@@ -39,4 +39,33 @@ public class PersistenciaTestes
         }
         finally { try { Directory.Delete(dir, true); } catch { } }
     }
+    [Fact]
+    public void Falha_na_gravacao_nao_perde_remocoes_nem_sujos()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "rp-teste-" + Guid.NewGuid().ToString("N"));
+        var arq = Path.Combine(dir, "t.db");
+        try
+        {
+            var t = new MundoTeste();
+            var r = t.NovoReino();
+            var local = t.M.LocaisDe(r.Id).First(l => l.Id != r.CasteloId);
+            using (var db = new Banco(arq))
+            {
+                db.Salvar(t.M);
+                // a próxima transação falha (como um disco cheio): a remoção e o sujo não podem se perder
+                db.Exec("CREATE TRIGGER falha BEFORE DELETE ON docs BEGIN SELECT RAISE(ABORT, 'disco cheio'); END;");
+                t.M.Locais.Remover(local);
+                r.Nome = "Outro Nome"; t.M.Sujar(r);
+                Assert.ThrowsAny<Exception>(() => db.Salvar(t.M));
+                db.Exec("DROP TRIGGER falha;");
+                db.Salvar(t.M);
+            }
+            using var db2 = new Banco(arq);
+            var m2 = new Mundo(Balanceamento.Padrao, t.Relogio);
+            db2.Carregar(m2);
+            Assert.Null(m2.Locais.Obter(local.Id));
+            Assert.Equal("Outro Nome", m2.Reinos[r.Id].Nome);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
 }
