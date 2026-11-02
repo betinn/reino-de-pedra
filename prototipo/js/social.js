@@ -38,7 +38,7 @@
     if (r.tipo === 'saque') return 'Levou ' + Object.keys(r.levado).map(function (k) { return r.levado[k] + ' ' + k; }).join(', ');
     if (r.tipo === 'exploracao') return r.quem + ' · ' + r.revelados + ' hexágonos revelados';
     if (r.tipo === 'espionagem') return 'Dono revelado: ' + D.reinos[r.dono].nome + (r.reliquia ? ' · guarda uma relíquia' : '');
-    if (r.tipo === 'roubo') return reliquia(r.reliquia).nome + ' levada por forças desconhecidas';
+    if (r.tipo === 'roubo') return reliquia(r.reliquia).nome + ' levada por forças desconhecidas' + (RP.ladroesDe(reliquia(r.reliquia)) ? ' · ainda a caminho' : '');
     if (r.tipo === 'fauna') return r.quem + ' · ' + W.ANIMAL[r.animal].nome.toLowerCase();
     if (r.tipo === 'caca') return '+' + r.ganho.comida + ' comida, +' + r.ganho.couro + ' couro';
     if (r.tipo === 'extracao') return '+' + r.ganho.prata + ' prata';
@@ -116,12 +116,16 @@
     } else if (r.tipo === 'roubo') {
       var rl = reliquia(r.reliquia);
       h += '<div class="secao-titulo">Atacante</div><div class="card linha atacante">' + RP.brasao(null, { tamanho: 40, desconhecido: true }) + '<span><b>Forças desconhecidas</b><br><small class="fraco">Sem estandarte. Batedores podem descobrir quem foi e onde a relíquia está.</small></span></div>' +
-        '<div class="card relq-card roubada tipo-' + rl.tipo + '" style="margin-top:var(--esp-3)"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(rl.nome) + '</b><br><small class="fraco">Estava em ' + RP.esc(x.nome) + '</small></span><span class="selo selo-perigo">Perdida</span></div>' +
+        '<div class="card relq-card roubada tipo-' + rl.tipo + '" style="margin-top:var(--esp-3)"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(rl.nome) + '</b><br><small class="fraco">Estava em ' + RP.esc(x.nome) + '</small></span><span class="selo selo-perigo">' + (RP.ladroesDe(rl) ? 'Em fuga' : 'Perdida') + '</span></div>' +
           '<p class="relq-efeito">' + RP.icone('menos', 'ico-p') + 'Você perdeu: ' + RP.RELIQUIA[rl.tipo].efeito(rl.bonus) + '</p></div>' +
         '<div class="card info" style="margin-top:var(--esp-3)">' + linha('Tipo de ataque', r.tipoAtaque) + linha('Forças', RP.esc(r.forcas)) + linha('Vindas do', r.origem) +
         linha('Resultado', '<span class="selo selo-perigo">Local saqueado</span>') + linha('Suas perdas', RP.esc(r.perdas.meu)) + linha('Perdas deles', RP.esc(r.perdas.deles)) + (r.levado ? linha('Também levado', perdaHTML(r.levado)) : '') + '</div>' +
-        '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + '<span>Relíquias de outros reinos só aparecem depois de espionadas. Espione locais na direção ' + (r.origem === 'leste' ? 'do leste' : 'de origem') + ' para achar a sua.</span></p>';
-      acoes = '<a class="btn btn-p btn-primario" href="#/exploradores?tipo=batedor">' + RP.icone('batedor') + 'Espionar para achar</a><a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquias</a>';
+        (RP.ladroesDe(rl)
+          ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p pulso') + '<span>As tropas que levam a relíquia ainda estão a caminho, rumo ao ' + RP.esc(RP.ladroesDe(rl).d.rumo) + '. Somem na névoa em <b class="num" data-fim="' + RP.ladroesDe(rl).d.chegada + '">' + RP.fmtResta(RP.ladroesDe(rl).d.chegada - Date.now()) + '</b>: dá para interceptar.</span></p>'
+          : '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + '<span>As forças chegaram ao destino. Relíquias de outros reinos só aparecem depois de espionadas: espione na direção ' + (r.origem === 'leste' ? 'do leste' : 'de origem') + ' para achar a sua.</span></p>');
+      acoes = RP.ladroesDe(rl)
+        ? '<a class="btn btn-p btn-primario" href="#/interceptar?marcha=' + RP.ladroesDe(rl).d.id + '">' + RP.icone('alvo') + 'Interceptar</a><a class="btn btn-p" href="#/mapa?modo=cena&abrir=marcha:' + RP.ladroesDe(rl).d.id + '">' + RP.icone('vista') + 'Ver na Vista</a>'
+        : '<a class="btn btn-p btn-primario" href="#/exploradores?tipo=batedor">' + RP.icone('batedor') + 'Espionar para achar</a><a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquias</a>';
     } else if (r.tipo === 'extracao') {
       var j = W.jazida(r.jazida);
       h += '<div class="card info">' + linha('Jazida', RP.esc(j.nome)) + linha('Ganho', ganhoHTML(r.ganho)) + '</div>' +

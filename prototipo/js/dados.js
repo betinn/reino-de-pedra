@@ -283,8 +283,8 @@
         quem: 'Explorador a cavalo', revelados: 14, achados: ['Manada de cavalos de raça (valioso)', 'Lobos (perigo alto)', 'Rota pública: Estrada do Rei continua para o leste'] },
       { id: 'r-espionagem', tipo: 'espionagem', titulo: 'Espionagem da Mina Rubra', horas: 10, lido: true, local: 'v-mina',
         quem: 'Batedor de elite', dono: 'valdren', defesa: '≈ 15 lanceiros e muralha baixa', producao: 'Ferro, ≈ 40/h', tropasVistas: '≈ 35 lanceiros saindo para o oeste', descoberto: false, reliquia: 'rl-lamina' },
-      { id: 'r-roubo', tipo: 'roubo', titulo: 'Relíquia roubada da Vila do Moinho', horas: 48, lido: false, local: 'vila-moinho', reliquia: 'rl-calice',
-        forcas: '≈ 30 tropas · cavalaria', origem: 'leste', tipoAtaque: 'Saque', perdas: { meu: '5 milicianos · 22 de população', deles: '≈ 4 cavaleiros' }, levado: { comida: 260 } },
+      { id: 'r-roubo', tipo: 'roubo', titulo: 'Relíquia roubada da Vila do Moinho', horas: 0.2, lido: false, local: 'vila-moinho', reliquia: 'rl-calice',
+        forcas: '≈ 30 tropas · infantaria e cavalaria', origem: 'leste', tipoAtaque: 'Saque', perdas: { meu: '5 milicianos · 22 de população', deles: '≈ 4 cavaleiros' }, levado: { comida: 260 } },
       { id: 'r-fauna', tipo: 'fauna', titulo: 'Explorador morto no pântano', horas: 30, lido: true,
         quem: 'Explorador a pé', animal: 'crocodilos', onde: 'Pântano a sudoeste', resultado: 'O explorador foi morto. Tropas mortas não retornam.' },
       { id: 'r-caca', tipo: 'caca', titulo: 'Caçada aos javalis', horas: 14, lido: true,
@@ -295,6 +295,7 @@
 
     /* Notificações (exemplos). horas: há quanto tempo. ir: rota do protótipo. */
     notificacoes: [
+      { id: 'n11', cat: 'ataque', titulo: 'Relíquia roubada', texto: 'O Cálice das Colheitas foi levado da Vila do Moinho. As tropas que o levam seguem para o leste: ainda dá para interceptar.', horas: 0.2, lido: false, ir: 'relatorio?id=r-roubo' },
       { id: 'n1', cat: 'ataque', titulo: 'Vila do Vau está sendo atacada', texto: 'Forças desconhecidas. Envie reforços ou recue.', horas: 0.07, lido: false, ir: 'batalha' },
       { id: 'n2', cat: 'ataque', titulo: 'Forças desconhecidas a caminho', texto: 'Alvo provável: Pasto das Éguas. Chegada em cerca de 40 min.', horas: 0.1, lido: false, ir: 'mapa?modo=cena&abrir=marcha:m-inimigo' },
       { id: 'n3', cat: 'exploracao', titulo: 'Explorador revelou 14 hexágonos', texto: 'Encontrou uma manada de cavalos de raça e um bando de lobos.', horas: 2, lido: false, ir: 'relatorio?id=r-exploracao' },
@@ -302,7 +303,6 @@
       { id: 'n5', cat: 'social', titulo: 'Nova bandeira perto do seu reino', texto: 'Casa Valdren: “Este ouro é de Valdren.”', horas: 4, lido: true, ir: 'mapa?modo=tatico&abrir=bandeira:b-1' },
       { id: 'n6', cat: 'recrutamento', titulo: '15 arqueiros prontos', texto: 'Quartel da Guarda.', horas: 7, lido: true, ir: 'tropas' },
       { id: 'n7', cat: 'fauna', titulo: 'Explorador morto por crocodilos', texto: 'Pântano a sudoeste. Prefira a rota segura ou leve escolta.', horas: 30, lido: true, ir: 'relatorio?id=r-fauna' },
-      { id: 'n11', cat: 'ataque', titulo: 'Relíquia roubada', texto: 'O Cálice das Colheitas foi levado da Vila do Moinho. Espione para descobrir onde está.', horas: 48, lido: true, ir: 'relatorio?id=r-roubo' },
       { id: 'n9', cat: 'social', titulo: 'Sua bandeira foi derrubada', texto: '“Fica longe da Salina.” não está mais no mapa.', horas: 18, lido: true, ir: 'bandeiras' },
       { id: 'n10', cat: 'ataque', titulo: 'Ataque sem combate', texto: 'O alvo estava protegido por escudo de novato. Suas tropas voltaram.', horas: 20, lido: true, ir: 'relatorio?id=r-escudo' },
       { id: 'n8', cat: 'temporada', titulo: 'Faltam 41 dias para o fim da temporada', texto: 'Relíquias e títulos da temporada ainda podem ser conquistados.', horas: 30, lido: true, ir: 'temporada' }
@@ -369,7 +369,7 @@
       { id: 'rl-pedra-vale', nome: 'Pedra do Vale', tipo: 'producao', bonus: 15, dono: 'meu', local: 'mina-vale', origem: 'Escavada numa ruína antiga no dia 9' },
       { id: 'rl-muralha-viva', nome: 'Muralha Viva', tipo: 'resistencia', bonus: 20, dono: 'meu', local: 'castelo', origem: 'Tomada num saque no dia 21' },
       { id: 'rl-lamina', nome: 'Lâmina do Rei Antigo', tipo: 'ataque', bonus: 15, dono: 'valdren', local: 'v-mina', espionada: 10 },
-      { id: 'rl-calice', nome: 'Cálice das Colheitas', tipo: 'producao', bonus: 15, dono: null, local: null, roubada: { horas: 48, de: 'vila-moinho', origem: 'leste' } }
+      { id: 'rl-calice', nome: 'Cálice das Colheitas', tipo: 'producao', bonus: 15, dono: null, local: null, roubada: { horas: 0.2, de: 'vila-moinho', origem: 'leste', marcha: 'm-roubo' } }
     ],
     ruinasComReliquia: ['j-ruina'],
     escavacoes: [],
@@ -391,7 +391,7 @@
       crocodilos: { comida: '40–60', couro: '50–70', peles: '0' }
     },
 
-    notificacoesNaoLidas: 3
+    notificacoesNaoLidas: 4
   };
 
   RP.TIPOS_LOCAL = {

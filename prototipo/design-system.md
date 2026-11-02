@@ -179,6 +179,7 @@ Luz natural levemente quente, para conversar com a interface escura:
 | Extração em andamento | Posto de madeira e carrinho ao lado da jazida | Trabalhadores com picareta; rótulo "Extraindo · ritmo" |
 | Relíquia guardada | Pedestal de pedra ao lado do local, gema na cor do tipo | Coluna de luz pulsando e cintilar; parada e sem luz em área explorada. Só as suas e as espionadas |
 | Escavação | Trabalhadores na ruína antiga | Picaretas; rótulo "Escavando · tempo" |
+| Relíquia em marcha | Baú carregado no meio da formação, com gema na cor do tipo | Brilho pulsando; rótulo "Relíquia · tempo" (com "?" se as forças são desconhecidas) |
 | Batalha | Atacantes (cinza, sem brasão) contra guarnição e milícia | Estocadas, flechas, celeiro em chamas, fumaça, poeira; rótulo "Batalha · tempo" |
 | Ataque seu | Formação na sua cor; com estandarte, bandeira na cor do seu brasão | Marcha até o alvo |
 
@@ -208,6 +209,7 @@ Chão, vegetação, relevo e névoa ficam num cache que só é refeito ao sair d
 | Local | Círculo com ícone do tipo, na cor do dono; ameaçado com anel pulsante |
 | Jazida | Losango com ícone do recurso; lendária com brilho |
 | Relíquia no local | Disco pequeno na cor do tipo, no canto superior esquerdo do marcador. Só as suas e as espionadas |
+| Relíquia em marcha | Mesmo disco no canto inferior esquerdo do marcador da marcha |
 | Fauna ao vivo | Círculo com o animal, contorno na cor do nível e contador do bando |
 | Área de perigo | Triângulo na cor do nível com pegada |
 | Ruína / terra livre | Círculo tracejado cinza com escombros / estacas |
@@ -266,7 +268,10 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Selo de relíquia | `.selo-relq.tipo-<tipo>` | Nome e efeito; quebra linha (diferente do `.selo` comum). |
 | Tipos de relíquia | `.relq-tipos > .relq-tipo` | Três cartões lado a lado: ataque, produção, resistência. |
 | Relíquia no card do local | `.lc-relq` | Linha na cor do tipo abaixo da produção. |
-| Marcador no mapa | `.relq-badge.tipo-<tipo>` | Disco no marcador do local. |
+| Marcador no mapa | `.relq-badge.tipo-<tipo>` | Disco no marcador do local ou da marcha. |
+| Aviso urgente | `.nota-antiga.nota-perigo` | Mesma forma da nota de informação antiga, em vermelho: relíquia em fuga, prazo para interceptar. |
+| Alertas recolhidos | `.faixa-mais` + `.faixas-extra` | No mundo, no máximo duas faixas à vista; as demais ficam atrás de "+N alertas" (`aria-expanded`). |
+| Ponto de encontro | `.mini-rota` + `.ext-numeros` | Caminho até o encontro e três números: vocês chegam, eles passam, folga. Sem encontro possível, nota com o motivo e o botão inativo. |
 
 ---
 

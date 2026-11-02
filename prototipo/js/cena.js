@@ -224,6 +224,18 @@
     if (vivo) { brilho(c, 4, gy - 6, t, 0, '#fff'); brilho(c, -5, gy - 2, t, 2.1, '#fff'); }
   }
 
+  /* relíquia carregada por uma marcha: baú nos ombros, gema na cor do tipo e brilho pulsante */
+  function bauReliquia(c, t, pal, tipo) {
+    var cor = COR_REL[tipo] || '#e8c04a', pulso = 0.5 + Math.sin(t * 2.6) * 0.5, by = -11 + Math.sin(t * 8) * 0.6;
+    elipse(c, 0, by - 3, 11 + pulso * 3, 7 + pulso * 2, 'rgba(255,240,200,' + (0.10 + pulso * 0.10).toFixed(3) + ')');
+    linha(c, -9, by + 1, 9, by + 1, pal.madeiraEsc, 1.4);
+    caixa(c, 0, by, 9, 6, 6, pal.madeira, pal.madeiraEsc, pal.madeira);
+    c.fillStyle = '#d6b25a'; c.fillRect(-4.5, by - 3.6, 9, 1.2);
+    poli(c, [0, by - 13, 2.8, by - 9.5, 0, by - 6.5, -2.8, by - 9.5], cor);
+    poli(c, [0, by - 13, 2.8, by - 9.5, 0, by - 9.5], 'rgba(255,255,255,.45)');
+    brilho(c, 4, by - 13, t, 0.7, '#fff');
+  }
+
   /* pessoa: o = { roupa, dir, andando, fase, capacete, lanca, escudo, carga, trabalho, sentado } */
   function pessoa(c, x, y, t, pal, o) {
     var dir = o.dir || 1, ph = t * 8 + (o.fase || 0), anda = o.andando ? Math.sin(ph) : 0;
@@ -1006,8 +1018,13 @@
         })(q);
         itens.push({ y: pos.y + 6, d: function () { obj(c, V, pos.x - ux * 30, pos.y - uy * 30); for (var z = 0; z < 3; z++) { var a = (t * 0.8 + z / 3) % 1; elipse(c, Math.sin(z * 3) * 6 - dir * a * 6, -a * 6, 4 + a * 6, 2 + a * 3, 'rgba(160,140,110,' + (0.3 * (1 - a)).toFixed(2) + ')'); } } });
       }
+      var relM = RP.reliquiaNaMarcha && RP.reliquiaNaMarcha(m.d.id);
+      if (relM) {
+        var bx = pos.x - ux * 12, by = pos.y - uy * 12 + 1;
+        itens.push({ y: by, d: function () { obj(c, V, bx, by); bauReliquia(c, t, P, relM.tipo); } });
+      }
       self.alvos.push(alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.d.id]));
-      rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil ? '? ' : '') + RP.fmtResta(m.d.chegada - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : corReino(m.d.dono) });
+      rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil ? '? ' : '') + (relM ? 'Relíquia · ' : '') + RP.fmtResta(m.d.chegada - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : corReino(m.d.dono) });
     });
 
     /* extrações em andamento: posto e trabalhadores na jazida */

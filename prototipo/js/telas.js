@@ -233,7 +233,7 @@
     return '<div class="secao-titulo">Relíquias</div><a class="card pilha reino-relq" href="#/reliquias">' +
       '<div class="linha-entre"><span class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><b>' + minhas.length + (minhas.length === 1 ? ' relíquia' : ' relíquias') + ' com você</b></span>' + RP.icone('avancar', 'ico-p') + '</div>' +
       '<div class="linha" style="flex-wrap:wrap">' + minhas.map(function (r) { return '<span class="selo selo-relq tipo-' + r.tipo + '">' + RP.icone(RP.RELIQUIA[r.tipo].icone) + RP.esc(r.nome) + '</span>'; }).join('') + '</div>' +
-      (roubadas.length ? '<span class="lc-ameaca">' + RP.icone('alerta', 'ico-p') + '<span><b>' + RP.esc(roubadas[0].nome) + '</b> foi roubada · paradeiro desconhecido</span></span>' : '') +
+      (roubadas.length ? '<span class="lc-ameaca">' + RP.icone('alerta', 'ico-p' + (RP.ladroesDe(roubadas[0]) ? ' pulso' : '')) + '<span><b>' + RP.esc(roubadas[0].nome) + '</b> foi roubada · ' + (RP.ladroesDe(roubadas[0]) ? 'ainda a caminho: dá para interceptar' : 'paradeiro desconhecido') + '</span></span>' : '') +
       '<small class="fraco">' + conhecidas.length + ' de outros reinos conhecida' + (conhecidas.length === 1 ? '' : 's') + ' por espionagem · ' + D.ruinasComReliquia.length + (D.ruinasComReliquia.length === 1 ? ' ruína antiga' : ' ruínas antigas') + ' para escavar</small></a>';
   }
 

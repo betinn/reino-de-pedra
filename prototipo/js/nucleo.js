@@ -22,7 +22,7 @@
     return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
   };
   RP.fmtHa = function (horas) {
-    if (horas < 1) return 'há instantes';
+    if (horas < 1) return horas * 60 >= 1 ? 'há ' + Math.round(horas * 60) + ' min' : 'há instantes';
     if (horas < 48) return 'há ' + Math.round(horas) + ' h';
     return 'há ' + Math.round(horas / 24) + ' dias';
   };

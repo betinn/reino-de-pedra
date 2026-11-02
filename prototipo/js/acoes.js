@@ -62,7 +62,7 @@
   RP.caminho = caminho;
 
   /* minimapa de rota (SVG): terreno conhecido, névoa, perigo, rotas e o(s) caminho(s) */
-  function miniRota(op, escolhida, destinoLabel) {
+  function miniRota(op, escolhida, destinoLabel, origemIcone) {
     var todos = [].concat(op.curta ? op.curta.hexes : [], op.segura ? op.segura.hexes : []);
     if (!todos.length) return '';
     var cs = todos.map(function (h) { return h[0]; }), ls = todos.map(function (h) { return h[1]; });
@@ -92,7 +92,7 @@
     if (op.segura) h += linhaCaminho(op.segura, 'mr-segura' + (escolhida === 'segura' ? ' ativo' : ''));
     if (op.curta) h += linhaCaminho(op.curta, 'mr-curta' + (escolhida === 'curta' ? ' ativo' : ''));
     var o = H.centro(todos[0][0], todos[0][1]), d = H.centro(todos[todos.length - 1][0], todos[todos.length - 1][1]);
-    h += '<g transform="translate(' + o.x.toFixed(0) + ' ' + o.y.toFixed(0) + ')"><circle class="mr-pino" r="15"/><use href="#i-castelo" x="-10" y="-11" width="20" height="20" class="mr-pino-ico"/></g>';
+    h += '<g transform="translate(' + o.x.toFixed(0) + ' ' + o.y.toFixed(0) + ')"><circle class="mr-pino" r="15"/><use href="#i-' + (origemIcone || 'castelo') + '" x="-10" y="-11" width="20" height="20" class="mr-pino-ico"/></g>';
     h += '<g transform="translate(' + d.x.toFixed(0) + ' ' + d.y.toFixed(0) + ')"><circle class="mr-destino" r="14"/><circle class="mr-destino-c" r="5"/></g>';
     return '<svg class="mini-rota mapa-svg" viewBox="' + vb.map(function (v) { return v.toFixed(0); }).join(' ') + '" role="img" aria-label="Caminho até ' + RP.esc(destinoLabel || 'o destino') + '">' + h + '</svg>';
   }

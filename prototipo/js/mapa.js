@@ -187,6 +187,7 @@
         '<use href="#i-' + iconeMarcha(m) + '" x="' + (-r * 0.66) + '" y="' + (-r * 0.66) + '" width="' + (r * 1.32) + '" height="' + (r * 1.32) + '"/>' +
         (m.d.hostil ? '<g class="mc-selo" transform="translate(12 -12)"><circle r="8"/><text y="4.5">?</text></g>' : '') +
         (m.d.estandarte ? '<g class="mc-estandarte" transform="translate(13 -15)"><use href="#i-estandarte" x="-8" y="-8" width="16" height="16"/></g>' : '') +
+        (RP.reliquiaNaMarcha(m.d.id) ? '<g class="relq-badge tipo-' + RP.reliquiaNaMarcha(m.d.id).tipo + '" transform="translate(-14 13)"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>' : '') +
         (risco && risco.nivel !== 'baixo' ? '<g class="mc-risco nivel-' + risco.nivel + '" transform="translate(-13 -13)"><path d="M0-8 8 6H-8Z"/><text y="4">!</text></g>' : '') +
         '<g class="mc-eta" transform="translate(0 ' + (r + 13) + ')"><rect x="-24" y="-10" width="48" height="20" rx="10"/><text y="4.5" data-fim="' + m.d.chegada + '">' + RP.fmtResta(m.d.chegada - Date.now()) + '</text></g>' +
         '</g></g>';
@@ -478,7 +479,16 @@
       var alvoNome = alvoTexto(o.alvo);
       var risco = W.riscoMarcha(m);
       var avisoRisco = risco && risco.nivel !== 'baixo' ? '<div class="perigo-linha nivel-' + risco.nivel + '">' + RP.icone(W.ANIMAL[risco.fauna.tipo].icone) + '<span><b>Rota com ' + W.ANIMAL[risco.fauna.tipo].nome.toLowerCase() + ' (perigo ' + W.NOME_NIVEL[risco.nivel].toLowerCase() + ')</b><br><small>' + (o.tipo === 'explorador' ? 'Explorador sozinho' : 'Grupo pequeno') + ' corre risco. Considere escolta ou uma rota mais longa e segura.</small></span></div>' : '';
-      if (o.hostil) {
+      var rlm = RP.reliquiaNaMarcha(o.id);
+      if (o.hostil && rlm) {
+        corpo = '<div class="info">' +
+          linhaInfo('Identidade', '<span class="selo selo-perigo">' + RP.icone('interrogacao') + 'Desconhecida</span>') +
+          linhaInfo('Forças', o.resumo) + linhaInfo('Rumo', o.rumo || '?') +
+          linhaInfo('Some na névoa em', '<b class="num" data-fim="' + o.chegada + '">' + RP.fmtResta(o.chegada - Date.now()) + '</b>') +
+          '</div><div style="margin-top:var(--esp-3)">' + RP.seloReliquia(rlm) + '</div>' +
+          '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Levam a sua relíquia. Alcance-os no caminho antes que sumam na névoa.</p>';
+        acoes = botao('Interceptar', 'alvo', 'btn-primario', 'data-ir="interceptar?marcha=' + o.id + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
+      } else if (o.hostil) {
         corpo = '<div class="info">' +
           linhaInfo('Identidade', '<span class="selo selo-perigo">' + RP.icone('interrogacao') + 'Desconhecida</span>') +
           linhaInfo('Forças', o.resumo) + linhaInfo('Vindo do', o.origem) + linhaInfo('Alvo provável', alvoNome) +
@@ -487,6 +497,7 @@
         acoes = botao('Enviar reforços', 'escudo', 'btn-primario', 'data-ir="envio?modo=reforco&destino=' + o.alvo + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
       } else if (o.dono === 'meu') {
         corpo = avisoRisco + '<div class="info">' + linhaInfo('Ordem', o.resumo) + (alvoNome ? linhaInfo('Destino', alvoNome) : '') + '</div>' +
+          (rlm ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(rlm) + '</div><p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Carregando uma relíquia: visível no mapa e sujeita a roubo até chegar.</p>' : '') +
           '<div style="margin-top:var(--esp-3)">' + RP.timerHTML('Chegada', o.seg, o.seg * 2.2) + '</div>';
         acoes = o.tipo === 'explorador'
           ? botao('Mudar ordem', 'explorador', 'btn-primario', 'data-ir="exploradores?ativo=' + o.id + '"') + botao('Retornar', 'voltar', '', 'data-retornar="' + o.id + '"')
@@ -635,10 +646,18 @@
     var bx = W.local(D.batalha.local);
     var faixaBatalha = RP.batalha && RP.batalha.ativa() ? '<a class="faixa-alerta faixa-batalha" href="#/batalha">' + RP.icone('tropas', 'pulso') +
       '<span class="txt"><b>Batalha em andamento</b> · ' + RP.esc(bx.nome) + '<br>toque para enviar reforços ou recuar</span>' + RP.icone('avancar', 'ico-p') + '</a>' : '';
-    var faixa = faixaBatalha + hostis.map(function (m) {
+    var faixas = (faixaBatalha ? [faixaBatalha] : []).concat(hostis.map(function (m) {
+      var rl = RP.reliquiaNaMarcha(m.d.id);
+      if (rl) return '<button type="button" class="faixa-alerta" data-abrir="marcha:' + m.d.id + '" data-centrar-marcha="' + m.d.id + '">' + RP.icone('lendario', 'pulso') +
+        '<span class="txt"><b>' + RP.esc(rl.nome) + ' sendo levada</b> → ' + RP.esc(m.d.rumo || '?') + '<br>some na névoa em <b class="num" data-fim="' + m.d.chegada + '">' + RP.fmtResta(m.d.chegada - Date.now()) + '</b></span>' + RP.icone('avancar', 'ico-p') + '</button>';
       return '<button type="button" class="faixa-alerta" data-abrir="marcha:' + m.d.id + '" data-centrar-marcha="' + m.d.id + '">' + RP.icone('alerta', 'pulso') +
         '<span class="txt"><b>Forças desconhecidas</b> → ' + alvoTexto(m.d.alvo) + '<br>chegada em <b class="num" data-fim="' + m.d.chegada + '">' + RP.fmtResta(m.d.chegada - Date.now()) + '</b></span>' + RP.icone('avancar', 'ico-p') + '</button>';
-    }).join('');
+    }));
+    /* no máximo duas faixas à vista; o resto fica atrás de "+N alertas" para não cobrir o mapa */
+    var faixa = faixas.slice(0, 2).join('') + (faixas.length > 2
+      ? '<div class="faixas-extra" id="faixas-extra" hidden>' + faixas.slice(2).join('') + '</div>' +
+        '<button type="button" class="faixa-mais" data-faixas-mais aria-expanded="false" aria-controls="faixas-extra">' + RP.icone('alerta', 'ico-p') + '<span>+' + (faixas.length - 2) + (faixas.length - 2 > 1 ? ' alertas' : ' alerta') + '</span></button>'
+      : '');
     el.innerHTML =
       '<canvas class="cena-cv" aria-label="Vista do mundo. Arraste para mover, use dois dedos ou os botões para zoom. Toque em construções, tropas e animais."></canvas>' +
       '<div class="mapa-vp" role="application" aria-label="Mapa tático. Arraste para mover, use dois dedos ou os botões para zoom.">' +
@@ -710,6 +729,12 @@
 
     el.addEventListener('click', function (e) {
       var b;
+      if ((b = e.target.closest('[data-faixas-mais]'))) {
+        var ab = b.getAttribute('aria-expanded') !== 'true', ex = RP.$('#faixas-extra', el);
+        b.setAttribute('aria-expanded', String(ab)); ex.hidden = !ab;
+        b.querySelector('span').textContent = ab ? 'Menos alertas' : '+' + ex.children.length + (ex.children.length > 1 ? ' alertas' : ' alerta');
+        return;
+      }
       if ((b = e.target.closest('[data-zoom]'))) zoomBotao(+b.getAttribute('data-zoom'));
       else if (e.target.closest('[data-centrar-castelo]')) { var cc = W.castelo(); centrar(cc.x, cc.y, modo === 'cena' ? 1.8 : Math.max(vista.s, 0.85)); }
       else if (e.target.closest('[data-camadas]')) abrirCamadas();

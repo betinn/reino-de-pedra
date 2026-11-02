@@ -30,9 +30,18 @@
     return Object.keys(g).filter(function (k) { return g[k]; }).map(function (k) { return g[k] + ' ' + U.unidade(k).nome.toLowerCase() + (g[k] > 1 ? 's' : ''); }).join(', ');
   }
   function forcaGrupo(g) { return Object.keys(g).reduce(function (s, k) { var u = U.unidade(k); return s + (g[k] || 0) * (u.atk + u.def) / 2; }, 0); }
+  /* usados também pelas telas de relíquias (transporte e interceptação) */
+  U.grupo = { soma: somaGrupo, perfil: perfilGrupo, linhas: linhasGrupo, passo: passoGrupo, partes: partesGrupo, forca: forcaGrupo, disp: function (id) { return D.disponiveis[id] || 0; } };
 
   /* ================================================================ Extração */
-  var ext = { jazida: null, grupo: { lanceiro: 1, arqueiro: 0, cavalaria: 0 }, posto: false, caminho: 'curta' };
+  var ext = { jazida: null, grupo: { lanceiro: 1, arqueiro: 0, cavalaria: 0 }, posto: false, caminho: 'curta', destinoRel: null };
+  /* locais seus que podem receber uma relíquia (um por local, contando as que já estão a caminho) */
+  function locaisLivres() {
+    return D.locais.filter(function (x) {
+      return x.reino === 'meu' && !RP.reliquiaEm(x.id) && !D.reliquias.some(function (r) { return r.transito && r.transito.para === x.id; }) &&
+        !D.escavacoes.some(function (q) { return q.destino === x.id; });
+    });
+  }
   /* ruínas antigas entram como escavação: lenta, finita, rende 1 relíquia e esgota a ruína */
   function jazidasExtraiveis() { return D.jazidas.filter(function (j) { return (j.classe !== 'lendario' || D.ruinasComReliquia.indexOf(j.id) >= 0) && W.estado(j.c, j.l).v !== 'desconhecido'; }); }
   function horasEscavar(r) { return r ? Math.max(4, 72 / r) : 0; }   /* ilustrativo: ≈12 h com 1 lanceiro, nunca menos de 4 h */
@@ -51,6 +60,16 @@
         '<span class="gb-rotulo">' + RP.esc(c.nome) + '</span><span class="gb-trilho"><i style="width:' + Math.max(2, (80 * c.v) / max).toFixed(1) + '%"></i></span>' +
         '<span class="gb-valor num">' + val + '</span></div>';
     }).join('') + '</div>';
+  }
+  function destinoRelHTML(j) {
+    var livres = locaisLivres(), perfil = perfilGrupo(ext.grupo);
+    if (!livres.length) return '<div class="secao-titulo">Ao achar, levar para</div><p class="nota-antiga">' + RP.icone('info', 'ico-p') + '<span>Todos os seus locais já guardam uma relíquia. Mova uma antes de escavar.</span></p>';
+    var ops = livres.map(function (x) { var c = RP.caminho([j.c, j.l], [x.c, x.l], perfil); return { x: x, seg: c ? c.seg : Infinity }; }).sort(function (a, b) { return a.seg - b.seg; });
+    if (!ext.destinoRel || !livres.some(function (x) { return x.id === ext.destinoRel; })) ext.destinoRel = ops[0].x.id;
+    return '<div class="secao-titulo">Ao achar, levar para</div><div class="escolhas escolhas-lista">' + ops.slice(0, 4).map(function (o) {
+      return '<button type="button" class="escolha escolha-linha" data-destino-escav="' + o.x.id + '" aria-pressed="' + (o.x.id === ext.destinoRel) + '"><span class="ico-placa dono-meu">' + RP.icone(o.x.tipo) + '</span>' +
+        '<span class="escolha-txt"><b>' + RP.esc(o.x.tipo === 'castelo' ? 'Castelo de ' + RP.estado.nome : o.x.nome) + '</b><small class="fraco">' + RP.TIPOS_LOCAL[o.x.tipo] + ' · volta em ' + (isFinite(o.seg) ? RP.fmtDuracao(o.seg) : '—') + '</small></span></button>';
+    }).join('') + '</div><p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">A relíquia não vai sozinha: o próprio grupo a carrega até lá e, no caminho, ela pode ser roubada. Grupo maior, escolta maior.</p>';
   }
   function desenharExtracao(el) {
     var lista = jazidasExtraiveis();
@@ -83,6 +102,7 @@
       '<div class="secao-titulo">Grupo</div><div class="card pilha">' + linhasGrupo(ext.grupo, ['lanceiro', 'arqueiro', 'cavalaria'], dispDe) +
       '<button type="button" class="alternar" data-posto aria-pressed="' + ext.posto + '" style="width:100%">' + RP.icone('picareta') + '<span>Construir posto de ' + (escav ? 'escavação' : 'extração') + ' <small class="fraco">(' + RP.fmtDuracao(custoPosto.tempo) + ')</small></span><i aria-hidden="true"></i></button>' +
       (ext.posto ? '<div class="linha" style="flex-wrap:wrap">' + RP.custoHTML(custoPosto.custo) + '<small class="fraco">entra na fila de obras</small></div>' : '') + '</div>' +
+      (escav && !emEscav ? destinoRelHTML(j) : '') +
       (escav
         ? '<div class="secao-titulo">Quanto cada escolha encurta a escavação</div><div class="card">' + graficoCenarios(cen, true) +
           '<div class="ext-numeros"><div><span class="fraco">Escavação</span><b class="num">' + (hEsc ? '≈ ' + Math.round(hEsc) + ' h' : '—') + '</b></div><div><span class="fraco">Viagem</span><b class="num">' + (esc ? RP.fmtDuracao(esc.seg) : '—') + '</b></div>' +
@@ -114,12 +134,14 @@
         if ((b = e.target.closest('[data-jazida]'))) { ext.jazida = b.getAttribute('data-jazida'); desenharExtracao(el); return; }
         if ((b = e.target.closest('[data-caminho]'))) { ext.caminho = b.getAttribute('data-caminho'); desenharExtracao(el); return; }
         if (e.target.closest('[data-posto]')) { ext.posto = !ext.posto; desenharExtracao(el); return; }
+        if ((b = e.target.closest('[data-destino-escav]'))) { ext.destinoRel = b.getAttribute('data-destino-escav'); desenharExtracao(el); return; }
         if (passoGrupo(e, ext.grupo, dispDe)) { desenharExtracao(el); return; }
         if (e.target.closest('[data-extrair]')) {
           var esc = ext._esc, n = somaGrupo(ext.grupo), j = W.jazida(ext.jazida);
           if (ext._ocupada) { RP.aviso({ titulo: 'Já em escavação', texto: 'Esta ruína já está sendo escavada.', icone: 'picareta', tipo: 'alerta' }); return; }
           if (!n || !esc) { RP.aviso({ titulo: 'Escolha o grupo', texto: 'Uma unidade já basta.', icone: 'info', tipo: 'alerta' }); return; }
           var escav = j.classe === 'lendario';
+          if (escav && !ext.destinoRel) { RP.aviso({ titulo: 'Sem local livre', texto: 'Mova uma relíquia antes de escavar.', icone: 'lendario', tipo: 'alerta' }); return; }
           if (ext.posto) {
             var cp = D.construcoes.filter(function (x) { return x.id === 'posto'; })[0], falta = RP.faltas(cp.custo);
             if (falta.length) { RP.aviso({ titulo: 'Sem recursos para o posto', texto: 'Faltam ' + falta.join(', ') + '. Envie sem posto ou espere.', icone: 'alerta', tipo: 'perigo' }); return; }
@@ -132,7 +154,7 @@
             nome: escav ? 'Grupo de escavação' : 'Grupo de extração', resumo: partesGrupo(ext.grupo) + ' → ' + j.nome, seg: esc.seg }, esc.hexes);
           if (escav) {
             var chega = Date.now() + esc.seg * 1000;
-            D.escavacoes.push({ jazida: j.id, grupo: Object.assign({}, ext.grupo), chega: chega, fim: chega + Math.round(ext._horas * 3600) * 1000 });
+            D.escavacoes.push({ jazida: j.id, grupo: Object.assign({}, ext.grupo), chega: chega, fim: chega + Math.round(ext._horas * 3600) * 1000, destino: ext.destinoRel });
             RP.invalidarTela('reliquias');
           } else D.extracoes.push({ id: 'ex-' + Date.now(), jazida: j.id, grupo: Object.assign({}, ext.grupo), posto: ext.posto, ritmo: Math.round(ext._r), horas: 0, aCaminho: true });
           ext.grupo = { lanceiro: 1, arqueiro: 0, cavalaria: 0 }; ext.posto = false;
@@ -185,7 +207,8 @@
             '<span class="linha"><span class="ico-placa">' + RP.icone(t.icone) + '</span><b>' + t.nome + '</b></span><small class="fraco">' + t.txt + '</small>' + (bloq ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + 'Só castelos</span>' : '') + '</button>';
         }).join('') + '</div>' +
         (rel ? (levaRel
-          ? '<button type="button" class="alternar alternar-relq" data-priorizar aria-pressed="' + env.priorizar + '" style="width:100%;margin-top:var(--esp-3)">' + RP.icone('lendario') + '<span>Priorizar a relíquia<br><small class="fraco">' + (env.tipo === 'saque' ? 'se vencer, traz ' + RP.esc(rel.nome) + ' antes dos recursos' : 'se vencer, ' + RP.esc(rel.nome) + ' fica com você') + '</small></span><i aria-hidden="true"></i></button>'
+          ? '<button type="button" class="alternar alternar-relq" data-priorizar aria-pressed="' + env.priorizar + '" style="width:100%;margin-top:var(--esp-3)">' + RP.icone('lendario') + '<span>Priorizar a relíquia<br><small class="fraco">' + (env.tipo === 'ocupacao' ? 'se vencer, ' + RP.esc(rel.nome) + ' fica no local tomado, agora seu' : 'se vencer, as tropas trazem ' + RP.esc(rel.nome) + ' ao castelo' + (env.tipo === 'saque' ? ', antes dos recursos' : '')) + '</small></span><i aria-hidden="true"></i></button>' +
+            (env.tipo !== 'ocupacao' && env.priorizar ? '<p class="nota-antiga">' + RP.icone('tropas', 'ico-p') + '<span>A relíquia não volta sozinha: vem com as suas tropas e pode ser interceptada no caminho de volta. Leve tropas suficientes para a escolta.</span></p>' : '')
           : '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('lendario', 'ico-p') + '<span>' + (env.tipo === 'sabotagem' ? 'Sabotagem' : 'Massacre') + ' não leva a relíquia. Para tomá-la, use saque, ocupação ou cerco.</span></p>') : '') +
         (env.tipo === 'saque' && saques ? '<div class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + 'Você saqueou este alvo ' + saques + (saques > 1 ? ' vezes' : ' vez') + ' nas últimas 24 h: rendimento −' + Math.min(80, saques * 20) + '%. Saques repetidos rendem cada vez menos.</div>' : '');
     }
@@ -243,7 +266,7 @@
             titulo: 'Confirmar ' + tipo.nome.toLowerCase(),
             corpo: '<p class="suave">' + RP.esc(W.nomeAparente(x)) + ' · ' + (x.espionado ? RP.esc(D.reinos[x.reino].nome) : 'dono desconhecido') + '<br>' + partesGrupo(env.grupo) + ' · chegada em ' + RP.fmtDuracao(esc.seg) + '</p>' +
               '<p class="selo ' + (env.estandarte ? 'selo-info' : 'selo-desconhecido') + '" style="margin-top:var(--esp-3)">' + RP.icone('estandarte') + (env.estandarte ? 'Com estandarte: o defensor saberá que foi você' : 'Sem estandarte: você não será identificado') + '</p>' +
-              (reliquiaAlvo(x) && LEVA_RELIQUIA[env.tipo] && env.priorizar ? '<p class="selo selo-relq tipo-' + reliquiaAlvo(x).tipo + '" style="margin-top:var(--esp-2)">' + RP.icone('lendario') + 'Se vencer, traz ' + RP.esc(reliquiaAlvo(x).nome) + '</p>' : ''),
+              (reliquiaAlvo(x) && LEVA_RELIQUIA[env.tipo] && env.priorizar ? '<p class="selo selo-relq tipo-' + reliquiaAlvo(x).tipo + '" style="margin-top:var(--esp-2)">' + RP.icone('lendario') + (env.tipo === 'ocupacao' ? 'Se vencer, ' + RP.esc(reliquiaAlvo(x).nome) + ' fica no local tomado' : 'Se vencer, as tropas trazem ' + RP.esc(reliquiaAlvo(x).nome) + ' e podem ser interceptadas na volta') + '</p>' : ''),
             acoes: [{ rotulo: RP.icone('tropas') + 'Enviar ataque', classe: 'btn-primario', acao: enviar }, { rotulo: 'Voltar' }]
           });
         }

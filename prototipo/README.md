@@ -56,7 +56,7 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 14 | Temporada e legado | `#/temporada`, `#/ranking` |
 | 15 | Exílio | `#/exilio` (exemplo, em Mais) |
 | 16 | Retorno após regência | `#/regencia` (exemplo, em Mais) |
-| 17 | Relíquias lendárias | `#/reliquias` (em Mais, em Meu reino e nas folhas). Escavação: `#/extracao?jazida=j-ruina` |
+| 17 | Relíquias lendárias | `#/reliquias` (em Mais, em Meu reino e nas folhas). Escavação: `#/extracao?jazida=j-ruina`. Mover com escolta: `#/transporte?rel=<id>`. Interceptar: `#/interceptar?marcha=<id>` |
 | — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
 
 Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolher no mapa o local de uma construção nova (vila, posto, rota).
@@ -90,10 +90,10 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 21. **Temporada e legado:** Mais → dias restantes, o que fica e o que recomeça, ranking da temporada (baixas, perdas, tropas e famílias), linhagem, relíquias (com teto), títulos, brasões, histórico.
 22. **Exílio:** Mais → Exílio → o que aconteceu, novo ponto do mapa, kit de recomeço, escudo temporário, legado mantido → Recomeçar.
 23. **Relíquias:** Mais (ou Meu reino) → Relíquias → as suas (onde estão e o efeito), as espionadas, a roubada e as ruínas antigas.
-24. **Escavar:** Relíquias → Escavar (ou a ruína no mapa) → grupo, posto opcional, gráfico de horas por cenário → os trabalhadores aparecem na Vista com "Escavando · tempo" → a relíquia achada pede um local para ser guardada.
-25. **Mover / guardar:** Relíquias → Mover → lista dos seus locais com o tempo de viagem (os que já guardam uma ficam marcados) → a escolta sai na Vista; no caminho a relíquia pode ser roubada.
-26. **Roubar:** Mina Rubra (espionada) → Roubar a relíquia → saque, ocupação ou cerco com "Priorizar a relíquia"; sabotagem e massacre avisam que não levam a relíquia.
-27. **Perder:** relatório "Relíquia roubada" (forças desconhecidas, direção de origem, o efeito perdido) → Espionar para achar.
+24. **Escavar:** Relíquias → Escavar (ou a ruína no mapa) → grupo, posto opcional, gráfico de horas por cenário e **para onde levar ao achar** → os trabalhadores aparecem na Vista com "Escavando · tempo" → ao achar, o próprio grupo carrega a relíquia até o local escolhido (marcha com baú, sujeita a roubo).
+25. **Mover com escolta:** Relíquias → Mover → destino (os que já guardam uma ficam bloqueados) → escolta (sem tropas o botão fica inativo; escolta pequena recebe aviso) → caminho: buscar (castelo → local da relíquia) e levar (rota curta ou segura, risco de fauna) → a escolta sai; ao pegar a relíquia, ela deixa de fortalecer a origem e passa a ser carregada, visível no mapa.
+26. **Roubar de outro reino:** Mina Rubra (espionada) → Roubar a relíquia → saque ou cerco com "Priorizar a relíquia": as tropas trazem a relíquia ao castelo e podem ser interceptadas na volta. Na ocupação, a relíquia fica no local tomado. Sabotagem e massacre avisam que não levam a relíquia.
+27. **Interceptar:** o Cálice das Colheitas acabou de ser roubado e as forças que o levam ainda marcham para o leste (faixa no mundo, notificação, relatório, Relíquias e Meu reino) → Interceptar → tropas → ponto de encontro calculado sobre o caminho deles, com "vocês chegam", "eles passam" e folga. Lanceiros (lentos) não alcançam; arqueiros alcançam por pouco. Se as forças chegam ao destino, a relíquia some na névoa e só a espionagem a acha.
 
 ---
 
@@ -196,7 +196,11 @@ As regras definidas estão no `CLAUDE.md`. Detalhes que o protótipo precisou as
 |---|---|---|
 | Quantas por local | Uma relíquia por local. | Sem limite (empilhar no castelo); ou bônus decrescente quando há mais de uma. |
 | Roubo | Saque, ocupação ou cerco vitorioso levam a relíquia. No saque, "Priorizar a relíquia" a traz antes dos recursos. Sabotagem e massacre não levam. | Só ocupação leva; ou a relíquia ocupa carga como recurso. |
-| Em trânsito | Mover leva tempo (escolta no passo lento) e a relíquia pode ser roubada no caminho. | Mover instantâneo; ou trânsito protegido. |
+| Escolta ao mover | As tropas saem do castelo, buscam a relíquia e a levam (duas pernas). A relíquia fortalece a origem até ser pega. Escolta escolhida pelo jogador; abaixo de uma força mínima, aviso de escolta pequena. | Usar a guarnição do próprio local; escolta mínima obrigatória. |
+| Depois de escavar | O grupo de escavação carrega a relíquia até um local escolhido antes de enviar. | Escolher o destino só ao achar (a relíquia espera na ruína, exposta). |
+| Depois de roubar | Saque e cerco: as tropas trazem a relíquia ao castelo, interceptáveis na volta. Ocupação: fica no local tomado. | Trazer sempre ao castelo, inclusive na ocupação. |
+| Interceptar | Tropas vão a um hexágono do caminho deles e precisam chegar ao menos 1 min antes. Quem vence fica com a relíquia, que volta escoltada. | Alcançar por perseguição (atacar a marcha por trás); ou interceptar só em rotas. |
+| Quem vê a relíquia em marcha | Você vê as suas e a sua que foi roubada (sabe que ela vai ali). Marchas de outros reinos não mostram se carregam relíquia sem espionagem. | Relíquia em marcha sempre visível para todos (brilho no mapa). |
 | Visibilidade | Só a espionagem mostra relíquias de outros reinos (selo no mapa, pedestal na Vista, linha no envio). Relíquia roubada de você some até ser espionada. | Brilho visível de longe, sem revelar o tipo nem o dono. |
 | Ruína antiga | Guarda 1 relíquia; o tipo só se conhece ao achar; esgota depois. | Tipo visível antes de escavar; ruína com várias relíquias. |
 | Escavação | Uma unidade já escava (≈ 12 h); mais tropas e posto encurtam, mínimo de 4 h. Tropas ficam paradas na ruína. | Tempo fixo; ou exigir prospector. |
