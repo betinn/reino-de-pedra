@@ -70,12 +70,13 @@ public sealed partial class Mundo
     }
 
     /// <summary>Cria um mundo novo: terreno, jazidas, ruínas e início da temporada.</summary>
-    public void CriarNovo(ulong semente, int numeroTemporada = 1)
+    /// <param name="ultimoId">Último id já usado (no reset da temporada os ids continuam: um id nunca volta a outro documento).</param>
+    public void CriarNovo(ulong semente, int numeroTemporada = 1, long ultimoId = 1)
     {
         Estados.AdicionarCarregado(new EstadoMundo { Id = 1 });
         var e = Estado;
         e.Semente = semente; e.InicioTemporada = Relogio.Agora; e.NumeroTemporada = numeroTemporada;
-        e.UltimoId = 1;
+        e.UltimoId = Math.Max(1, ultimoId);
         Sujar(e);
         PrepararMapa();
         var (jaz, ruinas) = GeradorMapa.SortearObjetos(Mapa, B, semente);
@@ -145,6 +146,7 @@ public sealed partial class Mundo
         foreach (var l in Locais) Indexar(l);
         IndiceNevoa.Clear();
         foreach (var n in NevoasDosReinos) IndiceNevoa[n.ReinoId] = n.Id;
+        IndiceFotos.Clear(); BandeirasPorHex = null;   // remontados sob demanda
         if (Mapa != null) AoReconstruirIndices?.Invoke(this);
     }
     public static event Action<Mundo>? AoReconstruirIndices;
@@ -191,7 +193,12 @@ public sealed partial class Mundo
     public void Avisar(long reinoId, string tipo, object? dados = null) => Avisos.Avisar(reinoId, tipo, dados);
 }
 
-public interface ICanalAvisos { void Avisar(long reinoId, string tipo, object? dados); }
+public interface ICanalAvisos
+{
+    void Avisar(long reinoId, string tipo, object? dados);
+    /// <summary>Reset da temporada: fecha as conexões abertas (cada cliente reconecta e acha o reino da temporada nova).</summary>
+    void Reiniciar() { }
+}
 internal sealed class CanalNulo : ICanalAvisos { public void Avisar(long reinoId, string tipo, object? dados) { } }
 
 /// <summary>Dados gerais do mundo e da temporada (documento único, id 1).</summary>

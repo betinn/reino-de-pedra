@@ -169,10 +169,12 @@ namespace ReinoDePedra.Jogo.Temporada
         {
             var n = m.Estado.NumeroTemporada + 1;
             var s = semente ?? Rng.Hash(m.Estado.Semente, (ulong)m.Agora, m.Sorte.Proximo());
+            var ultimoId = m.Estado.UltimoId;
             foreach (var c in m.Colecoes) c.Limpar();
             m.Agenda.Limpar();
             m.Sujos.Clear(); m.Removidos.Clear();
-            m.CriarNovo(s, n);
+            m.CriarNovo(s, n, ultimoId);   // os ids continuam: nada da temporada passada (índice, aviso, foto) cai num reino novo
+            m.Avisos.Reiniciar();
             Garantir(m);
             if (m.Banco != null)
             {

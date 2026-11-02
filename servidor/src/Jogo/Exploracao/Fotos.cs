@@ -28,7 +28,7 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         public static FotoNevoa De(Mundo m, long reinoId)
         {
-            if (m.IndiceFotos.TryGetValue(reinoId, out var id) && m.FotosDosReinos.Obter(id) is { } f)
+            if (m.IndiceFotos.TryGetValue(reinoId, out var id) && m.FotosDosReinos.Obter(id) is { } f && f.ReinoId == reinoId)
             {
                 if (f.Perigo.Length != m.G.Total) f.Perigo = new byte[m.G.Total];
                 return f;

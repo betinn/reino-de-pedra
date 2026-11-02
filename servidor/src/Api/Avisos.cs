@@ -24,6 +24,12 @@ public sealed class CanalSse : ICanalAvisos
     {
         if (_porReino.TryGetValue(reinoId, out var d) && d.TryRemove(id, out var c)) c.Writer.TryComplete();
     }
+    /// <summary>Reset da temporada: fecha todas as conexões (o cliente reconecta e acha o reino da temporada nova).</summary>
+    public void Reiniciar()
+    {
+        foreach (var (reinoId, d) in _porReino)
+            foreach (var id in d.Keys) Fechar(reinoId, id);
+    }
     public int Conexoes => _porReino.Values.Sum(d => d.Count);
     public bool Conectado(long reinoId) => _porReino.TryGetValue(reinoId, out var d) && !d.IsEmpty;
 

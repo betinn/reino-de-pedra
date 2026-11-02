@@ -10,7 +10,8 @@ namespace ReinoDePedra.Jogo.IA;
 /// de IA novo, verificação de regência de cada reino de jogador, reino de IA que perde tudo abdica (não renasce) e a meta
 /// é conferida de novo, perdas da regência e a aliança que não passa a liderança a quem está em regência.
 /// Na subida (<see cref="AoIniciar"/>), com <c>m.IA.Ativa</c>, garante os eventos de cada reino (mundos de antes da IA).
-/// A leva inicial e a meta são completadas por <see cref="Ocupacao.Completar"/>, chamada pelo servidor depois de todos os sistemas.
+/// A leva inicial e a meta são completadas por <see cref="Ocupacao.Completar"/>, chamada pelo servidor depois de todos os sistemas
+/// e de novo a cada reset da temporada (<see cref="Temporada.Temporadas.AoReiniciar"/>).
 /// </summary>
 [Sistema]
 public static class SistemaIA
@@ -35,6 +36,13 @@ public static class SistemaIA
             };
             Combates.AoTerminar.Add(Regencia.AoTerminarBatalha);
             Aliancas.EmRegencia = (_, r) => r.EmRegencia;
+            // temporada nova: reserva de ids nova e a leva inicial de IA (o estado da IA foi apagado com o mundo)
+            Temporada.Temporadas.AoReiniciar += mm =>
+            {
+                if (!mm.IA.Ativa) return;
+                Ocupacao.ReservarIds(mm);
+                Ocupacao.Completar(mm);
+            };
         });
         if (!m.IA.Ativa) return;
         Ocupacao.ReservarIds(m);

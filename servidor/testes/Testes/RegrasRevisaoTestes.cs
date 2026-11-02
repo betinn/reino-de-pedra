@@ -336,4 +336,65 @@ public class RegrasRevisaoTestes
         Assert.Equal(Economia.Logistica(220, 300, 0.05, 2), Economia.Logistica(220, 300, 0.05, 2, sem), 12);
         Assert.Equal(5, Economia.Logistica(0, 5, 0.05, 100, sem), 9);   // teto livre abaixo da semente
     }
+
+    // ---------------------------------------------------------------- reset da temporada
+
+    [Fact]
+    public void Reset_recria_a_leva_de_IA_com_ids_novos()
+    {
+        var t = MundoIA.Novo();
+        var inicial = t.M.P.IA.Inicial;
+        Assert.Equal(inicial, Ocupacao.DeIA(t.M).Count());
+        var maior = t.M.Reinos.Max(r => r.Id);
+        var ultimo = t.M.Estado.UltimoId;
+        Temporadas.Reiniciar(t.M, 99);
+        Assert.Equal(2, t.M.Estado.NumeroTemporada);
+        Assert.Equal(inicial, Ocupacao.DeIA(t.M).Count());
+        Assert.All(t.M.Reinos, r => Assert.True(r.Id > ultimo));
+        Assert.All(t.M.Locais, l => Assert.True(l.Id > maior));
+        Assert.All(Ocupacao.DeIA(t.M), r => Assert.NotNull(r.SessaoIAEventoId));
+        // a ordem dos ids não diz quem entrou junto: os ids saem da reserva embaralhada
+        var ids = Ocupacao.DeIA(t.M).Select(r => r.Id).ToList();
+        Assert.NotEqual(ids.OrderBy(x => x).ToList(), ids);
+    }
+
+    [Fact]
+    public void Reset_limpa_os_indices_de_fotos_e_bandeiras()
+    {
+        var t = new MundoTeste();
+        var a = t.NovoReino();
+        var foto = Fotos.De(t.M, a.Id);
+        var hex = t.M.Locais[a.CasteloId].Hex;
+        var band = Bandeiras.Colocar(t.M, a, hex, "aviso", "Terra de Pedralva");
+        Temporadas.Reiniciar(t.M, 99);
+        // documentos novos com os mesmos ids da temporada passada (de outro reino, em outro lugar) não aparecem pelo índice velho
+        var outroHex = t.M.G.Indice(1, 1);
+        t.M.FotosDosReinos.Adicionar(new FotoNevoa { Id = foto.Id, ReinoId = a.Id + 777, Perigo = new byte[t.M.G.Total] });
+        t.M.Bandeiras.Adicionar(new Bandeira { Id = band.Id, ReinoId = a.Id + 777, Hex = outroHex, Recado = "Outra terra", Quando = t.M.Agora });
+        Assert.Equal(a.Id, Fotos.De(t.M, a.Id).ReinoId);
+        Assert.Empty(Bandeiras.NoHex(t.M, hex));
+        Assert.Single(Bandeiras.NoHex(t.M, outroHex));
+    }
+
+    [Fact]
+    public async Task Reset_fecha_as_conexoes_de_avisos_e_api_nao_cria_fila_pelo_nome()
+    {
+        await using var s = await ServidorTeste.Iniciar();
+        using var c = s.NovoCliente();
+        await c.ContaComReino("avisos@exemplo.test", "Pedralva");
+        // DELETE numa fila que não existe: 404 e nenhuma fila nova no reino
+        var del = await c.Http.DeleteAsync("filas/" + new string('n', 2000) + "/1");
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, del.StatusCode);
+        var (_, reino) = await c.Get("reino");
+        Assert.DoesNotContain(reino.GetProperty("filas").EnumerateObject(), p => p.Name.StartsWith("nnn"));
+        // a conexão de avisos aberta antes do reset termina (o cliente reconecta e acha o reino novo)
+        using var resp = await c.Http.GetAsync("eventos", System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
+        await using var corpo = await resp.Content.ReadAsStreamAsync();
+        var buf = new byte[4096];
+        Assert.True(await corpo.ReadAsync(buf) > 0);   // "ola"
+        await s.Motor.Executar(m => Temporadas.Reiniciar(m, 5));
+        using var limite = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        while (await corpo.ReadAsync(buf, limite.Token) > 0) { }
+        Assert.False(limite.IsCancellationRequested);
+    }
 }
