@@ -6,7 +6,7 @@
   var RP = (window.RP = window.RP || {});
 
   RP.dados = {
-    temporada: { numero: 3, nome: 'Temporada do Ferro Frio', diasRestantes: 41, reinos: 12408 },
+    temporada: { numero: 3, nome: 'Temporada do Ferro Frio', diasRestantes: 41, reinos: 240 },
 
     jogador: {
       reino: 'meu',
@@ -282,7 +282,9 @@
       { id: 'r-exploracao', tipo: 'exploracao', titulo: 'Exploração ao norte', horas: 2, lido: false,
         quem: 'Explorador a cavalo', revelados: 14, achados: ['Manada de cavalos de raça (valioso)', 'Lobos (perigo alto)', 'Rota pública: Estrada do Rei continua para o leste'] },
       { id: 'r-espionagem', tipo: 'espionagem', titulo: 'Espionagem da Mina Rubra', horas: 10, lido: true, local: 'v-mina',
-        quem: 'Batedor de elite', dono: 'valdren', defesa: '≈ 15 lanceiros e muralha baixa', producao: 'Ferro, ≈ 40/h', tropasVistas: '≈ 35 lanceiros saindo para o oeste', descoberto: false },
+        quem: 'Batedor de elite', dono: 'valdren', defesa: '≈ 15 lanceiros e muralha baixa', producao: 'Ferro, ≈ 40/h', tropasVistas: '≈ 35 lanceiros saindo para o oeste', descoberto: false, reliquia: 'rl-lamina' },
+      { id: 'r-roubo', tipo: 'roubo', titulo: 'Relíquia roubada da Vila do Moinho', horas: 48, lido: false, local: 'vila-moinho', reliquia: 'rl-calice',
+        forcas: '≈ 30 tropas · cavalaria', origem: 'leste', tipoAtaque: 'Saque', perdas: { meu: '5 milicianos · 22 de população', deles: '≈ 4 cavaleiros' }, levado: { comida: 260 } },
       { id: 'r-fauna', tipo: 'fauna', titulo: 'Explorador morto no pântano', horas: 30, lido: true,
         quem: 'Explorador a pé', animal: 'crocodilos', onde: 'Pântano a sudoeste', resultado: 'O explorador foi morto. Tropas mortas não retornam.' },
       { id: 'r-caca', tipo: 'caca', titulo: 'Caçada aos javalis', horas: 14, lido: true,
@@ -300,6 +302,7 @@
       { id: 'n5', cat: 'social', titulo: 'Nova bandeira perto do seu reino', texto: 'Casa Valdren: “Este ouro é de Valdren.”', horas: 4, lido: true, ir: 'mapa?modo=tatico&abrir=bandeira:b-1' },
       { id: 'n6', cat: 'recrutamento', titulo: '15 arqueiros prontos', texto: 'Quartel da Guarda.', horas: 7, lido: true, ir: 'tropas' },
       { id: 'n7', cat: 'fauna', titulo: 'Explorador morto por crocodilos', texto: 'Pântano a sudoeste. Prefira a rota segura ou leve escolta.', horas: 30, lido: true, ir: 'relatorio?id=r-fauna' },
+      { id: 'n11', cat: 'ataque', titulo: 'Relíquia roubada', texto: 'O Cálice das Colheitas foi levado da Vila do Moinho. Espione para descobrir onde está.', horas: 48, lido: true, ir: 'relatorio?id=r-roubo' },
       { id: 'n9', cat: 'social', titulo: 'Sua bandeira foi derrubada', texto: '“Fica longe da Salina.” não está mais no mapa.', horas: 18, lido: true, ir: 'bandeiras' },
       { id: 'n10', cat: 'ataque', titulo: 'Ataque sem combate', texto: 'O alvo estava protegido por escudo de novato. Suas tropas voltaram.', horas: 20, lido: true, ir: 'relatorio?id=r-escudo' },
       { id: 'n8', cat: 'temporada', titulo: 'Faltam 41 dias para o fim da temporada', texto: 'Relíquias e títulos da temporada ainda podem ser conquistados.', horas: 30, lido: true, ir: 'temporada' }
@@ -356,8 +359,20 @@
         { nome: 'Vale do Junco', brasao: { forma: 'classico', divisao: 'partido', cor1: 'verde', cor2: 'prata', simbolo: 'lua', corSimbolo: 'negro' }, baixas: 760, perdas: 1180, tropas: 540, familias: 3010 },
         { reino: 'meu', baixas: 640, perdas: 390, tropas: 420, familias: 1240 }
       ],
-      minhaPosicao: { baixas: 214, perdas: 388, tropas: 302, familias: 167 }
+      minhaPosicao: { baixas: 41, perdas: 77, tropas: 58, familias: 33 }
     },
+
+    /* Relíquias lendárias: uma por reino no mundo; escavadas em ruínas antigas, guardadas num local
+       para melhorar o desempenho dele; podem ser roubadas e só a espionagem revela onde estão.
+       bonus em % (ilustrativo). */
+    reliquias: [
+      { id: 'rl-pedra-vale', nome: 'Pedra do Vale', tipo: 'producao', bonus: 15, dono: 'meu', local: 'mina-vale', origem: 'Escavada numa ruína antiga no dia 9' },
+      { id: 'rl-muralha-viva', nome: 'Muralha Viva', tipo: 'resistencia', bonus: 20, dono: 'meu', local: 'castelo', origem: 'Tomada num saque no dia 21' },
+      { id: 'rl-lamina', nome: 'Lâmina do Rei Antigo', tipo: 'ataque', bonus: 15, dono: 'valdren', local: 'v-mina', espionada: 10 },
+      { id: 'rl-calice', nome: 'Cálice das Colheitas', tipo: 'producao', bonus: 15, dono: null, local: null, roubada: { horas: 48, de: 'vila-moinho', origem: 'leste' } }
+    ],
+    ruinasComReliquia: ['j-ruina'],
+    escavacoes: [],
 
     /* Exílio (exemplo) */
     exilio: {

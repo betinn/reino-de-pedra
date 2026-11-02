@@ -795,3 +795,51 @@ a.guia-item { color: inherit; text-decoration: none; }
 .band-acoes .selo { min-height: 44px; }
 .band-acoes { flex-wrap: wrap; justify-content: flex-start; }
 .band-acoes .btn-icone { margin-left: auto; }
+
+/* ---------------------------------------------------------------- Relíquias lendárias */
+.tipo-ataque { --relq: var(--rel-ataque); }
+.tipo-producao { --relq: var(--rel-producao); }
+.tipo-resistencia { --relq: var(--rel-resistencia); }
+.selo-relq {
+  color: var(--relq, var(--rec-lendario));
+  border-color: color-mix(in srgb, var(--relq, var(--rec-lendario)) 50%, transparent);
+  background: color-mix(in srgb, var(--relq, var(--rec-lendario)) 12%, transparent);
+  white-space: normal; text-align: left;
+}
+.relq-card {
+  display: flex; flex-direction: column; gap: var(--esp-2);
+  border-color: color-mix(in srgb, var(--relq, var(--rec-lendario)) 45%, var(--cor-borda));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--relq, var(--rec-lendario)) 10%, var(--cor-superficie)) 0%, var(--cor-superficie) 62%);
+}
+.relq-card.roubada { border-style: dashed; }
+.relq-ico {
+  display: inline-grid; place-items: center; flex: none;
+  width: 40px; height: 40px; border-radius: 50%;
+  color: var(--relq, var(--rec-lendario));
+  background: color-mix(in srgb, var(--relq, var(--rec-lendario)) 16%, var(--cor-superficie-2));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--relq, var(--rec-lendario)) 50%, transparent), 0 0 16px color-mix(in srgb, var(--relq, var(--rec-lendario)) 28%, transparent);
+}
+.relq-ico .ico { width: 22px; height: 22px; }
+.relq-efeito { display: flex; align-items: center; gap: 6px; font-size: var(--fs-2); font-weight: 700; color: var(--relq, var(--rec-lendario)); }
+.relq-acoes { flex-wrap: wrap; }
+.relq-acoes .btn { flex: 1 1 auto; }
+.relq-tipos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--esp-2); margin-top: var(--esp-3); }
+.relq-tipo {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: var(--esp-3) var(--esp-2); border-radius: var(--raio-2);
+  border: 1px solid color-mix(in srgb, var(--relq) 40%, var(--cor-borda));
+  background: color-mix(in srgb, var(--relq) 8%, var(--cor-superficie));
+}
+.relq-tipo > .ico { width: 22px; height: 22px; color: var(--relq); }
+.relq-tipo b { font-size: var(--fs-2); color: var(--relq); }
+.relq-tipo small { font-size: var(--fs-1); line-height: 1.3; }
+.lc-relq { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 2px; font-size: var(--fs-2); color: var(--relq); }
+.lc-relq b { color: var(--relq); }
+.reino-relq { color: inherit; text-decoration: none; }
+.reino-relq .ico-p { flex: none; }
+/* selo no marcador do mapa tático (só relíquias suas e as espionadas) */
+.relq-badge circle { fill: var(--relq); stroke: var(--ent-borda); stroke-width: 1.2; }
+.relq-badge use { color: var(--ent-borda); --ico-d-stroke: var(--relq); }
+/* destino que já guarda uma relíquia: barra neutra em vez de verde */
+.rota-opcao[aria-disabled="true"] .rota-cor { background: var(--cor-texto-3); }
+.rota-opcao[aria-disabled="true"] .rota-tempo { color: var(--cor-texto-3); }

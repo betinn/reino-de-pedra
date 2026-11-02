@@ -28,14 +28,17 @@
     fauna: { nome: 'Fauna', icone: 'pata', cls: 'perigo', filtro: 'outros' },
     caca: { nome: 'Caça', icone: 'lobo', cls: 'sucesso', filtro: 'outros' },
     extracao: { nome: 'Extração', icone: 'picareta', cls: 'sucesso', filtro: 'outros' },
-    bloqueio: { nome: 'Ataque sem combate', icone: 'escudo', cls: 'info', filtro: 'saques' }
+    bloqueio: { nome: 'Ataque sem combate', icone: 'escudo', cls: 'info', filtro: 'saques' },
+    roubo: { nome: 'Relíquia roubada', icone: 'lendario', cls: 'perigo', filtro: 'ataques' }
   };
+  function reliquia(id) { return D.reliquias.filter(function (q) { return q.id === id; })[0]; }
   var filtroRel = 'todos';
   function resumoRel(r) {
     if (r.tipo === 'ataque') return (r.atacante ? D.reinos[r.atacante].nome + ' (estandarte)' : 'Forças desconhecidas') + ' · ' + r.resultado.toLowerCase();
     if (r.tipo === 'saque') return 'Levou ' + Object.keys(r.levado).map(function (k) { return r.levado[k] + ' ' + k; }).join(', ');
     if (r.tipo === 'exploracao') return r.quem + ' · ' + r.revelados + ' hexágonos revelados';
-    if (r.tipo === 'espionagem') return 'Dono revelado: ' + D.reinos[r.dono].nome;
+    if (r.tipo === 'espionagem') return 'Dono revelado: ' + D.reinos[r.dono].nome + (r.reliquia ? ' · guarda uma relíquia' : '');
+    if (r.tipo === 'roubo') return reliquia(r.reliquia).nome + ' levada por forças desconhecidas';
     if (r.tipo === 'fauna') return r.quem + ' · ' + W.ANIMAL[r.animal].nome.toLowerCase();
     if (r.tipo === 'caca') return '+' + r.ganho.comida + ' comida, +' + r.ganho.couro + ' couro';
     if (r.tipo === 'extracao') return '+' + r.ganho.prata + ' prata';
@@ -92,8 +95,10 @@
     } else if (r.tipo === 'espionagem') {
       h += '<div class="card linha atacante">' + RP.brasao(D.reinos[r.dono].brasao, { tamanho: 40 }) + '<span><b>' + RP.esc(D.reinos[r.dono].nome) + '</b><br><small class="fraco">Dono de ' + RP.esc(x.nome) + ', revelado pela espionagem</small></span></div>' +
         '<div class="card info" style="margin-top:var(--esp-3)">' + linha('Quem', RP.esc(r.quem)) + linha('Defesa', RP.esc(r.defesa)) + linha('Produção', RP.esc(r.producao)) + linha('Tropas vistas', RP.esc(r.tropasVistas)) +
-        linha('Batedor', r.descoberto ? '<span class="selo selo-perigo">Descoberto</span>' : '<span class="selo selo-visivel">Não foi descoberto</span>') + '</div>';
-      acoes = '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + x.id + '">' + RP.icone('tropas') + 'Planejar ataque</a><a class="btn btn-p" href="#/mapa?modo=tatico&abrir=local:' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>';
+        linha('Batedor', r.descoberto ? '<span class="selo selo-perigo">Descoberto</span>' : '<span class="selo selo-visivel">Não foi descoberto</span>') + '</div>' +
+        (r.reliquia ? '<div class="secao-titulo">Relíquia encontrada</div><div class="card relq-card tipo-' + reliquia(r.reliquia).tipo + '"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(reliquia(r.reliquia).nome) + '</b><br><small class="fraco">Guardada em ' + RP.esc(x.nome) + '</small></span></div>' +
+          '<p class="relq-efeito">' + RP.icone('subir', 'ico-p') + RP.RELIQUIA[reliquia(r.reliquia).tipo].efeito(reliquia(r.reliquia).bonus) + '</p><small class="fraco">Saque, ocupação ou cerco vitorioso neste local levam a relíquia.</small></div>' : '');
+      acoes = '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + x.id + '">' + RP.icone('tropas') + (r.reliquia ? 'Planejar roubo' : 'Planejar ataque') + '</a><a class="btn btn-p" href="#/mapa?modo=tatico&abrir=local:' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>';
     } else if (r.tipo === 'fauna') {
       var f = D.fauna.filter(function (q) { return q.tipo === r.animal; }).sort(function (a, b) { return a.nivel === 'alto' ? -1 : 1; })[0];
       h += '<div class="card info">' + linha('Quem', RP.esc(r.quem)) + linha('Animais', W.ANIMAL[r.animal].nome) + linha('Onde', RP.esc(r.onde)) + '</div>' +
@@ -108,6 +113,15 @@
         linha('Resultado', '<span class="selo selo-info">' + RP.icone('escudo') + 'Sem combate</span>') + linha('Perdas', 'Nenhuma') + '</div>' +
         '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + '<span>O alvo estava sob escudo de novato. O escudo só é descoberto ao chegar: suas tropas voltaram para o castelo.</span></p>';
       acoes = '<a class="btn btn-p btn-primario" href="#/envio">' + RP.icone('tropas') + 'Escolher outro alvo</a><a class="btn btn-p" href="#/mapa?modo=tatico&abrir=local:' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>';
+    } else if (r.tipo === 'roubo') {
+      var rl = reliquia(r.reliquia);
+      h += '<div class="secao-titulo">Atacante</div><div class="card linha atacante">' + RP.brasao(null, { tamanho: 40, desconhecido: true }) + '<span><b>Forças desconhecidas</b><br><small class="fraco">Sem estandarte. Batedores podem descobrir quem foi e onde a relíquia está.</small></span></div>' +
+        '<div class="card relq-card roubada tipo-' + rl.tipo + '" style="margin-top:var(--esp-3)"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(rl.nome) + '</b><br><small class="fraco">Estava em ' + RP.esc(x.nome) + '</small></span><span class="selo selo-perigo">Perdida</span></div>' +
+          '<p class="relq-efeito">' + RP.icone('menos', 'ico-p') + 'Você perdeu: ' + RP.RELIQUIA[rl.tipo].efeito(rl.bonus) + '</p></div>' +
+        '<div class="card info" style="margin-top:var(--esp-3)">' + linha('Tipo de ataque', r.tipoAtaque) + linha('Forças', RP.esc(r.forcas)) + linha('Vindas do', r.origem) +
+        linha('Resultado', '<span class="selo selo-perigo">Local saqueado</span>') + linha('Suas perdas', RP.esc(r.perdas.meu)) + linha('Perdas deles', RP.esc(r.perdas.deles)) + (r.levado ? linha('Também levado', perdaHTML(r.levado)) : '') + '</div>' +
+        '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + '<span>Relíquias de outros reinos só aparecem depois de espionadas. Espione locais na direção ' + (r.origem === 'leste' ? 'do leste' : 'de origem') + ' para achar a sua.</span></p>';
+      acoes = '<a class="btn btn-p btn-primario" href="#/exploradores?tipo=batedor">' + RP.icone('batedor') + 'Espionar para achar</a><a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquias</a>';
     } else if (r.tipo === 'extracao') {
       var j = W.jazida(r.jazida);
       h += '<div class="card info">' + linha('Jazida', RP.esc(j.nome)) + linha('Ganho', ganhoHTML(r.ganho)) + '</div>' +

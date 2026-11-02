@@ -56,6 +56,7 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 14 | Temporada e legado | `#/temporada`, `#/ranking` |
 | 15 | Exílio | `#/exilio` (exemplo, em Mais) |
 | 16 | Retorno após regência | `#/regencia` (exemplo, em Mais) |
+| 17 | Relíquias lendárias | `#/reliquias` (em Mais, em Meu reino e nas folhas). Escavação: `#/extracao?jazida=j-ruina` |
 | — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
 
 Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolher no mapa o local de uma construção nova (vila, posto, rota).
@@ -83,11 +84,16 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 15. **Atacar:** local de outro reino → Atacar este local → tipo de ataque, tropas, estandarte (com prévia do que o defensor verá) e caminho → confirmação → o ataque sai do castelo. Alvo com escudo de novato fica bloqueado; saque repetido avisa do rendimento menor.
 16. **Defender:** faixa "Batalha em andamento" → Batalha: Vista do combate, força dos lados, gráfico ao longo do tempo (toque mostra os valores; também há tabela), acontecimentos → Enviar reforços (a curva muda quando chegam) ou Recuar.
 17. **Posturas:** Tropas → Posturas: as três posturas explicadas, uma por guarnição e por exército em campo, ou "aplicar a todas".
-18. **Relatórios:** aba Relatórios → filtro → detalhe: ataque anônimo x identificado pelo estandarte, saque com rendimento decrescente, exploração, espionagem (revela o dono), fauna, caça, extração.
+18. **Relatórios:** aba Relatórios → filtro → detalhe: ataque anônimo x identificado pelo estandarte, saque com rendimento decrescente, exploração, espionagem (revela o dono e a relíquia guardada), relíquia roubada, fauna, caça, extração.
 19. **Notificações:** sino → avisos de agora, de hoje e antes; como chegam no celular; o que avisar e silêncio noturno.
 20. **Bandeira:** hexágono → Colocar bandeira → tipo, recado (até 60), prévia com seu brasão → aparece na Vista e no Mapa; Mais → Bandeiras para remover as suas (até 20) ou derrubar e denunciar as alheias.
 21. **Temporada e legado:** Mais → dias restantes, o que fica e o que recomeça, ranking da temporada (baixas, perdas, tropas e famílias), linhagem, relíquias (com teto), títulos, brasões, histórico.
 22. **Exílio:** Mais → Exílio → o que aconteceu, novo ponto do mapa, kit de recomeço, escudo temporário, legado mantido → Recomeçar.
+23. **Relíquias:** Mais (ou Meu reino) → Relíquias → as suas (onde estão e o efeito), as espionadas, a roubada e as ruínas antigas.
+24. **Escavar:** Relíquias → Escavar (ou a ruína no mapa) → grupo, posto opcional, gráfico de horas por cenário → os trabalhadores aparecem na Vista com "Escavando · tempo" → a relíquia achada pede um local para ser guardada.
+25. **Mover / guardar:** Relíquias → Mover → lista dos seus locais com o tempo de viagem (os que já guardam uma ficam marcados) → a escolta sai na Vista; no caminho a relíquia pode ser roubada.
+26. **Roubar:** Mina Rubra (espionada) → Roubar a relíquia → saque, ocupação ou cerco com "Priorizar a relíquia"; sabotagem e massacre avisam que não levam a relíquia.
+27. **Perder:** relatório "Relíquia roubada" (forças desconhecidas, direção de origem, o efeito perdido) → Espionar para achar.
 
 ---
 
@@ -130,6 +136,11 @@ prototipo/
     cena.js           Vista imersiva 2.5D (Canvas 2D)
     mapa.js           tela do mundo: Mapa tático, alternância de visão, folhas de detalhe, minimapa
     telas.js          entrada, criação, meu reino, regência e telas-guia
+    acoes.js          caminhos, tropas, construção, recrutamento, exploradores e caça
+    militar.js        extração e escavação, envio de ataque, posturas e batalha
+    social.js         relatórios, notificações, bandeiras e ranking
+    legado.js         temporada e legado, exílio
+    reliquias.js      relíquias lendárias: tela, mover/guardar, chegada e fim da escavação
 ```
 
 ---
@@ -171,17 +182,32 @@ Regras confirmadas estão no `CLAUDE.md`.
 | Saque repetido | Rendimento cai a cada saque ao mesmo alvo (mock: −20% por saque em 24 h, até −80%), com aviso antes de enviar. |
 | Bandeiras | Até 20 ativas, recado de até 60 caracteres. Outros jogadores podem derrubá-las mandando tropas até o local. "Denunciar" continua para texto ofensivo. |
 | Notificações | Todas as categorias ligam e desligam, inclusive ataques; sem horário de silêncio. |
-| Relíquias | Bônus pequenos com teto somado (mock: 5%). |
+| Relíquias da temporada (legado) | Bônus pequenos com teto somado (mock: 5%). |
 | Ranking da temporada | Por reino: baixas causadas, perdas, tropas e famílias (população). Os 10 primeiros por categoria e a sua posição. Não mede território. |
 | Exílio | Região aleatória longe de quem derrubou você; a escolha libera pela linhagem. |
 | Posturas padrão | Guarnições: "Apenas defender"; exércitos em campo: "Atacar quem atacar". |
 | Reforço e ocupação | Mesma tela do envio de ataque, em outros modos. |
 
+## Relíquias lendárias (sub-decisões aplicadas, para aprovar)
+
+As regras definidas estão no `CLAUDE.md`. Detalhes que o protótipo precisou assumir:
+
+| Tema | Aplicado | Alternativas |
+|---|---|---|
+| Quantas por local | Uma relíquia por local. | Sem limite (empilhar no castelo); ou bônus decrescente quando há mais de uma. |
+| Roubo | Saque, ocupação ou cerco vitorioso levam a relíquia. No saque, "Priorizar a relíquia" a traz antes dos recursos. Sabotagem e massacre não levam. | Só ocupação leva; ou a relíquia ocupa carga como recurso. |
+| Em trânsito | Mover leva tempo (escolta no passo lento) e a relíquia pode ser roubada no caminho. | Mover instantâneo; ou trânsito protegido. |
+| Visibilidade | Só a espionagem mostra relíquias de outros reinos (selo no mapa, pedestal na Vista, linha no envio). Relíquia roubada de você some até ser espionada. | Brilho visível de longe, sem revelar o tipo nem o dono. |
+| Ruína antiga | Guarda 1 relíquia; o tipo só se conhece ao achar; esgota depois. | Tipo visível antes de escavar; ruína com várias relíquias. |
+| Escavação | Uma unidade já escava (≈ 12 h); mais tropas e posto encurtam, mínimo de 4 h. Tropas ficam paradas na ruína. | Tempo fixo; ou exigir prospector. |
+| Bônus (mock) | Ataque +15% nas tropas que saem do local; produção +15% do local; resistência +20% na defesa do local. | Bônus que cresce com o tempo guardado; bônus menor fora do castelo. |
+| Fim da temporada | Relíquias lendárias ficam na temporada (recomeçam com o mapa). São distintas das relíquias da temporada do legado. | Quem termina com relíquias ganha um título ou uma relíquia de legado. |
+| Mundo mock | 240 reinos → 240 relíquias (antes o mock tinha 12.408 reinos). | — |
+
 ## Pontos em aberto
 
-1. **Ruínas lendárias:** o que o jogador ganha com elas. Hoje só podem ser exploradas, sem recompensa definida.
-2. **Famílias no ranking:** o protótipo trata como a população do reino.
-3. **Quem derruba uma bandeira:** o protótipo não revela ao dono quem derrubou (mesma lógica do anonimato).
+1. **Famílias no ranking:** o protótipo trata como a população do reino.
+2. **Quem derruba uma bandeira:** o protótipo não revela ao dono quem derrubou (mesma lógica do anonimato).
 
 ## Valores ilustrativos
 
@@ -194,7 +220,7 @@ Custos, tempos, atributos de unidades, rendimento de caça e força x perigo sã
 As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e os fluxos de criação, construção, recrutamento, exploração, caça, extração, ataque, batalha e bandeira.
 
 Revisão final:
-- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em todas as 23 telas: nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
+- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 28 rotas (todas as telas, mais relíquias, escavação, relatórios de roubo e espionagem e a folha de um local com relíquia): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
 - **Toque:** todos os botões e links com pelo menos 44 × 44 px.
 - **Larguras:** sem rolagem horizontal em 360, 375, 430 e 1024 px.
 - **Gráficos:** cores do gráfico de batalha validadas contra o fundo (faixa de luminosidade, daltonismo e contraste); legenda, rótulos diretos, leitura por toque e tabela.

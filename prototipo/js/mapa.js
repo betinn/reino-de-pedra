@@ -119,6 +119,8 @@
       h += '<circle class="lc-base" r="15"/><use href="#i-' + x.tipo + '" x="-10" y="-10.5" width="20" height="20"/>' + rotuloSvg(W.nomeAparente(x), 30, '');
     }
     if (antigo) h += '<g class="selo-antigo-mapa" transform="translate(' + (castelo ? 16 : 11) + ' ' + (castelo ? 14 : 10) + ')"><circle r="7.5"/><use href="#i-relogio" x="-6" y="-6" width="12" height="12"/></g>';
+    var rel = RP.reliquiaEm && RP.reliquiaEm(x.id, true);   /* só as suas e as já espionadas */
+    if (rel) h += '<g class="relq-badge tipo-' + rel.tipo + '" transform="translate(' + (castelo ? -17 : -12) + ' ' + (castelo ? -15 : -11) + ')"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>';
     return h + '</g></g>';
   }
   function svgRuina(r) {
@@ -313,7 +315,7 @@
       return '<button type="button" class="conteudo" data-abrir="local:' + o.id + '"><span class="ico-placa ' + corDono(W.donoAparente(o)) + '">' + RP.icone(o.tipo) + '</span><span><b>' + RP.esc(W.nomeAparente(o)) + '</b><small>' + RP.TIPOS_LOCAL[o.tipo] + ' · ' + (o.reino === 'meu' ? 'Seu reino' : 'Dono desconhecido') + '</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
     }
     if (it.tipo === 'jazida') {
-      return '<button type="button" class="conteudo" data-abrir="jazida:' + o.id + '"><span class="ico-placa">' + RP.icone(o.tipo, 'r-' + o.tipo) + '</span><span><b>' + RP.esc(o.nome) + '</b><small>' + (o.classe === 'lendario' ? 'Lendário' : 'Valioso') + ' · ' + Math.round(o.restante * 100) + '% restante</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
+      return '<button type="button" class="conteudo" data-abrir="jazida:' + o.id + '"><span class="ico-placa">' + RP.icone(o.tipo, 'r-' + o.tipo) + '</span><span><b>' + RP.esc(o.nome) + '</b><small>' + (o.classe === 'lendario' ? 'Lendário · ' + (D.ruinasComReliquia.indexOf(o.id) >= 0 ? 'guarda 1 relíquia' : 'esgotada') : 'Valioso · ' + Math.round(o.restante * 100) + '% restante') + '</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
     }
     if (it.tipo === 'ruina') {
       return '<button type="button" class="conteudo" data-abrir="ruina:' + o.id + '"><span class="ico-placa">' + RP.icone(o.tipo === 'livre' ? 'estaca' : 'escombros') + '</span><span><b>' + RP.esc(o.nome) + '</b><small>Sem dono</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
@@ -393,7 +395,7 @@
         linhaInfo('Terreno', H.TERRENOS[T[o.l][o.c]].nome) +
         (meu ? linhaInfo('Nível', o.nivel) + linhaInfo('Guarnição', o.guarnicao) + linhaInfo('Postura', '<span class="selo selo-info">' + o.postura + '</span>')
           : linhaInfo('Defesa', esp ? RP.esc(esp.defesa) : '<span class="fraco">Desconhecida</span>')) +
-        '</div>' + (meu ? '' : esp
+        '</div>' + (RP.reliquiaEm(o.id, true) ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(RP.reliquiaEm(o.id, true)) + '</div>' : '') + (meu ? '' : esp
           ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('batedor', 'ico-p') + 'Dono e defesa revelados por espionagem ' + RP.fmtHa(esp.horas) + '.</p>'
           : '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Explorar não revela a quem pertence um local. Espionar com batedor de elite revela o dono e a defesa.</p>');
       if (o.ameaca) {
@@ -402,7 +404,7 @@
       }
       acoes = meu
         ? botao('Abrir no reino', 'castelo', 'btn-primario', 'data-ir="reino?local=' + o.id + '"') + botao('Postura', 'escudo', '', 'data-ir="posturas?local=' + o.id + '"')
-        : botao('Atacar este local', 'tropas', 'btn-primario', 'data-ir="envio?alvo=' + o.id + '"') + botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"');
+        : botao(RP.reliquiaEm(o.id, true) ? 'Roubar a relíquia' : 'Atacar este local', 'tropas', 'btn-primario', 'data-ir="envio?alvo=' + o.id + '"') + botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"');
       abrirFolhaMapa({
         titulo: RP.esc(o.reino === 'meu' && o.tipo === 'castelo' ? 'Castelo de ' + D.reinos.meu.nome : W.nomeAparente(o)),
         subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
@@ -412,16 +414,21 @@
     } else if (tipo === 'jazida') {
       o = W.jazida(id); e = estado(o.c, o.l);
       var reivind = D.bandeiras.filter(function (b) { return H.dist([b.c, b.l], [o.c, o.l]) <= 1 && b.tipo === 'reivindicacao'; })[0];
+      var lend = o.classe === 'lendario', guarda = lend && D.ruinasComReliquia.indexOf(o.id) >= 0, escav = lend && D.escavacoes.filter(function (q) { return q.jazida === o.id; })[0];
       corpo = notaAntiga(e) + '<div class="info">' +
-        linhaInfo('Classe', o.classe === 'lendario' ? '<span class="selo selo-destaque">' + RP.icone('lendario') + 'Lendário</span>' : '<span class="selo selo-destaque">Valioso</span>') +
+        linhaInfo('Classe', lend ? '<span class="selo selo-destaque">' + RP.icone('lendario') + 'Lendário</span>' : '<span class="selo selo-destaque">Valioso</span>') +
         linhaInfo('Terreno', H.TERRENOS[T[o.l][o.c]].nome) +
-        '</div><div class="timer" style="margin-top:var(--esp-3)"><div class="timer-topo"><b>Jazida restante</b><span class="timer-resta">' + Math.round(o.restante * 100) + '%</span></div><div class="barra barra-sucesso"><i style="width:' + (o.restante * 100) + '%"></i></div></div>' +
-        '<p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Jazidas são finitas e se esgotam com a extração.</p>' + blocoPerigo(o.c, o.l, e) +
+        (lend ? linhaInfo('Guarda', guarda ? '1 relíquia · tipo desconhecido' : '<span class="fraco">Esgotada</span>') : '') +
+        '</div>' + (lend
+          ? (escav ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('picareta', 'ico-p') + '<span>Sua escavação acha a relíquia em <b class="num" data-fim="' + escav.fim + '">' + RP.fmtResta(escav.fim - Date.now()) + '</b>.</span></p>' : '') +
+            '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Escavar é lento e esgota a ruína. A relíquia achada pode ser guardada num local seu para fortalecê-lo.</p>'
+          : '<div class="timer" style="margin-top:var(--esp-3)"><div class="timer-topo"><b>Jazida restante</b><span class="timer-resta">' + Math.round(o.restante * 100) + '%</span></div><div class="barra barra-sucesso"><i style="width:' + (o.restante * 100) + '%"></i></div></div>' +
+            '<p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Jazidas são finitas e se esgotam com a extração.</p>') + blocoPerigo(o.c, o.l, e) +
         (reivind ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('bandeira', 'ico-p') + 'Há uma bandeira de ' + RP.esc(D.reinos[reivind.reino].nome) + ' ao lado: “' + RP.esc(reivind.texto) + '”</p>' : '');
-      acoes = (o.classe === 'lendario' ? botao('Explorar ruína', 'explorador', 'btn-primario', 'data-ir="exploradores?alvo=' + o.c + ',' + o.l + '"') : botao('Extrair', 'picareta', 'btn-primario', 'data-ir="extracao?jazida=' + o.id + '"')) + botao('Colocar bandeira', 'bandeira', '', 'data-ir="bandeira-nova?alvo=' + o.c + ',' + o.l + '"');
+      acoes = (lend ? (guarda && !escav ? botao('Escavar', 'picareta', 'btn-primario', 'data-ir="extracao?jazida=' + o.id + '"') : botao('Relíquias', 'lendario', 'btn-primario', 'data-ir="reliquias"')) : botao('Extrair', 'picareta', 'btn-primario', 'data-ir="extracao?jazida=' + o.id + '"')) + botao('Colocar bandeira', 'bandeira', '', 'data-ir="bandeira-nova?alvo=' + o.c + ',' + o.l + '"');
       abrirFolhaMapa({
         titulo: RP.esc(o.nome), subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
-        icone: '<span class="ico-placa folha-ico">' + RP.icone(o.tipo, 'r-' + o.tipo) + '</span>', corpo: corpo, acoes: acoes
+        icone: '<span class="ico-placa folha-ico">' + RP.icone(o.tipo, 'r-' + (lend ? 'lendario' : o.tipo)) + '</span>', corpo: corpo, acoes: acoes
       }, o.c, o.l);
     } else if (tipo === 'fauna') {
       o = W.fauna(id); var A = W.ANIMAL[o.tipo];

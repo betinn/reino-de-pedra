@@ -202,6 +202,28 @@
     c.globalAlpha = 1;
   }
 
+  /* relíquia guardada: pedestal de pedra, gema na cor do tipo e coluna de luz pulsante */
+  var COR_REL = { ataque: '#f47b60', producao: '#e8c04a', resistencia: '#57c2c9' };
+  function pedestalReliquia(c, t, pal, tipo, vivo) {
+    var cor = COR_REL[tipo] || '#e8c04a', pulso = vivo ? 0.5 + Math.sin(t * 2.2) * 0.5 : 0.3;
+    c.scale(1.25, 1.25);
+    sombra(c, 0, 0, 7, 0.3);
+    caixa(c, 0, 0, 10, 7, 6, pal.pedra, pal.pedraSombra, pal.pedraTopo || pal.pedra);
+    caixa(c, 0, -6, 7, 5, 3, pal.pedraSombra, pal.pedraSombra, pal.pedra);
+    if (vivo) {
+      var gr = c.createLinearGradient(0, -10, 0, -58);
+      gr.addColorStop(0, cor); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      c.globalAlpha = 0.22 + pulso * 0.25; c.fillStyle = gr;
+      c.beginPath(); c.moveTo(-4, -10); c.lineTo(4, -10); c.lineTo(2, -58); c.lineTo(-2, -58); c.closePath(); c.fill();
+      c.globalAlpha = 1;
+      elipse(c, 0, -14, 7 + pulso * 3, 5 + pulso * 2, 'rgba(255,255,255,' + (0.05 + pulso * 0.08).toFixed(3) + ')');
+    }
+    var gy = -14 - (vivo ? Math.sin(t * 1.6) * 1.2 : 0);
+    poli(c, [0, gy - 5, 3.4, gy, 0, gy + 4, -3.4, gy], cor);
+    poli(c, [0, gy - 5, 3.4, gy, 0, gy], 'rgba(255,255,255,.45)');
+    if (vivo) { brilho(c, 4, gy - 6, t, 0, '#fff'); brilho(c, -5, gy - 2, t, 2.1, '#fff'); }
+  }
+
   /* pessoa: o = { roupa, dir, andando, fase, capacete, lanca, escudo, carga, trabalho, sentado } */
   function pessoa(c, x, y, t, pal, o) {
     var dir = o.dir || 1, ph = t * 8 + (o.fase || 0), anda = o.andando ? Math.sin(ph) : 0;
@@ -847,6 +869,11 @@
         itens.push({ y: p.y - 18, d: function () { obj(c, V, p.x, p.y); cerca(c, P, false); } });
         itens.push({ y: p.y + 18, d: function () { obj(c, V, p.x, p.y); cerca(c, P, true); } });
       }
+      var rel = RP.reliquiaEm && RP.reliquiaEm(x.id, true);   /* relíquias de outros reinos só aparecem depois de espionadas */
+      if (rel) {
+        var rx = p.x + (x.tipo === 'castelo' ? -46 : -24), ry = p.y + (x.tipo === 'castelo' ? 30 : 16);
+        itens.push({ y: ry, d: function () { obj(c, V, rx, ry); pedestalReliquia(c, t, antigo ? PA : P, rel.tipo, !antigo); }, alvo: { x: rx, y: ry - 12, w: 26, h: 34, ent: ['local', x.id] } });
+      }
       if (x.tipo === 'castelo') rotulos.push({ x: p.x, y: p.y, dy: 26, txt: x.reino === 'meu' ? D.reinos.meu.nome : 'Castelo', cls: 'castelo', cor: corReino(W.donoAparente(x)) });
       if (x.ameaca) rotulos.push({ x: p.x, y: p.y, dy: -46, txt: 'Ameaçado', cls: 'perigo' });
     });
@@ -995,6 +1022,18 @@
         itens.push({ y: wy, d: function () { obj(c, V, wx, wy); pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), dir: q % 2 ? -1 : 1, trabalho: 'picareta', fase: q * 0.9, capacete: P.metal }); } });
       })(q);
       rotulos.push({ x: p.x, y: p.y, dy: -40, txt: 'Extraindo · ' + ex.ritmo + '/h', cls: 'marcha', cor: corReino('meu') });
+    });
+    /* escavações de ruínas antigas: trabalhadores cavando depois que o grupo chega */
+    D.escavacoes.forEach(function (q) {
+      if (q.chega > Date.now()) return;
+      var j = W.jazida(q.jazida), p = H.centro(j.c, j.l);
+      if (!naTela(p.x, p.y) || W.estado(j.c, j.l).v !== 'visivel') return;
+      var nT = Math.max(1, Math.min(4, (q.grupo.lanceiro || 0) + (q.grupo.arqueiro || 0) + (q.grupo.cavalaria || 0)));
+      for (var z = 0; z < nT; z++) (function (z) {
+        var wx = p.x - 14 + z * 9, wy = p.y + 12 + (z % 2) * 5;
+        itens.push({ y: wy, d: function () { obj(c, V, wx, wy); pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), dir: z % 2 ? -1 : 1, trabalho: 'picareta', fase: z * 0.7, capacete: P.metal }); } });
+      })(z);
+      rotulos.push({ x: p.x, y: p.y, dy: -40, txt: 'Escavando · ' + RP.fmtResta(q.fim - Date.now()), cls: 'marcha', cor: corReino('meu') });
     });
     /* batalha em andamento */
     if (RP.batalha && RP.batalha.ativa()) {

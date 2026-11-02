@@ -190,13 +190,18 @@
     return '<div class="card local-card" role="button" tabindex="0" data-local="' + x.id + '" data-cat="' + categoria(x) + '">' +
       '<span class="ico-placa dono-meu">' + RP.icone(x.tipo) + '</span>' +
       '<div class="lc-corpo"><div class="linha-entre"><b class="lc-nome">' + RP.esc(x.nome) + '</b><span class="selo">Nv ' + x.nivel + '</span></div>' +
-      '<small class="fraco">' + RP.TIPOS_LOCAL[x.tipo] + ' · ' + terr + ' · ' + RP.icone('escudo', 'ico-p') + RP.esc(x.postura) + '</small>' + linha2 +
+      '<small class="fraco">' + RP.TIPOS_LOCAL[x.tipo] + ' · ' + terr + ' · ' + RP.icone('escudo', 'ico-p') + RP.esc(x.postura) + '</small>' + linha2 + linhaRel(x) +
       (x.obra ? RP.timerHTML(RP.icone('martelo', 'ico-p') + ' ' + x.obra.rotulo, x.obra.seg, x.obra.total) : '') +
       (x.fila ? RP.timerHTML(RP.icone('tropas', 'ico-p') + ' ' + x.fila.rotulo, x.fila.seg, x.fila.total) : '') +
       ameacas.map(function (m) {
         return '<div class="lc-ameaca">' + RP.icone('alerta', 'ico-p pulso') + '<span><b>Forças desconhecidas</b> a caminho · <b class="num" data-fim="' + m.chegada + '">' + RP.fmtResta(m.chegada - Date.now()) + '</b></span></div>';
       }).join('') +
       '</div></div>';
+  }
+  /* relíquia guardada no local (só as suas aparecem aqui) */
+  function linhaRel(x) {
+    var r = RP.reliquiaEm(x.id);
+    return r ? '<span class="lc-relq tipo-' + r.tipo + '">' + RP.icone('lendario', 'ico-p') + '<b>' + RP.esc(r.nome) + '</b>&nbsp;· ' + RP.RELIQUIA[r.tipo].efeito(r.bonus) + '</span>' : '';
   }
   function folhaLocal(x) {
     var terr = H.TERRENOS[RP.mundo.T[x.l][x.c]];
@@ -207,7 +212,8 @@
       (x.info || []).map(function (i) { return '<div class="info-linha"><span class="fraco">Detalhe</span><span>' + RP.esc(i) + '</span></div>'; }).join('') +
       '<div class="info-linha"><span class="fraco">Guarnição</span><span>' + RP.esc(x.guarnicao) + '</span></div>' +
       '<div class="info-linha"><span class="fraco">Postura</span><span class="selo selo-info">' + RP.esc(x.postura) + '</span></div>' +
-      '</div><p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Cada local é um alvo com defesa própria: guarnição, população como milícia e muralhas.</p>';
+      '</div>' + (RP.reliquiaEm(x.id) ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(RP.reliquiaEm(x.id)) + '</div>' : '') +
+      '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Cada local é um alvo com defesa própria: guarnição, população como milícia e muralhas.' + (RP.reliquiaEm(x.id) ? ' Quem vencer um saque ou uma ocupação aqui leva a relíquia.' : '') + '</p>';
     RP.abrirFolha({
       titulo: RP.esc(x.nome), veu: true,
       subtitulo: '<span class="fraco">' + RP.TIPOS_LOCAL[x.tipo] + ' · Nível ' + x.nivel + '</span>',
@@ -216,8 +222,19 @@
       acoes: '<a class="btn btn-p btn-primario" href="#/mapa?foco=' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>' +
         '<a class="btn btn-p" href="#/construcao">' + RP.icone('martelo') + 'Melhorar</a>' +
         '<a class="btn btn-p" href="#/posturas?local=' + x.id + '">' + RP.icone('escudo') + 'Postura</a>' +
-        (x.tipo === 'quartel' ? '<a class="btn btn-p" href="#/recrutamento">' + RP.icone('tropas') + 'Recrutar</a>' : '')
+        (x.tipo === 'quartel' ? '<a class="btn btn-p" href="#/recrutamento">' + RP.icone('tropas') + 'Recrutar</a>' : '') +
+        (RP.reliquiaEm(x.id) ? '<a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquia</a>' : '')
     });
+  }
+
+  function cardReliquias() {
+    var minhas = D.reliquias.filter(function (r) { return r.dono === 'meu'; }), roubadas = D.reliquias.filter(function (r) { return r.roubada; });
+    var conhecidas = D.reliquias.filter(function (r) { return r.dono && r.dono !== 'meu' && r.espionada !== undefined; });
+    return '<div class="secao-titulo">Relíquias</div><a class="card pilha reino-relq" href="#/reliquias">' +
+      '<div class="linha-entre"><span class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><b>' + minhas.length + (minhas.length === 1 ? ' relíquia' : ' relíquias') + ' com você</b></span>' + RP.icone('avancar', 'ico-p') + '</div>' +
+      '<div class="linha" style="flex-wrap:wrap">' + minhas.map(function (r) { return '<span class="selo selo-relq tipo-' + r.tipo + '">' + RP.icone(RP.RELIQUIA[r.tipo].icone) + RP.esc(r.nome) + '</span>'; }).join('') + '</div>' +
+      (roubadas.length ? '<span class="lc-ameaca">' + RP.icone('alerta', 'ico-p') + '<span><b>' + RP.esc(roubadas[0].nome) + '</b> foi roubada · paradeiro desconhecido</span></span>' : '') +
+      '<small class="fraco">' + conhecidas.length + ' de outros reinos conhecida' + (conhecidas.length === 1 ? '' : 's') + ' por espionagem · ' + D.ruinasComReliquia.length + (D.ruinasComReliquia.length === 1 ? ' ruína antiga' : ' ruínas antigas') + ' para escavar</small></a>';
   }
 
   RP.registrarTela('reino', {
@@ -275,6 +292,7 @@
         '<div><span class="fraco">Milícia</span><b data-pop>' + RP.num(RP.popAtual()) + '</b></div>' +
         '</div>' +
         '<div class="linha"><span class="selo selo-info">' + RP.icone('escudo') + RP.esc(castelo.postura) + '</span><span class="fraco" style="font-size:var(--fs-2)">' + RP.esc(castelo.guarnicao) + '</span></div>' +
+        linhaRel(castelo) +
         '</div>' +
 
         '<div class="secao-titulo">Locais (' + outros.length + ')</div>' +
@@ -286,6 +304,7 @@
         '</div>' +
         '<div class="locais-lista">' + outros.map(cardLocal).join('') + '</div>' +
 
+        cardReliquias() +
         '<div class="secao-titulo">Valiosos</div>' +
         '<div class="linha" style="flex-wrap:wrap">' + D.valiosos.map(function (v) {
           return '<span class="selo selo-destaque selo-g">' + RP.icone(v.id, 'r-' + v.id) + v.nome + ' <b class="num">' + v.qtd + '</b></span>';
@@ -365,6 +384,7 @@
     montar: function (el) {
       el.innerHTML = guia('Mais', 'Temporada, legado, bandeiras e avisos.', [
         ['temporada', 'Temporada e legado', 'Tempo restante, linhagem, relíquias, títulos e brasões', '#/temporada'],
+        ['lendario', 'Relíquias', 'Suas, as espionadas, as roubadas e as ruínas para escavar', '#/reliquias'],
         ['coroa', 'Ranking da temporada', 'Baixas, perdas, tropas e famílias', '#/ranking'],
         ['bandeira', 'Bandeiras', 'Sinais que você colocou e os de perto', '#/bandeiras'],
         ['sino', 'Notificações', 'Avisos recentes e o que chega no celular', '#/notificacoes'],

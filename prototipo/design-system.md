@@ -83,6 +83,7 @@ Locais de outros reinos nunca usam cor de reino: cinza, brasão "?", nome genér
 
 - Recursos: `--rec-madeira`, `--rec-pedra`, `--rec-comida`, `--rec-ferro`, `--rec-couro`, `--rec-peles`, `--rec-populacao`, `--rec-ouro`, `--rec-prata`, `--rec-sal`, `--rec-cavalo`, `--rec-ervas`, `--rec-gema`, `--rec-lendario`. Classe `r-<recurso>`. A cor sempre acompanha o ícone.
 - Perigo da fauna: `--perigo-baixo` `#e8b947`, `--perigo-medio` `#ec8a3a`, `--perigo-alto` `#ea4f43`. Classe `nivel-<nivel>` define `--nivel`.
+- Relíquias lendárias, por tipo: `--rel-ataque` `#f47b60`, `--rel-producao` `#e8c04a`, `--rel-resistencia` `#57c2c9`. Classe `tipo-<tipo>` define `--relq`. Contraste AA conferido sobre a superfície tingida do card. Sem tipo (ruína antiga, relíquia ainda não achada) usa `--rec-lendario`.
 
 ### 2.6 Mapa tático
 
@@ -176,6 +177,8 @@ Luz natural levemente quente, para conversar com a interface escura:
 | Escolta | Três lanceiros atrás do explorador | Marcha no passo do mais lento |
 | Grupo de caça | Arqueiros de capuz verde e lanceiros | Caminhada até o animal |
 | Extração em andamento | Posto de madeira e carrinho ao lado da jazida | Trabalhadores com picareta; rótulo "Extraindo · ritmo" |
+| Relíquia guardada | Pedestal de pedra ao lado do local, gema na cor do tipo | Coluna de luz pulsando e cintilar; parada e sem luz em área explorada. Só as suas e as espionadas |
+| Escavação | Trabalhadores na ruína antiga | Picaretas; rótulo "Escavando · tempo" |
 | Batalha | Atacantes (cinza, sem brasão) contra guarnição e milícia | Estocadas, flechas, celeiro em chamas, fumaça, poeira; rótulo "Batalha · tempo" |
 | Ataque seu | Formação na sua cor; com estandarte, bandeira na cor do seu brasão | Marcha até o alvo |
 
@@ -204,6 +207,7 @@ Chão, vegetação, relevo e névoa ficam num cache que só é refeito ao sair d
 | Castelo | Círculo grande com anel duplo, brasão e nome (de outro reino: cinza, brasão "?", "Castelo") |
 | Local | Círculo com ícone do tipo, na cor do dono; ameaçado com anel pulsante |
 | Jazida | Losango com ícone do recurso; lendária com brilho |
+| Relíquia no local | Disco pequeno na cor do tipo, no canto superior esquerdo do marcador. Só as suas e as espionadas |
 | Fauna ao vivo | Círculo com o animal, contorno na cor do nível e contador do bando |
 | Área de perigo | Triângulo na cor do nível com pegada |
 | Ruína / terra livre | Círculo tracejado cinza com escombros / estacas |
@@ -257,7 +261,12 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Preferência | `.alternar` | Liga/desliga por categoria, todas configuráveis. |
 | Ranking | `.rank-eu`, `.rank-lista > .rank-linha` | Abas por categoria; sua posição em destaque; 10 primeiros com posição, brasão, nome, valor, barra fina relativa ao 1º e as outras três medidas em texto pequeno. Pódio com a posição em `--cor-destaque`. |
 | Bandeira alheia | botão "Derrubar" + "Denunciar" | Derrubar manda uma tropa ao local (mostra "Derrubando · tempo"); denunciar oculta o texto para você e envia para revisão. |
-| Relíquia / título / brasão | `.reliquia`, `.lista-item`, `.brasao-item` | Bloqueados esmaecem só a imagem; o texto mantém contraste. |
+| Relíquia / título / brasão | `.reliquia`, `.lista-item`, `.brasao-item` | Bloqueados esmaecem só a imagem; o texto mantém contraste. (Relíquias da temporada, do legado.) |
+| Relíquia lendária | `.relq-card.tipo-<tipo>`, `.relq-ico`, `.relq-efeito`, `.relq-acoes` | Cor do tipo na borda, no halo do ícone e no efeito ("+15% de produção do local"). Roubada: borda tracejada. |
+| Selo de relíquia | `.selo-relq.tipo-<tipo>` | Nome e efeito; quebra linha (diferente do `.selo` comum). |
+| Tipos de relíquia | `.relq-tipos > .relq-tipo` | Três cartões lado a lado: ataque, produção, resistência. |
+| Relíquia no card do local | `.lc-relq` | Linha na cor do tipo abaixo da produção. |
+| Marcador no mapa | `.relq-badge.tipo-<tipo>` | Disco no marcador do local. |
 
 ---
 

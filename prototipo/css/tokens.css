@@ -164,6 +164,11 @@
   --rec-couro: #c08a5c;
   --rec-peles: #ddd3c4;
 
+  /* Relíquias lendárias, por tipo (contraste AA sobre --cor-superficie) */
+  --rel-ataque: #f47b60;
+  --rel-producao: #e8c04a;
+  --rel-resistencia: #57c2c9;
+
   /* Gráficos (validados contra a superfície #22262c: faixa de luminosidade, daltonismo e contraste) */
   --grafico-meu: #4f97da;
   --grafico-hostil: #e2584e;

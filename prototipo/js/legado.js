@@ -28,7 +28,7 @@
       '<div class="secao-titulo">Relíquias da temporada</div><div class="reliquias">' + L.reliquias.map(function (r) {
         return '<div class="card reliquia' + (r.ganha ? ' ganha' : '') + '"><span class="reliquia-ico">' + RP.icone('lendario', 'r-lendario') + '</span><b>' + RP.esc(r.nome) + '</b><span class="selo' + (r.ganha ? ' selo-destaque' : '') + '">' + RP.esc(r.bonus) + '</span>' +
           '<small class="fraco">' + (r.ganha ? 'Conquistada: ' : 'Como ganhar: ') + RP.esc(r.como) + '</small>' + (!r.ganha && r.progresso ? '<div class="barra"><i style="width:' + (r.progresso * 100) + '%"></i></div>' : '') + '</div>';
-      }).join('') + '</div><p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Bônus pequenos e com teto: somadas, as relíquias dão no máximo ' + L.tetoBonus + '.</p>' +
+      }).join('') + '</div><p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Bônus pequenos e com teto: somadas, as relíquias dão no máximo ' + L.tetoBonus + '. Não confundir com as <a href="#/reliquias">relíquias lendárias</a> do mapa, que ficam na temporada.</p>' +
 
       '<div class="secao-titulo">Títulos</div><div class="card lista">' + L.titulos.map(function (ti, i) {
         return '<div class="lista-item"><span class="ico-placa">' + RP.icone(ti.ganho ? 'coroa' : 'cadeado') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(ti.nome) + '</b><br><small class="fraco">' + RP.esc(ti.como) + '</small></span>' +
