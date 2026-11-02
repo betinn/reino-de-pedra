@@ -1,10 +1,10 @@
-# Balanceamento — proposta v1 (em validação)
+# Balanceamento — v1 (aprovado)
 
 Números de tempos, custos, rendimentos e combate para o Reino de Pedra. Saem de **metas de ritmo** (o que o jogador deve sentir) e de um **modelo** que calcula as tabelas e simula uma temporada inteira, conferindo as metas a cada execução.
 
 - Modelo: [`modelo.js`](modelo.js). Rodar: `node balanceamento/modelo.js > balanceamento/tabelas.md`.
 - Tabelas completas, geradas pelo modelo: [`tabelas.md`](tabelas.md).
-- Estado: **proposta para validação**. Os números ainda não estão no `CLAUDE.md`; entram lá depois de validados.
+- Estado: **aprovado**. As 4 regras abaixo, a temporada de 70 dias, as proteções e o tamanho do mapa estão no `CLAUDE.md`; os números ficam aqui e mudam com testes.
 
 ---
 
@@ -25,9 +25,9 @@ Números de tempos, custos, rendimentos e combate para o Reino de Pedra. Saem de
 | Torre | Nível 1: 6 arqueiros no alto, alcance 2, 600 recursos; com ela, o mesmo ataque que tomaria o local perde |
 | Relíquias | Ataque +15%, produção +15%, resistência +20%; escavação de 12 h com 1 unidade, mínimo 4 h |
 
-## 4 regras que o balanceamento precisou (valide primeiro)
+## 4 regras que o balanceamento precisou (aprovadas)
 
-Sem elas, a simulação não fecha. São o ponto mais importante desta proposta.
+Sem elas, a simulação não fecha.
 
 1. **Tropas ocupam o teto de população.** Soldados também moram no reino. Sem isso, a população se refaz depois de cada recrutamento e o exército cresce sem limite (a primeira simulação chegou a 10 mil tropas no dia 35). Com isso, cada soldado é um trabalhador a menos: é a escolha entre tropas e economia do `CLAUDE.md`, agora com número.
 2. **Cada nível de local precisa de trabalhadores** (10 por nível). Se a população não cobre, o local produz menos. É o que "a população sustenta a produção" quer dizer na prática.

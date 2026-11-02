@@ -33,7 +33,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Mapa e exploração
 
-- Mapa **grande**, que exige deslocamento real: distância e terreno importam.
+- Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: cerca de **60 × 48 hexágonos**; a travessia com tropa lenta leva pouco mais de 3 h (menos com rota ou cavalaria). Um reino pode não encontrar todos os outros na temporada.
 - Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido.
 - Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
   - Planície: deslocamento rápido, comida.
@@ -86,7 +86,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Veículos de transporte** (ex.: carroças) facilitam o transporte e também são construídos com recursos.
 - **Construir gera uma requisição**: os recursos que faltam são enviados automaticamente pelos locais **mais próximos**, levados por tropas ou população, sem ação manual. A construção mostra que está **aguardando a chegada dos recursos**, e o transporte é visível no mapa. Quem constrói se preocupa com o tempo, sem precisar aprender a enviar recursos de um lugar para outro desde o início.
 - O **envio manual** de recursos de um local para outro continua possível.
-- Cada local **acumula a própria produção**; recursos valiosos ficam no armazém.
+- Cada local **acumula a própria produção** e guarda até **10 h** dela; o excedente vai para o armazém, onde também ficam os recursos valiosos. O estoque do local é o que um saque pode levar.
+- **Nenhum local passa do nível do castelo.** Melhorar o castelo custa e demora mais que um local do mesmo nível.
 - A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição vão a pé e sem escolta.
 - Carroças ficam no castelo: saem, buscam a carga na origem e a levam. Escolta é opcional; caravana pouco protegida recebe aviso.
 
@@ -128,7 +129,9 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ## População
 
 - População é um **número abstrato** do reino, sem divisão por gênero ou profissão.
-- **Teto** definido por moradias.
+- **Teto** definido por moradias (e pelo castelo). Cresce construindo moradias, cada uma mais cara que a anterior.
+- **Tropas ocupam o teto**: soldados também moram no reino. População civil + tropas ≤ teto.
+- Cada nível de local precisa de **trabalhadores** (10 por nível). Sem população civil suficiente, o local produz menos. Cada soldado é um trabalhador a menos.
 - **Crescimento** por tempo, mais rápido com excedente de comida.
 - **Recrutar consome população**; tropas mortas não retornam.
 - A população sustenta a produção de recursos e atua como **milícia** na defesa.
@@ -225,6 +228,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Indistinguíveis**: reinos de IA não são identificados como tal para os jogadores.
 - **Mesmas regras dos jogadores**: timers, recursos, população e limites idênticos, sem trapaça. Perfis variados (expansionista, defensivo, saqueador, comerciante) e níveis de habilidade diferentes.
 - Respeitam o escudo de novato e calibram a agressividade pelo porte do alvo.
+- Proteções: escudo de novato de **72 h**; escudo de exílio de **24 h**; regência depois de **48 h** sem entrar.
 - **Saída gradual**: conforme jogadores entram, não são criados novos reinos de IA; reinos de IA destruídos não renascem, e excedentes podem abdicar, com seus locais virando ruínas ou terra livre.
 - **Entrada quando jogadores saem**:
   - **Regência**: após um período de inatividade, o reino do jogador ausente passa a ser governado por IA. Se o jogador voltar, retoma o controle do que restou.
@@ -262,7 +266,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Temporadas e legado
 
-- Mundo organizado em **temporadas** (ordem de grandeza: 2 a 3 meses), com reset de mapa e reinos.
+- Mundo organizado em **temporadas de 70 dias**, com reset de mapa e reinos.
 - Objetivo: evitar domínio permanente dos primeiros jogadores sem desanimar veteranos.
 - **Legado** que atravessa temporadas:
   - **Relíquias da temporada**: itens únicos e limitados, ganhos por conquistas, com bônus pequeno e com teto (o teto vale para a soma das relíquias).
@@ -285,7 +289,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Em aberto
 
-- Valores concretos de tempos, custos e rendimentos (balanceamento): **proposta v1 em validação** em `balanceamento/README.md`, com modelo e simulação em `balanceamento/modelo.js`.
+- Ajuste fino do balanceamento com testes. Valores atuais: **balanceamento v1 aprovado** em `balanceamento/README.md`, com modelo e simulação em `balanceamento/modelo.js`.
 - Lista final de recursos valiosos e lendários.
-- Duração exata das temporadas e regras precisas de legado.
+- Regras precisas de legado.
 - Detalhes de diplomacia e regras finas de alianças (cargos, saída e traição).
