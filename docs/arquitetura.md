@@ -109,6 +109,15 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `RP.ferraria` (`dados`, `carregar`), `RP.reino.ferraria`, `local.lendarios`, `RP.SISTEMAS` (cliente) | Dados de `GET /ferraria`; resumo da ferraria e equipamento lendário em cada local no GET /reino; nome e texto dos sistemas revelados aos poucos (`RP.sistema(k)`). |
 | `RP.exploracao`, `RP.blocoRisco`, `RP.opcaoCaminhoExp`, `RP.perigoConhecido` (cliente) | Dados de `GET /exploracao`, risco da fauna e opção de caminho com risco (caravana, extração, escolta), perigo conhecido de um hexágono. |
 | `RP.extrasGuarnicao`, `RP.extrasExercito`, `RP.extrasFolhaExercito`, `RP.grupoPadraoEnvio` (cliente) | Linhas nos cartões de guarnição e de exército da tela Tropas e na folha do exército (selo de veterania); tropas padrão do envio pelo mapa (o combate devolve as do último ataque). |
+| `Temporada.Temporadas` (`Fim`, `DiaIndice`, `MarcarAtivo`, `Encerrar`, `Reiniciar`, `Reagendar`, eventos `AoTerminar`/`AoReiniciar`), `Mundo.DuracaoTemporadaMs` | Fim da temporada e reset do mundo (ver [decisão 0020](decisoes/0020-temporada.md)); temporada curta em desenvolvimento com `REINO_TEMPORADA_MIN`. |
+| `m.Legados` (`LegadoConta`), `Temporada.Linhagem` (`Nivel`, `BonusReino`, desbloqueios), `Mundo.Banco` | Legado por conta (tabela `legado`), bônus das relíquias da temporada, desbloqueios da linhagem. |
+| `IColecao.Limpar` | Esvaziar uma coleção na memória sem marcar remoções (reset). |
+| `Economia.ModificadoresCrescimento` | Multiplicadores da taxa de crescimento da população (relíquia da temporada de crescimento). |
+| `CriacaoReino.BrasaoLiberado`, `CriacaoReino.CriarNaRegiao/VagaPerto`, `Brasao.Valido(extras, moldura)` | Brasões liberados pela linhagem; região inicial. |
+| `Temporada.Ranking`, `Reino.RankBaixas/RankPerdas/VenceuCerco` | Ranking da temporada e conquistas rastreadas na temporada. |
+| `Temporada.PrecisaDeVoce.Listar/Extras` | "Precisa de você" (GET /agora): itens `{ grupo, icone, titulo, texto, href, botao, fim }`. |
+| `Exploracao.Avistamentos.AoRegistrar` | Reagir a um avistamento (gatilho da espionagem). |
+| `RP.agoraItemHTML`, telas `#/temporada`, `#/ranking`, `#/agora`, `#/regencia`, aviso SSE `temporada`, `RP.extrasConstrucao[].sistema` (cliente) | Item do "precisa de você"; telas da temporada; aba de construção que só aparece depois do gatilho do sistema; `RP.reino.legado` (`linhagem`, `titulo`, `regiaoExilio`) e `RP.reino.regencia` (do sistema de IA). |
 | `RP.seloVeterania`, `RP.mapa.tiposObjeto.avistamento`, telas `#/exilio` e `#/interceptar?marcha=` (cliente) | Selo de veterania; avistamentos no mapa (se a exploração registrar o mesmo tipo antes, ela desenha); exílio e interceptação. |
 
 ## Regras de visibilidade (o servidor é quem esconde)

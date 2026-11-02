@@ -342,7 +342,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Alianças: ao conhecer o primeiro reino.
   - Comércio e diplomacia: ao conhecer o primeiro reino.
   - Ferraria e eras: ao ter a primeira ferraria (fundada ou ocupada).
-- Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação e sem recompensa.
+- Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação e sem recompensa. Os 3 mais urgentes aparecem no topo de Meu reino.
+- Espionagem também aparece ao sofrer o primeiro ataque; torres, quando forças de outro reino (não aliado) entram na visão do reino.
 
 ---
 
@@ -359,7 +360,11 @@ Este documento registra as **decisões de negócio e de game design** já fechad
     - Níveis de 1 a 10. Sobe 1 nível por temporada jogada (ativo em pelo menos 30 dos 70 dias) e 1 por relíquia da temporada ganha.
     - Desbloqueios: nível 2, cores e formas extras de brasão; nível 3, títulos; nível 5, escolher a região inicial; nível 7, escolher a região do exílio; nível 10, brasão da casa com moldura de linhagem.
 - Novos jogadores devem conseguir competir; veteranos carregam identidade e vantagem pequena.
+- Um dia conta como ativo quando o jogador abre o jogo nele. As relíquias da temporada valem pela posição (1º 2%, 2º 1,5%, 3º 1%; relíquia lendária e cerco 1,5%), uma por conquista; se as equipadas passam de 5%, todas encolhem na mesma proporção.
+- Títulos vêm da linhagem (níveis 3, 5, 7 e 10) e das conquistas; só aparecem para o próprio jogador.
+- A região do exílio é escolhida antes, em Temporada e legado; a região inicial, ao fundar. Vale a vaga livre mais perto do centro da região.
 - **Ranking da temporada** por reino: total de baixas causadas, perdas, quantidade de tropas e famílias (população civil). Não mede território (continua sem placar de domínio).
+  - Baixas e perdas contam tropas e milícia nas batalhas (fauna não conta); perdas: menos é melhor. Reinos de IA aparecem como qualquer reino, mas não ganham relíquias.
 
 ---
 

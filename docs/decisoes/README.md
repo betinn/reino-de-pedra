@@ -23,3 +23,4 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento; parte 2: feridos em lotes, veterania com média ponderada, queda e exílio, combate em campo, interceptação, posturas, avistamentos e modelos |
 | [0018](0018-ferraria.md) | Ferraria: fila própria, eras por `ReqCumprido`, bônus por família ponderado pela força, lendário preso a um grupo; sistemas revelados aos poucos |
 | [0019](0019-social.md) | Social: aliança como documento, reforço na guarnição com reserva, cargas entre reinos, propostas, pactos, mensageiros e bandeiras |
+| [0020](0020-temporada.md) | Temporada: fim como evento, reset dentro do motor (limpa coleções, mundo novo, apaga e grava o banco), legado por conta em tabela própria, ranking por ganchos de batalha, "precisa de você" sob demanda |
