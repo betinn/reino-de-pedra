@@ -205,6 +205,11 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Todo ataque é enviado com **objetivos em ordem de prioridade** (ex.: capturar a relíquia + 10 mil de madeira) e uma **tática**. As tropas tentam cumprir os objetivos nessa ordem e sabem quando parar e voltar.
 - A tática define o limite de baixas para recuar: **conservadora 25%**, **média 40%**, **agressiva 60%** e **sem limite**.
 - Objetivos por tipo: saque (relíquia e recursos), sabotagem (construção do local e torres), massacre (população), ocupação (tomar o local e a relíquia), cerco (portões, torres, relíquia e recursos).
+- A batalha dura alguns minutos (mais com mais tropas), tempo para reforços e recuo; reforços que entram antes do fim lutam. Um segundo ataque do mesmo reino se junta; de outro reino, espera ela acabar.
+- A milícia e o massacre usam a população "do local": a do reino dividida entre onde se mora (castelo, moradias) e onde se trabalha.
+- Sabotagem tira níveis; um local (que não seja o castelo) que chega ao nível 0 vira ruína sem dono. Aríetes batem só na vitória; trebuchets, de longe, mesmo na derrota.
+- Ruína e terra livre sem defesa são ocupadas na chegada, sem batalha.
+- Torres ficam a até 2 hexágonos de um local próprio.
 - Se um objetivo não existe no local, as tropas passam ao próximo. Recursos ocupam carga e as tropas voltam quando a carga enche; a relíquia não ocupa carga. Há a opção de completar a carga com o que houver no local.
 - O ataque rápido usa o padrão: saque, objetivos automáticos (relíquia à vista e o recurso principal do local), tática média, sem estandarte e rota curta, com as tropas do último ataque.
 - A espionagem revela também o **estoque** do alvo. O relatório mostra o resultado de cada objetivo e por que as tropas voltaram.

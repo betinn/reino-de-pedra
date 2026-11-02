@@ -52,6 +52,12 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Marcha.AoPartir` | Rodar a cada partida de marcha (fauna no caminho, encontros, avistamentos). |
 | `Combate.Bonus.Ataque/Defesa/DefesaExercito` | Bônus de combate (armas, veterania, relíquia, lendário, legado); o combate soma e aplica o teto. |
 | `Combate.Permissoes.AntesDeEnviar/AoChegar` | Bloqueios de ataque (aliança, pacto, trégua antes; escudo descoberto ao chegar). |
+| `Combate.Combates.AoCairCastelo` | Cerco vitorioso: (reino que perdeu, exército vencedor, castelo). A queda do castelo (parte 2) registra aqui. |
+| `Combate.Combates.AoTerminar` | Batalha encerrada (`ResultadoCombate`: lados, tropas, perdas, milícia): veterania, ranking, legado. |
+| `Combate.Combates.AoFerir` | Feridos de um lado (reino, unidades, local). Sem ninguém registrado, as baixas são todas mortes. |
+| `Combate.Combates.PopDoLocal`, `Combates.Perdas` | População "do local" (milícia, massacre, espionagem); divisão proporcional de perdas. |
+| `Combate.Defesas.NoAlcance/ArqueirosNoAlto/Protege`, `Defesas.RequisitosPortao` | Torres que cobrem um local (espionagem usa); bloqueios extras dos portões (o nível acima de `P.combate.portao.nivelSemEra` já pede a Era do Cerco Avançado por `Recrutamento.ReqCumprido`). |
+| `Combate.Batalhas.Ativa/Recalcular/Encerrar` | Batalha num local; quem muda a composição fora dos ganchos (aliados reforçando) chama `Recalcular`. |
 | `Reliquia` (`m.Reliquias`, `Reliquias.Carregar/Guardar`) | Relíquia lendária guardada num local ou carregada por marcha. |
 | `Caminhos.CustosExtras` | Peso extra por hexágono na rota segura (fauna). |
 | `Nevoas.FontesDeVisao` | Visão extra (torres, exploradores parados...). |
@@ -66,6 +72,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Reinos.Tropas` | Ajudantes de grupo de tropas: validar, retirar, devolver, somar, velocidade, carga, força contra fauna, população. Dentro de uma `Marcha`, a propriedade `Tropas` esconde a classe: use um alias (`using GT = ReinoDePedra.Jogo.Reinos.Tropas;`). |
 | `VisaoReino.Extras`, `VisaoReino.ExtrasLocal`, `VisaoMarcha.ExtrasPropria`, `VisaoMapa.Extras` (Api) | Acrescentar dados ao que o cliente recebe. |
 | `RP.ordensEnvio`, `RP.acoesTropas`, `RP.extrasTropas`, `RP.NOMES_MARCHA` (cliente) | Ordens extras no envio pelo mapa (`{ ordem, rotulo, verbo, icone, descricao, dados, quando(hex, dados, envio) }`), cartões e blocos da tela Tropas, nome dos tipos de marcha. |
+| `RP.TIPOS_ATAQUE`, `RP.graficoBatalha`, `RP.mapa.tiposObjeto.torre/batalha` (cliente) | Tipos de ataque; gráfico de força dos lados (`serie` com `t, meu, eles, proj`); objetos do mapa. O mapa que desenha `tiposObjeto` sozinho marca `RP.mapa.desenhaTiposObjeto = true` e o combate deixa de desenhar e de pôr linhas na folha. |
 
 ## Regras de visibilidade (o servidor é quem esconde)
 
