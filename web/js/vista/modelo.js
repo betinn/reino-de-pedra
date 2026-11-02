@@ -30,6 +30,8 @@
        folha(o, dados), acoes(o, dados) → HTML   linhas e botões nas folhas
      } (info.antigo: informação antiga, último estado conhecido) */
   MAPA.tiposObjeto = MAPA.tiposObjeto || {};
+  /* este mapa desenha tiposObjeto sozinho (sistemas não precisam desenhar por desenhosExtras) */
+  MAPA.desenhaTiposObjeto = true;
   /* RP.mapa.tiposMarcha[o.marcha] = { nome, icone, desenharCena(c, o, info) } — tipos novos de marcha (explorador, caravana...) */
   MAPA.tiposMarcha = MAPA.tiposMarcha || {};
   /* camada Perigo: o sistema de fauna define RP.mapa.perigoHex = function (hex, dados) → 'baixo' | 'medio' | 'alto' | null */

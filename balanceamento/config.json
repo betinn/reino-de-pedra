@@ -392,7 +392,42 @@
    "milicia",
    "lanceiro",
    "arqueiro"
-  ]
+  ],
+  "combate": {
+   "taticas": {
+    "conservadora": 0.25,
+    "media": 0.4,
+    "agressiva": 0.6,
+    "semLimite": null
+   },
+   "taticaPadrao": "media",
+   "batalha": {
+    "baseSeg": 300,
+    "porTropaSeg": 1.5,
+    "maxSeg": 1200
+   },
+   "saqueJanelaH": 24,
+   "massacrePorTropa": 5,
+   "sabotagemMaxNiveis": 3,
+   "objPadrao": {
+    "construcao": 1,
+    "populacao": 100,
+    "portoes": 1,
+    "torre": 1
+   },
+   "guardarBatalhaH": 24,
+   "portao": {
+    "custoN1": 1000,
+    "custoCresc": 2,
+    "tempoN1": 3600,
+    "nivelSemEra": 3,
+    "receita": {
+     "pedra": 0.5,
+     "madeira": 0.3,
+     "ferro": 0.2
+    }
+   }
+  }
  },
  "U": {
   "milicia": {
