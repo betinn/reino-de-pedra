@@ -49,7 +49,7 @@ Referência visual para a implementação. Os valores abaixo vêm de `css/tokens
 | `--cor-fundo` | `#111316` | Fundo de página (com ruído de pedra `--textura`) |
 | `--cor-superficie` / `-2` / `-3` | `#22262c` / `#2b3037` / `#363c46` | Cards e folhas / itens internos / realces |
 | `--cor-borda` / `-forte` | `#3a4049` / `#5b6370` | Divisórias / contornos de controles |
-| `--cor-texto` / `-2` / `-3` | `#efe9dd` / `#bfb6a8` / `#948c80` | Principal / secundário / legendas |
+| `--cor-texto` / `-2` / `-3` | `#efe9dd` / `#bfb6a8` / `#a69e92` | Principal / secundário / legendas |
 | `--cor-primaria` | `#e07a2e` | Ação principal (brasa), uma por área |
 | `--cor-destaque` | `#d9b25c` | Ouro velho: tempo restante, valiosos, títulos |
 | `--cor-sucesso` | `#7dbb63` | Visível, crescimento, jazida restante |
@@ -58,7 +58,16 @@ Referência visual para a implementação. Os valores abaixo vêm de `css/tokens
 | `--cor-info` | `#62acdc` | Postura, links |
 | `--barra-fundo` | `#0d0f12` | Barra de topo, navegação, avisos |
 
-Contraste medido (WCAG): texto principal ≥ 12:1 sobre superfície; secundário 7,6:1; `--cor-texto-3` 4,6:1; texto do botão primário 6,3:1; cores de estado ≥ 4,5:1 sobre superfície.
+Contraste medido (WCAG): texto principal ≥ 12:1 sobre superfície; secundário 7,6:1; `--cor-texto-3` ≥ 5:1 sobre `--cor-superficie-2`; texto do botão primário 6,3:1; cores de estado ≥ 4,5:1 sobre superfície. Auditoria axe-core (WCAG 2.1 AA) sem violações em todas as telas.
+
+### Gráficos
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--grafico-meu` | `#4f97da` | Série do seu lado (batalha), barras de rendimento |
+| `--grafico-hostil` | `#e2584e` | Série das forças inimigas |
+
+Validadas com o validador de paleta contra `#22262c` (faixa de luminosidade do modo escuro, separação para daltonismo ΔE 21, contraste ≥ 3:1). Regras: linha de 2 px, ponto atual com anel na cor da superfície, grade de 1 px, um único eixo, legenda sempre presente com 2 séries, rótulo direto só no ponto atual, cruz + dica ao tocar/passar, tabela como alternativa. Texto nunca usa a cor da série.
 
 ### 2.4 Donos
 
@@ -166,6 +175,9 @@ Luz natural levemente quente, para conversar com a interface escura:
 | Explorador a pé / batedor | Andarilho / figura de capuz escuro | Caminhada |
 | Escolta | Três lanceiros atrás do explorador | Marcha no passo do mais lento |
 | Grupo de caça | Arqueiros de capuz verde e lanceiros | Caminhada até o animal |
+| Extração em andamento | Posto de madeira e carrinho ao lado da jazida | Trabalhadores com picareta; rótulo "Extraindo · ritmo" |
+| Batalha | Atacantes (cinza, sem brasão) contra guarnição e milícia | Estocadas, flechas, celeiro em chamas, fumaça, poeira; rótulo "Batalha · tempo" |
+| Ataque seu | Formação na sua cor; com estandarte, bandeira na cor do seu brasão | Marcha até o alvo |
 
 ### 5.4 Rótulos na Vista
 Pílulas escuras com borda colorida, sempre legíveis sobre a cena: nome do castelo (fonte de título), tempo de chegada das marchas (borda na cor do dono; vermelha e com "?" para forças desconhecidas), animais com nível de perigo, "Ameaçado" sobre locais sob ataque.
@@ -233,6 +245,17 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Risco | `.perigo-linha.nivel-*` / `.risco-linha.ok` | Risco da fauna para o grupo escolhido, com a orientação (rota segura, escolta, reforçar o grupo). |
 | Força do grupo | `.forca` | Barra do grupo pequeno até "passa ileso", na cor do risco. |
 | Rodapé com resumo | `.rodape-acao.rodape-com-resumo` | Resumo do pedido (o quê, custo total, tempo) acima do botão principal, fixo no rodapé. |
+| Fila com término | `.fila-termina` | Até 10 itens por fila, um por vez; mostra quando a fila toda termina ("amanhã às 06:40"). |
+| Nota de regra | `.nota-regra` | Lembra uma regra que muda a decisão ("Nada é obrigatório", "Bandeiras mostram o autor"). |
+| Barras de cenário | `.grafico-barras` | Comparação de rendimento (1 unidade sem preparo x seu grupo x com posto); a escolha atual em destaque, valor na ponta. |
+| Força dos lados | `.bat-lados` + `.barra-dupla` | Números grandes nas cores das séries; barra dividida em proporção; "Tendência" com ícone. |
+| Gráfico de linha | `.grafico-linha` | Força ao longo da batalha: sólido até agora, tracejado = tendência; marco de chegada de reforços. |
+| Seletor de postura | `.abas-postura` (`role=radiogroup`) | Três opções curtas; o nome completo vai no `aria-label`. |
+| Lista com "Trocar" | `.trocar-alvo` | Quando o alvo vem do mapa, mostra só ele; "Trocar alvo (N opções)" abre a lista. |
+| Relatório | `.rel-item`, `.rel-cab`, `.atacante` | Ícone por tipo, ponto de não lido; detalhe com atacante (brasão "?" ou brasão do estandarte), linhas de informação, ganhos em verde e perdas em vermelho, ações no rodapé. |
+| Notificação | `.not-item`, `.push` | Agrupadas em Agora/Hoje/Antes; prévia de como chegam no celular (crítico em vermelho). |
+| Preferência | `.alternar` | Liga/desliga por categoria; ataques fixos em ligado. |
+| Relíquia / título / brasão | `.reliquia`, `.lista-item`, `.brasao-item` | Bloqueados esmaecem só a imagem; o texto mantém contraste. |
 
 ---
 
@@ -253,6 +276,9 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 - Não revelar o dono de locais de outros reinos, nem quem construiu rotas alheias.
 - Rotas só aparecem em área explorada; bandeiras sempre mostram o autor.
 - Tempo de viagem sempre visível e curto: nada de esperas de muitas horas sem o que fazer.
+- Filas longas são permitidas (até 10): o jogador planeja horas ou a noite inteira, e a tela mostra quando tudo termina.
+- Ataques sempre geram notificação; o jogador não pode desligá-la.
+- Item bloqueado nunca reduz o contraste do texto.
 - Não marcar reino como IA de nenhuma forma.
 - Não esconder ação principal atrás de gesto.
 - Toda contagem regressiva diz o que acontece no fim ("chegada", "nível 4").

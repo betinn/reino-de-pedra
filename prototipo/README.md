@@ -37,29 +37,28 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 
 ## Mapa de telas
 
-| # | Tela | Rota | Status |
-|---|---|---|---|
-| 1 | Entrada (tela inicial) | `#/inicio` | Entregue |
-| 1 | Criação do reino (nome e brasão) | `#/criar` | Entregue |
-| 2 | Mundo: Vista e Mapa | `#/mapa` (`?modo=cena\|tatico`, `?centro=<local>`, `?foco=<local>`, `?abrir=<tipo>:<id>`) | Entregue |
-| 3 | Meu reino (com Vista do território) | `#/reino` (`?local=<id>` abre o local) | Entregue |
-| — | Tropas (em campo, guarnição, ordens) | `#/tropas` | Entregue |
-| 4 | Construção | `#/construcao` (`?aba=economia\|populacao\|militar\|novos`) | Entregue |
-| 5 | Recrutamento | `#/recrutamento` | Entregue |
-| 6 | Exploradores | `#/exploradores` (`?alvo=c,l`, `?tipo=batedor`, `?ativo=<marcha>`) | Entregue |
-| 7 | Extração de recurso | — | Próximo bloco |
-| 7b | Caça (comida, couro e peles) | `#/caca` (`?fauna=<id>`) | Entregue |
-| 8 | Envio de ataque | — | Próximo bloco |
-| 9 | Posturas | — | Próximo bloco |
-| 10 | Batalha em andamento | — | Próximo bloco |
-| 11 | Relatórios | `#/relatorios` (guia) | Próximo bloco |
-| 12 | Bandeiras | — | Próximo bloco |
-| 13 | Notificações | — | Próximo bloco |
-| 14 | Temporada e legado | — | Próximo bloco |
-| 15 | Exílio | — | Próximo bloco |
-| 16 | Retorno após regência | `#/regencia` (também em Mais) | Entregue |
+| # | Tela | Rota |
+|---|---|---|
+| 1 | Entrada e criação do reino | `#/inicio`, `#/criar` |
+| 2 | Mundo: Vista e Mapa | `#/mapa` (`?modo=cena\|tatico`, `?centro=<local>`, `?foco=<local>`, `?abrir=<tipo>:<id>`) |
+| 3 | Meu reino (com Vista do território) | `#/reino` (`?local=<id>`) |
+| 4 | Construção | `#/construcao` (`?aba=economia\|populacao\|militar\|novos`) |
+| 5 | Recrutamento | `#/recrutamento` |
+| 6 | Exploradores | `#/exploradores` (`?alvo=c,l`, `?tipo=batedor`, `?ativo=<marcha>`) |
+| 7 | Extração de recurso | `#/extracao` (`?jazida=<id>`) |
+| 7b | Caça | `#/caca` (`?fauna=<id>`) |
+| 8 | Envio de ataque (e reforço, ocupação) | `#/envio` (`?alvo=<local>`, `?modo=reforco&destino=<local>`, `?modo=ocupar&alvo=<ruína>`) |
+| 9 | Posturas | `#/posturas` (`?local=<id>`) |
+| 10 | Batalha em andamento | `#/batalha` |
+| 11 | Relatórios | `#/relatorios`, `#/relatorio?id=<id>` |
+| 12 | Bandeiras | `#/bandeiras`, `#/bandeira-nova` (`?alvo=c,l`) |
+| 13 | Notificações | `#/notificacoes` (sino) |
+| 14 | Temporada e legado | `#/temporada` |
+| 15 | Exílio | `#/exilio` (exemplo, em Mais) |
+| 16 | Retorno após regência | `#/regencia` (exemplo, em Mais) |
+| — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
 
-Botões que levam a telas ainda não prototipadas mostram um aviso "entra no próximo bloco".
+Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolher no mapa o local de uma construção nova (vila, posto, rota).
 
 ### Navegação principal
 
@@ -80,6 +79,15 @@ Botões que levam a telas ainda não prototipadas mostram um aviso "entra no pr�
 11. **Explorar:** tocar num hexágono → Enviar explorador (ou Tropas → Exploradores) → tipo, ordem, destino e caminho (curto x seguro, escolta opcional, risco de fauna) → enviar → a Vista mostra o explorador saindo do castelo.
 12. **Espionar:** local de outro reino → Espionar → Exploradores com batedor de elite. A Mina Rubra mostra o resultado: dono e defesa revelados por espionagem.
 13. **Caçar:** animal no mapa → Caçar (ou Tropas → Caça) → alvo, rendimento estimado, grupo de caça com força x perigo, caminho → os caçadores saem do castelo na Vista.
+14. **Extrair:** jazida no mapa → Extrair (ou Tropas → Extração) → grupo (uma unidade já basta), posto opcional, gráfico de rendimento por cenário, duração da jazida e caminho → os trabalhadores aparecem na Vista (exemplo ativo: Jazida de prata, com posto).
+15. **Atacar:** local de outro reino → Atacar este local → tipo de ataque, tropas, estandarte (com prévia do que o defensor verá) e caminho → confirmação → o ataque sai do castelo. Alvo com escudo de novato fica bloqueado; saque repetido avisa do rendimento menor.
+16. **Defender:** faixa "Batalha em andamento" → Batalha: Vista do combate, força dos lados, gráfico ao longo do tempo (toque mostra os valores; também há tabela), acontecimentos → Enviar reforços (a curva muda quando chegam) ou Recuar.
+17. **Posturas:** Tropas → Posturas: as três posturas explicadas, uma por guarnição e por exército em campo, ou "aplicar a todas".
+18. **Relatórios:** aba Relatórios → filtro → detalhe: ataque anônimo x identificado pelo estandarte, saque com rendimento decrescente, exploração, espionagem (revela o dono), fauna, caça, extração.
+19. **Notificações:** sino → avisos de agora, de hoje e antes; como chegam no celular; o que avisar e silêncio noturno.
+20. **Bandeira:** hexágono → Colocar bandeira → tipo, recado (até 60), prévia com seu brasão → aparece na Vista e no Mapa; Mais → Bandeiras para remover as suas ou denunciar texto alheio.
+21. **Temporada e legado:** Mais → dias restantes, o que fica e o que recomeça, linhagem, relíquias (com teto), títulos, brasões, histórico.
+22. **Exílio:** Mais → Exílio → o que aconteceu, novo ponto do mapa, kit de recomeço, escudo temporário, legado mantido → Recomeçar.
 
 ---
 
@@ -150,7 +158,27 @@ prototipo/
 7. **Colina:** deslocamento normal.
 8. **Espionagem revela o dono:** espionar um local com batedor de elite revela a quem ele pertence (e a defesa).
 
-## Valores ilustrativos deste bloco
+## Decisões tomadas sem consulta (aguardam aprovação)
+
+Problemas que surgiram ao desenhar o último bloco. A primeira coluna é o que está aplicado no protótipo.
+
+| Tema | Aplicado | Alternativas |
+|---|---|---|
+| Batalha | Curvas roteirizadas: reforços sobem a sua força quando chegam; recuo zera a defesa. Mostra "tendência", não resultado garantido. | Simulação simples por tipo de unidade; só barras de força, sem gráfico. |
+| Recuo | Tropas e população se salvam; o local é saqueado. | Recuo com perda parcial de tropas; recuo só antes do inimigo romper a muralha. |
+| "Unidades adequadas" na extração | Unidades com mais carga rendem mais (cavalaria leva mais por viagem). | Unidade de trabalho própria (carroceiro, mineiro); bônus por tipo de jazida (ex.: cavalaria para cavalos de raça). |
+| Ruínas lendárias | Fora da extração: só exploração. | Escavação lenta que rende relíquia; ocupar a ruína para ganhar o bônus. |
+| Escudo de novato | O atacante vê que o alvo está protegido e não consegue enviar. | Só descobrir ao chegar (pior para quem joga). |
+| Saque repetido | −20% por saque ao mesmo alvo em 24 h, até −80%, avisado antes de enviar. | Imunidade temporária do alvo após N saques. |
+| Bandeiras | Até 10 ativas, ficam até você remover, recado de até 60 caracteres; bandeiras alheias têm "Denunciar texto". | Expirar em X dias; pequeno custo para colocar; limite por região. |
+| Notificações | Ataques sempre avisam (não dá para desligar); silêncio das 22h às 7h para o resto. | Resumo matinal único; horário de silêncio configurável. |
+| Relíquias | Bônus pequenos com teto somado de 5%. | Teto por relíquia; relíquias só cosméticas. |
+| Temporada | Sem ranking (a regra proíbe placar de domínio); histórico pessoal de temporadas. | Conquistas não territoriais compartilháveis (exploração, defesas). |
+| Exílio | Região aleatória longe de quem derrubou você; escolha libera no nível 5 da linhagem. | Escolher entre 3 regiões sugeridas. |
+| Posturas padrão | Guarnições: "Apenas defender"; exércitos em campo: "Atacar quem atacar". | Padrão por tipo de local; perguntar na primeira vez. |
+| Reforço e ocupação | Mesma tela do envio de ataque, em outros modos. | Telas separadas. |
+
+## Valores ilustrativos
 
 Custos, tempos, atributos de unidades, rendimento de caça e força x perigo são **mock** para dar forma às telas, não balanceamento. Seguem as regras: construções básicas em minutos e fortes/tecnologias mais demoradas; deslocamentos curtos (dezenas de minutos); a viagem segue a unidade mais lenta; rio só com ponte ou vau; rotas reduzem o custo e o perigo; grupos médios passam ilesos pela fauna. Não existe atalho pago para encurtar timers.
 
@@ -158,4 +186,10 @@ Custos, tempos, atributos de unidades, rendimento de caça e força x perigo sã
 
 ## Verificação
 
-As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e o fluxo de criação do reino.
+As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e os fluxos de criação, construção, recrutamento, exploração, caça, extração, ataque, batalha e bandeira.
+
+Revisão final:
+- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em todas as 23 telas: nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
+- **Toque:** todos os botões e links com pelo menos 44 × 44 px.
+- **Larguras:** sem rolagem horizontal em 360, 375, 430 e 1024 px.
+- **Gráficos:** cores do gráfico de batalha validadas contra o fundo (faixa de luminosidade, daltonismo e contraste); legenda, rótulos diretos, leitura por toque e tabela.
