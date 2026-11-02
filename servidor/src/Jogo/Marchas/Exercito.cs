@@ -253,7 +253,12 @@ public sealed class OrdemReforcar : IOrdemExercito
     public void Validar(Mundo m, Reino r, Exercito ex, int destino)
     {
         var l = m.LocalNoHex(destino);
-        if (Exercitos.LocalProprio(l, r.Id) || (l != null && Aceita.Any(f => f(m, r, l)))) return;
+        if (Exercitos.LocalProprio(l, r.Id)) return;
+        if (l != null && Aceita.Any(f => f(m, r, l)))
+        {
+            if (ex.Carga.Count > 0) throw new RegraException("Tropas com carga não reforçam um aliado: entregue a carga num local seu antes.");
+            return;
+        }
         throw new RegraException("Reforço só vai para um local seu.");
     }
     public void Chegou(Mundo m, Exercito ex)

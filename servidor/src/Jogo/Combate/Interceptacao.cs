@@ -246,7 +246,7 @@ namespace ReinoDePedra.Jogo.Combate
         private static IEnumerable<Vigia> Todas(Mundo m)
         {
             foreach (var l in m.Locais)
-                if (l.ReinoId != 0 && !l.Ruina && l.Postura != Postura.ApenasDefender && SemMilicia(m, l.Guarnicao))
+                if (l.ReinoId != 0 && !l.Ruina && l.Postura != Postura.ApenasDefender && SemMilicia(m, GT.GuarnicaoLivre(m, l)))
                     yield return new Vigia(l.ReinoId, l.Hex, l.Id, null);
             foreach (var e in m.Marchas.OfType<Exercito>())
                 if (e.Parado && e.BatalhaId == null && e.Postura != Postura.ApenasDefender && SemMilicia(m, e.Tropas))
@@ -285,7 +285,7 @@ namespace ReinoDePedra.Jogo.Combate
                 var l = m.Locais.Obter(lid);
                 if (l == null || l.Ruina || l.ReinoId == 0 || Batalhas.Ativa(m, l.Id) != null || m.G.Distancia(l.Hex, e.Hex) > alcance) return;
                 if (!Hostil(m, l.ReinoId, mc.ReinoId, l.Postura)) return;
-                var saida = Saida(m, l.Guarnicao);
+                var saida = Saida(m, GT.GuarnicaoLivre(m, l));   // o reforço de um aliado defende, mas não sai em nome do dono
                 if (saida.Count == 0) return;
                 var r = m.Reinos.Obter(l.ReinoId)!;
                 Economia.Atualizar(m, r);

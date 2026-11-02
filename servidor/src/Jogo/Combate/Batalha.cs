@@ -305,7 +305,20 @@ namespace ReinoDePedra.Jogo.Combate
 
             // feridos: de quem vence ou recua (quem perde sem recuar não tem feridos)
             var feridosA = venceu || resultado == "recuo" ? Combates.Feridos(m, perdasAtk) : new();
-            var feridosD = !venceu || modo == ModoRecuoDefesa ? Combates.Feridos(m, perdasDef) : new();
+            // os feridos de um reforço aliado são do reino que o mandou (o dono do local fica só com os dele)
+            var feridosD = new Dictionary<string, int>();
+            var feridosAliados = new List<(Reino reino, Dictionary<string, int> feridos)>();
+            if (!venceu || modo == ModoRecuoDefesa)
+            {
+                var proprias = new Dictionary<string, int>(perdasDef);
+                if (l != null)
+                    foreach (var (e, pe) in Reforcos.PartesDasPerdas(l, c.Defesa, perdasDef))
+                    {
+                        Combates.Tirar(proprias, pe);
+                        if (m.Reinos.Obter(e.ReinoId) is { Ativo: true } ar) feridosAliados.Add((ar, Combates.Feridos(m, pe)));
+                    }
+                feridosD = Combates.Feridos(m, proprias);
+            }
             if (atkR != null && feridosA.Count > 0)
             {
                 var origem = c.Exercitos.Select(e => m.Locais.Obter(e.OrigemLocalId)).FirstOrDefault(x => x != null && x.ReinoId == atkR.Id);
@@ -313,6 +326,8 @@ namespace ReinoDePedra.Jogo.Combate
             }
             if (defR != null && feridosD.Count > 0)
                 foreach (var f in Combates.AoFerir) f(m, defR, feridosD, l != null && l.ReinoId == defR.Id ? l : null);
+            foreach (var (ar, fa) in feridosAliados)
+                if (fa.Count > 0) foreach (var f in Combates.AoFerir) f(m, ar, fa, l);
 
             var rc = new ResultadoCombate(b.Id, b.LocalId, b.AtacanteId, b.DefensorId, plano.Tipo, resultado, full.A, full.D,
                 c.Ataque, c.Defesa, perdasAtk, perdasDef, miliciaMorta);

@@ -95,4 +95,107 @@ public class RegrasRevisaoTestes
         Assert.Equal(-1, Ocupacao.LiberarVaga(t.M));
         Assert.True(ia.Ativo);
     }
+
+    // ---------------------------------------------------------------- reforço aliado
+
+    [Fact]
+    public void Reforco_aliado_com_carga_nao_descarrega_no_local_do_aliado()
+    {
+        var t = new MundoTeste();
+        var a = t.NovoReino(); var b = t.NovoReino();
+        Aliar(t, a, b);
+        var ca = t.M.Locais[a.CasteloId]; var cb = t.M.Locais[b.CasteloId];
+        ca.Guarnicao["lanceiro"] = 10;
+        var ouroAntes = cb.Estoque.Qtd("ouro");
+        // a ordem dada a um exército com carga é recusada
+        var ex = Exercitos.Enviar(t.M, a, ca.Id, G(("lanceiro", 6)), t.M.LocaisDe(a.Id).First(l => l.Id != ca.Id).Hex, OrdemMover.Id);
+        ex.Carga.Somar("ouro", 500);
+        Assert.Throws<RegraException>(() => Exercitos.DarOrdem(t.M, a, ex.Id, OrdemReforcar.Id, cb.Hex));
+        // a carga que aparece no caminho (interceptação vencida) também não fica com o aliado: o reforço volta com ela
+        ex.Carga = new();
+        Exercitos.DarOrdem(t.M, a, ex.Id, OrdemReforcar.Id, cb.Hex);
+        ex.Carga.Somar("ouro", 500);
+        AvancarAte(t, ex.Chegada);
+        Assert.Equal(ouroAntes, cb.Estoque.Qtd("ouro"));
+        Assert.Empty(cb.ReforcosAliados);
+        Assert.True(t.M.Marchas.ContemId(ex.Id));
+        Assert.True(ex.Retornando);
+        Assert.Equal(500, ex.Carga.Qtd("ouro"));
+    }
+
+    [Fact]
+    public void Feridos_do_reforco_aliado_voltam_ao_reino_de_quem_mandou()
+    {
+        var s = new CombateCenario();
+        var t = s.T;
+        var aliado = t.NovoReino(); aliado.EscudoAte = 0;
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 20)), 50);
+        Aliar(t, s.Def, aliado);
+        var cal = t.M.Locais[aliado.CasteloId];
+        cal.Guarnicao["lanceiro"] = 20;
+        var re = Exercitos.Enviar(t.M, aliado, cal.Id, G(("lanceiro", 20)), alvo.Hex, OrdemReforcar.Id);
+        AvancarAte(t, re.Chegada);
+        var b = s.Chegar(s.Atacar(alvo, G(("lanceiro", 30))));
+        s.Terminar(b);
+        var rc = AjustesTeste.De(t.M).Fins.Last();
+        Assert.False(rc.AtacanteVenceu);
+        var perdas = rc.PerdasDefesa.GetValueOrDefault("lanceiro");
+        var perdasAliado = 20 - (alvo.ReforcosAliados.FirstOrDefault()?.Tropas.GetValueOrDefault("lanceiro") ?? 0);
+        Assert.True(perdasAliado >= 4);
+        var proprias = G(("lanceiro", perdas - perdasAliado));
+        Assert.Equal(Combates.Feridos(t.M, proprias).Values.Sum(), Feridos.Total(s.Def));
+        Assert.Equal(Combates.Feridos(t.M, G(("lanceiro", perdasAliado))).Values.Sum(), Feridos.Total(aliado));
+        Assert.True(Feridos.Total(aliado) > 0);
+    }
+
+    // ---------------------------------------------------------------- postura com reforço e lendário
+
+    /// <summary>Exército do defensor que passa a 1 hexágono do castelo atacante, que está em "atacar qualquer ameaça".</summary>
+    private static (CombateCenario s, Exercito alvo, int hexEncontro) Passagem()
+    {
+        var s = new CombateCenario();
+        var mina = s.Alvo(TipoLocal.Mina, G(("lanceiro", 10)), 0);
+        var c = s.CasteloAtk;
+        s.Guarnecer(c, G(("cavalaria", 30)));
+        c.Postura = Postura.AtacarQualquer;
+        foreach (var d in s.M.G.Area(c.Hex, 4).Where(h => s.M.G.Distancia(h, c.Hex) >= 3 && Obras.HexLivre(s.M, h) && !s.M.Mapa.Rio[h]))
+        {
+            var rota = Caminhos.Calcular(s.M, mina.Hex, d, "Lenta");
+            var i = rota.Hexes.ToList().FindIndex(h => s.M.G.Distancia(h, c.Hex) <= 1);
+            if (rota.Hexes[^1] != d || i < 1 || i >= rota.Hexes.Count - 1) continue;
+            var alvo = Exercitos.Enviar(s.M, s.Def, mina.Id, G(("lanceiro", 10)), d, OrdemMover.Id);
+            return (s, alvo, rota.Hexes[i]);
+        }
+        throw new Exception("sem caminho de teste");
+    }
+
+    [Fact]
+    public void Guarnicao_em_postura_nao_sai_com_as_tropas_do_reforco_aliado()
+    {
+        var (s, alvo, h) = Passagem();
+        var c = s.CasteloAtk;
+        var aliado = s.T.NovoReino();
+        c.Guarnicao["cavalaria"] += 20;
+        c.ReforcosAliados.Add(new ReforcoAliado { ReinoId = aliado.Id, OrigemLocalId = aliado.CasteloId, Tropas = G(("cavalaria", 20)), Desde = s.M.Agora });
+        s.AvancarAte(alvo.Tempos[alvo.Caminho.IndexOf(h)]);
+        var rc = AjustesTeste.De(s.M).Fins.Last();
+        Assert.Equal(30, rc.TropasAtaque.GetValueOrDefault("cavalaria"));   // só as tropas do dono saem
+        Assert.Equal(20, c.ReforcosAliados.Single().Tropas["cavalaria"]);
+        Assert.True(c.Guarnicao["cavalaria"] >= 20);
+        Assert.Equal(c.Guarnicao["cavalaria"] - 20, GT.Livres(s.M, c, "cavalaria"));
+    }
+
+    [Fact]
+    public void Lendario_tomado_pela_guarnicao_em_postura_fica_no_local()
+    {
+        var (s, alvo, h) = Passagem();
+        var eq = s.M.Lendarios.Adicionar(new EquipamentoLendario { DonoId = s.Def.Id, ForjadoPor = s.Def.Id, Tipo = Ferrarias.Defesa, Nome = "Égide", MarchaId = alvo.Id });
+        s.AvancarAte(alvo.Tempos[alvo.Caminho.IndexOf(h)]);
+        Assert.False(s.M.Marchas.ContemId(alvo.Id));
+        Lendarios.Conferir(s.M);
+        Assert.Same(eq, s.M.Lendarios.Obter(eq.Id));
+        Assert.Equal(s.CasteloAtk.Id, eq.LocalId);
+        Assert.Null(eq.MarchaId);
+        Assert.Equal(s.Atk.Id, eq.DonoId);
+    }
 }

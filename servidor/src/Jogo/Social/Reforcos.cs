@@ -51,6 +51,12 @@ namespace ReinoDePedra.Jogo.Social
         {
             if (l.Ruina || !Aliancas.SaoAliados(m, ex.ReinoId, l.ReinoId)) return false;   // a aliança acabou no caminho: volta
             if (ex.Reliquias.Count > 0) return false;   // relíquia não fica em local de outro reino
+            if (ex.Carga.Count > 0)
+            {
+                // carga não passa ao aliado pelo reforço (só por troca ou ajuda, com o limite do novato): volta com ela
+                Registros.Notificar(m, ex.ReinoId, "tropas", "Reforço voltou", "Tropas com carga não ficam em " + l.Nome + ": voltam para casa com ela.", "tropas");
+                return false;
+            }
             var r = m.Reinos.Obter(ex.ReinoId)!;
             var dono = m.Reinos.Obter(l.ReinoId)!;
             Economia.Atualizar(m, r); Economia.Atualizar(m, dono);
@@ -59,9 +65,8 @@ namespace ReinoDePedra.Jogo.Social
             var e = l.ReforcosAliados.FirstOrDefault(x => x.ReinoId == r.Id);
             if (e == null) l.ReforcosAliados.Add(e = new ReforcoAliado { ReinoId = r.Id, OrigemLocalId = ex.OrigemLocalId, Desde = m.Agora });
             GT.Somar(e.Tropas, grupo);
-            if (ex.Carga.Count > 0) l.Estoque.Somar(ex.Carga);
             m.Sujar(l);
-            ex.Tropas = new(); ex.Carga = new();
+            ex.Tropas = new();
             ex.Encerrar(m);
             var partes = GT.Partes(m, grupo);
             if (Batalhas.Ativa(m, l.Id) is { } b && b.DefensorId == l.ReinoId)
@@ -127,6 +132,27 @@ namespace ReinoDePedra.Jogo.Social
         }
 
         /// <summary>
+        /// Parte de cada reforço nas perdas da defesa do local: por unidade, na proporção das tropas dele na defesa. O combate
+        /// usa para dar os feridos de cada reino ao próprio reino; <see cref="AoTerminar"/>, para tirar as perdas do reforço.
+        /// </summary>
+        public static List<(ReforcoAliado reforco, Dictionary<string, int> perdas)> PartesDasPerdas(Local l, IReadOnlyDictionary<string, int> tropasDefesa, IReadOnlyDictionary<string, int> perdasDefesa)
+        {
+            var lista = new List<(ReforcoAliado, Dictionary<string, int>)>();
+            foreach (var e in l.ReforcosAliados)
+            {
+                var perdas = new Dictionary<string, int>();
+                foreach (var (k, n) in e.Tropas)
+                {
+                    var tot = tropasDefesa.GetValueOrDefault(k);
+                    var p = tot > 0 ? (int)Math.Round(n * (double)perdasDefesa.GetValueOrDefault(k) / tot) : 0;
+                    if (p > 0) perdas[k] = Math.Min(n, p);
+                }
+                lista.Add((e, perdas));
+            }
+            return lista;
+        }
+
+        /// <summary>
         /// Batalha encerrada num local com reforço: cada reforço perde a sua parte das perdas da defesa (por unidade). Se a defesa
         /// recuou, o reforço sai do exército que fugiu e volta para casa; se o local mudou de dono, o reforço caiu com a defesa.
         /// </summary>
@@ -134,15 +160,8 @@ namespace ReinoDePedra.Jogo.Social
         {
             var l = m.Locais.Obter(rc.LocalId);
             if (l == null || l.ReforcosAliados.Count == 0) return;
-            foreach (var e in l.ReforcosAliados)
+            foreach (var (e, perdas) in PartesDasPerdas(l, rc.TropasDefesa, rc.PerdasDefesa))
             {
-                var perdas = new Dictionary<string, int>();
-                foreach (var (k, n) in e.Tropas)
-                {
-                    var tot = rc.TropasDefesa.GetValueOrDefault(k);
-                    var p = tot > 0 ? (int)Math.Round(n * (double)rc.PerdasDefesa.GetValueOrDefault(k) / tot) : 0;
-                    if (p > 0) perdas[k] = Math.Min(n, p);
-                }
                 Combates.Tirar(e.Tropas, perdas);
                 if (perdas.Count > 0 && m.Reinos.Obter(e.ReinoId) is { } q)
                     Registros.Notificar(m, q.Id, "batalhas", "Seu reforço lutou em " + l.Nome, "Perdas: " + GT.Partes(m, perdas) + ".", "tropas");

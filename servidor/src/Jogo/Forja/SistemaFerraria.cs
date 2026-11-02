@@ -174,16 +174,22 @@ public static class Lendarios
         Conferir(m);
     }
 
-    /// <summary>Marcha vencida no caminho: o equipamento vai com o vencedor.</summary>
+    /// <summary>
+    /// Marcha vencida no caminho: o equipamento vai com o vencedor. Um vencedor que não está no mapa (a saída provisória de
+    /// uma guarnição em postura) volta ao local de onde saiu, e o equipamento fica na guarnição dele.
+    /// </summary>
     internal static void AoPerderNoCaminho(Mundo m, Marcha perdedor, Exercito vencedor)
     {
+        var guarnicao = m.Marchas.ContemId(vencedor.Id) ? null : m.Locais.Obter(vencedor.OrigemLocalId) is { } o && o.ReinoId == vencedor.ReinoId && !o.Ruina ? o : null;
         foreach (var eq in NaMarcha(m, perdedor.Id).ToList())
         {
             var antigo = eq.DonoId;
-            eq.MarchaId = vencedor.Id; eq.DonoId = vencedor.ReinoId; eq.Levar = false;
+            eq.DonoId = vencedor.ReinoId; eq.Levar = false;
+            if (guarnicao != null) { eq.MarchaId = null; eq.LocalId = guarnicao.Id; }
+            else eq.MarchaId = vencedor.Id;
             m.Sujar(eq);
             Avisar(m, antigo, eq, "Equipamento lendário perdido", eq.Nome + " ficou no campo e o vencedor levou.");
-            Avisar(m, vencedor.ReinoId, eq, "Equipamento lendário capturado", eq.Nome + " (+" + Math.Round(m.P.Lendario.Bonus * 100) + "% de " + eq.Tipo + ") agora vai com suas tropas.");
+            Avisar(m, vencedor.ReinoId, eq, "Equipamento lendário capturado", eq.Nome + " (+" + Math.Round(m.P.Lendario.Bonus * 100) + "% de " + eq.Tipo + ") " + (guarnicao != null ? "agora está em " + guarnicao.Nome + "." : "agora vai com suas tropas."));
         }
     }
 

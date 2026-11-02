@@ -52,7 +52,8 @@ namespace ReinoDePedra.Jogo.Combate
             // a batalha que acabou agora diz de onde vieram (o combate passa o local de origem do atacante, não o alvo)
             var b = m.Batalhas.Where(x => x.EncerradaEm == m.Agora && (x.AtacanteId == r.Id || x.DefensorId == r.Id)).OrderByDescending(x => x.Id).FirstOrDefault();
             var alvo = b != null ? m.Locais.Obter(b.LocalId) : null;
-            var origem = b == null || alvo == null ? "Batalha em campo"
+            var origem = local != null && local.ReinoId != r.Id ? "Reforço em " + local.Nome   // reforço num local de aliado
+                : b == null || alvo == null ? "Batalha em campo"
                 : b.DefensorId == r.Id ? "Defesa de " + (alvo.ReinoId == r.Id ? alvo.Nome : "um local perdido")
                 : "Ataque a " + (alvo.ReinoId == r.Id ? alvo.Nome : Ataques.NomeAlvo(alvo).ToLowerInvariant());
             Adicionar(m, r, unidades, origem);
