@@ -65,7 +65,17 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Recrutamento.ReqCumprido`, `Recrutamento.Requisitos` | Quem cumpre um `U.req` (eras); bloqueios extras de unidade. |
 | `Reinos.Tropas` | Ajudantes de grupo de tropas: validar, retirar, devolver, somar, velocidade, carga, força contra fauna, população. Dentro de uma `Marcha`, a propriedade `Tropas` esconde a classe: use um alias (`using GT = ReinoDePedra.Jogo.Reinos.Tropas;`). |
 | `VisaoReino.Extras`, `VisaoReino.ExtrasLocal`, `VisaoMarcha.ExtrasPropria`, `VisaoMapa.Extras` (Api) | Acrescentar dados ao que o cliente recebe. |
+| `Fotos.Fotografos` | Objetos do sistema que ficam na foto da névoa (último estado conhecido fora da visão: torres, bandeiras...). |
+| `Marcha.AlvoDeFauna`, `Marcha.Furtiva`, `Marcha.ForcaContraFauna`, `Marcha.SofrerFauna`, `Marcha.AoPassar` | Fauna e visibilidade por tipo de marcha (mensageiro fora da fauna, batedor furtivo, caravana perde carga...). |
+| `OpcoesCaminho.ReinoId` | A rota segura evita a fauna que esse reino conhece (passe sempre o reino que viaja). |
+| `Espionagem.TorresNoAlcance`, `Espionagem.Milicia`, `Espionagem.ExtrasRelatorio` | Torres e milícia na chance e no relatório de espionagem. |
+| `Capturas.Ignorar`, `Capturas.AoPedirResgate`, `Capturas.PagarResgate` | Aliança/pacto sem captura; levar o pedido de resgate e libertar quando pago (comércio). |
+| `Conhecimento.Conhecer` / `Conhecimento.AoConhecer`, `Reino.ReinosConhecidos` | Reinos conhecidos (espionagem, captura, resgate; estandarte e bandeira depois) e gatilho de alianças e comércio. |
+| `Avistamentos.Registrar` | "Visto há X" no mapa por `P.avistamentoH` (espião; o combate pode registrar tropas). |
+| `Fauna.Limpar`, `MundoTeste(fauna: true)`, `ServidorTeste.Iniciar(fauna: true)` | Testes sem sorteios de fauna por padrão. |
 | `RP.ordensEnvio`, `RP.acoesTropas`, `RP.extrasTropas`, `RP.NOMES_MARCHA` (cliente) | Ordens extras no envio pelo mapa (`{ ordem, rotulo, verbo, icone, descricao, dados, quando(hex, dados, envio) }`), cartões e blocos da tela Tropas, nome dos tipos de marcha. |
+| `RP.mapa.tiposObjeto`, `RP.mapa.camadas` (cliente) | Tipos de objeto do mapa (`{ nome, icone, desenharTatico(ctx, o, p, cam), folha(o) }`) e camadas que ligam e desligam (`perigo`). |
+| `RP.exploracao`, `RP.blocoRisco`, `RP.opcaoCaminhoExp`, `RP.perigoConhecido` (cliente) | Dados de `GET /exploracao`, risco da fauna e opção de caminho com risco (caravana, extração, escolta), perigo conhecido de um hexágono. |
 
 ## Regras de visibilidade (o servidor é quem esconde)
 
@@ -92,6 +102,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 
 - `cd servidor && dotnet test`. `MundoTeste` cria um mundo com relógio falso: `t.NovoReino()`, `t.AvancarMin(5)`, `t.DarRecursos(r)`.
 - Cada regra nova ganha teste. Fórmulas são conferidas contra o modelo.
+- `MundoTeste` e `ServidorTeste` sobem **sem fauna** (sorteios); passe `fauna: true` para ter a fauna do mundo. Para um sorteio de `m.Sorte` com resultado conhecido, troque `m.Sorte` por um `Rng` com semente escolhida (ver `ExploracaoTestes.Sorte`).
 - Teste de carga: 30 reinos (jogadores e IA) por dias de jogo simulados, medindo tempo de CPU por evento e memória.
 
 ## Segurança e repositório público
