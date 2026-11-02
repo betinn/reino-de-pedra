@@ -163,6 +163,8 @@ public sealed class ParametrosP
     public ReliquiaVisP ReliquiaVis { get; init; } = new();
     // ---------- ferraria, eras e equipamento lendário (servidor) ----------
     public FerrariaServP FerrariaServ { get; init; } = new();
+    // ---------- social (servidor): alianças, conversa, mensagens, propostas e bandeiras
+    public SocialP Social { get; init; } = new();
 }
 
 // ---------- ferraria, eras e equipamento lendário (servidor) ----------
@@ -335,6 +337,25 @@ public sealed class MensageiroP
     public int Caracteres { get; init; }
     public int RecadoProposta { get; init; }
 }
+// ---------- social (servidor)
+public sealed class SocialP
+{
+    /// <summary>Conselheiros por aliança.</summary>
+    public int Conselheiros { get; init; }
+    public FaixaP NomeAlianca { get; init; } = new();
+    public ConversaP Conversa { get; init; } = new();
+    /// <summary>Mensagens por mensageiro guardadas por reino.</summary>
+    public int Caixa { get; init; }
+    /// <summary>Horas até uma proposta, convite ou pedido sem resposta expirar.</summary>
+    public double PropostaH { get; init; }
+    /// <summary>Janela (horas) do limite diário do novato.</summary>
+    public double NovatoJanelaH { get; init; }
+    public BandeirasP Bandeiras { get; init; } = new();
+}
+public sealed class FaixaP { public int Min { get; init; } public int Max { get; init; } }
+public sealed class ConversaP { public int Caracteres { get; init; } public int Guardar { get; init; } }
+public sealed class BandeirasP { public int Ativas { get; init; } public int Minimo { get; init; } public int Caracteres { get; init; } }
+
 public sealed class SalgadeiraP { public Dictionary<string, double> Custo { get; init; } = new(); public double Tempo { get; init; } public double Horas { get; init; } }
 
 public sealed class Unidade

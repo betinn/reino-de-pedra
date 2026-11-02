@@ -16,7 +16,7 @@ public static class VisaoTropas
         var locais = m.LocaisDe(r.Id).OrderBy(l => l.Tipo).ThenBy(l => l.Id).Select(l => new
         {
             l.Id, tipo = l.Tipo.Chave(), l.Produz, l.Nome, l.Nivel, l.Hex, c = m.G.C(l.Hex), lin = m.G.L(l.Hex),
-            guarnicao = l.Guarnicao, l.Postura, l.Ruina,
+            guarnicao = GT.GuarnicaoLivre(m, l), l.Postura, l.Ruina,   // sem o reforço de aliados (é deles)
             recruta = Recrutamento.Recruta(l),
             unidades = Recrutamento.Recruta(l) ? m.B.U.Keys.Where(u => Recrutamento.RecrutaNoLocal(m, l, u)).ToList() : [],
         }).ToList();

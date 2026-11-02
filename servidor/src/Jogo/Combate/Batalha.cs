@@ -125,7 +125,7 @@ namespace ReinoDePedra.Jogo.Combate
             var def = semDono ? null : m.Reinos.Obter(l.ReinoId);
             if (def != null)
             {
-                var motivo = Permissoes.MotivoEnvio(m, r, def) ?? Permissoes.MotivoChegada(m, r, def);
+                var motivo = Permissoes.MotivoEnvio(m, r, def, l) ?? Permissoes.MotivoChegada(m, r, def);
                 if (motivo != null)
                 {
                     RelatoriosCombate.SemCombate(m, ex, l, plano, motivo, def);

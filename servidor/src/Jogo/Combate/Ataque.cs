@@ -275,7 +275,7 @@ public sealed class OrdemAtacar : IOrdemExercito
         if (!Ataques.SemDono(m, alvo))
         {
             var dono = m.Reinos.Obter(alvo.ReinoId)!;
-            var motivo = Permissoes.MotivoEnvio(m, r, dono);
+            var motivo = Permissoes.MotivoEnvio(m, r, dono, alvo);
             if (motivo != null) throw new RegraException(motivo);
         }
         var plano = PlanoAtaque.Ler(ex.Dados);

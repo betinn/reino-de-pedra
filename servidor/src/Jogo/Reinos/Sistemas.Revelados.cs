@@ -27,6 +27,8 @@ namespace ReinoDePedra.Jogo.Nucleo
         {
             lock (_revelaveis) _revelaveis[chave] = (nome, texto, categoria, link);
         }
+        /// <summary>Sinônimo de <see cref="Revelavel"/> (nome usado pelo sistema social).</summary>
+        public static void Registrar(string chave, string nome, string texto, string? link = null) => Revelavel(chave, nome, texto, "reino", link);
         /// <summary>Sinônimo de <see cref="Revelavel"/> (nome usado pelo sistema de valiosos).</summary>
         public static void Apresentavel(string chave, string nome, string texto, string categoria = "reino", string? link = null) =>
             Revelavel(chave, nome, texto, categoria, link);

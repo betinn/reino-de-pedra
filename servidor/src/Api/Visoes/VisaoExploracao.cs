@@ -162,7 +162,7 @@ public static class VisaoExploracao
             var visto = Nevoas.Instante(m, nevoa.MinutoVisto(h));
             foreach (var o in objs)
             {
-                if (o["tipo"]?.GetValue<string>() == "local" && m.LocalNoHex(h) is { } atual && atual.ReinoId == r.Id) continue;   // virou seu
+                if (o["tipo"]?.GetValue<string>() == "local" && m.LocalNoHex(h) is { } atual && (atual.ReinoId == r.Id || VisaoMapa.Aliado(m, r, atual.ReinoId))) continue;   // virou seu (ou é de aliado: vem ao vivo)
                 var c = (JsonObject)o.DeepClone();
                 c["hex"] = h; c["foto"] = true; c["visto"] = visto;
                 l.Add(c);

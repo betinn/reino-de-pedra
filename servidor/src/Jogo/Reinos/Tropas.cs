@@ -30,11 +30,25 @@ public static class Tropas
         foreach (var (k, n) in g)
         {
             if (!m.B.U.TryGetValue(k, out var u)) throw new RegraException("Unidade desconhecida.");
-            var tem = l.Guarnicao.GetValueOrDefault(k);
+            var tem = Livres(m, l, k);
             if (tem < n) throw new RegraException($"{l.Nome} só tem {tem} {Nome(u, tem)}.");
         }
         return g;
     }
+
+    /// <summary>
+    /// Tropas da guarnição que o dono do local não pode usar: (mundo, local, unidade) → quantidade.
+    /// O reforço de um aliado fica na guarnição (defende) mas continua dele (a aliança registra aqui).
+    /// </summary>
+    public static List<Func<Mundo, Local, string, int>> Reservadas { get; } = new();
+
+    /// <summary>Quantas tropas da unidade o dono do local pode usar (guarnição menos as reservadas).</summary>
+    public static int Livres(Mundo m, Local l, string unidade) =>
+        Math.Max(0, l.Guarnicao.GetValueOrDefault(unidade) - Reservadas.Sum(f => f(m, l, unidade)));
+
+    /// <summary>Guarnição que o dono do local pode usar.</summary>
+    public static Dictionary<string, int> GuarnicaoLivre(Mundo m, Local l) =>
+        l.Guarnicao.Select(kv => (kv.Key, n: Livres(m, l, kv.Key))).Where(x => x.n > 0).ToDictionary(x => x.Key, x => x.n);
 
     /// <summary>Valida e tira o grupo da guarnição do local. Devolve o grupo limpo.</summary>
     public static Dictionary<string, int> Retirar(Mundo m, Local l, IReadOnlyDictionary<string, int>? grupo)

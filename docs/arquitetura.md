@@ -89,6 +89,14 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Capturas.Ignorar`, `Capturas.AoPedirResgate`, `Capturas.PagarResgate` | Aliança/pacto sem captura; levar o pedido de resgate e libertar quando pago (comércio). |
 | `Conhecimento.Conhecer` / `Conhecimento.AoConhecer`, `Reino.ReinosConhecidos` | Reinos conhecidos (espionagem, captura, resgate; estandarte e bandeira depois) e gatilho de alianças e comércio. |
 | `Avistamentos.Registrar` | "Visto há X" no mapa por `P.avistamentoH` (espião; o combate pode registrar tropas). |
+| `Sistemas.Registrar/Revelar`, `Reino.SistemasVistos` | Sistemas apresentados aos poucos: registre a chave em AoIniciar e revele no gatilho ("Novo: ..."); GET /reino manda `sistemas`. |
+| `Permissoes.AntesDeEnviarNoLocal` | Bloqueio que depende do local (pacto/trégua quando o atacante já sabe de quem é o local). |
+| `OrdemReforcar.Aceita/Chegada`, `Tropas.Reservadas`, `Tropas.GuarnicaoLivre` | Reforço em local que não é seu (aliança); tropas da guarnição que o dono não pode usar. |
+| `Aliancas.SaoAliados/EmTregua/AoEntrarEmRegencia`, `Aliancas.EmRegencia` | Aliança para outros sistemas (IA, regência, interceptação). |
+| `Remessa`, `Remessas.Enviar`, `Remessas.AoTerminar[motivo]` | Carga de um reino para outro (troca, ajuda, pagamentos): sai dos locais mais próximos, roubável; reação quando a última chega ou uma é roubada. |
+| `Comercio.AceitarTroca/Abertas/PactoAtivo/ConferirNovato` | Comércio para a IA comerciante e para quem precisa do pacto ou do limite do novato. |
+| `VisaoMapa.Aliados`, `VisaoMapa.AoVerEstandarte` (Api) | Locais e marchas reconhecidos (dono "aliado" com `reino`); reagir a uma marcha vista com estandarte. |
+| `RP.social` (cliente) | Peças comuns do social: `cargaTxt`, `cargaHTML`, `brasao`, `stepper`, `chipsRecurso`, `campoRecado`; evento `rp:social` nos avisos `alianca`, `comercio` e `mensagem`. |
 | `Fauna.Limpar`, `MundoTeste(fauna: true)`, `ServidorTeste.Iniciar(fauna: true)` | Testes sem sorteios de fauna por padrão. |
 | `Sistemas.Apresentavel`, `Sistemas.Revelar`, `Reino.SistemasVistos` | Sistemas apresentados aos poucos: registre a chave e revele no gatilho ("Novo: …"); o cliente lê `RP.reino.sistemas` com `RP.sistema(chave)`. |
 | `Caravanas.Enviar`/`Planejar`, `Caravana` (marcha) | Transporte manual (base → origem → destino → volta), com veículos de `Reino.Veiculos` e escolta. |
