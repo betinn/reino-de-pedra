@@ -43,11 +43,12 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 1 | Criação do reino (nome e brasão) | `#/criar` | Entregue |
 | 2 | Mundo: Vista e Mapa | `#/mapa` (`?modo=cena\|tatico`, `?centro=<local>`, `?foco=<local>`, `?abrir=<tipo>:<id>`) | Entregue |
 | 3 | Meu reino (com Vista do território) | `#/reino` (`?local=<id>` abre o local) | Entregue |
-| 4 | Construção | — | Próximo bloco |
-| 5 | Recrutamento | — | Próximo bloco |
-| 6 | Exploradores | — | Próximo bloco |
+| — | Tropas (em campo, guarnição, ordens) | `#/tropas` | Entregue |
+| 4 | Construção | `#/construcao` (`?aba=economia\|populacao\|militar\|novos`) | Entregue |
+| 5 | Recrutamento | `#/recrutamento` | Entregue |
+| 6 | Exploradores | `#/exploradores` (`?alvo=c,l`, `?tipo=batedor`, `?ativo=<marcha>`) | Entregue |
 | 7 | Extração de recurso | — | Próximo bloco |
-| 7b | Caça (comida, couro e peles) | — | Próximo bloco |
+| 7b | Caça (comida, couro e peles) | `#/caca` (`?fauna=<id>`) | Entregue |
 | 8 | Envio de ataque | — | Próximo bloco |
 | 9 | Posturas | — | Próximo bloco |
 | 10 | Batalha em andamento | — | Próximo bloco |
@@ -74,6 +75,11 @@ Botões que levam a telas ainda não prototipadas mostram um aviso "entra no pr�
 6. **Rota segura:** Mapa → Camadas → Perigo: pinta as áreas com fauna; o explorador a cavalo mostra alerta de risco por passar por área de lobos.
 7. **Do reino ao mundo:** Meu reino → tocar numa construção da Vista ou num card → detalhes → Ver no mapa.
 8. **Regência:** Mais → Retorno após regência → o que o regente fez, o que foi perdido → Retomar o reino.
+9. **Construir:** Reino → Construir (ou Melhorar num local) → escolher no catálogo → custo sai dos recursos e a obra entra na fila → na Vista aparecem andaimes, um construtor e o tempo da obra.
+10. **Recrutar:** Tropas → Recrutar → quantidade por unidade (−/+, +5, +10, Máx.) → resumo com custo, população e tempo → fila; na Vista, arqueiros treinam no quartel enquanto há recrutamento.
+11. **Explorar:** tocar num hexágono → Enviar explorador (ou Tropas → Exploradores) → tipo, ordem, destino e caminho (curto x seguro, escolta opcional, risco de fauna) → enviar → a Vista mostra o explorador saindo do castelo.
+12. **Espionar:** local de outro reino → Espionar → Exploradores com batedor de elite. A Mina Rubra mostra o resultado: dono e defesa revelados por espionagem.
+13. **Caçar:** animal no mapa → Caçar (ou Tropas → Caça) → alvo, rendimento estimado, grupo de caça com força x perigo, caminho → os caçadores saem do castelo na Vista.
 
 ---
 
@@ -141,11 +147,12 @@ prototipo/
 4. **Deslocamento curto:** viagens não devem levar muitas horas sem outras ações para o jogador. Os tempos mock de marcha ficam entre 10 e 50 minutos.
 5. **Ruínas e terra livre podem ser ocupadas ou reconstruídas:** a folha oferece Ocupar e Reconstruir / Construir local.
 6. **Couro e peles são recursos** do reino, obtidos pela caça.
+7. **Colina:** deslocamento normal.
+8. **Espionagem revela o dono:** espionar um local com batedor de elite revela a quem ele pertence (e a defesa).
 
-## Pontos em aberto (perguntas, não regras)
+## Valores ilustrativos deste bloco
 
-1. **Colina:** o protótipo trata como "deslocamento normal" (entre planície e floresta), seguindo a diretriz de deslocamento curto. Confirmar.
-2. **Espionagem e dono:** um batedor de elite espionando um local revela a quem ele pertence? Hoje a folha só oferece "Espionar", sem prometer o resultado.
+Custos, tempos, atributos de unidades, rendimento de caça e força x perigo são **mock** para dar forma às telas, não balanceamento. Seguem as regras: construções básicas em minutos e fortes/tecnologias mais demoradas; deslocamentos curtos (dezenas de minutos); a viagem segue a unidade mais lenta; rio só com ponte ou vau; rotas reduzem o custo e o perigo; grupos médios passam ilesos pela fauna. Não existe atalho pago para encurtar timers.
 
 ---
 

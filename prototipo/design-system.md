@@ -160,6 +160,12 @@ Luz natural levemente quente, para conversar com a interface escura:
 | Fauna | Lobos, javalis, ursos, crocodilos (na água) | Bando passeando pelo território |
 | Área de perigo conhecida | Placa triangular na cor do nível | Rótulo com animal e idade da informação |
 | Névoa | Bancos de nuvem sobre o desconhecido | Nuvens à deriva |
+| Obra em andamento | Andaime de madeira em volta da construção | Construtor martelando; rótulo "Obra · tempo" |
+| Obra na fila | Pilha de toras e pedras ao lado | — |
+| Recrutamento ativo | Arqueiros e alvo de palha ao lado do quartel | Arqueiros puxando o arco e flechas voando |
+| Explorador a pé / batedor | Andarilho / figura de capuz escuro | Caminhada |
+| Escolta | Três lanceiros atrás do explorador | Marcha no passo do mais lento |
+| Grupo de caça | Arqueiros de capuz verde e lanceiros | Caminhada até o animal |
 
 ### 5.4 Rótulos na Vista
 Pílulas escuras com borda colorida, sempre legíveis sobre a cena: nome do castelo (fonte de título), tempo de chegada das marchas (borda na cor do dono; vermelha e com "?" para forças desconhecidas), animais com nível de perigo, "Ameaçado" sobre locais sob ataque.
@@ -217,6 +223,16 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Gestos | `RP.gestos(el, {...})` | Arrastar, pinça, roda e toque, iguais em todas as superfícies. |
 | Vista | `new RP.Cena(canvas, {...})` | Interativa (mundo) ou só toque + arrasto lateral (topo de Meu reino). |
 | Brasão | `RP.brasao(cfg, {tamanho})` | 3 formas × 6 divisões × 2 cores × 8 símbolos × cor do símbolo. |
+| Custo | `RP.custoHTML(custo)` → `.custos > .custo` | Ícone + quantidade de cada recurso; o que falta fica em `--cor-perigo` com "!". Sempre junto do tempo (`.tempo`, em `--cor-destaque`). |
+| Card de obra | `.obra-card` | Ícone, nome, nível (Nv 2 → 3 / Novo / Tecnologia), onde, efeito em verde, custo e tempo, ação. Bloqueado: cadeado com o requisito. |
+| Card de unidade | `.unid-card` | Papel, "Forte contra" (verde) e "Fraco contra" (vermelho), atributos em 5 pontos, custo por unidade com população, quantidade. |
+| Quantidade | `.stepper` + `.chips-rapidos` | − e + de 44 px, número grande; atalhos +5, +10 e Máx. (limitado por recursos e população). |
+| Escolha | `.escolha[aria-pressed]` | Cartão selecionável (tipo de explorador, alvo de caça); selecionado com contorno de brasa. |
+| Opção de caminho | `.rota-opcao` | Curta (barra laranja) x segura (barra verde): hexágonos, trechos em rota pública, perigo e tempo. |
+| Minimapa de rota | `.mini-rota` | Terreno conhecido, névoa, perigo, rotas exploradas, castelo de origem, destino e os dois caminhos (o escolhido em destaque). |
+| Risco | `.perigo-linha.nivel-*` / `.risco-linha.ok` | Risco da fauna para o grupo escolhido, com a orientação (rota segura, escolta, reforçar o grupo). |
+| Força do grupo | `.forca` | Barra do grupo pequeno até "passa ileso", na cor do risco. |
+| Rodapé com resumo | `.rodape-acao.rodape-com-resumo` | Resumo do pedido (o quê, custo total, tempo) acima do botão principal, fixo no rodapé. |
 
 ---
 
