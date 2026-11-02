@@ -53,6 +53,7 @@ public static class VisaoExploracao
             {
                 limites = m.P.Fauna, ataque = m.P.AtaqueFauna, perda = m.P.PerdaFauna, voltaH = m.P.FaunaVoltaH, cacaMin = m.P.CacaMin,
                 caca = m.P.Caca, espiao = m.P.Espiao, resgateH = m.P.ResgateH, avistamentoH = m.P.AvistamentoH,
+                rota = m.P.Rota, ponte = m.P.Ponte, terreno = m.P.Terreno, rotaFator = m.P.RotaFator, valor = m.P.Valor,
             },
         };
     }

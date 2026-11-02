@@ -42,6 +42,7 @@
 
   RP.registrarTela('relatorio', {
     nav: true, secao: 'relatorios',
+    montar: function () { /* desenhado a cada entrada */ },
     entrar: function (el, p) {
       el.innerHTML = '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/relatorios" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Relatório</h1></header><div class="conteudo-tela"><p class="fraco">Carregando…</p></div>';
       RP.get('/relatorios/' + encodeURIComponent(p.get('id'))).then(function (rel) {
