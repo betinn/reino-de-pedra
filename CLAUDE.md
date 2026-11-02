@@ -290,6 +290,10 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - A regência é **conservadora** (defende e produz, sem expansão agressiva), para que abandonar nunca seja vantajoso.
   - Se a ocupação cair abaixo da meta, novos reinos de IA surgem em regiões com pouca atividade.
 - Cada temporada começa com mais reinos de IA, que vão saindo conforme a base de jogadores cresce.
+- Valores atuais: a temporada começa com 25 reinos de IA e o mundo nunca fica com menos de 20 reinos ativos; o reino de IA novo surge na vaga livre mais longe dos jogadores.
+- Abdica o reino de IA de menor porte: o castelo vira ruína e os outros locais, terra livre. Reino de IA que perde o último local não vai ao exílio: sai do mundo.
+- A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h.
+- A regência não funda, não ataca, não espiona e não negocia. O jogador que volta vê o que ela fez e o que se perdeu.
 
 ---
 
@@ -318,6 +322,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Mensageiro**: treinado no castelo; unidade que ocupa 1 de população e leva uma mensagem até um local de outro reino, inclusive de dono desconhecido. Vai com bandeira branca, evidente no mapa como não agressivo; tropas e fauna não o atacam. A mensagem revela quem a mandou; o destinatário só se revela se responder. Depois de entregar, o mensageiro volta.
 - **Troca direta** ("dou X, quero Y") só com reinos conhecidos: aliados, espionados ou identificados por estandarte ou bandeira. A proposta revela quem propõe. Se aceita, as duas cargas saem dos locais mais próximos e viajam visíveis no mapa, podendo ser roubadas.
 - **Reinos de IA comerciantes** compram abaixo e vendem acima do valor de referência, só com o próprio estoque e pelas mesmas regras dos jogadores. Mantêm o comércio vivo quando há poucos jogadores.
+  - Compram a 85% e vendem a 115%, com a prata pelo valor cheio; nunca dão mais que metade do que guardam de um recurso. Os outros reinos de IA pedem o dobro da margem.
 - **Pacto de não agressão**: qualquer lado propõe, com pagamento em qualquer direção (quem ameaça cobra para não atacar, ou quem teme paga para não ser atacado) ou sem pagamento.
   - Dura de **1 a 7 dias**; cada reino tem até **3 pactos ativos**.
   - Começa quando o pagamento chega; se a carga for roubada no caminho, não começa.

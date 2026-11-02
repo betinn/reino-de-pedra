@@ -50,6 +50,7 @@ public static class Regencia
         m.Cancelar(r.SessaoIAEventoId); r.SessaoIAEventoId = null;
         m.Sujar(r);
         Agendar(m, r);
+        Registros.Notificar(m, r.Id, "reino", "Fim da regência", "Você retomou o reino. Veja o que a regência fez e o que se perdeu.", "regencia");
         return true;
     }
 

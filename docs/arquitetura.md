@@ -110,6 +110,13 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `RP.exploracao`, `RP.blocoRisco`, `RP.opcaoCaminhoExp`, `RP.perigoConhecido` (cliente) | Dados de `GET /exploracao`, risco da fauna e opção de caminho com risco (caravana, extração, escolta), perigo conhecido de um hexágono. |
 | `RP.extrasGuarnicao`, `RP.extrasExercito`, `RP.extrasFolhaExercito`, `RP.grupoPadraoEnvio` (cliente) | Linhas nos cartões de guarnição e de exército da tela Tropas e na folha do exército (selo de veterania); tropas padrão do envio pelo mapa (o combate devolve as do último ataque). |
 | `RP.seloVeterania`, `RP.mapa.tiposObjeto.avistamento`, telas `#/exilio` e `#/interceptar?marcha=` (cliente) | Selo de veterania; avistamentos no mapa (se a exploração registrar o mesmo tipo antes, ela desenha); exílio e interceptação. |
+| `m.IA` (`Ativa`, `CriarReinos`), `MundoIA.Novo` (testes) | Liga a IA no processo (não é gravado): sessões e regência; meta de ocupação (`REINO_IA=0` desliga só esta). `MundoTeste` sobe com a IA desligada. |
+| `Ocupacao.Completar/CriarUm/Abdicar/LiberarVaga/VagaLonge` | Meta de ocupação (leva inicial, mínimo de ativos), reino de IA novo, abdicação (castelo em ruína, locais como terra livre) e vaga para jogador. |
+| `CriacaoReino.IdNovo` | Id do reino e dos locais iniciais (a IA sorteia de uma reserva para a ordem dos ids não revelar quem é IA). |
+| `Sessoes.Agendar/De`, `SessaoIAEvento`, `Conduta` | Próxima sessão de um reino de IA ou em regência e a conduta (habilidade × perfil, ou regência). |
+| `Governo.Sessao` e partes (`Construir`, `Recrutar`, `Defender`, `Explorar`, `Cacar`, `Extrair`, `Torres`, `Ocupar`, `Espionar`, `Atacar`) | Decisões da IA, sempre pelos serviços da API e com a informação de um jogador. Um sistema novo que a IA deva usar ganha uma parte aqui. |
+| `Regencia.Agendar/Comecar/AoEntrar/Acao/Perda`, `Reino.Regencia`, `Reino.EmRegencia` | Regência (último acesso + `P.regenciaH`), relatório do que a regência fez e perdeu; GET /reino leva `regencia: { ativaDesde, terminouEm, acoes, perdas }`. Sistemas que agem pelo reino em regência anotam com `Acao`/`Perda`. |
+| `Comerciante.Responder/Vale` | Respostas da IA a trocas e pactos (margens de `P.comercio.margemIA` e `P.ia.comercio`). |
 
 ## Regras de visibilidade (o servidor é quem esconde)
 
@@ -138,7 +145,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 - `cd servidor && dotnet test`. `MundoTeste` cria um mundo com relógio falso: `t.NovoReino()`, `t.AvancarMin(5)`, `t.DarRecursos(r)`.
 - Cada regra nova ganha teste. Fórmulas são conferidas contra o modelo.
 - `MundoTeste` e `ServidorTeste` sobem **sem fauna** (sorteios); passe `fauna: true` para ter a fauna do mundo. Para um sorteio de `m.Sorte` com resultado conhecido, troque `m.Sorte` por um `Rng` com semente escolhida (ver `ExploracaoTestes.Sorte`).
-- Teste de carga: 30 reinos (jogadores e IA) por dias de jogo simulados, medindo tempo de CPU por evento e memória.
+- Teste de carga (`CargaIATestes`, `Categoria=carga`): 30 reinos (jogadores e IA) por dias de jogo simulados, medindo tempo de CPU por evento e memória; números em [`desempenho.md`](desempenho.md).
 
 ## Segurança e repositório público
 
