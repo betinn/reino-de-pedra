@@ -36,10 +36,10 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: cerca de **60 × 48 hexágonos**; a travessia com tropa lenta leva pouco mais de 3 h (menos com rota ou cavalaria). Um reino pode não encontrar todos os outros na temporada.
 - Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido.
 - Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
-  - Planície: deslocamento rápido, comida.
+  - Planície: deslocamento rápido, comida, cavalos de raça e sal.
   - Floresta: lenta, madeira e caça.
-  - Colina: deslocamento normal, ferro e pedra.
-  - Montanha: lenta, ouro e pedras preciosas.
+  - Colina: deslocamento normal, ferro, pedra, aço de qualidade e prata.
+  - Montanha: lenta, ouro, prata, pedras preciosas e minério raro.
   - Pântano: muito lento, ervas raras.
   - Rio: exige ponte ou vau.
 
@@ -53,6 +53,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 | Batedor de elite | Rápida | Alta | Caro | Furtivo; espiona exércitos e reinos inimigos |
 
 - Exploradores podem ser capturados ou mortos.
+- Quem captura um explorador vê o **reino de origem** e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
 
 ### Fauna hostil
@@ -76,8 +77,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ## Recursos
 
 - **Básicos**: madeira, pedra, comida, ferro. Espalhados pelo mapa, base da economia.
-- **Valiosos**: ex. ouro, prata, sal, cavalos de raça, aço de qualidade. Raros, liberam unidades e tecnologias melhores.
-- **Lendários**: minérios raros, relíquias, ruínas antigas. Pouquíssimos no mapa, bônus únicos, alvo de disputa.
+- **Valiosos**: aço de qualidade, cavalos de raça, ouro, prata, sal, ervas raras e pedras preciosas. Raros, liberam unidades e tecnologias melhores.
+- **Lendários**: minério raro, relíquias, ruínas antigas. Pouquíssimos no mapa, bônus únicos, alvo de disputa.
 - **Couro e peles**: recursos do reino, obtidos pela caça.
 - Recursos valiosos e lendários ficam **ocultos** até serem descobertos.
 - Jazidas são **finitas** e se esgotam com o tempo.
@@ -91,11 +92,29 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição vão a pé e sem escolta.
 - Carroças ficam no castelo: saem, buscam a carga na origem e a levam. Escolta é opcional; caravana pouco protegida recebe aviso.
 
+### Valiosos e lendários
+
+| Recurso | Para que serve |
+|---|---|
+| Aço de qualidade | Armas e armaduras dos níveis 2 e 3; equipamento lendário |
+| Cavalos de raça | Cavaleiro de elite (1 por unidade) e carroção |
+| Ouro | Eras; armas e armaduras do nível 3 |
+| Prata | Moeda de troca padrão |
+| Sal | Salgadeira: o local de comida guarda 20 h de comida em vez de 10 h |
+| Ervas raras | Curar feridos |
+| Pedras preciosas | Troca de alto valor; brasões e estandartes (só cosméticos) |
+| Minério raro (lendário) | Equipamento lendário |
+
+- Cada recurso tem um **valor de referência** em recursos básicos (1 prata = 10 básicos). Orienta trocas, a IA comerciante e os limites do novato; não é preço fixo.
+- Quanto mais valioso, **mais devagar sai** na extração: o ritmo é medido em valor.
+- O mapa tem pouco mais ouro e aço que a demanda típica dos reinos: são **escassos de propósito**, motivo de disputa.
+
 ### Extração
 
 - **Nada é obrigatório.** Qualquer tropa pode coletar um recurso descoberto, inclusive uma única unidade sem preparo.
 - Posto de extração, mais tropas, unidades adequadas e rotas são **opcionais** e aumentam velocidade e rendimento da extração.
 - Unidades adequadas são as de **maior capacidade de carga**: rendem mais por viagem.
+- Até **50 tropas por jazida**; juntar tropas demais rende cada vez menos por tropa.
 
 ### Relíquias lendárias
 
@@ -133,7 +152,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Tropas ocupam o teto**: soldados também moram no reino. População civil + tropas ≤ teto.
 - Cada nível de local precisa de **trabalhadores** (10 por nível). Sem população civil suficiente, o local produz menos. Cada soldado é um trabalhador a menos.
 - **Crescimento** por tempo, mais rápido com excedente de comida.
-- **Recrutar consome população**; tropas mortas não retornam.
+- **Recrutar consome população**; tropas mortas não retornam. Feridos curados com ervas voltam (ver Combate).
 - A população sustenta a produção de recursos e atua como **milícia** na defesa.
 - Objetivo: criar a decisão central entre **tropas e economia**.
 - Moral, profissões e migração ficam para depois, apenas se o balanceamento pedir.
@@ -142,10 +161,17 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Tropas e evolução
 
-- Tipos de unidade: milícia, lanceiro, arqueiro, cavalaria e máquinas de cerco (aríete, trebuchet).
-- Relação de vantagens entre tipos (ex.: lança vence cavalaria, cavalaria vence arqueiro, arqueiro vence infantaria lenta).
-- **Evolução de armas e tecnologias** por eras (ferro, aço, cerco avançado), dependente de recursos valiosos.
-- Exércitos sobreviventes ganham **veterania**.
+- Tipos de unidade: milícia, lanceiro, arqueiro, cavalaria, cavaleiro de elite e máquinas de cerco (aríete, trebuchet).
+- Vantagens por **família**: lança vence cavalaria (inclusive a de elite), cavalaria vence arqueiros, arqueiro vence infantaria.
+- **Eras**: Ferro (inicial), Aço e Cerco Avançado. Cada era seguinte custa ouro e libera:
+  - Era do Ferro: armas e armaduras do nível 1.
+  - Era do Aço: armas e armaduras dos níveis 2 e 3, cavaleiro de elite e equipamento lendário.
+  - Era do Cerco Avançado: trebuchet e portões dos níveis 4 e 5.
+- **Armas e armaduras** na ferraria, por família (infantaria, arqueiros, cavalaria): armas dão ataque, armaduras dão defesa, **+8% por nível, até o nível 3**. O nível 1 usa ferro e couro; os níveis 2 e 3 pedem aço de qualidade, e o 3 também ouro. A ferraria tem fila própria de até 10 itens.
+- **Cavaleiro de elite**: mais forte por pessoa que a cavalaria e mais caro por força; cada um usa 1 cavalo de raça.
+- **Veterania**: o exército ganha 1 marca por vitória com perdas abaixo de 50% contra inimigo com pelo menos 30% da sua força. Com 2, 5 e 9 marcas: +5%, +10% e +15% de ataque e defesa. Recrutas novos diluem as marcas, cada derrota tira 1, e combate com fauna não conta.
+- **Equipamento lendário**: forjado com minério raro, dá **+25% de ataque ou de defesa** a um exército de até 50 tropas (num exército maior, o bônus se dilui). Cada reino forja um. Se o exército for derrotado, o equipamento fica no campo e o vencedor o leva.
+- **Teto de bônus**: armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo **+50%**. Torres e portões ficam fora do teto.
 - Exércitos em marcha são visíveis no mapa; o tempo de viagem depende de distância, terreno, rotas e da unidade mais lenta.
 
 ---
@@ -189,9 +215,14 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Recuar** salva tropas e população, mas o local é saqueado.
 - Destruir um reino inteiro deve ser **muito difícil e caro**, mesmo para um veterano contra um iniciante.
 
+### Feridos
+
+- **30% das baixas** de quem vence, ou de quem recua pela tática, voltam como feridos. Quem perde sem recuar não tem feridos.
+- Cada ferido é curado no castelo com **5 ervas raras**. Sem ervas em **24 h**, morre.
+
 ### Queda do castelo
 
-- Se o reino ainda possui outros locais: o castelo vira ruína e a sede se transfere para outro local, com perdas pesadas, sem extinção.
+- Se o reino ainda possui outros locais: o castelo vira ruína e a sede vai para o **local de maior nível**, que vira castelo com **metade do nível** do antigo. O reino perde **metade dos recursos guardados**, **30% da população civil** e as relíquias do castelo, que vão com o atacante, sem extinção. Locais acima do novo nível do castelo ficam como estão, mas só sobem quando o castelo passar deles.
 - Se perder tudo: o jogador recomeça **em exílio** em um novo ponto do mapa, com um kit de recomeço, mantendo linhagem e relíquias, e recebe **escudo temporário** contra ataques.
 - O ponto do exílio é **aleatório e longe de quem derrubou** o reino; escolher a região depende da linhagem.
 
@@ -202,6 +233,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Bandeiras** podem ser colocadas em qualquer lugar do mapa, como sinal para outros jogadores (reivindicação, ameaça, aliança). Têm valor social, não mecânico.
 - Bandeiras **mostram quem as colocou**.
 - Cada jogador tem **até 20 bandeiras ativas**, com recado de até 60 caracteres. **Outros jogadores podem derrubá-las** com tropas no local.
+- O dono é avisado quando a bandeira cai, sem saber quem derrubou, a não ser que as tropas levassem estandarte.
 - Explorar um local de outro reino **não revela o dono**; espionar o local com batedores de elite revela.
 - Espiões são **descobertos se alguma tropa os vir**. Ficam no mapa como "visto há X horas" por apenas **10 horas**.
 - Para não poluir o mapa, objetos vistos ("visto há X") são **limpos periodicamente**. Vale para espiões e exércitos vistos; o nível de perigo da fauna segue a regra da névoa.
@@ -244,6 +276,24 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Alianças têm **limite de membros**, por balanceamento: alianças muito grandes geram problemas. Valor inicial: **5 reinos** por aliança.
 - Aliados se reconhecem (nome e brasão) e veem as marchas uns dos outros. Locais de aliados não são alvo de ataque.
 - Um pedido de recursos é aceito ou recusado pelo aliado. A ajuda sai dos locais mais próximos dele e viaja visível no mapa, podendo ser roubada.
+- **Cargos**: líder (convida, expulsa e promove), até 2 conselheiros (convidam e aceitam pedidos de entrada) e membros.
+- **Saída**: qualquer membro sai quando quiser, e o líder pode expulsar. Ao sair ou ser expulso, vale uma **trégua de 24 h** entre o reino e a aliança, garantida pelo jogo, e o reino só entra em outra aliança depois de 24 h. A visão das marchas acaba na hora.
+- **Traição**: não há ataque surpresa entre membros. Quem quer atacar um aliado precisa sair e esperar a trégua.
+- Se o líder entra em regência, a liderança passa ao conselheiro mais antigo, ou ao membro mais antigo.
+
+---
+
+## Comércio e diplomacia
+
+- **Sem mercado global**: um mercado único quebraria as regras de recurso no local e de roubo no caminho.
+- **Troca direta** ("dou X, quero Y") só com reinos conhecidos: aliados, espionados ou identificados por estandarte ou bandeira. A proposta revela quem propõe. Se aceita, as duas cargas saem dos locais mais próximos e viajam visíveis no mapa, podendo ser roubadas.
+- **Reinos de IA comerciantes** compram abaixo e vendem acima do valor de referência, só com o próprio estoque e pelas mesmas regras dos jogadores. Mantêm o comércio vivo quando há poucos jogadores.
+- **Pacto de não agressão**: qualquer lado propõe, com pagamento em qualquer direção (quem ameaça cobra para não atacar, ou quem teme paga para não ser atacado) ou sem pagamento.
+  - Dura de **1 a 7 dias**; cada reino tem até **3 pactos ativos**.
+  - Começa quando o pagamento chega; se a carga for roubada no caminho, não começa.
+  - **O jogo garante o pacto**: enquanto durar, nenhum dos dois consegue atacar, saquear ou interceptar o outro. Tropas enviadas a um local do outro descobrem o pacto ao chegar e voltam sem combate.
+- **Resgate de explorador**: ver Exploradores.
+- **Limites para o novato**: enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajuda de aliados, pagamentos) tem limite por dia, para que contas secundárias não alimentem outra. Ninguém pode cobrar pacto de um reino sob escudo.
 
 ---
 
@@ -270,10 +320,14 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Objetivo: evitar domínio permanente dos primeiros jogadores sem desanimar veteranos.
 - **Legado** que atravessa temporadas:
   - **Relíquias da temporada**: itens únicos e limitados, ganhos por conquistas, com bônus pequeno e com teto (o teto vale para a soma das relíquias).
+    - Ganhas no fim da temporada por: ficar entre os 3 primeiros de uma categoria do ranking (menos perdas), terminar com uma relíquia lendária em seu poder, ou ter vencido um cerco a um castelo.
+    - Cada uma dá **+1% a +2%** (produção, ataque, defesa ou crescimento da população). Até **3 equipadas** por temporada, com **teto somado de 5%**, que também conta no teto de bônus de combate.
   - **Títulos, brasões e skins** permanentes, mostrando o histórico do jogador.
-  - **Linhagem**: progressão de conta que desbloqueia opções (ex.: escolha de região inicial), não poder bruto.
+  - **Linhagem**: progressão de conta que desbloqueia opções, não poder bruto.
+    - Níveis de 1 a 10. Sobe 1 nível por temporada jogada (ativo em pelo menos 30 dos 70 dias) e 1 por relíquia da temporada ganha.
+    - Desbloqueios: nível 2, cores e formas extras de brasão; nível 3, títulos; nível 5, escolher a região inicial; nível 7, escolher a região do exílio; nível 10, brasão da casa com moldura de linhagem.
 - Novos jogadores devem conseguir competir; veteranos carregam identidade e vantagem pequena.
-- **Ranking da temporada** por reino: total de baixas causadas, perdas, quantidade de tropas e famílias. Não mede território (continua sem placar de domínio).
+- **Ranking da temporada** por reino: total de baixas causadas, perdas, quantidade de tropas e famílias (população civil). Não mede território (continua sem placar de domínio).
 
 ---
 
@@ -289,7 +343,5 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Em aberto
 
-- Ajuste fino do balanceamento com testes. Valores atuais: **balanceamento v1 aprovado** em `balanceamento/README.md`, com modelo e simulação em `balanceamento/modelo.js`.
-- Lista final de recursos valiosos e lendários.
-- Regras precisas de legado.
-- Detalhes de diplomacia e regras finas de alianças (cargos, saída e traição).
+- Ajuste fino do balanceamento com testes. Valores atuais: **balanceamento v1 aprovado** e **v2 em validação** (valiosos, comércio, ferraria, eras, veterania, feridos, lendário e queda do castelo) em `balanceamento/README.md`, com modelo e simulação em `balanceamento/modelo.js`.
+- Validar as regras propostas de eras, veterania, alianças (cargos, saída e trégua), legado (relíquias da temporada e linhagem) e queda do castelo.
