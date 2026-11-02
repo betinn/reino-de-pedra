@@ -41,12 +41,13 @@ public static class Nomes
             if (CriacaoReino.MotivoNomeInvalido(m, n) == null) return n;
         }
         // muito improvável: todas as combinações tentadas já existem
-        for (var k = 2; ; k++)
+        for (var k = 0; k < 10000; k++)
         {
             var n = rng.Escolher(Lugares) + " " + rng.Escolher(Complementos);
-            var alt = n.Length <= 20 ? n + " " + Romano(k) : rng.Escolher(Raizes) + rng.Escolher(Finais) + " " + Romano(k);
+            var alt = n.Length <= 20 ? n + " " + Romano(2 + k % 9) : rng.Escolher(Raizes) + rng.Escolher(Finais) + " " + Romano(2 + k % 9);
             if (CriacaoReino.MotivoNomeInvalido(m, alt) == null) return alt;
         }
+        throw new InvalidOperationException("sem nome livre para um reino de IA");
     }
 
     private static string Qualificar(string lugar, string q)

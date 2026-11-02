@@ -161,7 +161,6 @@ public static class Ocupacao
             }
             else { l.Moradias = 0; l.Marcas = 0; l.MarcasTropas = 0; }
             m.MudarDono(l, 0);
-            Fotos.Tirar(m, r.Id, [l.Hex]);
         }
         foreach (var t in Defesas.DoReino(m, r.Id).ToList()) m.Torres.Remover(t);
         r.Ativo = false;
