@@ -260,7 +260,7 @@ public static class Efeitos
         Local? alvo = null; Rota? rota = null;
         foreach (var l in m.LocaisDe(r.Id).Where(x => !x.Ruina && x.Id != de.Id))
         {
-            var rr = Caminhos.Calcular(m, de.Hex, l.Hex, ex.Vel, new OpcoesCaminho { Forca = GT.ForcaFauna(m, grupo) });
+            var rr = Caminhos.Calcular(m, de.Hex, l.Hex, ex.Vel, new OpcoesCaminho { Forca = GT.ForcaFauna(m, grupo), ReinoId = r.Id });
             if (rr.Hexes[^1] != l.Hex) continue;
             if (rota == null || rr.TotalMin < rota.TotalMin) { alvo = l; rota = rr; }
         }

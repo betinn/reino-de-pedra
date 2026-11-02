@@ -61,7 +61,7 @@ public static class VisaoCombate
         object Op(bool seguro)
         {
             if (grupo.Count == 0) return new { ok = false };
-            var rota = Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca });
+            var rota = Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca, ReinoId = r.Id });
             var ok = rota.Hexes[^1] == para;
             return new { ok, min = ok ? Math.Round(rota.TotalMin, 1) : (double?)null, hexes = ok ? rota.Hexes.Count : 0, caminho = ok ? rota.Hexes : null };
         }
@@ -159,7 +159,7 @@ public static class VisaoCombate
                 var g = papel == "ataque" ? x.Guarnicao.Where(kv => m.B.U.TryGetValue(kv.Key, out var u) && u.So != "defesa").ToDictionary(kv => kv.Key, kv => kv.Value) : GT.Limpo(x.Guarnicao);
                 if (GT.Total(g) == 0) continue;
                 var vel = GT.Velocidade(m, g);
-                var rota = Caminhos.Calcular(m, x.Hex, l.Hex, vel, new OpcoesCaminho { Forca = GT.ForcaFauna(m, g) });
+                var rota = Caminhos.Calcular(m, x.Hex, l.Hex, vel, new OpcoesCaminho { Forca = GT.ForcaFauna(m, g), ReinoId = r.Id });
                 if (rota.Hexes[^1] != l.Hex) continue;
                 var chega = agora + (long)Math.Round(rota.TotalMin * T.Min);
                 reforcos.Add(new { localId = x.Id, x.Nome, tropas = GT.Limpo(x.Guarnicao), vel, min = Math.Round(rota.TotalMin, 1), chega, aTempo = chega < b.FimPrevisto });

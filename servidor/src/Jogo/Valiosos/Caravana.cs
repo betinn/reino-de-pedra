@@ -209,7 +209,7 @@ public static class Caravanas
     /// <summary>Escolta abaixo da força mínima (o jogador é avisado, não impedido).</summary>
     public static bool PoucoProtegida(Mundo m, IReadOnlyDictionary<string, int> tropas) => GT.ForcaFauna(m, tropas) < m.P.Caravana.EscoltaMin;
 
-    internal static OpcoesCaminho Opcoes(Mundo m, Caravana c) => new() { Seguro = c.Seguro, Forca = GT.ForcaFauna(m, c.Tropas) };
+    internal static OpcoesCaminho Opcoes(Mundo m, Caravana c) => new() { Seguro = c.Seguro, Forca = GT.ForcaFauna(m, c.Tropas), ReinoId = c.ReinoId };
     internal static Rota Rota(Mundo m, Caravana c, int de, int para)
     {
         var rota = Caminhos.Calcular(m, de, para, c.Vel, Opcoes(m, c));
@@ -256,7 +256,7 @@ public static class Caravanas
         var cap = Capacidade(m, veic, tropas);
         if (carga.Total > cap + 1e-6) Falha($"A carga não cabe: leva até {Math.Floor(cap)}.");
         var vel = Velocidade(m, veic, tropas);
-        var op = new OpcoesCaminho { Seguro = p.Seguro, Forca = GT.ForcaFauna(m, tropas) };
+        var op = new OpcoesCaminho { Seguro = p.Seguro, Forca = GT.ForcaFauna(m, tropas), ReinoId = r.Id };
         Rota? buscar = null, levar = null;
         if (baseL != null && o != null && baseL.Hex != o.Hex)
         {
