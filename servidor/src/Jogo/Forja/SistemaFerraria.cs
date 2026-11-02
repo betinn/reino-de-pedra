@@ -262,6 +262,7 @@ public static class SistemaFerraria
         CheckpointReinoEvento.AoCheckpoint.Add((mm, r) => Lendarios.Conferir(mm));
         // a ferraria aparece quando o reino tem a primeira
         ObraFundar.AoFundar += (mm, r, l) => { if (l.Tipo == TipoLocal.Ferraria) Revelar(mm, r); };
+        Sistemas.Gatilhos.Add(ConferirGatilho);
     });
 
     /// <summary>Apresenta a ferraria ao reino (gatilho: ter a primeira ferraria).</summary>

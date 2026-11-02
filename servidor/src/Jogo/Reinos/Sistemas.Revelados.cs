@@ -44,7 +44,17 @@ namespace ReinoDePedra.Jogo.Nucleo
             return true;
         }
 
-        /// <summary>Chave → já apareceu para o reino (só as chaves registradas).</summary>
-        public static Dictionary<string, bool> Estado(Reino r) => Revelaveis.ToDictionary(k => k, r.SistemasVistos.Contains);
+        /// <summary>
+        /// Gatilhos conferidos antes de mostrar o estado ao cliente, para o que pode mudar por fora dos eventos do sistema
+        /// (ex.: uma ferraria que veio por ocupação). Registre dentro de Sistemas.UmaVez.
+        /// </summary>
+        public static List<Action<Mundo, Reino>> Gatilhos { get; } = new();
+
+        /// <summary>Chave → já apareceu para o reino (só as chaves registradas), depois de conferir os <see cref="Gatilhos"/>.</summary>
+        public static Dictionary<string, bool> Estado(Mundo m, Reino r)
+        {
+            foreach (var g in Gatilhos) g(m, r);
+            return Revelaveis.ToDictionary(k => k, r.SistemasVistos.Contains);
+        }
     }
 }

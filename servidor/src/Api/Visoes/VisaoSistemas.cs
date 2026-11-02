@@ -9,6 +9,6 @@ public static class VisaoSistemas
 {
     public static void AoIniciar(Mundo m) => Sistemas.UmaVez("api-sistemas", () =>
     {
-        VisaoReino.Extras.Add((mm, r, d) => d["sistemas"] = Sistemas.Estado(r));
+        VisaoReino.Extras.Add((mm, r, d) => d["sistemas"] = Sistemas.Estado(mm, r));
     });
 }

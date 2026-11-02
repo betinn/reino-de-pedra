@@ -73,7 +73,6 @@ public static class ExtrasFerraria
     {
         VisaoReino.Extras.Add((mm, r, d) =>
         {
-            SistemaFerraria.ConferirGatilho(mm, r);
             d["ferraria"] = new
             {
                 era = Ferrarias.EraAtual(mm, r),
