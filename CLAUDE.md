@@ -89,6 +89,15 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Posto de extração, mais tropas, unidades adequadas e rotas são **opcionais** e aumentam velocidade e rendimento da extração.
 - Unidades adequadas são as de **maior capacidade de carga**: rendem mais por viagem.
 
+### Relíquias lendárias
+
+- Existe **uma relíquia para cada reino** do mundo (ex.: 10 reinos, 10 relíquias). Um reino pode ter **mais de uma**.
+- São obtidas por **escavação nas ruínas antigas**: lenta e finita.
+- O jogador **guarda a relíquia num local** do reino, e ela melhora o desempenho daquele local.
+- Tipos: **ataque**, **produção** e **resistência** (defesa).
+- Relíquias podem ser **roubadas** e são **descobertas por espionagem**.
+- Objetivo: tornar o PvP mais desejável, com alvos que dão vantagem real além de recursos.
+
 ### Tempos
 
 - Recursos e construções básicas: **tempos baixos**.
