@@ -250,4 +250,30 @@ public class VisibilidadeTestes
         await s.Motor.Executar(m => Conhecimento.Conhecer(m, m.Reinos[idB], m.Reinos[idA], "teste"));
         Assert.Equal(System.Net.HttpStatusCode.OK, (await b.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);
     }
+
+    // ---------------------------------------------------------------- nomes da IA sem padrão fixo (achado 17)
+
+    [Fact]
+    public void Nomes_da_IA_variam_de_forma_sem_padrao_fixo()
+    {
+        var t = new MundoTeste();
+        var rng = new Rng(42);
+        var nomes = new List<string>();
+        for (var i = 0; i < 400; i++)
+        {
+            var n = ReinoDePedra.Jogo.IA.Nomes.Novo(t.M, rng);
+            Assert.Null(CriacaoReino.MotivoNomeInvalido(t.M, n));
+            nomes.Add(n);
+        }
+        var distintos = nomes.Distinct(StringComparer.OrdinalIgnoreCase).Count();
+        Assert.True(distintos >= nomes.Count * 0.9, "distintos: " + distintos);   // espaço grande: pouco se repete (os ativos nunca)
+        // formas variadas: uma palavra, duas, três ou mais
+        var palavras = nomes.GroupBy(n => Math.Min(3, n.Split(' ').Length)).ToDictionary(g => g.Key, g => g.Count() / (double)nomes.Count);
+        Assert.All(new[] { 1, 2, 3 }, k => Assert.True(palavras.GetValueOrDefault(k) >= 0.15, $"{k} palavra(s): {palavras.GetValueOrDefault(k):P0}"));
+        // nenhum punhado de palavras iniciais domina (antes, 16 "lugares" abriam 60% dos nomes)
+        var primeiras = nomes.GroupBy(n => n.Split(' ')[0].ToLowerInvariant()).OrderByDescending(g => g.Count()).Take(16).Sum(g => g.Count());
+        Assert.True(primeiras <= nomes.Count * 0.35, $"as 16 primeiras palavras mais comuns abrem {primeiras} de {nomes.Count}");
+        // nem todo nome é capitalizado nem acentuado como num gerador
+        Assert.Contains(nomes, n => char.IsLower(n[0]));
+    }
 }
