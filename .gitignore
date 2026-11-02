@@ -15,3 +15,4 @@ dados/
 !.env.exemplo
 publicar/
 TestResults/
+.revisao/
