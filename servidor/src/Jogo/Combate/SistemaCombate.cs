@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
@@ -29,6 +30,11 @@ public static class SistemaCombate
         Marcha.AoPartir.Add(Avistamentos.AoPartir);
         Marcha.AoPartir.Add(Batalhas.AoPartir);
         Obras.HexOcupado.Add((mm, hex) => Defesas.NoHex(mm, hex) != null);
+        Obras.HexOcupadoPara.Add((mm, r, hex) => Defesas.NoHex(mm, hex) is { } t && t.ReinoId == r.Id);
+        // torres de outros reinos ficam na foto da névoa como foram vistas (nível e alcance daquele momento)
+        Fotos.Fotografos.Add((mm, reinoId, hex) => Defesas.NoHex(mm, hex) is { } t && t.ReinoId != reinoId
+            ? [new JsonObject { ["tipo"] = "torre", ["id"] = t.Id, ["nivel"] = t.Nivel, ["alcance"] = Defesas.Alcance(mm, t), ["dono"] = "desconhecido", ["aoVivo"] = false }]
+            : []);
         // os arqueiros no alto enxergam o alcance da torre
         Nevoas.FontesDeVisao.Add((mm, reinoId) => Defesas.DoReino(mm, reinoId).SelectMany(t => mm.G.Area(t.Hex, Defesas.Alcance(mm, t))).ToList());
     });

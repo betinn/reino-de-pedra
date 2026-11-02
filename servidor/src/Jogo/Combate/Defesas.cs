@@ -79,7 +79,7 @@ namespace ReinoDePedra.Jogo.Combate
             if (!m.G.Valido(hex)) return "Hexágono fora do mapa.";
             if (!Nevoas.Explorado(m, r.Id, hex)) return "Explore a área antes de construir.";
             if (m.Mapa.Rio[hex]) return "Não dá para erguer a torre sobre o rio.";
-            if (!Obras.HexLivre(m, hex)) return "O hexágono não está livre.";
+            if (!Obras.HexLivrePara(m, r, hex)) return "O hexágono não está livre.";
             if (r.Fila(Obras.Fila).Itens.Any(i => i.Tipo is ObraTorre.Id or ObraFundar.Id && i.Hex == hex)) return "Já há uma obra na fila para este hexágono.";
             var alcance1 = m.F.AlcanceTorre(1);
             if (!m.LocaisDe(r.Id).Any(l => !l.Ruina && m.G.Distancia(l.Hex, hex) <= alcance1))
@@ -187,7 +187,7 @@ namespace ReinoDePedra.Jogo.Combate
         public string Tipo => Id;
         public void Concluir(Mundo m, Reino r, ItemFila item)
         {
-            if (!Obras.HexLivre(m, item.Hex))
+            if (!Obras.HexLivreParaObra(m, r, item.Hex))
             {
                 // alguém ocupou o hexágono antes: o material volta ao castelo
                 var c = m.Locais.Obter(r.CasteloId);

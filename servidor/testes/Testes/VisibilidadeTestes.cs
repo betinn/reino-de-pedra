@@ -15,6 +15,15 @@ public class VisibilidadeTestes
 {
     public VisibilidadeTestes() => AjustesTeste.Garantir();
 
+    /// <summary>Liga também os sistemas da API (visões do mapa), como o servidor faz na subida.</summary>
+    private static MundoTeste ComApi()
+    {
+        var t = new MundoTeste();
+        foreach (var ty in typeof(Servidor).Assembly.GetTypes().Where(x => x.IsDefined(typeof(SistemaAttribute), false)))
+            ty.GetMethod("AoIniciar", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.Invoke(null, [t.M]);
+        return t;
+    }
+
     private static JsonElement J(object o) => JsonSerializer.SerializeToElement(o, Json.Web);
 
     private static int HexLonge(MundoTeste t, int de, int dist, int pular = 0) =>
@@ -140,5 +149,56 @@ public class VisibilidadeTestes
         Assert.Equal(404, e.Status);
         var meu = t.M.LocaisDe(a.Id).First(l => l.Id != a.CasteloId);
         Assert.Equal(1, J(VisaoValiosos.PreviaMover(t.M, a, rel.Id, ca.Id, tropas, meu.Id)).GetProperty("depois").GetInt32());
+    }
+
+    // ---------------------------------------------------------------- hexágono livre pelo que o reino sabe (achado 10)
+
+    [Fact]
+    public void Motivo_de_torre_e_de_fundacao_nao_revela_jazida_oculta_nem_local_fora_da_vista()
+    {
+        var t = new MundoTeste();
+        var a = t.NovoReino(); var b = t.NovoReino();
+        var ca = t.M.Locais[a.CasteloId];
+        var vis = Nevoas.VisiveisAgora(t.M, a.Id);
+        var h = t.M.G.Area(ca.Hex, 2).First(x => vis.Contains(x) && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
+        var j = t.M.Jazidas.Adicionar(new ReinoDePedra.Jogo.Mapa.Jazida { Hex = h, Recurso = "prata", Inicial = 100, Restante = 100 });
+        Assert.Null(ReinoDePedra.Jogo.Combate.Defesas.MotivoTorre(t.M, a, h));
+        // a torre sobe sobre a jazida que ninguém do reino descobriu (ela segue oculta embaixo)
+        new ReinoDePedra.Jogo.Combate.ObraTorre().Concluir(t.M, a, new ItemFila { Hex = h });
+        Assert.NotNull(ReinoDePedra.Jogo.Combate.Defesas.NoHex(t.M, h));
+        // descoberta, a jazida ocupa o hexágono para quem a conhece
+        var h2 = t.M.G.Area(ca.Hex, 2).First(x => vis.Contains(x) && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
+        t.M.Jazidas.Adicionar(new ReinoDePedra.Jogo.Mapa.Jazida { Hex = h2, Recurso = "prata", Inicial = 100, Restante = 100, DescobertaPor = [a.Id] });
+        Assert.Equal("O hexágono não está livre.", ReinoDePedra.Jogo.Combate.Defesas.MotivoTorre(t.M, a, h2));
+
+        // explorado e fora da vista: um local novo de outro reino não aparece no motivo
+        var longe = HexLonge(t, ca.Hex, 8);
+        Nevoas.RevelarArea(t.M, a.Id, longe, 0);
+        Assert.DoesNotContain(longe, Nevoas.VisiveisAgora(t.M, a.Id));
+        var tipo = Obras.Fundaveis.First(kv => kv.Value.terrenos.Contains(t.M.Mapa.Terrenos[longe])).Key;
+        var antes = Obras.MotivoNaoFundar(t.M, a, tipo, longe);
+        t.M.AdicionarLocal(new Local { ReinoId = b.Id, Tipo = TipoLocal.Vila, Produz = "comida", Nivel = 1, Hex = longe, Nome = "Vila" });
+        Assert.Equal(antes, Obras.MotivoNaoFundar(t.M, a, tipo, longe));
+    }
+
+    // ---------------------------------------------------------------- torres alheias no último estado conhecido (achado 18)
+
+    [Fact]
+    public void Torre_alheia_fora_da_vista_aparece_como_foi_vista()
+    {
+        var t = ComApi();
+        var a = t.NovoReino(); var b = t.NovoReino();
+        var cb = t.M.Locais[b.CasteloId];
+        var th = t.M.G.Area(cb.Hex, 1).First(x => x != cb.Hex && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
+        var torre = t.M.Torres.Adicionar(new ReinoDePedra.Jogo.Combate.Torre { ReinoId = b.Id, Hex = th, Nivel = 1, Estrutura = ReinoDePedra.Jogo.Combate.Defesas.EstruturaCheia(t.M, 1) });
+        Nevoas.RevelarArea(t.M, a.Id, th, 0);   // viu a torre no nível 1
+        Assert.DoesNotContain(th, Nevoas.VisiveisAgora(t.M, a.Id));
+        torre.Nivel = 3;
+        JsonElement TorreNoMapa() => J(VisaoMapa.Montar(t.M, a)).GetProperty("objetos").EnumerateArray()
+            .Single(o => o.GetProperty("tipo").GetString() == "torre" && o.GetProperty("hex").GetInt32() == th);
+        Assert.Equal(1, TorreNoMapa().GetProperty("nivel").GetInt32());
+        // derrubada fora da vista: continua no mapa até ser vista de novo
+        t.M.Torres.Remover(torre);
+        Assert.Equal(1, TorreNoMapa().GetProperty("nivel").GetInt32());
     }
 }

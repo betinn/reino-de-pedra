@@ -26,11 +26,25 @@ public static class VisaoCombate
         return new JsonObject { ["tipo"] = p.Tipo, ["objetivos"] = arr, ["tatica"] = p.Tatica, ["completar"] = p.Completar == true, ["estandarte"] = p.Estandarte == true };
     }
 
-    /// <summary>Torres que cobrem o local e que o reino conhece (viu ao vivo ou já tinha visto).</summary>
-    public static List<Torre> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null)
+    public sealed record TorreConhecida(int Hex, int Nivel, int Alcance);
+
+    /// <summary>
+    /// Torres que cobrem o local pelo que o reino sabe: as próprias e as à vista como estão agora; fora da vista, as da foto
+    /// da névoa como foram vistas (nível e alcance daquele momento).
+    /// </summary>
+    public static List<TorreConhecida> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null)
     {
         vis ??= Nevoas.VisiveisAgora(m, r.Id);
-        return Defesas.NoAlcance(m, l).Where(t => t.ReinoId == r.Id || t.ConhecidaPor.Contains(r.Id) || vis.Contains(t.Hex)).ToList();
+        var lista = Defesas.NoAlcance(m, l).Where(t => t.ReinoId == r.Id || vis.Contains(t.Hex))
+            .Select(t => new TorreConhecida(t.Hex, t.Nivel, Defesas.Alcance(m, t))).ToList();
+        foreach (var (h, objs) in Fotos.De(m, r.Id).Objetos)
+        {
+            if (vis.Contains(h)) continue;
+            foreach (var o in objs)
+                if (o["tipo"]?.GetValue<string>() == "torre" && o["alcance"]?.GetValue<int>() is int alc && m.G.Distancia(h, l.Hex) <= alc)
+                    lista.Add(new TorreConhecida(h, o["nivel"]?.GetValue<int>() ?? 1, alc));
+        }
+        return lista;
     }
 
     /// <summary>Prévia do envio: chegada, carga, objetivos normalizados, saque decrescente e avisos, sem enviar nada.</summary>
@@ -96,7 +110,7 @@ public static class VisaoCombate
                 local = foto != null ? (string?)foto["local"] : alvo.Tipo.Chave(), produz = foto != null ? null : alvo.Produz,
                 dono = foto != null ? (string?)foto["dono"] : Ataques.SemDono(m, alvo) ? "livre" : "desconhecido",
                 castelo = foto != null ? (string?)foto["local"] == TipoLocal.Castelo.Chave() && foto["ruina"]?.GetValue<bool>() != true : alvo.Tipo == TipoLocal.Castelo && !alvo.Ruina,
-                torres = torres.Select(t => new { t.Hex, t.Nivel, alcance = Defesas.Alcance(m, t) }),
+                torres = torres.Select(t => new { t.Hex, t.Nivel, t.Alcance }),
             },
             tipos = Ataques.TiposPara(m, alvo), bloqueio,
             plano = new

@@ -149,7 +149,8 @@ public sealed class ModuloReino : IModuloApi
         conta.MapGet("/fundar/motivo", async (string tipo, int hex, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => new { motivo = Obras.MotivoNaoFundar(m, Sessao.ReinoDa(m, id), tipo, hex) }), Json.Web);
+            // a foto da névoa em dia com o que o reino vê agora (o motivo usa só o que ele sabe)
+            return Results.Json(await motor.Executar(m => { var r = Sessao.ReinoDa(m, id); ReinoDePedra.Jogo.Exploracao.Nevoas.VisiveisAgora(m, r.Id); return new { motivo = Obras.MotivoNaoFundar(m, r, tipo, hex) }; }), Json.Web);
         });
     }
 }

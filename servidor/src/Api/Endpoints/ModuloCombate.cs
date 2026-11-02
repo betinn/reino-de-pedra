@@ -87,7 +87,7 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapGet("/defesas/torre/motivo", async (int hex, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => new { motivo = Defesas.MotivoTorre(m, Sessao.ReinoDa(m, id), hex) }), Json.Web);
+            return Results.Json(await motor.Executar(m => { var r = Sessao.ReinoDa(m, id); Nevoas.VisiveisAgora(m, r.Id); return new { motivo = Defesas.MotivoTorre(m, r, hex) }; }), Json.Web);
         });
 
         conta.MapPost("/defesas/torres", async (PedidoTorre p, HttpContext ctx, Motor motor) =>
@@ -146,13 +146,11 @@ public static class ExtrasCombate
         VisaoMapa.Extras.Add((mm, r, vis) =>
         {
             var lista = new List<object>();
-            var nevoa = Nevoas.De(mm, r.Id);
             foreach (var t in mm.Torres)
             {
                 var meu = t.ReinoId == r.Id;
                 var visivel = vis.Contains(t.Hex);
-                if (!meu && visivel && t.ConhecidaPor.Add(r.Id)) mm.Sujar(t);
-                if (!meu && !visivel && !(t.ConhecidaPor.Contains(r.Id) && nevoa.MinutoVisto(t.Hex) > 0)) continue;
+                if (!meu && !visivel) continue;   // fora da vista, a torre alheia vem da foto da névoa (como foi vista)
                 lista.Add(new
                 {
                     tipo = "torre", id = t.Id, hex = t.Hex, nivel = t.Nivel, alcance = Defesas.Alcance(mm, t),

@@ -84,7 +84,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Valiosos**: aço de qualidade, cavalos de raça, ouro, prata, sal, ervas raras e pedras preciosas. Raros, liberam unidades e tecnologias melhores.
 - **Lendários**: minério raro, relíquias, ruínas antigas. Pouquíssimos no mapa, bônus únicos, alvo de disputa.
 - **Couro e peles**: recursos do reino, obtidos pela caça.
-- Recursos valiosos e lendários ficam **ocultos** até serem descobertos.
+- Recursos valiosos e lendários ficam **ocultos** até serem descobertos. Jazida oculta não impede fundar nem erguer torre no hexágono; ela segue oculta embaixo.
 - Jazidas são **finitas** e se esgotam com o tempo.
 - **O reino base já gera recursos básicos** suficientes para recrutar tropas básicas, sem depender de exploração.
 - Recursos ficam **no local** onde estão. Para usar (construir, recrutar), é preciso **transportá-los até o local** onde são necessários; não dá para usar recurso "de qualquer lugar". Vale a mesma lógica das relíquias: o transporte é feito por tropas e a carga pode ser **roubada no meio do caminho**.
