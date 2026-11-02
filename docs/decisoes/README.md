@@ -16,4 +16,4 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0010](0010-logistica.md) | Requisição: reserva na hora, carregadores por origem |
 | [0011](0011-icone-do-reino.md) | Ícone: brasão sorteado/editável ou imagem própria pequena |
 | [0012](0012-tropas.md) | Tropas: recrutamento na fila, exércitos com ordens, interceptação |
-| [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento |
+| [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento; parte 2: feridos em lotes, veterania com média ponderada, queda e exílio, combate em campo, interceptação, posturas, avistamentos e modelos |
