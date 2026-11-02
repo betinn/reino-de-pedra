@@ -1,0 +1,10 @@
+/* Reino de Pedra — ferraria e eras (cartões de era, família e lendário vêm de telas.css; aqui só os acréscimos, com os tokens). */
+.fer-nota { font-size: var(--fs-2); margin: var(--esp-1) 0 var(--esp-2); }
+.fer-fundar { width: 100%; margin: var(--esp-2) 0 var(--esp-3); }
+.lend-acoes { flex-wrap: wrap; gap: var(--esp-2); }
+.lend-sub { margin: var(--esp-2) 0 0; }
+.lend-meu { align-items: flex-start; }
+.lend-meu .selo { vertical-align: 1px; }
+.lend-levar { display: flex; align-items: center; gap: var(--esp-2); margin-top: var(--esp-2); font-size: var(--fs-2); color: var(--cor-texto-2); min-height: var(--alvo); cursor: pointer; }
+.lend-levar input { width: 20px; height: 20px; accent-color: var(--cor-destaque); flex: none; }
+.lc-lend { align-self: flex-start; }

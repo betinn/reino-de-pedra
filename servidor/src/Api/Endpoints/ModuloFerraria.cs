@@ -76,8 +76,10 @@ public static class ExtrasFerraria
             d["ferraria"] = new
             {
                 era = Ferrarias.EraAtual(mm, r),
+                eraNome = mm.P.Eras.TryGetValue(Ferrarias.EraAtual(mm, r), out var e) ? e.Nome : null,
                 eras = r.Eras.Keys.ToList(),
                 forja = r.Forja,
+                bonusNivel = mm.P.Ferraria.BonusNivel,
                 lendarios = VisaoFerraria.Meus(mm, r),
             };
         });

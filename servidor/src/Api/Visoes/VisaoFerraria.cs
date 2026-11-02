@@ -85,7 +85,7 @@ public static class VisaoFerraria
     {
         object? onde = null;
         if (e.LocalId is long lid && m.Locais.Obter(lid) is { } l)
-            onde = new { tipo = "local", id = l.Id, nome = l.Nome, hex = l.Hex, tropas = GT.Total(l.Guarnicao), fator = Lendarios.Fator(m, Lendarios.Defensores(m, l)) };
+            onde = new { tipo = "local", id = l.Id, nome = l.Nome, hex = l.Hex, tropas = (int)Lendarios.Defensores(m, l), fator = Lendarios.Fator(m, Lendarios.Defensores(m, l)) };
         else if (e.MarchaId is long mid && m.Marchas.Obter(mid) is Exercito ex)
             onde = new { tipo = "exercito", id = ex.Id, nome = GT.Partes(m, ex.Tropas), hex = ex.HexEm(m.Agora), tropas = GT.Total(ex.Tropas), fator = Lendarios.Fator(m, GT.Total(ex.Tropas)) };
         return (object)new { e.Id, e.Nome, e.Tipo, e.Levar, capturado = e.ForjadoPor != r.Id, onde };
