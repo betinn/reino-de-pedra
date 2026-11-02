@@ -5,7 +5,7 @@
 
   /* ================================================================ Temporada e legado */
   function desenharTemporada(el) {
-    var t = D.temporada, L = D.legado, total = 75, passados = total - t.diasRestantes;
+    var t = D.temporada, L = D.legado, total = 70, passados = total - t.diasRestantes;
     var lin = L.linhagem;
     RP.$('.temp-conteudo', el).innerHTML =
       '<div class="card card-moldura temp-hero"><span class="rotulo">Temporada ' + t.numero + '</span><h2>' + RP.esc(t.nome) + '</h2>' +

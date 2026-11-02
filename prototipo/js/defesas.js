@@ -7,7 +7,7 @@
 (function () {
   'use strict';
   var RP = window.RP, D = RP.dados, W = RP.mundo, H = RP.hex;
-  var CUSTO_TORRE = { pedra: 400, madeira: 150 }, TEMPO_TORRE = 1800, ARQ_NIVEL = 4, NIVEL_MAX = 3;
+  var CUSTO_TORRE = { pedra: 420, madeira: 180 }, TEMPO_TORRE = 2400, ARQ_NIVEL = 6, NIVEL_MAX = 3;   /* balanceamento v1 */
   var VALIDADE_H = 10;
 
   function chave(c, l) { return c + ',' + l; }
@@ -58,7 +58,7 @@
     var p = RP.planoRequisicao(custo, local);
     return { ok: p.completo, html: '<small class="obra-estoque' + (!p.completo ? ' falta' : p.viagens.length ? ' vem' : '') + '">' + RP.icone(p.viagens.length ? 'carroca' : 'check', 'ico-p') + RP.esc(RP.textoPlano(p, local)) + '</small>' };
   }
-  function custoNivel(t) { return { pedra: 300 * (t.nivel + 1), madeira: 100 * (t.nivel + 1) }; }
+  function custoNivel(t) { var c = 600 * Math.pow(1.8, t.nivel); return { pedra: Math.round(c * 0.07) * 10, madeira: Math.round(c * 0.03) * 10 }; }
   /* local mais próximo da torre (de onde sai o material) */
   function localBase(t) { return D.locais.filter(function (x) { return x.reino === 'meu'; }).sort(function (a, b) { return H.dist([t.c, t.l], [a.c, a.l]) - H.dist([t.c, t.l], [b.c, b.l]); })[0]; }
   /* hexágono livre ao lado de um local para erguer uma torre nova */
@@ -136,7 +136,7 @@
     }
     if ((b = e.target.closest('[data-torre-nivel]'))) {
       var t = D.torres.filter(function (q) { return q.id === b.getAttribute('data-torre-nivel'); })[0], cn = custoNivel(t), lb = localBase(t);
-      var f1 = noFila(lb.id, t.nome + ' → nível ' + (t.nivel + 1), TEMPO_TORRE * t.nivel, cn);
+      var f1 = noFila(lb.id, t.nome + ' → nível ' + (t.nivel + 1), TEMPO_TORRE * (t.nivel + 1), cn);
       if (!f1) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(cn, lb.id), lb.id), icone: 'alerta', tipo: 'perigo' }); return true; }
       RP.aviso({ titulo: t.nome + ' na fila', texto: 'Nível ' + (t.nivel + 1) + ' termina em ' + RP.fmtResta(f1 - Date.now()) + '.', icone: 'torre', tipo: 'sucesso' });
       redesenhar(); return true;

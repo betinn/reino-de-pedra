@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   var RP = window.RP, D = RP.dados, W = RP.mundo, U = RP.util, G = U.grupo;
-  var CARGA_UN = 25;   /* carga por ponto de "carga" da unidade (mesma escala do saque) */
+  var CARGA_UN = 20;   /* carga por ponto de "carga" da unidade: lanceiro 40, cavalaria 80 (balanceamento v1) */
   var VELS = ['Lenta', 'Média', 'Rápida'];
 
   function nomeLocal(id) { var x = W.local(id); return x ? (x.reino === 'meu' && x.tipo === 'castelo' ? 'Castelo de ' + RP.estado.nome : x.nome) : '—'; }

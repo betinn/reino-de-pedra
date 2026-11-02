@@ -395,7 +395,7 @@
     if (env.tipo === 'cerco' && x.tipo !== 'castelo') env.tipo = 'saque';
     var op = U.opcoesCaminho(U.castelo(), [x.c, x.l], perfilGrupo(env.grupo));
     if (env.caminho === 'segura' && !op.segura) env.caminho = 'curta';
-    var esc = op[env.caminho] || op.curta, n = somaGrupo(env.grupo), carga = Object.keys(env.grupo).reduce(function (s, k) { return s + (env.grupo[k] || 0) * U.unidade(k).carga * 25; }, 0);
+    var esc = op[env.caminho] || op.curta, n = somaGrupo(env.grupo), carga = Object.keys(env.grupo).reduce(function (s, k) { return s + (env.grupo[k] || 0) * U.unidade(k).carga * 20; }, 0);   /* lanceiro 40, cavalaria 80 (balanceamento v1) */
     var saques = D.saquesRecentes[x.id] || 0;   /* escudo de novato não aparece aqui: só é descoberto ao chegar */
     var rel = ataque ? reliquiaAlvo(x) : null, levaRel = rel && LEVA_RELIQUIA[env.tipo];
     var torresX = ataque ? torresAlvo(x) : [];

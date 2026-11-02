@@ -289,9 +289,9 @@ Aprovadas e registradas no `CLAUDE.md` (os números são valores de teste).
 1. **Famílias no ranking:** o protótipo trata como a população do reino.
 2. **Quem derruba uma bandeira:** o protótipo não revela ao dono quem derrubou (mesma lógica do anonimato).
 
-## Valores ilustrativos
+## Valores
 
-Custos, tempos, atributos de unidades, rendimento de caça e força x perigo são **mock** para dar forma às telas, não balanceamento. Seguem as regras: construções básicas em minutos e fortes/tecnologias mais demoradas; deslocamentos curtos (dezenas de minutos); a viagem segue a unidade mais lenta; rio só com ponte ou vau; rotas reduzem o custo e o perigo; grupos médios passam ilesos pela fauna. Não existe atalho pago para encurtar timers.
+Custos e tempos de unidades e obras, produção e níveis dos locais, torres e a temporada de 70 dias seguem a **proposta de balanceamento v1** ([`../balanceamento/README.md`](../balanceamento/README.md)), em validação. Ataque e defesa aparecem em escala de 1 a 5, só para comparação visual. Rendimento de caça, extração e força × perigo continuam ilustrativos. Seguem as regras: construções básicas em minutos e fortes/tecnologias mais demoradas; deslocamentos curtos (dezenas de minutos); a viagem segue a unidade mais lenta; rio só com ponte ou vau; rotas reduzem o custo e o perigo; grupos médios passam ilesos pela fauna. Não existe atalho pago para encurtar timers.
 
 ---
 
