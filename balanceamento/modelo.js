@@ -22,6 +22,13 @@ const P = {
   /* estoque inicial (kit) e capacidade de estoque de um local em horas de produção */
   kit: { madeira: 600, pedra: 400, comida: 800, ferro: 300 },
   estoqueHoras: 10,
+  /* servidor: estoque mínimo do castelo por recurso (o castelo também guarda o excedente quando não há armazém),
+     capacidade do armazém por recurso no nível L = capN1 × capCresc^(L−1), couro inicial do kit */
+  estoqueMinimo: 2000, armazem: { capN1: 2000, capCresc: 1.35 }, kitExtra: { couro: 200 },
+  /* servidor: carregadores da requisição (a pé, sem escolta); rio sem ponte se atravessa pelo vau (× custo do terreno) */
+  carregador: { carga: 50, vel: 'Lenta' }, rio: { vau: 2.0 },
+  /* servidor: raio de visão (hexágonos) do castelo, dos locais e de tropas em campo; avistamentos somem depois de 10 h */
+  visao: { castelo: 3, local: 2, tropa: 1 }, avistamentoH: 10,
   /* novos locais: custo e quando o jogador funda (médio) */
   custoNovoLocal: 1500, novoLocalCresc: 1.22, tempoNovoLocal: 90 * 60,
   /* deslocamento: minutos por unidade de custo de terreno */
@@ -255,7 +262,7 @@ function simular(perfil, opc) {
       if (hd === sessoes[sessoes.length - 1]) S.filaHorasNoite.push(Math.max(0, fimFila() - S.h));
     }
     while (S.fila.length && S.fila[0].fim <= S.h + 1) { S.fila.shift().aplicar(); }
-    const pr = producaoH(), cap = Math.max(2000, soma(pr) * P.estoqueHoras);
+    const pr = producaoH(), cap = Math.max(P.estoqueMinimo, soma(pr) * P.estoqueHoras);
     TIPOS.forEach(k => { S.est[k] = Math.min(cap, S.est[k] + pr[k]); });
     S.prodAcum += soma(pr); if (S.h + 1 === P.escudoNovatoH) S.prodEscudo = S.prodAcum;
     S.couro += 4;                                    /* caça ocasional */
@@ -547,5 +554,35 @@ out('|---|---|---|---|');
 metas.forEach(m => out('| ' + m[0] + ' | ' + m[1] + ' | ' + m[2] + ' | ' + (m[3] ? '✓' : '✗') + ' |'));
 const falhas = metas.filter(m => !m[3]).length;
 out('\n' + (falhas ? falhas + ' meta(s) fora do alvo.' : 'Todas as metas no alvo.'));
-process.stdout.write(L.join('\n') + '\n');
+/* ================================================================ configuração do servidor
+   node balanceamento/modelo.js --json > balanceamento/config.json
+   Os mesmos P, U e VEICULOS, mais valores de referência calculados pelas fórmulas do modelo,
+   usados pelos testes do servidor para conferir que as fórmulas dele batem com as daqui. */
+if (process.argv.includes('--json')) {
+  const Pj = JSON.parse(JSON.stringify(P));
+  Pj.torre.alcanceBase = P.torre.alcance(0);                 /* alcance = nível + alcanceBase */
+  const niveis = Array.from({ length: P.nivelMax }, (_, i) => i + 1);
+  const ref = {
+    producao: niveis.map(prod), castelo: niveis.map(castelo),
+    custo: niveis.map(n => n > 1 ? custo(n) : 0), receita: niveis.map(n => n > 1 ? receita(custo(n)) : null),
+    tempoObra: niveis.map(n => n > 1 ? tempoObra(n) : 0),
+    moradia: [0, 1, 2, 5, 10].map(n => ({ n, custo: custoMoradia(n), tempo: tempoMoradia(n) })),
+    novoLocal: [0, 1, 2, 5].map(n => ({ n, custo: receita(P.custoNovoLocal * Math.pow(P.novoLocalCresc, n)) })),
+    viagem: [[4, 'Lenta', false], [14, 'Lenta', false], [60, 'Lenta', false], [10, 'Rápida', true], [10, 'Média', false]]
+      .map(([h, v, r]) => ({ hexes: h, vel: v, rota: r, min: viagemMin(h, v, r) })),
+    batalhas: casos.map(([rot, a, d, x, lim], i) => ({ rot, atk: a, def: d, extra: x, limite: lim == null ? null : lim, res: resCasos[i] })),
+    extracao: [[{ lanceiro: 1 }, false, false], [{ lanceiro: 10 }, false, false], [{ lanceiro: 20 }, false, false], [{ lanceiro: 40 }, true, false],
+      [{ cavalaria: 10 }, true, true], [{ lanceiro: 60 }, false, false]].map(([g, p, r]) => ({ grupo: g, posto: p, rota: r, valorH: extracaoH(g, p, r) })),
+    espiao: [[0, 0], [1, 15], [4, 60], [10, 100]].map(([t, n]) => ({ torres: t, tropas: n, chance: chanceEspiao(t, n) })),
+    fauna: [['baixo', 38], ['baixo', 80], ['medio', 130], ['alto', 650], ['alto', 300], ['medio', 239]].map(([nv, f]) => ({ nivel: nv, forca: f, risco: riscoFauna(nv, f) })),
+    forcaFauna: [{ lanceiro: 20 }, { arqueiro: 20 }, { lanceiro: 5 }].map(g => ({ grupo: g, forca: forcaFauna(g) })),
+    torres: Array.from({ length: P.torre.nivelMax }, (_, i) => i + 1).map(n => { const c = P.torre.custoN1 * Math.pow(P.torre.custoCresc, n - 1);
+      return { nivel: n, alcance: P.torre.alcance(n), arqueiros: n * P.torre.arqPorNivel, custo: { pedra: r0(c * 0.7 / 10) * 10, madeira: r0(c * 0.3 / 10) * 10 }, tempo: P.torre.tempoN1 * n, estrutura: n * P.torre.estrutura }; }),
+    jazidas: Object.keys(VAL).map(k => ({ recurso: k, tamanho: tamJazida(k), quantidade: nJazidas(k) })),
+    metasOk: falhas === 0
+  };
+  process.stdout.write(JSON.stringify({ gerado: 'node balanceamento/modelo.js --json', P: Pj, U, VEICULOS, referencia: ref }, null, 1) + '\n');
+} else {
+  process.stdout.write(L.join('\n') + '\n');
+}
 if (falhas) process.exitCode = 1;

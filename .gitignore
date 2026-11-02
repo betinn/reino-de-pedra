@@ -1,0 +1,17 @@
+# build
+bin/
+obj/
+*.user
+.vs/
+.idea/
+# dados locais do servidor (banco SQLite, uploads)
+dados/
+*.db
+*.db-wal
+*.db-shm
+# configuração local e segredos
+.env
+.env.*
+!.env.exemplo
+publicar/
+TestResults/

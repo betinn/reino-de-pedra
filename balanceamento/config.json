@@ -1,0 +1,1241 @@
+{
+ "gerado": "node balanceamento/modelo.js --json",
+ "P": {
+  "temporadaDias": 70,
+  "prodBase": 30,
+  "prodCresc": 1.3,
+  "nivelMax": 10,
+  "casteloBase": 25,
+  "casteloCresc": 1.12,
+  "casteloCusto": 4,
+  "casteloTempo": 2,
+  "custoN2": 50,
+  "custoCresc": 2.15,
+  "tempoN2": 120,
+  "tempoCresc": 2,
+  "receita": {
+   "madeira": 0.45,
+   "pedra": 0.35,
+   "ferro": 0.1,
+   "comida": 0.1
+  },
+  "tetoCastelo": 300,
+  "tetoPorMoradia": 60,
+  "popInicial": 220,
+  "custoMoradia": 400,
+  "moradiaPasso": 120,
+  "crescPop": 0.05,
+  "bonusComida": 0.3,
+  "trabPorNivel": 10,
+  "kit": {
+   "madeira": 600,
+   "pedra": 400,
+   "comida": 800,
+   "ferro": 300
+  },
+  "estoqueHoras": 10,
+  "estoqueMinimo": 2000,
+  "armazem": {
+   "capN1": 2000,
+   "capCresc": 1.35
+  },
+  "kitExtra": {
+   "couro": 200
+  },
+  "carregador": {
+   "carga": 50,
+   "vel": "Lenta"
+  },
+  "rio": {
+   "vau": 2
+  },
+  "visao": {
+   "castelo": 3,
+   "local": 2,
+   "tropa": 1
+  },
+  "avistamentoH": 10,
+  "custoNovoLocal": 1500,
+  "novoLocalCresc": 1.22,
+  "tempoNovoLocal": 5400,
+  "minPor": {
+   "Lenta": 2.4,
+   "Média": 1.6,
+   "Rápida": 1
+  },
+  "terreno": {
+   "planicie": 1,
+   "colina": 1.25,
+   "floresta": 1.8,
+   "montanha": 2.3,
+   "pantano": 2.8
+  },
+  "terrenoMedio": 1.35,
+  "rotaFator": 0.55,
+  "reinos": 30,
+  "mapa": {
+   "cols": 60,
+   "lins": 48
+  },
+  "expPerdas": 1.5,
+  "vantagem": 1.5,
+  "miliciaPorPop": 0.05,
+  "defMilicia": 15,
+  "portoes": [
+   0,
+   1.15,
+   1.3,
+   1.45,
+   1.6,
+   1.75
+  ],
+  "torre": {
+   "custoN1": 600,
+   "custoCresc": 1.8,
+   "tempoN1": 2400,
+   "arqPorNivel": 6,
+   "bonusAlto": 3,
+   "nivelMax": 3,
+   "estrutura": 300,
+   "alcanceBase": 1
+  },
+  "portoesEstrutura": 500,
+  "saqueQueda": 0.2,
+  "saqueMinimo": 0.2,
+  "reliquia": {
+   "ataque": 0.15,
+   "producao": 0.15,
+   "resistencia": 0.2,
+   "escavarHoras1": 12,
+   "escavarMin": 4
+  },
+  "escudoNovatoH": 72,
+  "escudoExilioH": 24,
+  "regenciaH": 48,
+  "legado": {
+   "relMin": 0.01,
+   "relMax": 0.02,
+   "equipadas": 3,
+   "teto": 0.05
+  },
+  "fauna": {
+   "baixo": 40,
+   "medio": 120,
+   "alto": 300
+  },
+  "ataqueFauna": {
+   "baixo": 0.1,
+   "medio": 0.25,
+   "alto": 0.5
+  },
+  "perdaFauna": {
+   "acima": 0.05,
+   "abaixo": 0.25
+  },
+  "faunaVoltaH": 24,
+  "caca": {
+   "javalis": {
+    "comida": 120,
+    "couro": 40,
+    "peles": 5,
+    "nivel": "baixo"
+   },
+   "lobos": {
+    "comida": 50,
+    "couro": 30,
+    "peles": 40,
+    "nivel": "alto"
+   },
+   "ursos": {
+    "comida": 90,
+    "couro": 60,
+    "peles": 60,
+    "nivel": "alto"
+   },
+   "crocodilos": {
+    "comida": 50,
+    "couro": 90,
+    "peles": 0,
+    "nivel": "medio"
+   }
+  },
+  "cacasDia": 3,
+  "exploradores": {
+   "pe": {
+    "nome": "A pé",
+    "custo": {
+     "comida": 40
+    },
+    "tempo": 60,
+    "vel": "Lenta",
+    "visao": 2,
+    "forca": 10
+   },
+   "cavalo": {
+    "nome": "A cavalo",
+    "custo": {
+     "comida": 80,
+     "couro": 20
+    },
+    "tempo": 180,
+    "vel": "Rápida",
+    "visao": 3,
+    "forca": 15
+   },
+   "prospector": {
+    "nome": "Prospector",
+    "custo": {
+     "comida": 120,
+     "ferro": 60
+    },
+    "tempo": 360,
+    "vel": "Lenta",
+    "visao": 1,
+    "jazidas": 2,
+    "forca": 8
+   },
+   "batedor": {
+    "nome": "Batedor de elite",
+    "custo": {
+     "comida": 150,
+     "couro": 40
+    },
+    "tempo": 480,
+    "vel": "Rápida",
+    "visao": 3,
+    "forca": 20
+   }
+  },
+  "rota": {
+   "custo": {
+    "madeira": 120,
+    "pedra": 80
+   },
+   "tempo": 300
+  },
+  "ponte": {
+   "custo": {
+    "madeira": 600,
+    "pedra": 400
+   },
+   "tempo": 1800
+  },
+  "espiao": {
+   "base": 0.15,
+   "porTorre": 0.1,
+   "porTropa": 0.005,
+   "max": 0.6,
+   "capturado": 0.5,
+   "tempoNoLocal": 600
+  },
+  "alianca": 5,
+  "valor": {
+   "comida": 1,
+   "madeira": 1,
+   "pedra": 1,
+   "ferro": 1,
+   "couro": 2,
+   "peles": 2,
+   "sal": 6,
+   "ervas": 8,
+   "prata": 10,
+   "aco": 15,
+   "ouro": 20,
+   "gema": 30,
+   "cavalo": 40,
+   "minerio": 60
+  },
+  "jazida": {
+   "valor": 20000,
+   "porReinos": 3,
+   "valorLendaria": 12000,
+   "lendariasPorReinos": 6
+  },
+  "extracao": {
+   "taxa": 0.158,
+   "expTropas": 0.8,
+   "posto": 1.5,
+   "rota": 1.2,
+   "maxTropas": 50
+  },
+  "comercio": {
+   "margemIA": 0.15,
+   "novatoDia": 2000
+  },
+  "pacto": {
+   "diasMin": 1,
+   "diasMax": 7,
+   "ativosMax": 3
+  },
+  "resgateH": 24,
+  "treguaSaidaH": 24,
+  "eras": {
+   "aco": {
+    "nome": "Era do Aço",
+    "req": "ferraria nível 7",
+    "custo": {
+     "ouro": 80,
+     "ferro": 1500,
+     "madeira": 1000
+    },
+    "tempo": 21600,
+    "dia": 10,
+    "libera": "armas e armaduras dos níveis 2 e 3, cavaleiro de elite, equipamento lendário"
+   },
+   "cerco": {
+    "nome": "Era do Cerco Avançado",
+    "req": "Era do Aço e quartel nível 8",
+    "custo": {
+     "ouro": 150,
+     "madeira": 4000,
+     "pedra": 3000,
+     "ferro": 1500
+    },
+    "tempo": 43200,
+    "dia": 21,
+    "libera": "trebuchet e portões dos níveis 4 e 5"
+   }
+  },
+  "ferraria": {
+   "bonusNivel": 0.08,
+   "familias": 3,
+   "linhas": 2,
+   "niveis": [
+    {
+     "custo": {
+      "ferro": 1500,
+      "madeira": 800,
+      "couro": 200
+     },
+     "tempo": 7200,
+     "req": "ferraria nível 3"
+    },
+    {
+     "custo": {
+      "ferro": 3000,
+      "madeira": 1500,
+      "aco": 60
+     },
+     "tempo": 21600,
+     "req": "Era do Aço"
+    },
+    {
+     "custo": {
+      "ferro": 6000,
+      "madeira": 3000,
+      "aco": 150,
+      "ouro": 50
+     },
+     "tempo": 43200,
+     "req": "Era do Aço e ferraria nível 9"
+    }
+   ],
+   "linhasTipicas": 2
+  },
+  "veterania": {
+   "marcas": [
+    2,
+    5,
+    9
+   ],
+   "bonus": [
+    0.05,
+    0.1,
+    0.15
+   ],
+   "perdasMax": 0.5,
+   "forcaMin": 0.3
+  },
+  "lendario": {
+   "bonus": 0.25,
+   "tropas": 50,
+   "custo": {
+    "minerio": 100,
+    "ferro": 1500,
+    "aco": 100
+   },
+   "tempo": 86400,
+   "req": "Era do Aço e ferraria nível 8"
+  },
+  "feridos": {
+   "frac": 0.3,
+   "ervas": 5,
+   "esperaH": 24,
+   "curaH": 2
+  },
+  "tetoBonus": 0.5,
+  "queda": {
+   "nivel": 0.5,
+   "recursos": 0.5,
+   "populacao": 0.3,
+   "tropas": 0.4
+  },
+  "mensageiro": {
+   "custo": {
+    "comida": 30
+   },
+   "pop": 1,
+   "tempo": 60,
+   "vel": "Rápida",
+   "caracteres": 200,
+   "recadoProposta": 120
+  },
+  "salgadeira": {
+   "custo": {
+    "sal": 200,
+    "madeira": 300
+   },
+   "tempo": 3600,
+   "horas": 20
+  }
+ },
+ "U": {
+  "milicia": {
+   "nome": "Milícia",
+   "fam": "infantaria",
+   "atk": 5,
+   "def": 15,
+   "vel": "Lenta",
+   "carga": 20,
+   "custo": {
+    "comida": 20,
+    "madeira": 10
+   },
+   "tempo": 30,
+   "pop": 1,
+   "so": "defesa"
+  },
+  "lanceiro": {
+   "nome": "Lanceiro",
+   "fam": "infantaria",
+   "atk": 25,
+   "def": 40,
+   "vel": "Lenta",
+   "carga": 40,
+   "custo": {
+    "comida": 30,
+    "madeira": 30,
+    "ferro": 30
+   },
+   "tempo": 180,
+   "pop": 1,
+   "vence": "cavalaria"
+  },
+  "arqueiro": {
+   "nome": "Arqueiro",
+   "fam": "arqueiros",
+   "atk": 35,
+   "def": 25,
+   "vel": "Média",
+   "carga": 40,
+   "custo": {
+    "comida": 30,
+    "madeira": 50,
+    "couro": 10
+   },
+   "tempo": 210,
+   "pop": 1,
+   "vence": "infantaria"
+  },
+  "cavalaria": {
+   "nome": "Cavalaria",
+   "fam": "cavalaria",
+   "atk": 45,
+   "def": 30,
+   "vel": "Rápida",
+   "carga": 80,
+   "custo": {
+    "comida": 60,
+    "ferro": 50,
+    "couro": 30
+   },
+   "tempo": 360,
+   "pop": 1,
+   "vence": "arqueiros"
+  },
+  "elite": {
+   "nome": "Cavaleiro de elite",
+   "fam": "cavalaria",
+   "atk": 60,
+   "def": 40,
+   "vel": "Rápida",
+   "carga": 80,
+   "custo": {
+    "comida": 70,
+    "ferro": 60,
+    "couro": 40,
+    "cavalo": 1
+   },
+   "tempo": 480,
+   "pop": 1,
+   "vence": "arqueiros",
+   "req": "Era do Aço"
+  },
+  "ariete": {
+   "nome": "Aríete",
+   "fam": "cerco",
+   "atk": 10,
+   "def": 10,
+   "vel": "Lenta",
+   "carga": 0,
+   "custo": {
+    "madeira": 300,
+    "ferro": 60
+   },
+   "tempo": 900,
+   "pop": 4,
+   "cerco": 40
+  },
+  "trebuchet": {
+   "nome": "Trebuchet",
+   "fam": "cerco",
+   "atk": 5,
+   "def": 5,
+   "vel": "Lenta",
+   "carga": 0,
+   "custo": {
+    "madeira": 600,
+    "pedra": 200,
+    "ferro": 150
+   },
+   "tempo": 1800,
+   "pop": 6,
+   "cerco": 90,
+   "req": "Era do Cerco Avançado"
+  }
+ },
+ "VEICULOS": {
+  "carroca": {
+   "carga": 500,
+   "vel": "Lenta",
+   "custo": {
+    "madeira": 150,
+    "ferro": 20
+   }
+  },
+  "carrocao": {
+   "carga": 1500,
+   "vel": "Média",
+   "custo": {
+    "madeira": 400,
+    "ferro": 80,
+    "cavalo": 2
+   }
+  }
+ },
+ "referencia": {
+  "producao": [
+   30,
+   39,
+   50.7,
+   65.91,
+   85.68300000000002,
+   111.38790000000002,
+   144.80427000000003,
+   188.24555100000003,
+   244.71921630000008,
+   318.1349811900001
+  ],
+  "castelo": [
+   25,
+   28.000000000000004,
+   31.360000000000003,
+   35.12320000000001,
+   39.33798400000001,
+   44.05854208000002,
+   49.34556712960003,
+   55.26703518515204,
+   61.89907940737028,
+   69.32696893625473
+  ],
+  "custo": [
+   0,
+   50,
+   107.5,
+   231.12499999999997,
+   496.91874999999993,
+   1068.3753124999998,
+   2297.0069218749995,
+   4938.564882031249,
+   10617.914496367184,
+   22828.516167189446
+  ],
+  "receita": [
+   null,
+   {
+    "madeira": 20,
+    "pedra": 20,
+    "ferro": 10,
+    "comida": 10
+   },
+   {
+    "madeira": 50,
+    "pedra": 40,
+    "ferro": 10,
+    "comida": 10
+   },
+   {
+    "madeira": 100,
+    "pedra": 80,
+    "ferro": 20,
+    "comida": 20
+   },
+   {
+    "madeira": 220,
+    "pedra": 170,
+    "ferro": 50,
+    "comida": 50
+   },
+   {
+    "madeira": 480,
+    "pedra": 370,
+    "ferro": 110,
+    "comida": 110
+   },
+   {
+    "madeira": 1030,
+    "pedra": 800,
+    "ferro": 230,
+    "comida": 230
+   },
+   {
+    "madeira": 2220,
+    "pedra": 1730,
+    "ferro": 490,
+    "comida": 490
+   },
+   {
+    "madeira": 4780,
+    "pedra": 3720,
+    "ferro": 1060,
+    "comida": 1060
+   },
+   {
+    "madeira": 10270,
+    "pedra": 7990,
+    "ferro": 2280,
+    "comida": 2280
+   }
+  ],
+  "tempoObra": [
+   0,
+   120,
+   240,
+   480,
+   960,
+   1920,
+   3840,
+   7680,
+   15360,
+   30720
+  ],
+  "moradia": [
+   {
+    "n": 0,
+    "custo": 400,
+    "tempo": 600
+   },
+   {
+    "n": 1,
+    "custo": 520,
+    "tempo": 660
+   },
+   {
+    "n": 2,
+    "custo": 640,
+    "tempo": 720
+   },
+   {
+    "n": 5,
+    "custo": 1000,
+    "tempo": 900
+   },
+   {
+    "n": 10,
+    "custo": 1600,
+    "tempo": 1200
+   }
+  ],
+  "novoLocal": [
+   {
+    "n": 0,
+    "custo": {
+     "madeira": 680,
+     "pedra": 530,
+     "ferro": 150,
+     "comida": 150
+    }
+   },
+   {
+    "n": 1,
+    "custo": {
+     "madeira": 820,
+     "pedra": 640,
+     "ferro": 180,
+     "comida": 180
+    }
+   },
+   {
+    "n": 2,
+    "custo": {
+     "madeira": 1000,
+     "pedra": 780,
+     "ferro": 220,
+     "comida": 220
+    }
+   },
+   {
+    "n": 5,
+    "custo": {
+     "madeira": 1820,
+     "pedra": 1420,
+     "ferro": 410,
+     "comida": 410
+    }
+   }
+  ],
+  "viagem": [
+   {
+    "hexes": 4,
+    "vel": "Lenta",
+    "rota": false,
+    "min": 12.96
+   },
+   {
+    "hexes": 14,
+    "vel": "Lenta",
+    "rota": false,
+    "min": 45.36000000000001
+   },
+   {
+    "hexes": 60,
+    "vel": "Lenta",
+    "rota": false,
+    "min": 194.4
+   },
+   {
+    "hexes": 10,
+    "vel": "Rápida",
+    "rota": true,
+    "min": 7.425000000000001
+   },
+   {
+    "hexes": 10,
+    "vel": "Média",
+    "rota": false,
+    "min": 21.6
+   }
+  ],
+  "batalhas": [
+   {
+    "rot": "20 lanceiros contra mina com 15 lanceiros e 200 de população",
+    "atk": {
+     "lanceiro": 20
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 200
+    },
+    "limite": null,
+    "res": {
+     "A": 500,
+     "D": 750,
+     "venceA": false,
+     "perdaA": 1,
+     "perdaD": 0.5443310539518174,
+     "recuou": false,
+     "razao": 0.6666666666666666
+    }
+   },
+   {
+    "rot": "30 arqueiros contra a mesma mina",
+    "atk": {
+     "arqueiro": 30
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 200
+    },
+    "limite": null,
+    "res": {
+     "A": 1575,
+     "D": 750,
+     "venceA": true,
+     "perdaA": 0.32860264730588296,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 2.1
+    }
+   },
+   {
+    "rot": "30 arqueiros contra a mina com torre nível 2 (12 arqueiros no alto)",
+    "atk": {
+     "arqueiro": 30
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 200,
+     "arqTorre": 12
+    },
+    "limite": null,
+    "res": {
+     "A": 1575,
+     "D": 1650,
+     "venceA": false,
+     "perdaA": 1,
+     "perdaD": 0.9325989472402856,
+     "recuou": false,
+     "razao": 0.9545454545454546
+    }
+   },
+   {
+    "rot": "30 cavaleiros (saque) contra vila com 10 lanceiros",
+    "atk": {
+     "cavalaria": 30
+    },
+    "def": {
+     "lanceiro": 10
+    },
+    "extra": {
+     "pop": 300
+    },
+    "limite": null,
+    "res": {
+     "A": 1350,
+     "D": 825,
+     "venceA": true,
+     "perdaA": 0.47772753109312716,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 1.6363636363636365
+    }
+   },
+   {
+    "rot": "30 cavaleiros contra vila com 15 arqueiros",
+    "atk": {
+     "cavalaria": 30
+    },
+    "def": {
+     "arqueiro": 15
+    },
+    "extra": {
+     "pop": 300
+    },
+    "limite": null,
+    "res": {
+     "A": 2025,
+     "D": 600,
+     "venceA": true,
+     "perdaA": 0.1612832752449829,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 3.375
+    }
+   },
+   {
+    "rot": "Mina Rubra (15 lanceiros, torre 1, relíquia de resistência) contra 40 arqueiros",
+    "atk": {
+     "arqueiro": 40
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 150,
+     "arqTorre": 6,
+     "reliquia": 0.2
+    },
+    "limite": null,
+    "res": {
+     "A": 2100,
+     "D": 1395,
+     "venceA": true,
+     "perdaA": 0.5414175999103754,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 1.5053763440860215
+    }
+   },
+   {
+    "rot": "Cerco: 150 tropas mistas contra castelo médio (60 tropas, 4 torres nível 1, portões 3, 1.500 de população)",
+    "atk": {
+     "lanceiro": 60,
+     "arqueiro": 60,
+     "cavalaria": 30
+    },
+    "def": {
+     "lanceiro": 35,
+     "arqueiro": 25
+    },
+    "extra": {
+     "pop": 1500,
+     "arqTorre": 24,
+     "portoes": 3
+    },
+    "limite": null,
+    "res": {
+     "A": 5844,
+     "D": 7562,
+     "venceA": false,
+     "perdaA": 1,
+     "perdaD": 0.6793662530088364,
+     "recuou": false,
+     "razao": 0.7728039144377955
+    }
+   },
+   {
+    "rot": "Mesmo cerco com 320 tropas",
+    "atk": {
+     "lanceiro": 130,
+     "arqueiro": 130,
+     "cavalaria": 60
+    },
+    "def": {
+     "lanceiro": 35,
+     "arqueiro": 25
+    },
+    "extra": {
+     "pop": 1500,
+     "arqTorre": 24,
+     "portoes": 3
+    },
+    "limite": null,
+    "res": {
+     "A": 12390,
+     "D": 7552,
+     "venceA": true,
+     "perdaA": 0.47588150058445566,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 1.640592738956405
+    }
+   },
+   {
+    "rot": "Ataque perdido com tática média (recua com 40%)",
+    "atk": {
+     "lanceiro": 10
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 200
+    },
+    "limite": 0.4,
+    "res": {
+     "A": 250,
+     "D": 750,
+     "venceA": false,
+     "perdaA": 0.4,
+     "perdaD": 0.0769800358919501,
+     "recuou": true,
+     "razao": 0.3333333333333333
+    }
+   },
+   {
+    "rot": "40 arqueiros contra mina com 15 lanceiros, torre 1 e 200 de população, sem bônus",
+    "atk": {
+     "arqueiro": 40
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 200,
+     "arqTorre": 6
+    },
+    "limite": null,
+    "res": {
+     "A": 2100,
+     "D": 1200,
+     "venceA": true,
+     "perdaA": 0.43195939772483105,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 1.75
+    }
+   },
+   {
+    "rot": "Os mesmos 40 arqueiros com armas nível 3 (+24%)",
+    "atk": {
+     "arqueiro": 40
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 200,
+     "arqTorre": 6,
+     "bonusA": 0.24
+    },
+    "limite": null,
+    "res": {
+     "A": 2604,
+     "D": 1200,
+     "venceA": true,
+     "perdaA": 0.3128314439180326,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 2.17
+    }
+   },
+   {
+    "rot": "Os mesmos 40 arqueiros com todos os bônus de ataque (+84%, limitado a +50%)",
+    "atk": {
+     "arqueiro": 40
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 200,
+     "arqTorre": 6,
+     "bonusA": 0.8400000000000001
+    },
+    "limite": null,
+    "res": {
+     "A": 3150,
+     "D": 1200,
+     "venceA": true,
+     "perdaA": 0.23512891422794957,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 2.625
+    }
+   },
+   {
+    "rot": "A mesma mina com todos os bônus de defesa (+89%, limitado a +50%) contra os 40 arqueiros sem bônus",
+    "atk": {
+     "arqueiro": 40
+    },
+    "def": {
+     "lanceiro": 15
+    },
+    "extra": {
+     "pop": 200,
+     "arqTorre": 6,
+     "reliquia": 0.2,
+     "bonusD": 0.6900000000000002
+    },
+    "limite": null,
+    "res": {
+     "A": 2100,
+     "D": 1800,
+     "venceA": true,
+     "perdaA": 0.7935600855193298,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 1.1666666666666667
+    }
+   }
+  ],
+  "extracao": [
+   {
+    "grupo": {
+     "lanceiro": 1
+    },
+    "posto": false,
+    "rota": false,
+    "valorH": 6.32
+   },
+   {
+    "grupo": {
+     "lanceiro": 10
+    },
+    "posto": false,
+    "rota": false,
+    "valorH": 39.87650417114822
+   },
+   {
+    "grupo": {
+     "lanceiro": 20
+    },
+    "posto": false,
+    "rota": false,
+    "valorH": 69.42902633694666
+   },
+   {
+    "grupo": {
+     "lanceiro": 40
+    },
+    "posto": true,
+    "rota": false,
+    "valorH": 181.32443396019104
+   },
+   {
+    "grupo": {
+     "cavalaria": 10
+    },
+    "posto": true,
+    "rota": true,
+    "valorH": 143.5554150161336
+   },
+   {
+    "grupo": {
+     "lanceiro": 60
+    },
+    "posto": false,
+    "rota": false,
+    "valorH": 144.50839640903516
+   }
+  ],
+  "espiao": [
+   {
+    "torres": 0,
+    "tropas": 0,
+    "chance": 0.15
+   },
+   {
+    "torres": 1,
+    "tropas": 15,
+    "chance": 0.325
+   },
+   {
+    "torres": 4,
+    "tropas": 60,
+    "chance": 0.6
+   },
+   {
+    "torres": 10,
+    "tropas": 100,
+    "chance": 0.6
+   }
+  ],
+  "fauna": [
+   {
+    "nivel": "baixo",
+    "forca": 38,
+    "risco": "baixo"
+   },
+   {
+    "nivel": "baixo",
+    "forca": 80,
+    "risco": "nenhum"
+   },
+   {
+    "nivel": "medio",
+    "forca": 130,
+    "risco": "baixo"
+   },
+   {
+    "nivel": "alto",
+    "forca": 650,
+    "risco": "nenhum"
+   },
+   {
+    "nivel": "alto",
+    "forca": 300,
+    "risco": "medio"
+   },
+   {
+    "nivel": "medio",
+    "forca": 239,
+    "risco": "baixo"
+   }
+  ],
+  "forcaFauna": [
+   {
+    "grupo": {
+     "lanceiro": 20
+    },
+    "forca": 650
+   },
+   {
+    "grupo": {
+     "arqueiro": 20
+    },
+    "forca": 600
+   },
+   {
+    "grupo": {
+     "lanceiro": 5
+    },
+    "forca": 162.5
+   }
+  ],
+  "torres": [
+   {
+    "nivel": 1,
+    "alcance": 2,
+    "arqueiros": 6,
+    "custo": {
+     "pedra": 420,
+     "madeira": 180
+    },
+    "tempo": 2400,
+    "estrutura": 300
+   },
+   {
+    "nivel": 2,
+    "alcance": 3,
+    "arqueiros": 12,
+    "custo": {
+     "pedra": 760,
+     "madeira": 320
+    },
+    "tempo": 4800,
+    "estrutura": 600
+   },
+   {
+    "nivel": 3,
+    "alcance": 4,
+    "arqueiros": 18,
+    "custo": {
+     "pedra": 1360,
+     "madeira": 580
+    },
+    "tempo": 7200,
+    "estrutura": 900
+   }
+  ],
+  "jazidas": [
+   {
+    "recurso": "aco",
+    "tamanho": 1300,
+    "quantidade": 10
+   },
+   {
+    "recurso": "cavalo",
+    "tamanho": 500,
+    "quantidade": 10
+   },
+   {
+    "recurso": "ouro",
+    "tamanho": 1000,
+    "quantidade": 10
+   },
+   {
+    "recurso": "prata",
+    "tamanho": 2000,
+    "quantidade": 10
+   },
+   {
+    "recurso": "sal",
+    "tamanho": 3300,
+    "quantidade": 10
+   },
+   {
+    "recurso": "ervas",
+    "tamanho": 2500,
+    "quantidade": 10
+   },
+   {
+    "recurso": "gema",
+    "tamanho": 700,
+    "quantidade": 10
+   },
+   {
+    "recurso": "minerio",
+    "tamanho": 200,
+    "quantidade": 5
+   }
+  ],
+  "metasOk": true
+ }
+}
