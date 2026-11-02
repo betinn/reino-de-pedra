@@ -1,0 +1,27 @@
+/* Reino de Pedra — temporada, legado, ranking, "precisa de você" e regência. Só tokens (prototipo/design-system.md). */
+
+/* tinturas e moldura liberadas pela linhagem (cores fixas da heráldica, como as outras tinturas) */
+:root {
+  --tin-celeste: #6fa7d8;
+  --tin-laranja: #c8702a;
+  --tin-carmesim: #7d1d3f;
+  --brasao-moldura: var(--tin-ouro);
+}
+
+/* relíquia da temporada equipada */
+.reliquia.equipada { box-shadow: inset 0 0 0 1px var(--rec-lendario); }
+.reliquia .btn { margin-top: auto; }
+
+/* escolha de região (criação e exílio) */
+.regioes { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--esp-2); }
+.regioes .aba { justify-content: center; min-height: 44px; }
+
+/* "precisa de você" no topo de Meu reino: espaço reservado enquanto carrega */
+.agora-resumo:empty { display: none; }
+.pend-item small { overflow-wrap: anywhere; }
+
+/* brasão bloqueado na criação: aparece com cadeado */
+.amostra.bloqueada, .opcao.bloqueada { opacity: .4; cursor: not-allowed; }
+
+/* faixa de retorno após a regência */
+.faixa-regencia { text-decoration: none; color: inherit; }

@@ -14,13 +14,20 @@
     verde: { nome: 'Verde' },
     purpura: { nome: 'Púrpura' },
     negro: { nome: 'Negro' },
-    castanho: { nome: 'Castanho' }
+    castanho: { nome: 'Castanho' },
+    /* extras da linhagem (nível 2) */
+    celeste: { nome: 'Celeste', extra: true },
+    laranja: { nome: 'Laranja', extra: true },
+    carmesim: { nome: 'Carmesim', extra: true }
   };
 
   var FORMAS = {
     portugues: { nome: 'Português', d: 'M8 8H92V66C92 92 73 111 50 113 27 111 8 92 8 66Z' },
     classico: { nome: 'Clássico', d: 'M8 8H92V52C92 82 72 102 50 114 28 102 8 82 8 52Z' },
-    redondo: { nome: 'Rodela', d: 'M50 12A47 47 0 1 1 49.99 12Z' }
+    redondo: { nome: 'Rodela', d: 'M50 12A47 47 0 1 1 49.99 12Z' },
+    /* extras da linhagem (nível 2) */
+    frances: { nome: 'Francês', d: 'M8 8H92V84Q92 94 82 98L50 113 18 98Q8 94 8 84Z', extra: true },
+    losango: { nome: 'Losango', d: 'M50 5 93 60 50 115 7 60Z', extra: true }
   };
 
   function cor(t) { return 'var(--tin-' + t + ')'; }
@@ -107,6 +114,9 @@
       '<g clip-path="url(#' + id + ')">' + div.f(cor(cfg.cor1), cor(cfg.cor2 || cfg.cor1)) +
       (opt.semSimbolo ? '' : '<path transform="translate(50 ' + cy + ') scale(' + escala + ')" d="' + simb.d + '" fill-rule="' + simb.regra + '" style="fill:' + cor(cfg.corSimbolo) + '" stroke="rgba(0,0,0,.45)" stroke-width="1.6" stroke-linejoin="round"/>') +
       '<rect width="100" height="120" fill="url(#' + id + 'l)" class="brasao-luz"/></g>' +
+      /* moldura de linhagem (nível 10): aro de ouro por fora e três pontas no alto */
+      (cfg.moldura ? '<path d="' + forma + '" fill="none" style="stroke:var(--brasao-moldura)" stroke-width="13" stroke-linejoin="round"/>' +
+        '<path d="M50 0 55 7 50 14 45 7Z M30 2 34 8 30 13 26 8Z M70 2 74 8 70 13 66 8Z" style="fill:var(--brasao-moldura);stroke:var(--brasao-borda)" stroke-width="1.2"/>' : '') +
       '<path d="' + forma + '" fill="none" style="stroke:var(--brasao-borda)" stroke-width="6" stroke-linejoin="round"/>' +
       '<path d="' + forma + '" fill="none" style="stroke:var(--brasao-filete)" stroke-width="1.6" stroke-linejoin="round"/>' +
       '</svg>';

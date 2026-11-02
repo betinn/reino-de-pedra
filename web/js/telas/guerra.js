@@ -148,7 +148,7 @@
       '<div class="card linha atacante">' + atk + '</div>';
     if (x.exilio) {
       h += '<div class="card card-moldura pilha"><h2>Você recomeça em exílio</h2>' +
-        '<div class="exilio-item">' + RP.icone('bussola') + '<span><b>Um novo ponto do mapa</b><br><small class="fraco">Região aleatória, longe de quem derrubou você. A escolha da região vem com a linhagem.</small></span></div>' +
+        '<div class="exilio-item">' + RP.icone('bussola') + '<span><b>Um novo ponto do mapa</b><br><small class="fraco">' + (RP.reino && RP.reino.legado && RP.reino.legado.regiaoExilio ? 'Na região escolhida pela sua linhagem (' + RP.esc(RP.reino.legado.regiaoExilio) + ').' : 'Região aleatória, longe de quem derrubou você. A escolha da região vem com a linhagem (veja Temporada e legado).') + '</small></span></div>' +
         '<div class="exilio-item">' + RP.icone('castelo') + '<span><b>Kit de recomeço</b><br>' + RP.custoHTML(x.kit) + '<br><small class="fraco">' + RP.esc(RP.partesGrupo(x.kitTropas) || '') + ' · castelo nível 1</small></span></div>' +
         '<div class="exilio-item">' + RP.icone('escudo') + '<span><b>Escudo temporário · ' + x.escudoH + ' h</b><br><small class="fraco">' + (x.escudoAte > RP.agora() ? 'Termina em <span data-fim="' + x.escudoAte + '">' + RP.fmtResta(x.escudoAte - RP.agora()) + '</span>. ' : '') + 'Quem atacar seus locais só descobre ao chegar e volta sem combate.</small></span></div></div>' +
         '<div class="card pilha"><span class="rotulo">Fica com você</span><ul class="regras-lista">' + mantido.map(function (m) { return '<li>' + RP.icone('check', 'ico-p r-ervas') + RP.esc(m) + '</li>'; }).join('') + '</ul></div>' +

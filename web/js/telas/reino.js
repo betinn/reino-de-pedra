@@ -158,7 +158,8 @@
   function desenharConstrucao(el, aba) {
     var r = RP.reino; if (!r) return;
     aba = aba || 'economia';
-    var abas = [['economia', 'Locais'], ['populacao', 'População'], ['novos', 'Novos locais']].concat(RP.extrasConstrucao.map(function (x) { return [x.aba, x.nome]; }));
+    var extras = RP.extrasConstrucao.filter(function (x) { return !x.sistema || RP.sistema(x.sistema); });
+    var abas = [['economia', 'Locais'], ['populacao', 'População'], ['novos', 'Novos locais']].concat(extras.map(function (x) { return [x.aba, x.nome]; }));
     var corpo = '';
     if (aba === 'economia') {
       corpo = r.locais.map(function (l) {
@@ -184,7 +185,7 @@
             '<a class="btn btn-p" href="#/mapa?fundar=' + k + '">' + RP.icone('alvo') + 'Escolher no mapa</a></div>';
         }).join('');
     } else {
-      var x = RP.extrasConstrucao.filter(function (e) { return e.aba === aba; })[0];
+      var x = extras.filter(function (e) { return e.aba === aba; })[0];
       corpo = x ? x.html(r) : '';
     }
     el.innerHTML = '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/reino" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Construção</h1></header>' +

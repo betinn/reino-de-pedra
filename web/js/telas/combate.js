@@ -680,7 +680,7 @@
   RP.acoesFolhaLocal = RP.acoesFolhaLocal || [];
   RP.acoesFolhaLocal.push(function (l) {
     return (l.defesa && l.defesa.batalhaId ? '<a class="btn btn-p btn-primario" href="#/batalha?id=' + l.defesa.batalhaId + '">' + RP.icone('espada') + 'Batalha</a>' : '') +
-      (l.tipo === 'castelo' ? '<a class="btn btn-p" href="#/construcao?aba=defesas">' + RP.icone('torre') + 'Defesas</a>' : '');
+      (l.tipo === 'castelo' && RP.sistema('defesas') ? '<a class="btn btn-p" href="#/construcao?aba=defesas">' + RP.icone('torre') + 'Defesas</a>' : '');
   });
 
   /* ================================================================ Construção → Defesas: portões e torres */
@@ -727,7 +727,7 @@
     return h;
   }
   RP.extrasConstrucao = RP.extrasConstrucao || [];
-  RP.extrasConstrucao.push({ aba: 'defesas', nome: 'Defesas', html: function () {
+  RP.extrasConstrucao.push({ aba: 'defesas', nome: 'Defesas', sistema: 'defesas', html: function () {
     buscarDefesas();
     return '<div class="pilha" data-defesas>' + (defesas ? htmlDefesas(defesas) : '<p class="fraco">Carregando…</p>') + '</div>';
   } });
