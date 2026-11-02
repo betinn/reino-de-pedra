@@ -122,7 +122,7 @@ public static class ReliquiasLendarias
             var rel = m.Reliquias.Obter(rid);
             if (rel == null) { ex.Reliquias.Remove(rid); continue; }
             Reliquias.Guardar(m, rel, l);
-            Registros.Notificar(m, ex.ReinoId, "reliquias", rel.Nome + " guardada", "Agora fortalece " + l.Nome + ": " + Efeito(m, rel.Tipo) + ".", "reliquias");
+            Registros.Notificar(m, ex.ReinoId, "reliquias", "Relíquia guardada", rel.Nome + " agora fortalece " + l.Nome + ": " + Efeito(m, rel.Tipo) + ".", "reliquias");
         }
         m.Sujar(ex);
         if (dono != null) Sistemas.Revelar(m, dono, Apresentacao.ReliquiasChave);

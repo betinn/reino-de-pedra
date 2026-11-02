@@ -1,0 +1,9 @@
+/* Reino de Pedra — valiosos: caravana, extração, escavação e relíquias (sempre com os tokens de tokens.css). */
+.grupo-linha.bloqueado .ico, .grupo-linha.bloqueado svg { opacity: .55; }
+.lc-relq { display: flex; flex-wrap: wrap; gap: 4px; margin-top: var(--esp-1); }
+.lc-relq .selo-relq { font-size: var(--fs-1); }
+.relq-resumo { text-decoration: none; color: inherit; margin-bottom: var(--esp-3); }
+.relq-resumo .relq-ico { flex: none; }
+.cv-conteudo .abas, .ext-conteudo .abas, .tr-conteudo .abas { margin-bottom: var(--esp-2); }
+.ext-conteudo .emcampo, .relq-conteudo .emcampo { align-items: flex-start; }
+.ext-conteudo .alternar small, .cv-conteudo .alternar small { font-weight: 400; }

@@ -54,7 +54,7 @@ public static class Escavacoes
         ex.EscavaEventoId = m.Agendar(new FimEscavacaoEvento { MarchaId = ex.Id, RuinaId = ru.Id, Quando = ex.EscavaFim.Value }).Id;
         m.Sujar(ex);
         Registros.Notificar(m, ex.ReinoId, "reliquias", "Escavação começou",
-            GT.Partes(m, ex.Tropas) + " escavam a ruína antiga · relíquia em " + Duracao(h) + ".", "reliquias");
+            "Relíquia em " + Duracao(h) + " · " + GT.Partes(m, ex.Tropas) + " na ruína antiga.", "reliquias");
         m.Avisar(ex.ReinoId, "marchas");
     }
 
@@ -106,7 +106,7 @@ public static class Escavacoes
         if (!Exercitos.LocalProprio(dest, ex.ReinoId)) dest = r != null ? m.Locais.Obter(r.CasteloId) : null;
         Registros.Relatar(m, ex.ReinoId, "reliquia", "Relíquia encontrada", new JsonObject
         {
-            ["resumo"] = rel.Nome + " · " + ReliquiasLendarias.Efeito(m, rel.Tipo) + ". " + GT.Partes(m, ex.Tropas) + " a levam" +
+            ["resumo"] = rel.Nome + " · " + ReliquiasLendarias.Efeito(m, rel.Tipo) + ". O grupo (" + GT.Partes(m, ex.Tropas) + ") a leva" +
                          (dest != null ? " para " + dest.Nome : "") + "; no caminho, pode ser roubada.",
             ["linhas"] = new JsonArray
             {
