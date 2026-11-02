@@ -33,7 +33,7 @@ public static class Logistica
     /// </summary>
     public static void Repor(Mundo m, Reino r, string nomeFila, long itemId, Recursos perdido)
     {
-        var item = r.Fila(nomeFila).Itens.FirstOrDefault(i => i.Id == itemId);
+        var item = r.FilaSe(nomeFila)?.Itens.FirstOrDefault(i => i.Id == itemId);
         if (item == null || perdido.Count == 0) return;
         Economia.Atualizar(m, r);
         var faltam = perdido.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);

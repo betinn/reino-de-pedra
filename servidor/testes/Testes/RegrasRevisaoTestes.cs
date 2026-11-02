@@ -198,4 +198,86 @@ public class RegrasRevisaoTestes
         Assert.Null(eq.MarchaId);
         Assert.Equal(s.Atk.Id, eq.DonoId);
     }
+
+    // ---------------------------------------------------------------- obras
+
+    /// <summary>Castelo no nível 5 e uma vila no 4 com a melhoria para o 5 na fila, já com o material (tirado da vila).</summary>
+    private static (MundoTeste t, Reino r, Local castelo, Local vila, ItemFila item) VilaSubindo()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var castelo = t.M.Locais[r.CasteloId];
+        var vila = t.M.LocaisDe(r.Id).First(l => l.Tipo == TipoLocal.Vila);
+        castelo.Nivel = 5; vila.Nivel = 4;
+        Economia.Atualizar(t.M, r);
+        foreach (var k in new[] { "madeira", "pedra", "ferro", "comida" }) vila.Estoque.Somar(k, 1e5);
+        var it = Obras.Melhorar(t.M, r, vila.Id);
+        Assert.Equal(5, it.NivelAlvo);
+        Assert.True(it.MaterialCompleto);
+        return (t, r, castelo, vila, it);
+    }
+
+    [Fact]
+    public void Melhoria_na_fila_nao_desfaz_a_sabotagem_nem_passa_do_castelo()
+    {
+        var (t, r, castelo, vila, it) = VilaSubindo();
+        vila.Nivel = 1; castelo.Nivel = 2;   // sabotagem na vila e no castelo
+        AvancarAte(t, it.Fim!.Value);
+        Assert.Equal(2, vila.Nivel);         // sobe um nível (o item não devolve os níveis sabotados)
+        Assert.True(vila.Nivel <= castelo.Nivel);
+    }
+
+    [Fact]
+    public void Melhoria_que_passaria_do_castelo_sabotado_nao_sobe_e_o_material_fica_no_local()
+    {
+        var (t, r, castelo, vila, it) = VilaSubindo();
+        castelo.Nivel = 2;                   // sabotagem no castelo
+        Economia.Atualizar(t.M, r);
+        var madeira = vila.Estoque.Qtd("madeira");
+        AvancarAte(t, it.Fim!.Value);
+        Assert.Equal(4, vila.Nivel);
+        Assert.True(vila.Estoque.Qtd("madeira") >= madeira + it.Custo.Qtd("madeira") - 1e-6);
+    }
+
+    [Fact]
+    public void Material_de_obra_em_local_perdido_volta_ao_castelo_e_nao_ao_novo_dono()
+    {
+        var (t, r, castelo, vila, it) = VilaSubindo();
+        var inimigo = t.NovoReino();
+        Efeitos.Ocupar(t.M, vila, inimigo);
+        vila.Estoque = new();
+        Economia.Atualizar(t.M, r);
+        var noCastelo = castelo.Estoque.Qtd("madeira");
+        Filas.Cancelar(t.M, r, Obras.Fila, it.Id);
+        Assert.Equal(0, vila.Estoque.Qtd("madeira"), 6);
+        Assert.Equal(noCastelo + it.Custo.Qtd("madeira"), castelo.Estoque.Qtd("madeira"), 6);
+
+        // sem cancelar: a obra termina sem efeito e o material também volta ao castelo
+        var (t2, r2, castelo2, vila2, it2) = VilaSubindo();
+        Efeitos.Ocupar(t2.M, vila2, t2.NovoReino());
+        vila2.Estoque = new();
+        Economia.Atualizar(t2.M, r2);
+        var antes = castelo2.Estoque.Qtd("madeira");
+        AvancarAte(t2, it2.Fim!.Value);
+        Assert.Equal(4, vila2.Nivel);
+        Assert.Equal(0, vila2.Estoque.Qtd("madeira"), 6);
+        Assert.True(castelo2.Estoque.Qtd("madeira") >= antes + it2.Custo.Qtd("madeira") - 1e-6);
+    }
+
+    // ---------------------------------------------------------------- filas
+
+    [Fact]
+    public void Cancelar_em_fila_que_nao_existe_nao_cria_a_fila()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var nome = new string('x', 3000);
+        var e = Assert.Throws<RegraException>(() => Filas.Cancelar(t.M, r, nome, 1));
+        Assert.Equal(404, e.Status);
+        Assert.False(r.Filas.ContainsKey(nome));
+        Filas.MaterialChegou(t.M, r, "outra", 1, new Recursos());
+        Filas.Concluir(t.M, r, "mais-uma", 1);
+        Logistica.Repor(t.M, r, "e-outra", 1, new Recursos());
+        Assert.Empty(r.Filas);
+    }
 }

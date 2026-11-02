@@ -1,6 +1,7 @@
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Mapa;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Social;
 
 namespace ReinoDePedra.Jogo.Reinos;
 
@@ -119,11 +120,29 @@ public sealed class ObraNivel : ITipoItemFila
 {
     public const string Id = "nivel";
     public string Tipo => Id;
+    /// <summary>
+    /// Sobe um nível (no máximo até o alvo): um item na fila não devolve os níveis tirados por uma sabotagem. Nenhum local
+    /// passa do castelo: se o castelo caiu abaixo do novo nível (sabotagem), o local não sobe e o material fica nele.
+    /// Se o local não é mais do reino, o material volta ao castelo.
+    /// </summary>
     public void Concluir(Mundo m, Reino r, ItemFila item)
     {
         var l = item.LocalId is long id ? m.Locais.Obter(id) : null;
-        if (l == null || l.ReinoId != r.Id) return;
-        l.Nivel = Math.Max(l.Nivel, item.NivelAlvo);
+        if (l == null || l.ReinoId != r.Id || l.Ruina)
+        {
+            Filas.DevolverMaterial(m, r, item, null);
+            Registros.Notificar(m, r.Id, "obras", "Obra perdida", item.Rotulo + ": o local não é mais seu. O material voltou ao castelo.", "reino");
+            return;
+        }
+        var alvo = Math.Min(item.NivelAlvo, l.Nivel + 1);
+        var castelo = m.Locais.Obter(r.CasteloId);
+        if (l.Tipo != TipoLocal.Castelo && castelo != null && alvo > castelo.Nivel)
+        {
+            Filas.DevolverMaterial(m, r, item, l);
+            Registros.Notificar(m, r.Id, "obras", "Obra parada", item.Rotulo + ": nenhum local passa do nível do castelo. O material ficou no local.", "reino");
+            return;
+        }
+        l.Nivel = Math.Max(l.Nivel, alvo);
         m.Sujar(l);
     }
 }

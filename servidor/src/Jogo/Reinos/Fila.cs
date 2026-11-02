@@ -76,8 +76,8 @@ public static class Filas
     /// <summary>Começa o primeiro item da fila se ele estiver parado e com o material completo.</summary>
     public static void TentarIniciar(Mundo m, Reino r, string nomeFila)
     {
-        var fila = r.Fila(nomeFila);
-        if (fila.Itens.Count == 0) return;
+        var fila = r.FilaSe(nomeFila);
+        if (fila == null || fila.Itens.Count == 0) return;
         var it = fila.Itens[0];
         if (it.Iniciado || !it.MaterialCompleto) return;
         it.Inicio = m.Agora;
@@ -90,7 +90,7 @@ public static class Filas
     /// <summary>Material entregue por carregadores ou caravana a um item da fila.</summary>
     public static void MaterialChegou(Mundo m, Reino r, string nomeFila, long itemId, Recursos carga)
     {
-        var it = r.Fila(nomeFila).Itens.FirstOrDefault(i => i.Id == itemId);
+        var it = r.FilaSe(nomeFila)?.Itens.FirstOrDefault(i => i.Id == itemId);
         if (it == null)
         {
             // item cancelado: a carga fica no destino (ou volta ao castelo)
@@ -104,9 +104,9 @@ public static class Filas
 
     public static void Concluir(Mundo m, Reino r, string nomeFila, long itemId)
     {
-        var fila = r.Fila(nomeFila);
-        var it = fila.Itens.FirstOrDefault(i => i.Id == itemId);
-        if (it == null) return;
+        var fila = r.FilaSe(nomeFila);
+        var it = fila?.Itens.FirstOrDefault(i => i.Id == itemId);
+        if (fila == null || it == null) return;
         fila.Itens.Remove(it);
         Economia.Atualizar(m, r);
         TiposRegistrados[it.Tipo].Concluir(m, r, it);
@@ -118,19 +118,30 @@ public static class Filas
     public static event Action<Mundo, Reino, ItemFila>? AoConcluir;
 
     /// <summary>
-    /// Cancela um item. O material já entregue fica no local da obra (ou no castelo, se era um hexágono livre);
-    /// o que ainda está a caminho chega e fica lá também.
+    /// O material já entregue a um item vai para <paramref name="local"/>, se ele ainda é do reino (e não está em ruínas), ou
+    /// para o castelo: nunca para o estoque de quem tomou o local. Devolve onde ficou (null se o reino não tem castelo).
+    /// </summary>
+    public static Local? DevolverMaterial(Mundo m, Reino r, ItemFila it, Local? local)
+    {
+        static bool Proprio(Local? l, Reino r) => l != null && l.ReinoId == r.Id && !l.Ruina;
+        var destino = Proprio(local, r) ? local : m.Locais.Obter(r.CasteloId) is var c && Proprio(c, r) ? c : null;
+        if (destino != null && it.Entregue.Count > 0) { destino.Estoque.Somar(it.Entregue); m.Sujar(destino); }
+        return destino;
+    }
+
+    /// <summary>
+    /// Cancela um item. O material já entregue fica no local da obra (ou no castelo, se era um hexágono livre ou se o local
+    /// não é mais do reino); o que ainda está a caminho chega e fica lá também.
     /// </summary>
     public static void Cancelar(Mundo m, Reino r, string nomeFila, long itemId)
     {
-        var fila = r.Fila(nomeFila);
-        var it = fila.Itens.FirstOrDefault(i => i.Id == itemId) ?? throw new RegraException("Item não está na fila.", 404);
+        var fila = r.FilaSe(nomeFila);
+        var it = fila?.Itens.FirstOrDefault(i => i.Id == itemId) ?? throw new RegraException("Item não está na fila.", 404);
         Economia.Atualizar(m, r);
         fila.Itens.Remove(it);
         m.Cancelar(it.EventoId);
         if (TiposRegistrados.TryGetValue(it.Tipo, out var tipo)) tipo.Cancelado(m, r, it);
-        var destino = (it.LocalId is long lid ? m.Locais.Obter(lid) : null) ?? m.Locais.Obter(r.CasteloId);
-        if (destino != null) { destino.Estoque.Somar(it.Entregue); m.Sujar(destino); }
+        var destino = DevolverMaterial(m, r, it, it.LocalId is long lid ? m.Locais.Obter(lid) : null);
         foreach (var mc in m.Marchas.Where(x => x is Carregadores c && c.ItemId == it.Id).Cast<Carregadores>())
         {
             mc.ItemId = null; mc.DestinoLocalId = destino?.Id;

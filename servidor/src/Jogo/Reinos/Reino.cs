@@ -31,7 +31,10 @@ public sealed partial class Reino : Documento
 
     /// <summary>Filas do reino por nome ("obras", "recrutamento", "ferraria"...). Até 10 itens, um por vez.</summary>
     public Dictionary<string, Fila> Filas { get; set; } = new();
+    /// <summary>Fila pelo nome, criada se ainda não existe (use só com os nomes de fila dos sistemas).</summary>
     public Fila Fila(string nome) => Filas.TryGetValue(nome, out var f) ? f : Filas[nome] = new Fila();
+    /// <summary>Fila pelo nome, só para ler: null se não existe (nunca cria; serve para nomes vindos do cliente).</summary>
+    public Fila? FilaSe(string nome) => Filas.TryGetValue(nome, out var f) ? f : null;
 
     public bool EhIA => ContaId == null;
     public bool SobEscudo(long agora) => agora < EscudoAte;

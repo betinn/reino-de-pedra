@@ -34,7 +34,7 @@ public sealed class Carregadores : Marcha
         var r = m.Reinos.Obter(ReinoId);
         Encerrar(m);
         if (r == null) return;
-        if (ItemId is long item && r.Fila(Fila).Itens.Any(i => i.Id == item))
+        if (ItemId is long item && r.FilaSe(Fila)?.Itens.Any(i => i.Id == item) == true)
         {
             Filas.MaterialChegou(m, r, Fila, item, Carga);
             return;
