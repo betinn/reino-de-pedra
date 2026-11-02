@@ -118,7 +118,7 @@
       '<output class="num" aria-live="polite">' + valor + '</output>' +
       '<button type="button" class="btn btn-icone" data-passo="1" aria-label="Mais"' + (valor >= max ? ' disabled' : '') + '>' + RP.icone('mais') + '</button></div>';
   }
-  function pontos(v) { var h = ''; for (var i = 1; i <= 5; i++) h += '<i class="' + (i <= v ? 'on' : '') + '"></i>'; return '<span class="pontos" aria-label="' + v + ' de 5">' + h + '</span>'; }
+  function pontos(v) { var h = ''; for (var i = 1; i <= 5; i++) h += '<i class="' + (i <= v ? 'on' : '') + '"></i>'; return '<span class="pontos" role="img" aria-label="' + v + ' de 5">' + h + '</span>'; }
   function velPalavra(v) { return v <= 2 ? 'Lenta' : v >= 5 ? 'Rápida' : 'Média'; }
   function unidade(id) { return D.unidades.filter(function (u) { return u.id === id; })[0]; }
   function castelo() { var x = W.local('castelo'); return [x.c, x.l]; }
@@ -145,6 +145,7 @@
       var disp = D.disponiveis;
       el.innerHTML = '<header class="topo"><h1>Tropas</h1><button type="button" class="btn btn-fantasma btn-icone btn-sino-topo" data-abrir-notificacoes aria-label="Notificações">' + RP.icone('sino') + '<span class="contador">' + D.notificacoesNaoLidas + '</span></button></header>' +
         '<div class="conteudo-tela">' +
+        '<div data-batalha-atalho></div>' +
         '<div class="secao-titulo" style="margin-top:0">Em campo</div><div class="pilha" data-emcampo></div>' +
         '<div class="secao-titulo">Guarnição do castelo</div><div class="card"><div class="linha" style="flex-wrap:wrap">' +
         Object.keys(disp).filter(function (u) { return disp[u]; }).map(function (u) { return '<span class="selo selo-g">' + RP.icone(unidade(u).icone) + disp[u] + ' ' + unidade(u).nome.toLowerCase() + (disp[u] > 1 ? 's' : '') + '</span>'; }).join('') +
@@ -152,14 +153,18 @@
         '<div class="secao-titulo">Ordens</div><div class="grade-acoes">' +
         [['recrutamento', 'tropas', 'Recrutar', 'Milícia, lanceiro, arqueiro, cavalaria e cerco'],
           ['exploradores', 'explorador', 'Exploradores', 'Revelar o mapa, patrulhar e espionar'],
-          ['caca', 'lobo', 'Caça', 'Comida, couro e peles']].map(function (a) {
+          ['envio', 'alvo', 'Envio de ataque', 'Saque, sabotagem, massacre, ocupação, cerco'],
+          ['extracao', 'picareta', 'Extração', 'Coletar recursos descobertos'],
+          ['caca', 'lobo', 'Caça', 'Comida, couro e peles'],
+          ['posturas', 'escudo', 'Posturas', 'Como cada tropa reage sem você']].map(function (a) {
           return '<a class="card acao-card" href="#/' + a[0] + '"><span class="ico-placa ico-placa-g">' + RP.icone(a[1]) + '</span><b>' + a[2] + '</b><small class="fraco">' + a[3] + '</small></a>';
-        }).join('') +
-        [['picareta', 'Extração'], ['alvo', 'Envio de ataque'], ['escudo', 'Posturas'], ['estandarte', 'Batalha']].map(function (a) {
-          return '<button type="button" class="card acao-card em-breve" data-em-breve="' + a[1] + '"><span class="ico-placa ico-placa-g">' + RP.icone(a[0]) + '</span><b>' + a[1] + '</b><small class="selo">Próximo bloco</small></button>';
         }).join('') + '</div></div>';
     },
-    entrar: function (el) { RP.$('[data-emcampo]', el).innerHTML = emCampoHTML(); }
+    entrar: function (el) {
+      RP.$('[data-emcampo]', el).innerHTML = emCampoHTML();
+      var bt = RP.batalha && RP.batalha.ativa(), x = W.local(D.batalha.local);
+      RP.$('[data-batalha-atalho]', el).innerHTML = bt ? '<a class="faixa-alerta faixa-batalha" href="#/batalha" style="margin-bottom:var(--esp-2)">' + RP.icone('tropas', 'pulso') + '<span class="txt"><b>Batalha em andamento</b> · ' + RP.esc(x.nome) + '<br>termina em <b class="num" data-fim="' + (Date.now() + RP.batalha.restante() * 1000) + '">' + RP.fmtResta(RP.batalha.restante() * 1000) + '</b></span>' + RP.icone('avancar', 'ico-p') + '</a>' : '';
+    }
   });
 
   /* ================================================================ Construção */
@@ -168,7 +173,8 @@
     var f = D.filas;
     return '<div class="card pilha fila-card"><div class="card-titulo" style="margin:0">' + RP.icone('martelo') + '<h3>Obras</h3><span class="selo">' + f.obras.length + ' de ' + f.vagasObras + ' vagas</span></div>' +
       (f.obras.length ? f.obras.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') : '<p class="fraco">Nenhuma obra em andamento.</p>') +
-      '<p class="fraco" style="font-size:var(--fs-2)">Uma obra por vez; as próximas começam quando a anterior termina.</p></div>';
+      (f.obras.length ? '<p class="fila-termina">' + RP.icone('relogio', 'ico-p') + 'Fila termina ' + RP.fmtHora(RP.fimItem(f.obras[f.obras.length - 1])) + '</p>' : '') +
+      '<p class="fraco" style="font-size:var(--fs-2)">Uma obra por vez; as próximas começam quando a anterior termina. Planeje horas ou a noite inteira.</p></div>';
   }
   function cartaoObra(o) {
     var bloqueado = !!o.requisito, falta = RP.faltas(o.custo);
@@ -202,7 +208,7 @@
         var b;
         if ((b = e.target.closest('[data-aba-obra]'))) { abaObra = b.getAttribute('data-aba-obra'); desenharConstrucao(el); return; }
         if ((b = e.target.closest('[data-escolher-local]'))) {
-          RP.aviso({ titulo: 'Escolha o local no mapa', texto: 'Toque num hexágono livre ou numa jazida. A confirmação no mapa entra no bloco de Extração.', icone: 'mapa', tipo: 'alerta', ms: 3600 });
+          RP.aviso({ titulo: 'Escolha o local no mapa', texto: 'No jogo, você toca num hexágono livre ou numa jazida e confirma. No protótipo, este passo é só ilustrado.', icone: 'mapa', tipo: 'alerta', ms: 3600 });
           return;
         }
         if ((b = e.target.closest('[data-construir]'))) {
@@ -233,7 +239,8 @@
   function filaRecrutHTML() {
     var f = D.filas;
     return '<div class="card pilha fila-card"><div class="card-titulo" style="margin:0">' + RP.icone('tropas') + '<h3>Fila de recrutamento</h3><span class="selo">' + f.recrutamento.length + ' de ' + f.vagasRecrutamento + '</span></div>' +
-      (f.recrutamento.length ? f.recrutamento.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') : '<p class="fraco">Nada sendo recrutado.</p>') + '</div>';
+      (f.recrutamento.length ? f.recrutamento.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') +
+        '<p class="fila-termina">' + RP.icone('relogio', 'ico-p') + 'Fila termina ' + RP.fmtHora(RP.fimItem(f.recrutamento[f.recrutamento.length - 1])) + '</p>' : '<p class="fraco">Nada sendo recrutado.</p>') + '</div>';
   }
   function cartaoUnidade(u) {
     var q = pedido[u.id] || 0, max = maxRecrutavel(u);
@@ -486,6 +493,13 @@
     },
     entrar: function (el, params) { if (params.get('fauna')) caca.fauna = params.get('fauna'); desenharCaca(el); }
   });
+
+  /* peças compartilhadas com as telas militares e sociais */
+  RP.util = {
+    opcoesCaminho: opcoesCaminho, miniRota: miniRota, opcaoCaminho: opcaoCaminho, stepper: stepper, topo: topo,
+    unidade: unidade, castelo: castelo, irParaMarcha: irParaMarcha, seloNivel: seloNivel, perigoTxt: perigoTxt,
+    pontos: pontos, velPalavra: velPalavra, blocoRisco: blocoRisco
+  };
 
   /* retorno de marcha (ilustrativo) */
   document.addEventListener('click', function (e) {

@@ -78,7 +78,7 @@
       { id: 'c-serraria', reino: 'corvo', tipo: 'serraria', nome: 'Serraria', c: 36, l: 23, terreno: 'floresta', nivel: '?' },
       { id: 'c-armazem', reino: 'corvo', tipo: 'armazem', nome: 'Armazém', c: 33, l: 25, terreno: 'planicie', nivel: '?' },
 
-      { id: 'x-mina', reino: 'desconhecido', tipo: 'mina', nome: 'Mina', c: 7, l: 5, terreno: 'colina', nivel: '?' }
+      { id: 'x-mina', reino: 'desconhecido', tipo: 'mina', nome: 'Mina', c: 7, l: 5, terreno: 'colina', nivel: '?', escudo: true }
     ],
 
     /* Recursos valiosos e lendários descobertos (finitos) */
@@ -181,9 +181,9 @@
         { local: 'serraria', rotulo: 'Serraria do Bosque → nível 4', seg: 760, total: 1800 },
         { local: 'castelo', rotulo: 'Muralha do castelo → nível 4', seg: 760 + 2700, total: 2700 }
       ],
-      vagasObras: 3,
+      vagasObras: 10,
       recrutamento: [{ unidade: 'arqueiro', qtd: 10, rotulo: '10 arqueiros · Quartel da Guarda', seg: 492, total: 900 }],
-      vagasRecrutamento: 4
+      vagasRecrutamento: 10
     },
 
     /* Catálogo de construção. Básicas: minutos; fortes/valiosas: mais tempo. */
@@ -232,6 +232,119 @@
       { id: 'prospector', nome: 'Prospector', icone: 'picareta', velocidade: 'Lenta', visao: 'Baixa', custo: 'Caro', carac: 'Único que revela jazidas valiosas e lendárias', livres: 0, treino: { comida: 120, ferro: 60 } },
       { id: 'batedor', nome: 'Batedor de elite', icone: 'batedor', velocidade: 'Rápida', visao: 'Alta', custo: 'Caro', carac: 'Furtivo; espiona exércitos e reinos, revela o dono de locais', livres: 1, treino: { comida: 150, couro: 40 } }
     ],
+
+    /* Extração em andamento (exemplo): posto já construído na jazida de prata */
+    extracoes: [
+      { id: 'ex-prata', jazida: 'j-prata', grupo: { lanceiro: 6 }, posto: true, ritmo: 34, horas: 6 }
+    ],
+
+    /* Tipos de ataque (CLAUDE.md) */
+    tiposAtaque: [
+      { id: 'saque', nome: 'Saque', icone: 'ouro', txt: 'Leva recursos do local, até a capacidade de carga das tropas.' },
+      { id: 'sabotagem', nome: 'Sabotagem', icone: 'martelo', txt: 'Destrói ou danifica construções do local.' },
+      { id: 'massacre', nome: 'Massacre', icone: 'populacao', txt: 'Mata população do local. Enfraquece o reino a longo prazo, sem ganho de recurso.' },
+      { id: 'ocupacao', nome: 'Ocupação', icone: 'bandeira', txt: 'Toma o local e passa a explorá-lo até alguém retomar.' },
+      { id: 'cerco', nome: 'Cerco ao castelo', icone: 'cerco', txt: 'O ataque mais difícil do jogo. Só contra castelos; máquinas de cerco derrubam muralhas.', soCastelo: true }
+    ],
+    /* Saques recentes por alvo: rendimento decrescente em saques repetidos */
+    saquesRecentes: { 'v-mina': 2 },
+
+    /* Batalha em andamento (exemplo). Tempos em segundos a partir da abertura da página. */
+    batalha: {
+      id: 'b-vau', local: 'vila-vau', inicio: -240, duracao: 900,
+      atacante: { nome: 'Forças desconhecidas', resumo: '≈ 40 tropas · lanceiros e arqueiros', origem: 'sudoeste', tipo: 'Saque', forca: 100 },
+      defensor: { resumo: '4 milicianos, população como milícia (≈ 180) e paliçada', forca: 82 },
+      eventos: [
+        { t: 0, txt: 'Forças desconhecidas chegaram pelo sudoeste.' },
+        { t: 50, txt: 'A população pegou em armas como milícia.' },
+        { t: 170, txt: 'Arqueiros inimigos incendiaram um celeiro.' },
+        { t: 330, txt: 'A paliçada cedeu no lado sul.' },
+        { t: 520, txt: 'Os atacantes começam a carregar comida.' },
+        { t: 760, txt: 'A milícia recua para a praça da vila.' }
+      ],
+      reforcos: [
+        { id: 'castelo', nome: '20 lanceiros do castelo', forca: 48, seg: 360 },
+        { id: 'extracao', nome: 'Grupo de extração (20 lanceiros)', forca: 44, seg: 240 }
+      ]
+    },
+
+    /* Relatórios (exemplos) */
+    relatorios: [
+      { id: 'r-batalha', tipo: 'batalha', titulo: 'Vila do Vau sob ataque', horas: 0.07, lido: false, local: 'vila-vau' },
+      { id: 'r-ataque-anon', tipo: 'ataque', titulo: 'Ataque repelido na Vila do Moinho', horas: 5, lido: false, local: 'vila-moinho',
+        atacante: null, forcas: '≈ 25 tropas · lanceiros e cavalaria', origem: 'nordeste', tipoAtaque: 'Saque', resultado: 'Repelido',
+        perdas: { meu: '3 milicianos · 18 de população', deles: '≈ 9 tropas' }, levado: null },
+      { id: 'r-ataque-id', tipo: 'ataque', titulo: 'Pasto das Éguas saqueado', horas: 26, lido: true, local: 'pasto',
+        atacante: 'valdren', forcas: '32 cavaleiros', origem: 'leste', tipoAtaque: 'Saque', resultado: 'Saqueado',
+        perdas: { meu: '6 milicianos', deles: '4 cavaleiros' }, levado: { comida: 420, couro: 30 } },
+      { id: 'r-saque', tipo: 'saque', titulo: 'Seu saque à Mina Rubra', horas: 9, lido: true, local: 'v-mina',
+        tropas: '24 cavaleiros', resultado: 'Vitória', levado: { ferro: 180 }, decrescente: { vezes: 2, reducao: 40 }, perdas: { meu: '2 cavaleiros', deles: '≈ 6 lanceiros' }, estandarte: false },
+      { id: 'r-exploracao', tipo: 'exploracao', titulo: 'Exploração ao norte', horas: 2, lido: false,
+        quem: 'Explorador a cavalo', revelados: 14, achados: ['Manada de cavalos de raça (valioso)', 'Lobos (perigo alto)', 'Rota pública: Estrada do Rei continua para o leste'] },
+      { id: 'r-espionagem', tipo: 'espionagem', titulo: 'Espionagem da Mina Rubra', horas: 10, lido: true, local: 'v-mina',
+        quem: 'Batedor de elite', dono: 'valdren', defesa: '≈ 15 lanceiros e muralha baixa', producao: 'Ferro, ≈ 40/h', tropasVistas: '≈ 35 lanceiros saindo para o oeste', descoberto: false },
+      { id: 'r-fauna', tipo: 'fauna', titulo: 'Explorador morto no pântano', horas: 30, lido: true,
+        quem: 'Explorador a pé', animal: 'crocodilos', onde: 'Pântano a sudoeste', resultado: 'O explorador foi morto. Tropas mortas não retornam.' },
+      { id: 'r-caca', tipo: 'caca', titulo: 'Caçada aos javalis', horas: 14, lido: true,
+        grupo: '6 arqueiros', animal: 'javalis', ganho: { comida: 96, couro: 24, peles: 2 }, perdas: 'Nenhuma' },
+      { id: 'r-extracao', tipo: 'extracao', titulo: 'Prata extraída', horas: 1, lido: true, jazida: 'j-prata', ganho: { prata: 34 }, restante: 0.74 }
+    ],
+
+    /* Notificações (exemplos). horas: há quanto tempo. ir: rota do protótipo. */
+    notificacoes: [
+      { id: 'n1', cat: 'ataque', titulo: 'Vila do Vau está sendo atacada', texto: 'Forças desconhecidas. Envie reforços ou recue.', horas: 0.07, lido: false, ir: 'batalha' },
+      { id: 'n2', cat: 'ataque', titulo: 'Forças desconhecidas a caminho', texto: 'Alvo provável: Pasto das Éguas. Chegada em cerca de 40 min.', horas: 0.1, lido: false, ir: 'mapa?modo=cena&abrir=marcha:m-inimigo' },
+      { id: 'n3', cat: 'exploracao', titulo: 'Explorador revelou 14 hexágonos', texto: 'Encontrou uma manada de cavalos de raça e um bando de lobos.', horas: 2, lido: false, ir: 'relatorio?id=r-exploracao' },
+      { id: 'n4', cat: 'construcao', titulo: 'Moradia concluída', texto: 'Vila do Moinho, nível 3. Teto de população +60.', horas: 3, lido: true, ir: 'reino' },
+      { id: 'n5', cat: 'social', titulo: 'Nova bandeira perto do seu reino', texto: 'Casa Valdren: “Este ouro é de Valdren.”', horas: 4, lido: true, ir: 'mapa?modo=tatico&abrir=bandeira:b-1' },
+      { id: 'n6', cat: 'recrutamento', titulo: '15 arqueiros prontos', texto: 'Quartel da Guarda.', horas: 7, lido: true, ir: 'tropas' },
+      { id: 'n7', cat: 'fauna', titulo: 'Explorador morto por crocodilos', texto: 'Pântano a sudoeste. Prefira a rota segura ou leve escolta.', horas: 30, lido: true, ir: 'relatorio?id=r-fauna' },
+      { id: 'n8', cat: 'temporada', titulo: 'Faltam 41 dias para o fim da temporada', texto: 'Relíquias e títulos da temporada ainda podem ser conquistados.', horas: 30, lido: true, ir: 'temporada' }
+    ],
+    preferenciasPush: { ataque: true, construcao: true, recrutamento: false, exploracao: true, fauna: true, social: false, temporada: true, silencioNoturno: true },
+
+    /* Temporada e legado (exemplos) */
+    legado: {
+      linhagem: { nivel: 4, progresso: 0.62, desbloqueios: [
+        { nivel: 2, txt: 'Forma de brasão "Rodela"', feito: true },
+        { nivel: 3, txt: 'Nome de linhagem exibido no perfil', feito: true },
+        { nivel: 5, txt: 'Escolher a região inicial ao fundar o reino' },
+        { nivel: 6, txt: 'Estandarte bordado (cosmético)' },
+        { nivel: 8, txt: 'Castelo de pedra clara (cosmético)' }
+      ] },
+      reliquias: [
+        { id: 'coroa-ferro', nome: 'Coroa de Ferro Frio', bonus: '+2% produção de ferro', como: 'Defender 10 ataques nesta temporada', ganha: true },
+        { id: 'lanterna', nome: 'Lanterna do Explorador', bonus: '+3% visão de exploradores', como: 'Revelar 300 hexágonos', ganha: true },
+        { id: 'chave-ruina', nome: 'Chave das Ruínas', bonus: '+2% rendimento de extração', como: 'Ocupar uma ruína antiga', ganha: false, progresso: 0 },
+        { id: 'presa', nome: 'Presa do Grande Urso', bonus: '+2% rendimento de caça', como: 'Caçar 5 bandos de ursos', ganha: false, progresso: 0.4 }
+      ],
+      tetoBonus: '5%',
+      titulos: [
+        { nome: 'Senhor das Pedras', como: 'Linhagem nível 4', ativo: true, ganho: true },
+        { nome: 'Guardião do Vau', como: 'Temporada 2: defendeu a Vila do Vau 20 vezes', ganho: true },
+        { nome: 'Explorador do Norte', como: 'Temporada 1: revelou o norte do mapa', ganho: true },
+        { nome: 'Caçador de Lobos', como: 'Caçar 10 bandos de lobos', ganho: false }
+      ],
+      brasoes: [
+        { forma: 'portugues', divisao: 'pleno', cor1: 'azul', cor2: 'prata', simbolo: 'torre', corSimbolo: 'prata', nome: 'Atual' },
+        { forma: 'classico', divisao: 'esquartelado', cor1: 'azul', cor2: 'ouro', simbolo: 'torre', corSimbolo: 'negro', nome: 'Temporada 2' },
+        { forma: 'redondo', divisao: 'banda', cor1: 'verde', cor2: 'prata', simbolo: 'montes', corSimbolo: 'negro', nome: 'Temporada 1' },
+        { forma: 'portugues', divisao: 'chaveirao', cor1: 'negro', cor2: 'ouro', simbolo: 'coroa', corSimbolo: 'ouro', nome: 'Bloqueado: vencer um cerco', bloqueado: true }
+      ],
+      historico: [
+        { temporada: 2, nome: 'Temporada das Cinzas', resumo: 'Caiu no dia 34, recomeçou em exílio e terminou com 6 locais.' },
+        { temporada: 1, nome: 'Temporada da Fundação', resumo: 'Sobreviveu até o fim com 12 locais.' }
+      ]
+    },
+
+    /* Exílio (exemplo) */
+    exilio: {
+      motivo: 'O Castelo de Pedralva caiu num cerco e os últimos locais foram ocupados.',
+      kit: { madeira: 800, pedra: 500, comida: 1000, ferro: 200 },
+      kitTropas: '10 milicianos e 1 explorador a pé',
+      escudo: '3 dias',
+      mantido: ['Linhagem nível 4', '2 relíquias da temporada', '3 títulos', 'Brasões e cosméticos']
+    },
 
     /* Rendimento ilustrativo da caça por animal */
     caca: {

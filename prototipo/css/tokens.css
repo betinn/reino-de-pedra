@@ -82,7 +82,7 @@
   /* Texto */
   --cor-texto: #efe9dd;
   --cor-texto-2: #bfb6a8;
-  --cor-texto-3: #948c80;
+  --cor-texto-3: #a69e92;
 
   /* Ação e estado */
   --cor-primaria: #e07a2e;
@@ -163,6 +163,10 @@
   --rec-lendario: #d796f2;
   --rec-couro: #c08a5c;
   --rec-peles: #ddd3c4;
+
+  /* Gráficos (validados contra a superfície #22262c: faixa de luminosidade, daltonismo e contraste) */
+  --grafico-meu: #4f97da;
+  --grafico-hostil: #e2584e;
 
   /* Perigo da fauna */
   --perigo-baixo: #e8b947;

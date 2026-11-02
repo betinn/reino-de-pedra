@@ -26,6 +26,14 @@
     if (horas < 48) return 'há ' + Math.round(horas) + ' h';
     return 'há ' + Math.round(horas / 24) + ' dias';
   };
+  /* horário absoluto legível: "hoje às 14:20", "amanhã às 06:40" */
+  RP.fmtHora = function (ms) {
+    var d = new Date(ms), hoje = new Date(), am = new Date(); am.setDate(hoje.getDate() + 1);
+    var hh = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    if (d.toDateString() === hoje.toDateString()) return 'hoje às ' + hh;
+    if (d.toDateString() === am.toDateString()) return 'amanhã às ' + hh;
+    return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) + ' às ' + hh;
+  };
   RP.fmtDuracao = function (seg) {
     var h = Math.floor(seg / 3600), m = Math.round((seg % 3600) / 60);
     return h ? h + ' h ' + (m ? m + ' min' : '') : m + ' min';
@@ -314,7 +322,7 @@
   };
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-abrir-recursos]')) RP.folhaRecursos();
-    else if (e.target.closest('[data-abrir-notificacoes]')) RP.emBreve('Notificações');
+    else if (e.target.closest('[data-abrir-notificacoes]')) RP.ir('notificacoes');
     else if (e.target.closest('[data-em-breve]')) RP.emBreve(e.target.closest('[data-em-breve]').getAttribute('data-em-breve'));
   });
 
@@ -335,6 +343,7 @@
       montadas[atual].hidden = true;
     }
     RP.fecharFolha();
+    RP.$$('.modal-fundo').forEach(function (m) { m.remove(); });
     if (!montadas[nome]) {
       var s = document.createElement('section');
       s.className = 'tela tela-' + nome;
@@ -355,6 +364,7 @@
     if (atual !== nome && !def.fixa) window.scrollTo(0, 0);
     atual = nome;
     if (def.entrar) def.entrar(montadas[nome], params);
+    document.dispatchEvent(new CustomEvent('rp:tela', { detail: nome }));
   }
   RP.ir = function (h) { location.hash = '#/' + h; };
   /* descarta uma tela montada para que seja reconstruída na próxima visita */
