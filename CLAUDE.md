@@ -53,7 +53,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 | Prospector | Lenta | Baixa | Caro | Único que revela jazidas valiosas e lendárias |
 | Batedor de elite | Rápida | Alta | Caro | Furtivo; espiona exércitos e reinos inimigos |
 
-- Exploradores podem ser capturados ou mortos.
+- Exploradores ocupam **1 de população** cada. Podem ser capturados ou mortos.
 - Quem captura um explorador vê o **reino de origem** e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
 
@@ -64,13 +64,15 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Criam a escolha entre **rota curta e perigosa** ou **longa e segura**, ou levar escolta. Rotas construídas reduzem a presença de animais.
 - **Caçar** rende comida e materiais (couro, peles).
 - Áreas exploradas mostram o **nível de perigo**, sujeito ao mesmo envelhecimento de informação da névoa.
-- Animais se movem e **reaparecem** por região ao longo do tempo; área limpa não fica segura para sempre.
+- Animais se movem e **reaparecem** por região ao longo do tempo; um bando abatido volta em 24 h, e área limpa não fica segura para sempre.
+- Um explorador sozinho atacado por animais morre; grupos perdem parte das tropas, e com o dobro da força dos animais passam ilesos.
 - Perto dos reinos iniciais a fauna é mais fraca, para não punir iniciantes.
 
 ### Rotas
 
 - Rotas construídas funcionam como **ruas públicas**: qualquer jogador vê, usa e recebe as mesmas vantagens de deslocamento.
 - Quem constrói paga o custo; a rota pode beneficiar inclusive inimigos.
+- O custo e o tempo de cada hexágono de rota crescem com o terreno (floresta, montanha e pântano custam mais). Num rio, a rota precisa de **ponte**, mais cara; sem ponte, só pelo vau, mais lento.
 - Rotas **não atravessam a névoa**: só aparecem nas áreas que o jogador já explorou.
 
 ---
@@ -238,6 +240,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - O dono é avisado quando a bandeira cai, sem saber quem derrubou, a não ser que as tropas levassem estandarte.
 - Explorar um local de outro reino **não revela o dono**; espionar o local com batedores de elite revela.
 - Espiões são **descobertos se alguma tropa os vir**. Ficam no mapa como "visto há X horas" por apenas **10 horas**.
+- Ao espionar um local, o batedor pode ser visto: a chance cresce com as torres no alcance e com a guarnição, até um máximo. Visto, metade das vezes é capturado e o relatório não volta.
 - Para não poluir o mapa, objetos vistos ("visto há X") são **limpos periodicamente**. Vale para espiões e exércitos vistos; o nível de perigo da fauna segue a regra da névoa.
 
 ### Território
