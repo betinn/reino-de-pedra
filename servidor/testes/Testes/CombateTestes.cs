@@ -466,7 +466,9 @@ public class CombateTestes
         var b = s.Chegar(ex);
         s.Terminar(b);
         Assert.Equal("vitoria", b.Resultado);
-        Assert.Equal(1, castelo.Portoes);
+        // os portões caíram um nível (depois a queda do castelo arruína o castelo: ver GuerraTestes)
+        var defesa = s.M.Relatorios.Single(r => r.ReinoId == s.Def.Id && r.Tipo == "defesa");
+        Assert.Contains("portões −1", defesa.Dados["danos"]!.AsArray().Select(x => x!.GetValue<string>()));
         Assert.Equal(1000, ex.Carga.Qtd("madeira"), 6);
         Assert.Equal("cerco", PlanoAtaque.Ler(b.Plano).Tipo);
         Assert.Single(AjustesTeste.De(s.M).Fins);

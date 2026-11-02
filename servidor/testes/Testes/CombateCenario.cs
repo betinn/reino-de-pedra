@@ -20,6 +20,7 @@ public static class AjustesTeste
         public string? Bloquear;
         public List<(Reino perdeu, Exercito vencedor, Local castelo)> Quedas = new();
         public List<ResultadoCombate> Fins = new();
+        public int? Exilio;
     }
     private static readonly ConditionalWeakTable<Mundo, Ajuste> Tabela = new();
 
@@ -38,6 +39,7 @@ public static class AjustesTeste
         Permissoes.AntesDeEnviar.Add((m, atk, alvo) => Tabela.TryGetValue(m, out var a) ? a.Bloquear : null);
         Combates.AoCairCastelo.Add((m, r, ex, l) => De(m).Quedas.Add((r, ex, l)));
         Combates.AoTerminar.Add((m, rc) => De(m).Fins.Add(rc));
+        Quedas.EscolherExilio.Add((m, r, atk) => Tabela.TryGetValue(m, out var a) ? a.Exilio : null);
     }
 
     /// <summary>Garante o registro (chame no construtor da classe de teste, antes de qualquer combate).</summary>
