@@ -110,7 +110,7 @@ namespace ReinoDePedra.Jogo.Combate
                 // exílio: tudo perdido (o resto do castelo também); recomeça longe de quem derrubou
                 foreach (var (k, v) in restoCastelo) q.RecursosPerdidos[k] = q.RecursosPerdidos.GetValueOrDefault(k) + v;
                 novo = Exilar(m, r, atk, castelo);
-                ArrumarFilas(m, r, castelo, novo, true);
+                ArrumarFilas(m, r, castelo, novo, true, q);
                 r.Pop = m.P.Guerra.Exilio.Pop;   // o recrutamento cancelado não devolve população no exílio
                 q.Exilio = true; q.NivelNovo = novo.Nivel;
                 q.Kit = new(m.P.Guerra.Exilio.Kit); q.KitTropas = new(m.P.Guerra.Exilio.Tropas);
@@ -143,9 +143,10 @@ namespace ReinoDePedra.Jogo.Combate
 
         /// <summary>
         /// Filas depois da queda: o que era no castelo antigo (e as melhorias acima do novo castelo) é cancelado, com o material
-        /// indo para o castelo novo; a cura dos feridos muda para o castelo novo. No exílio, tudo é cancelado e os carregadores somem.
+        /// indo para o castelo novo; a cura dos feridos muda para o castelo novo. No exílio, tudo é cancelado sem devolver o
+        /// material (estava no reino perdido: entra nos recursos perdidos) e os carregadores somem.
         /// </summary>
-        private static void ArrumarFilas(Mundo m, Reino r, Local antigo, Local novo, bool exilio)
+        private static void ArrumarFilas(Mundo m, Reino r, Local antigo, Local novo, bool exilio, RegistroQueda? q = null)
         {
             foreach (var (nome, fila) in r.Filas.ToList())
                 foreach (var it in fila.Itens.ToList())
@@ -155,6 +156,11 @@ namespace ReinoDePedra.Jogo.Combate
                         || it.Tipo == ObraNivel.Id && it.NivelAlvo > novo.Nivel;
                     if (!cancelar) continue;
                     if (it.LocalId == antigo.Id || it.LocalId == null || exilio) { it.LocalId = novo.Id; it.Hex = novo.Hex; }
+                    if (exilio)
+                    {
+                        if (q != null) foreach (var (k, v) in it.Entregue) q.RecursosPerdidos[k] = q.RecursosPerdidos.GetValueOrDefault(k) + v;
+                        it.Entregue = new();
+                    }
                     Filas.Cancelar(m, r, nome, it.Id);
                 }
             if (exilio)
@@ -180,6 +186,8 @@ namespace ReinoDePedra.Jogo.Combate
             r.CasteloId = c.Id;
             r.Vaga = vaga;
             r.Pop = e.Pop;
+            // carroças, exploradores e mensageiros parados ficavam no castelo caído: o exílio recomeça só com o kit
+            r.Veiculos.Clear(); r.ExploradoresLivres.Clear(); r.MensageirosLivres = 0;
             r.Fundados = 0;
             r.EscudoAte = Math.Max(r.EscudoAte, m.Agora + T.DeHoras(m.P.EscudoExilioH));
             m.Sujar(r);

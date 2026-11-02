@@ -280,4 +280,33 @@ public class RegrasRevisaoTestes
         Logistica.Repor(t.M, r, "e-outra", 1, new Recursos());
         Assert.Empty(r.Filas);
     }
+
+    // ---------------------------------------------------------------- exílio
+
+    [Fact]
+    public void Exilio_nao_devolve_o_material_das_obras_nem_os_veiculos_do_castelo_caido()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino(); var atk = t.NovoReino();
+        foreach (var l in t.M.LocaisDe(r.Id).Where(l => l.Id != r.CasteloId).ToList()) t.M.RemoverLocal(l);
+        var castelo = t.M.Locais[r.CasteloId];
+        castelo.Nivel = 6;
+        t.DarRecursos(r);
+        var it = Obras.Melhorar(t.M, r, castelo.Id);
+        Assert.True(it.MaterialCompleto);
+        r.Veiculos["carroca"] = 3;
+        r.ExploradoresLivres["pe"] = 2;
+        r.MensageirosLivres = 1;
+        Quedas.CairCastelo(t.M, r, new Exercito { ReinoId = atk.Id }, castelo);
+        var q = r.UltimaQueda!;
+        Assert.True(q.Exilio);
+        var novo = t.M.Locais[r.CasteloId];
+        var kit = t.M.P.Guerra.Exilio.Kit;
+        foreach (var (k, v) in kit) Assert.Equal(v, novo.Estoque.Qtd(k), 6);
+        Assert.Equal(0, novo.Estoque.Qtd("ouro"), 6);
+        Assert.Empty(r.Veiculos);
+        Assert.Empty(r.ExploradoresLivres);
+        Assert.Equal(0, r.MensageirosLivres);
+        Assert.True(q.RecursosPerdidos.GetValueOrDefault("madeira") >= it.Custo.Qtd("madeira") - 1e-6);
+    }
 }
