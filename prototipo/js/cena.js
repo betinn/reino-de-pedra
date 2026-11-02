@@ -224,6 +224,21 @@
     if (vivo) { brilho(c, 4, gy - 6, t, 0, '#fff'); brilho(c, -5, gy - 2, t, 2.1, '#fff'); }
   }
 
+  /* carroça puxada a boi, com sacos de carga; rodas giram */
+  function carroca(c, t, pal, dir, cor, fase) {
+    cavalo(c, dir * 14, 0, t, pal, { cor: '#6e5137', escuro: '#3a2a1c', dir: dir, andando: true, fase: fase });
+    sombra(c, -2 * dir, 0, 10, 0.25);
+    linha(c, dir * 4, -6, dir * 10, -8.5, pal.madeiraEsc, 1.3);
+    caixa(c, -2 * dir, -3, 13, 7, 6, pal.madeira, pal.madeiraEsc, pal.madeiraLuz || pal.madeira);
+    c.fillStyle = cor; c.fillRect(-8.5 - 2 * dir, -6.2, 13, 1.4);
+    elipse(c, -6 * dir, -11, 3.6, 2.6, '#d8c9a2'); elipse(c, -1 * dir, -11.5, 3.6, 2.6, '#cbb88d'); elipse(c, -3.5 * dir, -14, 3, 2.2, '#e0d3ae');
+    [-7, 3].forEach(function (wx) {
+      var rx = wx * dir - 2 * dir, g = t * 5 + (fase || 0);
+      elipse(c, rx, -2, 3.3, 3.3, '#2c2018'); elipse(c, rx, -2, 1.5, 1.5, pal.madeira);
+      linha(c, rx - Math.cos(g) * 2.8, -2 - Math.sin(g) * 2.8, rx + Math.cos(g) * 2.8, -2 + Math.sin(g) * 2.8, pal.madeira, 0.7);
+    });
+  }
+
   /* relíquia carregada por uma marcha: baú nos ombros, gema na cor do tipo e brilho pulsante */
   function bauReliquia(c, t, pal, tipo) {
     var cor = COR_REL[tipo] || '#e8c04a', pulso = 0.5 + Math.sin(t * 2.6) * 0.5, by = -11 + Math.sin(t * 8) * 0.6;
@@ -883,7 +898,7 @@
       }
       var rel = RP.reliquiaEm && RP.reliquiaEm(x.id, true);   /* relíquias de outros reinos só aparecem depois de espionadas */
       if (rel) {
-        var rx = p.x + (x.tipo === 'castelo' ? -46 : -24), ry = p.y + (x.tipo === 'castelo' ? 30 : 16);
+        var rx = p.x + (x.tipo === 'castelo' ? -46 : -18), ry = p.y + (x.tipo === 'castelo' ? 30 : 12);
         itens.push({ y: ry, d: function () { obj(c, V, rx, ry); pedestalReliquia(c, t, antigo ? PA : P, rel.tipo, !antigo); }, alvo: { x: rx, y: ry - 12, w: 26, h: 34, ent: ['local', x.id] } });
       }
       if (x.tipo === 'castelo') rotulos.push({ x: p.x, y: p.y, dy: 26, txt: x.reino === 'meu' ? D.reinos.meu.nome : 'Castelo', cls: 'castelo', cor: corReino(W.donoAparente(x)) });
@@ -893,6 +908,42 @@
       var e = W.estado(rr.c, rr.l); if (e.v === 'desconhecido') return;
       var p = H.centro(rr.c, rr.l); if (!naTela(p.x, p.y)) return;
       itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); desenharRuina(c, rr, t, e.v === 'explorado' ? PA : P); }, alvo: { x: p.x, y: p.y, w: 50, h: 34, ent: ['ruina', rr.id] } });
+    });
+    /* muros: blocos de pedra nas bordas da área murada; torres com arqueiros no alto */
+    if (RP.muros) D.muros.forEach(function (m) {
+      var est = RP.muros.estado(m);
+      if (est === 'desconhecido') return;
+      var pal = est === 'explorado' ? PA : P, vivo = est === 'visivel', hm = 6 + m.nivel * 3, alfa = m.obra ? 0.5 : 1;
+      RP.muros.bordas(m).forEach(function (s) {
+        var len = Math.hypot(s.b.x - s.a.x, s.b.y - s.a.y), n = Math.max(2, Math.round(len / 6));
+        for (var i = 0; i < n; i++) (function (i) {
+          var f = (i + 0.5) / n, bx = s.a.x + (s.b.x - s.a.x) * f, by = s.a.y + (s.b.y - s.a.y) * f;
+          if (!naTela(bx, by)) return;
+          itens.push({ y: by, d: function () { obj(c, V, bx, by); c.globalAlpha = alfa; caixa(c, 0, 0, 6.6, 4, hm, pal.pedra, pal.pedraSombra, pal.pedraTopo); ameias(c, 0, 0, 6.6, 4, hm, pal.pedraLuz); c.globalAlpha = 1; } });
+        })(i);
+      });
+      RP.muros.torres(m).forEach(function (p, ti) {
+        if (!naTela(p.x, p.y)) return;
+        itens.push({ y: p.y + 2, d: function () {
+          obj(c, V, p.x, p.y); c.globalAlpha = alfa;
+          torre(c, 0, 0, 6.5, hm + 12, pal);
+          if (vivo && !m.obra) pessoa(c, 0, -(hm + 12) + 1, t, P, { roupa: corReino(m.dono), cinto: '#2b2520', dir: ti % 2 ? -1 : 1, arco: true, atirando: false, fase: ti * 1.3, capacete: P.metal });
+          c.globalAlpha = 1;
+        } });
+      });
+    });
+    /* avistamentos: figura parada e esmaecida onde foi vista; some depois de 10 h */
+    if (RP.avist) RP.avist.ativos().forEach(function (a) {
+      var p = H.centro(a.c, a.l);
+      if (!naTela(p.x, p.y)) return;
+      var hh = Math.max(1, Math.round(RP.avist.idade(a))), esp = a.tipo === 'espiao';
+      itens.push({ y: p.y, d: function () {
+        obj(c, V, p.x, p.y); c.globalAlpha = 0.5;
+        if (esp) pessoa(c, 0, 0, 0, PA, { roupa: '#2f3a2c', capuz: '#26301f', dir: 1, fase: 0.3 });
+        else for (var z = 0; z < 3; z++) pessoa(c, (z - 1) * 7, (z % 2) * 4, 0, PA, { roupa: '#3d4149', cinto: '#1e1b18', capacete: '#2d3036', lanca: true, escudo: '#4b4f57', dir: 1, fase: z });
+        c.globalAlpha = 1;
+      }, alvo: { x: p.x, y: p.y - 8, w: 40, h: 36, ent: ['avist', a.id] } });
+      rotulos.push({ x: p.x, y: p.y, dy: -30, txt: (esp ? 'Espião' : 'Exército') + ' · visto há ' + hh + ' h', cls: 'nivel', cor: cores().alerta });
     });
     if (camadas.recursos !== false) D.jazidas.forEach(function (j) {
       var e = W.estado(j.c, j.l); if (e.v === 'desconhecido') return;
@@ -998,6 +1049,17 @@
           var sx = pos.x - ux * qe * 9 - uy * ((qe % 2) * 2 - 1) * 4, sy = pos.y - uy * qe * 9 + ux * ((qe % 2) * 2 - 1) * 4;
           itens.push({ y: sy, d: function () { obj(c, V, sx, sy); pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), cinto: '#1e1b18', dir: dir, andando: true, fase: qe * 1.3, carga: qe % 2 ? 'picareta' : 'saco', capacete: P.metal }); } });
         })(qe);
+      } else if (m.d.tipo === 'caravana') {
+        var vv = m.d.veiculos || {}, nV = Math.max(1, Math.min(3, (vv.carroca || 0) + (vv.carrocao || 0))), gg = m.d.grupo || {};
+        var nS = Math.min(3, (gg.lanceiro || 0) + (gg.arqueiro || 0) + (gg.cavalaria || 0)), corC = m.d.dono === 'meu' ? corReino('meu') : '#8a8174';
+        for (var qv = 0; qv < nV; qv++) (function (qv) {
+          var sx = pos.x - ux * qv * 22, sy = pos.y - uy * qv * 22;
+          itens.push({ y: sy, d: function () { obj(c, V, sx, sy); carroca(c, t, P, dir, corC, qv * 1.7); } });
+        })(qv);
+        for (var qs = 0; qs < nS; qs++) (function (qs) {
+          var sx = pos.x - ux * (nV * 22 + qs * 8) - uy * ((qs % 2) * 2 - 1) * 4, sy = pos.y - uy * (nV * 22 + qs * 8) + ux * ((qs % 2) * 2 - 1) * 4;
+          itens.push({ y: sy, d: function () { obj(c, V, sx, sy); pessoa(c, 0, 0, t, P, { roupa: m.d.dono === 'meu' ? corReino('meu') : '#3d4149', cinto: '#1e1b18', dir: dir, andando: true, fase: qs * 1.1, capacete: P.metal, lanca: true }); } });
+        })(qs);
       } else if (m.d.tipo === 'caca') {
         var g = m.d.grupo || { arqueiro: 3 }, nC = Math.min(5, (g.arqueiro || 0) + (g.lanceiro || 0) + (g.cavalaria || 0));
         for (var qc = 0; qc < nC; qc++) (function (qc) {
@@ -1024,7 +1086,7 @@
         itens.push({ y: by, d: function () { obj(c, V, bx, by); bauReliquia(c, t, P, relM.tipo); } });
       }
       self.alvos.push(alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.d.id]));
-      rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil ? '? ' : '') + (relM ? 'Relíquia · ' : '') + RP.fmtResta(m.d.chegada - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : corReino(m.d.dono) });
+      rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil || (m.d.dono !== 'meu' && !m.d.estandarte) ? '? ' : '') + (relM ? 'Relíquia · ' : m.d.tipo === 'caravana' ? 'Caravana · ' : '') + RP.fmtResta(m.d.chegada - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : m.d.dono === 'meu' || m.d.estandarte ? corReino(m.d.dono) : cores().desconhecido });
     });
 
     /* extrações em andamento: posto e trabalhadores na jazida */

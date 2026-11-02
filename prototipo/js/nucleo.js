@@ -237,35 +237,67 @@
       pct.toFixed(1) + '%"></i></div></div>';
   };
   RP.fimItem = function (it) { return it.fim || RP.fim(it.seg); };
-  RP.custoHTML = function (custo, mult) {
+  /* ---------------------------------------------------------------- estoques por local
+     Recursos ficam no local onde foram produzidos ou guardados e só podem ser usados ali.
+     Para usar em outro lugar, tropas ou carroças precisam levá-los. A população é do reino. */
+  RP.SEDE = 'castelo';
+  var CAP_LOCAL = { castelo: 3000, armazem: 5000 };
+  RP.capLocal = function (id) { return CAP_LOCAL[id] || 2000; };
+  function prodLocal(id, k) {
+    var x = RP.dados.locais.filter(function (q) { return q.id === id; })[0];
+    return x && x.prod && x.prod.r === k ? x.prod.v : 0;
+  }
+  RP.prodLocal = prodLocal;
+  RP.qtdRecurso = function (k, local) {
+    if (k === 'populacao') return RP.popAtual();
+    local = local || RP.SEDE;
+    var e = RP.dados.estoques[local] || {}, base = e[k] || 0, t = prodLocal(local, k);
+    if (!t) return base;
+    return Math.max(base, Math.min(RP.capLocal(local), base + (t * (Date.now() - RP.t0)) / 3600000));
+  };
+  RP.totalRecurso = function (k) { return Object.keys(RP.dados.estoques).reduce(function (s, id) { return s + RP.qtdRecurso(k, id); }, 0); };
+  RP.mudarEstoque = function (local, k, delta) {
+    var e = RP.dados.estoques[local] = RP.dados.estoques[local] || {};
+    var atual = RP.qtdRecurso(k, local), t = prodLocal(local, k);
+    /* a produção segue acumulando: guarda a base de forma que o valor atual mude só pelo delta */
+    e[k] = atual + delta - (t ? (t * (Date.now() - RP.t0)) / 3600000 : 0);
+  };
+  RP.nomeRecurso = function (k) {
+    if (RP.dados.recursos[k]) return RP.dados.recursos[k].nome.toLowerCase();
+    var v = RP.dados.valiosos.filter(function (x) { return x.id === k; })[0];
+    return v ? v.nome.toLowerCase() : k === 'populacao' ? 'população' : k;
+  };
+  RP.custoHTML = function (custo, mult, local) {
     mult = mult || 1;
     return '<span class="custos">' + Object.keys(custo).map(function (k) {
-      var v = custo[k] * mult, tem = RP.temRecurso(k, v);
+      var v = custo[k] * mult, tem = RP.temRecurso(k, v, local);
       return '<span class="custo' + (tem ? '' : ' falta') + '">' + RP.icone(k === 'populacao' ? 'populacao' : k, 'ico-p r-' + k) + RP.num(v) + '</span>';
     }).join('') + '</span>';
   };
-  RP.qtdRecurso = function (k) {
-    if (k === 'populacao') return RP.popAtual();
-    if (RP.dados.recursos[k]) return RP.qtdAtual(RP.dados.recursos[k]);
-    var v = RP.dados.valiosos.filter(function (x) { return x.id === k; })[0];
-    return v ? v.qtd : 0;
-  };
-  RP.temRecurso = function (k, v) { return RP.qtdRecurso(k) >= v; };
-  RP.faltas = function (custo, mult) {
+  RP.temRecurso = function (k, v, local) { return RP.qtdRecurso(k, local) >= v; };
+  /* o que falta no local, como objeto { recurso: quantidade } */
+  RP.faltaObj = function (custo, mult, local) {
     mult = mult || 1;
-    return Object.keys(custo).filter(function (k) { return !RP.temRecurso(k, custo[k] * mult); }).map(function (k) {
-      var nome = RP.dados.recursos[k] ? RP.dados.recursos[k].nome.toLowerCase() : k === 'populacao' ? 'população' : k;
-      return RP.num(custo[k] * mult - RP.qtdRecurso(k)) + ' ' + nome;
-    });
+    var f = {};
+    Object.keys(custo).forEach(function (k) { var d = custo[k] * mult - RP.qtdRecurso(k, local); if (d > 0) f[k] = Math.ceil(d); });
+    return f;
   };
-  RP.gastar = function (custo, mult) {
+  RP.faltas = function (custo, mult, local) {
+    var f = RP.faltaObj(custo, mult, local);
+    return Object.keys(f).map(function (k) { return RP.num(f[k]) + ' ' + RP.nomeRecurso(k); });
+  };
+  RP.gastar = function (custo, mult, local) {
     mult = mult || 1;
     Object.keys(custo).forEach(function (k) {
       var v = custo[k] * mult;
       if (k === 'populacao') RP.dados.populacao.atual -= v;
-      else if (RP.dados.recursos[k]) RP.dados.recursos[k].qtd -= v;
-      else { var x = RP.dados.valiosos.filter(function (y) { return y.id === k; })[0]; if (x) x.qtd -= v; }
+      else RP.mudarEstoque(local || RP.SEDE, k, -v);
     });
+  };
+  /* link para trazer o que falta até um local (abre a caravana já preenchida) */
+  RP.linkTrazer = function (local, falta) {
+    var leva = Object.keys(falta).filter(function (k) { return k !== 'populacao'; }).map(function (k) { return k + ':' + falta[k]; }).join(',');
+    return '#/caravana?para=' + local + (leva ? '&leva=' + leva : '');
   };
   function tique() {
     var agora = Date.now();
@@ -275,14 +307,13 @@
       el.style.width = Math.max(0, Math.min(100, (100 * (agora - i)) / (f - i))).toFixed(2) + '%';
     });
     RP.$$('[data-rec]').forEach(function (el) {
-      var r = RP.dados.recursos[el.getAttribute('data-rec')];
-      el.textContent = el.hasAttribute('data-curto') ? RP.numCurto(RP.qtdAtual(r)) : RP.num(RP.qtdAtual(r));
+      var q = RP.qtdRecurso(el.getAttribute('data-rec'), el.getAttribute('data-local') || RP.SEDE);
+      el.textContent = el.hasAttribute('data-curto') ? RP.numCurto(q) : RP.num(q);
     });
     var p = RP.dados.populacao;
     RP.$$('[data-pop]').forEach(function (el) { el.textContent = el.hasAttribute('data-curto') ? RP.numCurto(RP.popAtual()) : RP.num(RP.popAtual()); });
     document.dispatchEvent(new CustomEvent('rp:tique'));
   }
-  RP.qtdAtual = function (r) { return Math.min(r.cap, r.qtd + (r.taxa * (Date.now() - RP.t0)) / 3600000); };
   RP.popAtual = function () { var p = RP.dados.populacao; return Math.min(p.teto, p.atual + (p.taxa * (Date.now() - RP.t0)) / 3600000); };
   setInterval(tique, 1000);
 
@@ -291,10 +322,10 @@
   RP.ORDEM_REC = ORDEM_REC;
   RP.barraRecursos = function (opt) {
     opt = opt || {};
-    var h = '<div class="recursos" role="group" aria-label="Recursos do reino">';
+    var h = '<div class="recursos" role="group" aria-label="Recursos no Castelo de ' + RP.esc(RP.estado.nome || '') + ' (sede)">';
     ORDEM_REC.forEach(function (k) {
-      var r = RP.dados.recursos[k], q = RP.qtdAtual(r);
-      h += '<button class="rec' + (q >= r.cap * 0.95 ? ' rec-cheio' : '') + '" type="button" data-abrir-recursos aria-label="' + r.nome + ': ' + RP.num(q) + '">' +
+      var r = RP.dados.recursos[k], q = RP.qtdRecurso(k, RP.SEDE);
+      h += '<button class="rec' + (q >= RP.capLocal(RP.SEDE) * 0.95 ? ' rec-cheio' : '') + '" type="button" data-abrir-recursos aria-label="' + r.nome + ' no castelo: ' + RP.num(q) + '">' +
         RP.icone(k, 'r-' + k) + '<span class="rec-num" data-rec="' + k + '" data-curto>' + RP.numCurto(q) + '</span></button>';
     });
     h += '<button class="rec" type="button" data-abrir-recursos aria-label="População">' + RP.icone('populacao', 'r-populacao') +
@@ -303,21 +334,26 @@
       RP.icone('sino') + '<span class="contador">' + RP.dados.notificacoesNaoLidas + '</span></button>';
     return h + '</div>';
   };
-  RP.folhaRecursos = function (sobreNav) {
-    var d = RP.dados, corpo = '<div class="lista">';
+  /* estoque de um local em selos (só o que tem) */
+  RP.estoqueHTML = function (local, so) {
+    var ks = (so || ORDEM_REC.concat(RP.dados.valiosos.map(function (v) { return v.id; }))).filter(function (k) { return RP.qtdRecurso(k, local) >= 1; });
+    return ks.length ? '<span class="custos">' + ks.map(function (k) { return '<span class="custo">' + RP.icone(k, 'ico-p r-' + k) + '<span data-rec="' + k + '" data-local="' + local + '" data-curto>' + RP.numCurto(RP.qtdRecurso(k, local)) + '</span></span>'; }).join('') + '</span>' : '<span class="fraco">vazio</span>';
+  };
+  RP.folhaRecursos = function () {
+    var d = RP.dados, sede = RP.SEDE, corpo = '<p class="nota-regra">' + RP.icone('carroca', 'ico-p') + '<span>Recursos ficam <b>onde estão</b>. A barra mostra o estoque do castelo (sede). Para construir ou recrutar em outro local, leve os recursos até lá com tropas ou carroças.</span></p>' +
+      '<div class="secao-titulo">No castelo</div><div class="lista">';
     ORDEM_REC.forEach(function (k) {
-      var r = d.recursos[k], q = RP.qtdAtual(r), pct = (100 * q) / r.cap;
+      var r = d.recursos[k], q = RP.qtdRecurso(k, sede), tot = RP.totalRecurso(k), pct = (100 * q) / RP.capLocal(sede);
       corpo += '<div class="lista-item"><span class="ico-placa">' + RP.icone(k, 'r-' + k) + '</span><div style="flex:1;min-width:0">' +
-        '<div class="linha-entre"><b>' + r.nome + '</b><span class="num"><b data-rec="' + k + '">' + RP.num(q) + '</b> <span class="fraco">/ ' + RP.num(r.cap) + '</span></span></div>' +
-        '<div class="barra" style="margin:6px 0 4px"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
-        '<div class="linha-entre" style="font-size:var(--fs-2)"><span class="suave">' + (r.taxa ? '+' + r.taxa + '/h' : r.origem) + '</span>' +
-        (pct >= 95 ? '<span class="selo selo-antigo">Armazém quase cheio</span>' : '') + '</div></div></div>';
+        '<div class="linha-entre"><b>' + r.nome + '</b><span class="num"><b data-rec="' + k + '">' + RP.num(q) + '</b> <span class="fraco">/ ' + RP.num(RP.capLocal(sede)) + '</span></span></div>' +
+        '<div class="barra" style="margin:6px 0 4px"><i style="width:' + Math.min(100, pct).toFixed(1) + '%"></i></div>' +
+        '<div class="linha-entre" style="font-size:var(--fs-2)"><span class="suave">No reino todo: ' + RP.num(tot) + (r.taxa ? ' · +' + r.taxa + '/h nos locais' : r.origem ? ' · ' + r.origem.toLowerCase() : '') + '</span></div></div></div>';
     });
-    corpo += '</div><div class="secao-titulo">Valiosos</div><div class="linha" style="flex-wrap:wrap">';
-    d.valiosos.forEach(function (v) {
-      corpo += '<span class="selo selo-destaque" style="font-size:var(--fs-2);min-height:32px">' + RP.icone(v.id, 'r-' + v.id) + v.nome + ' <b class="num">' + v.qtd + '</b></span>';
-    });
-    corpo += '</div><p class="fraco" style="margin-top:var(--esp-4);font-size:var(--fs-2)">O reino base já produz recursos básicos. Valiosos e lendários vêm de jazidas descobertas no mapa.</p>';
+    corpo += '</div><div class="secao-titulo">Onde estão</div><div class="lista">' + d.locais.filter(function (x) { return x.reino === 'meu' && x.id !== sede; }).map(function (x) {
+      return '<div class="lista-item"><span class="ico-placa dono-meu">' + RP.icone(x.tipo) + '</span><div style="flex:1;min-width:0"><b>' + RP.esc(x.nome) + '</b>' + (x.prod ? '<small class="fraco"> · +' + x.prod.v + ' ' + RP.nomeRecurso(x.prod.r) + '/h</small>' : '') + '<br>' + RP.estoqueHTML(x.id) + '</div></div>';
+    }).join('') + '</div>' +
+      '<div class="linha" style="margin-top:var(--esp-3)"><a class="btn btn-p btn-primario" href="#/caravana" style="flex:1">' + RP.icone('carroca') + 'Transportar recursos</a></div>' +
+      '<p class="fraco" style="margin-top:var(--esp-4);font-size:var(--fs-2)">Cada local acumula a própria produção. Valiosos e lendários vêm de jazidas descobertas no mapa.</p>';
     RP.abrirFolha({ titulo: 'Recursos', corpo: corpo, veu: true });
   };
   document.addEventListener('click', function (e) {

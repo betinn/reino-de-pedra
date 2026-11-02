@@ -57,6 +57,7 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 15 | Exílio | `#/exilio` (exemplo, em Mais) |
 | 16 | Retorno após regência | `#/regencia` (exemplo, em Mais) |
 | 17 | Relíquias lendárias | `#/reliquias` (em Mais, em Meu reino e nas folhas). Escavação: `#/extracao?jazida=j-ruina`. Mover com escolta: `#/transporte?rel=<id>`. Interceptar: `#/interceptar?marcha=<id>` |
+| 18 | Transportar recursos (caravana) | `#/caravana` (`?para=<local>`, `?de=<local>`, `?leva=madeira:300,pedra:150`) |
 | — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
 
 Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolher no mapa o local de uma construção nova (vila, posto, rota).
@@ -96,6 +97,11 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 25. **Mover com escolta:** Relíquias → Mover → destino (os que já guardam uma ficam bloqueados) → escolta (sem tropas o botão fica inativo; escolta pequena recebe aviso) → caminho: buscar (castelo → local da relíquia) e levar (rota curta ou segura, risco de fauna) → a escolta sai; ao pegar a relíquia, ela deixa de fortalecer a origem e passa a ser carregada, visível no mapa.
 26. **Roubar de outro reino:** Mina Rubra (espionada) → Roubar a relíquia → saque ou cerco com "Priorizar a relíquia": as tropas trazem a relíquia ao castelo e podem ser interceptadas na volta. Na ocupação, a relíquia fica no local tomado. Sabotagem e massacre avisam que não levam a relíquia.
 27. **Interceptar:** o Cálice das Colheitas acabou de ser roubado e as forças que o levam ainda marcham para o leste (faixa no mundo, notificação, relatório, Relíquias e Meu reino) → Interceptar → tropas → ponto de encontro calculado sobre o caminho deles, com "vocês chegam", "eles passam" e folga. Lanceiros (lentos) não alcançam; arqueiros alcançam por pouco. Se as forças chegam ao destino, a relíquia some na névoa e só a espionagem a acha.
+28. **Recursos no lugar certo:** a barra mostra o estoque do castelo; tocar nela abre o estoque de cada local e "Transportar recursos". Na Construção, cada obra mostra se o material está no local; se falta, "Trazer recursos" abre a caravana já preenchida (origem com mais estoque, carga e carroças). O recrutamento usa o estoque do quartel.
+29. **Caravana:** destino → origem → carga (−/+, Tudo) → carroças e escolta (capacidade, velocidade, aviso de caravana pouco protegida) → caminho (buscar no castelo + levar; rota curta ou segura; risco de fauna) → a caravana sai na Vista (carroças puxadas a boi, escolta). Ao chegar, a carga entra no estoque do destino. Exemplo em andamento: 500 de madeira da Serraria para o Castelo.
+30. **Caravana alheia:** uma "Caravana desconhecida" com ferro cruza a área visível → folha com carga estimada → Interceptar.
+31. **Muros:** Construção → Defesas → seus muros (prévia, trechos, torres, arqueiros no alto; subir nível; erguer torre) e Nova muralha (escolher um ou vários locais vizinhos, prévia do perímetro, custo alto somando os estoques dos locais envolvidos). No mapa, o muro contorna os locais; na Vista aparecem as ameias e arqueiros nas torres. Atacar a Mina Rubra mostra a muralha e as torres do alvo.
+32. **Espião visto:** notificação → mapa com "Espião · há 3 h" → folha com quem viu, rumo e "some do mapa em 6 h 59 min". Um avistamento de 11 h já foi limpo ao abrir.
 
 ---
 
@@ -142,7 +148,9 @@ prototipo/
     militar.js        extração e escavação, envio de ataque, posturas e batalha
     social.js         relatórios, notificações, bandeiras e ranking
     legado.js         temporada e legado, exílio
-    reliquias.js      relíquias lendárias: tela, mover/guardar, chegada e fim da escavação
+    reliquias.js      relíquias lendárias: tela, mover com escolta, interceptar, chegada e fim da escavação
+    logistica.js      estoques por local na prática: caravana, carroças, chegada das cargas
+    defesas.js        muros (área, trechos, torres), aba Defesas e avistamentos com validade
 ```
 
 ---
@@ -219,11 +227,30 @@ A regra (objetivos em ordem de prioridade + tática; as tropas sabem quando para
 | Objetivos por tipo | Saque: relíquia e recursos (madeira, pedra, comida, ferro, couro, peles) com quantidade. Sabotagem: muralha e a construção do local, em níveis (1 a 3). Massacre: população. Ocupação: "Tomar o local" (fixo) + relíquia. Cerco: muralha, relíquia e recursos. | Objetivos livres para qualquer tipo; incluir animais e armas no saque. |
 | Ordem | O jogador ordena (subir prioridade); se um objetivo não existe no local, as tropas passam ao próximo. | Objetivos simultâneos, sem ordem. |
 | Padrão | Ao escolher o alvo: relíquia espionada (se houver) + o recurso principal do local, 1.000. Sem objetivo, o envio fica bloqueado. | Começar vazio; permitir enviar sem objetivo ("pegar o que der"). |
-| Tática | Cautelosa (recua com 20% de perdas), Equilibrada (padrão, 40%), Até o fim (não recua por perdas). | Limite de perdas livre (controle deslizante); táticas de combate (flanquear, focar arqueiros). |
+| Tática | Conservadora 25%, Média 40% (padrão), Agressiva 60%, Sem limite: definidas por você e registradas no `CLAUDE.md`. | — |
 | Carga | Objetivos de recurso somam carga; acima da capacidade das tropas, aviso. As tropas param quando a carga enche. A relíquia não ocupa carga. | Bloquear o envio quando passa da carga; relíquia ocupa carga. |
 | Encher a carga | Opção "depois dos objetivos, encher a carga com o que houver" (desligada por padrão). | Sempre encher. |
 | Previsão | Espionagem mostra o estoque do alvo ("≈ 2.400 de ferro, há 10 h") e avisa "pode faltar". Sem espionagem: "desconhecido · espione antes". | Mostrar chance de sucesso estimada. |
 | Relatório | Cada objetivo com resultado (cumprido, parcial, falhou), o obtido e o motivo da volta. | — |
+
+## Logística, muros e avistamentos (sub-decisões aplicadas, para aprovar)
+
+As regras (recursos transportados até onde são usados, veículos construídos com recursos, muros caros que envolvem um ou vários locais, arqueiros no alto, espiões vistos por 10 h, limpeza do mapa) estão no `CLAUDE.md`.
+
+| Tema | Aplicado | Alternativas |
+|---|---|---|
+| Barra de recursos | Mostra o estoque do castelo (sede); a folha mostra cada local e o total do reino. | Mostrar o total do reino com aviso; seletor de local na barra. |
+| Produção | Cada local acumula a própria produção (serraria: madeira; minas: ferro e pedra; vilas e pasto: comida). Valiosos ficam no Armazém Real. | Toda produção vai direto ao armazém mais próximo. |
+| Onde se usa | Obra usa o estoque do local da obra; obra nova e carroças, o do castelo; recrutamento, o do quartel; posto de extração sai do castelo com o grupo. | Recrutar com o estoque do castelo. |
+| Veículos | Carroça (500, lenta, madeira + ferro) e Carroção (1.500, média, usa 2 cavalos de raça). Ficam no castelo: saem, buscam na origem e levam. | Veículos parados em qualquer local; animais de carga separados. |
+| Escolta | Opcional; carrega um pouco (25 por ponto de carga). Abaixo de uma força mínima, aviso "pouco protegida" (fauna e saqueadores). | Escolta obrigatória acima de certa carga. |
+| Reserva | A carga sai do estoque da origem ao enviar e entra no destino ao chegar. | Sai só quando a caravana passa pela origem. |
+| Abastecimento | Não há caravana automática repetida no protótipo. | Rota de abastecimento: repetir a viagem a cada X horas, para quem fica offline. |
+| Muro de vários locais | A área é a cadeia de hexágonos entre os locais escolhidos (até 3 hexágonos entre vizinhos); o muro contorna essa área. | Desenhar o traçado do muro à mão no mapa. |
+| Custo do muro | Por trecho (100 de pedra + 40 de madeira); subir nível custa metade por trecho e nível. O material precisa estar nos locais dentro do muro. | Custo pela área envolvida. |
+| Torres | 400 de pedra + 150 de madeira; +4 arqueiros no alto. | Torres sem limite de arqueiros; arqueiros saem da guarnição. |
+| Muro alheio | Visível quando a área já foi explorada; nível e torres aparecem no envio de ataque. | Só a espionagem mostra o nível. |
+| Avistamentos | Espiões e exércitos vistos ficam 10 h e somem; a limpeza roda a cada minuto. Placas de perigo da fauna seguem a névoa e não somem. | Validade diferente por tipo; limpar também as placas de perigo. |
 
 ## Pontos em aberto
 
@@ -241,7 +268,7 @@ Custos, tempos, atributos de unidades, rendimento de caça e força x perigo sã
 As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e os fluxos de criação, construção, recrutamento, exploração, caça, extração, ataque, batalha e bandeira.
 
 Revisão final:
-- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 28 rotas (todas as telas, mais relíquias, escavação, relatórios de roubo e espionagem e a folha de um local com relíquia): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
+- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 38 rotas (todas as telas, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, relatórios de roubo, espionagem e saque): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
 - **Toque:** todos os botões e links com pelo menos 44 × 44 px.
 - **Larguras:** sem rolagem horizontal em 360, 375, 430 e 1024 px.
 - **Gráficos:** cores do gráfico de batalha validadas contra o fundo (faixa de luminosidade, daltonismo e contraste); legenda, rótulos diretos, leitura por toque e tabela.

@@ -83,6 +83,7 @@ Locais de outros reinos nunca usam cor de reino: cinza, brasão "?", nome genér
 
 - Recursos: `--rec-madeira`, `--rec-pedra`, `--rec-comida`, `--rec-ferro`, `--rec-couro`, `--rec-peles`, `--rec-populacao`, `--rec-ouro`, `--rec-prata`, `--rec-sal`, `--rec-cavalo`, `--rec-ervas`, `--rec-gema`, `--rec-lendario`. Classe `r-<recurso>`. A cor sempre acompanha o ícone.
 - Perigo da fauna: `--perigo-baixo` `#e8b947`, `--perigo-medio` `#ec8a3a`, `--perigo-alto` `#ea4f43`. Classe `nivel-<nivel>` define `--nivel`.
+- Muros: `--muro-cor` `#b9b2a6` (topo e prévias) e `--muro-borda` `#2c2a27` (contorno).
 - Relíquias lendárias, por tipo: `--rel-ataque` `#f47b60`, `--rel-producao` `#e8c04a`, `--rel-resistencia` `#57c2c9`. Classe `tipo-<tipo>` define `--relq`. Contraste AA conferido sobre a superfície tingida do card. Sem tipo (ruína antiga, relíquia ainda não achada) usa `--rec-lendario`.
 
 ### 2.6 Mapa tático
@@ -180,6 +181,10 @@ Luz natural levemente quente, para conversar com a interface escura:
 | Relíquia guardada | Pedestal de pedra ao lado do local, gema na cor do tipo | Coluna de luz pulsando e cintilar; parada e sem luz em área explorada. Só as suas e as espionadas |
 | Escavação | Trabalhadores na ruína antiga | Picaretas; rótulo "Escavando · tempo" |
 | Relíquia em marcha | Baú carregado no meio da formação, com gema na cor do tipo | Brilho pulsando; rótulo "Relíquia · tempo" (com "?" se as forças são desconhecidas) |
+| Caravana | Carroças puxadas a boi com sacos, faixa na cor do dono (cinza se desconhecido), escolta atrás | Rodas girando; rótulo "Caravana · tempo" ("?" se desconhecida) |
+| Muro | Blocos de pedra com ameias nas bordas da área murada; altura cresce com o nível | Em obra: semitransparente |
+| Torre de arqueiros | Torre redonda sobre o muro com um arqueiro no alto, na cor do dono | — |
+| Avistamento | Figura parada e esmaecida (espião de capuz ou três soldados) onde foi vista | Rótulo "Espião · visto há X h"; some depois de 10 h |
 | Batalha | Atacantes (cinza, sem brasão) contra guarnição e milícia | Estocadas, flechas, celeiro em chamas, fumaça, poeira; rótulo "Batalha · tempo" |
 | Ataque seu | Formação na sua cor; com estandarte, bandeira na cor do seu brasão | Marcha até o alvo |
 
@@ -210,6 +215,9 @@ Chão, vegetação, relevo e névoa ficam num cache que só é refeito ao sair d
 | Jazida | Losango com ícone do recurso; lendária com brilho |
 | Relíquia no local | Disco pequeno na cor do tipo, no canto superior esquerdo do marcador. Só as suas e as espionadas |
 | Relíquia em marcha | Mesmo disco no canto inferior esquerdo do marcador da marcha |
+| Muro | Traço grosso contornando a área (borda escura + topo claro tracejado, como ameias); torres em círculos com o ícone de torre; em obra, tracejado espaçado |
+| Avistamento | Círculo tracejado em `--cor-alerta` com o ícone (batedor ou tropas), relógio e rótulo "há X h" |
+| Caravana | Marcador de marcha com ícone de carroça |
 | Fauna ao vivo | Círculo com o animal, contorno na cor do nível e contador do bando |
 | Área de perigo | Triângulo na cor do nível com pegada |
 | Ruína / terra livre | Círculo tracejado cinza com escombros / estacas |
@@ -275,6 +283,10 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Marcador no mapa | `.relq-badge.tipo-<tipo>` | Disco no marcador do local ou da marcha. |
 | Aviso urgente | `.nota-antiga.nota-perigo` | Mesma forma da nota de informação antiga, em vermelho: relíquia em fuga, prazo para interceptar. |
 | Alertas recolhidos | `.faixa-mais` + `.faixas-extra` | No mundo, no máximo duas faixas à vista; as demais ficam atrás de "+N alertas" (`aria-expanded`). |
+| Estoque | `RP.estoqueHTML(local)` → `.custos` | Só o que o local tem, em números curtos; nos cards de local (`.lc-estoque`), folhas e escolha de origem. |
+| Obra com estoque | `.obra-estoque` (`.falta`) | "Material em X" ou "Faltam … em X" em amarelo; o botão vira "Trazer recursos" e abre a caravana preenchida. |
+| Caravana | tela `#/caravana` | Destino e origem com "Trocar"; carga por recurso (−/+, Tudo); carroças e escolta; barra de carga x capacidade; caminho com buscar + levar. |
+| Muro | `.muro-card`, `.muro-previa`, `.muro-acao`, `.chip-sel[aria-pressed]` | Prévia do perímetro sobre o terreno; números (trechos, torres, arqueiros no alto); ações com custo e "Trazer" quando falta material. |
 | Ponto de encontro | `.mini-rota` + `.ext-numeros` | Caminho até o encontro e três números: vocês chegam, eles passam, folga. Sem encontro possível, nota com o motivo e o botão inativo. |
 
 ---

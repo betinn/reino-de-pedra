@@ -886,3 +886,27 @@ a.guia-item { color: inherit; text-decoration: none; }
 .obj-confirma { margin: var(--esp-3) 0 var(--esp-2); padding-left: 0; list-style: none; counter-reset: obj; display: flex; flex-direction: column; gap: 4px; }
 .obj-confirma li { counter-increment: obj; display: flex; align-items: center; gap: 6px; font-weight: 700; }
 .obj-confirma li::before { content: counter(obj) "."; min-width: 1.2em; color: var(--cor-texto-3); font-weight: 700; }
+
+/* ---------------------------------------------------------------- Logística, muros e avistamentos */
+.lc-estoque { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; font-size: var(--fs-1); }
+.lc-estoque .custos { gap: 8px; }
+.lc-muro { display: flex; align-items: center; gap: 4px; font-size: var(--fs-2); color: var(--cor-texto-2); }
+.obra-estoque { display: block; font-size: var(--fs-1); color: var(--cor-texto-3); }
+.obra-estoque.falta { color: var(--cor-alerta); }
+.chip-sel[aria-pressed="true"] { border-color: var(--cor-primaria); box-shadow: 0 0 0 2px var(--cor-primaria), var(--sombra-1); color: var(--cor-texto); }
+.muro-acao { border-top: 1px solid var(--cor-borda); padding-top: var(--esp-2); }
+.muro-acao .linha-entre { gap: var(--esp-2); align-items: center; }
+.muro-previa .hx:not(.muro-dentro) { opacity: .55; }
+.muro-linha { fill: none; stroke: var(--muro-cor); stroke-width: 6; stroke-linecap: round; }
+/* mapa tático */
+.muro-mapa .muro-base { fill: none; stroke: var(--muro-borda); stroke-width: 8; stroke-linecap: round; }
+.muro-mapa .muro-topo { fill: none; stroke: var(--muro-cor); stroke-width: 4.5; stroke-linecap: butt; stroke-dasharray: 5 2.5; }
+.muro-mapa.antigo { opacity: .7; }
+.muro-mapa.em-obra .muro-topo { stroke-dasharray: 2 6; }
+.torre-mapa circle { fill: var(--muro-cor); stroke: var(--muro-borda); stroke-width: 2; }
+.torre-mapa use { color: var(--muro-borda); --ico-d-stroke: var(--muro-cor); }
+.avist .av-base { fill: var(--ent-fundo); stroke: var(--cor-alerta); stroke-width: 2; stroke-dasharray: 4 3; }
+.avist use { color: var(--cor-alerta); --ico-d-stroke: var(--ent-fundo); opacity: .85; }
+.avist .ponto { fill: var(--cor-alerta); }
+.rotulo-avist { fill: var(--cor-alerta); }
+[data-zoom="zoom-mundo"] .avist .ent-k { display: none; }

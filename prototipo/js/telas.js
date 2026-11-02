@@ -191,6 +191,8 @@
       '<span class="ico-placa dono-meu">' + RP.icone(x.tipo) + '</span>' +
       '<div class="lc-corpo"><div class="linha-entre"><b class="lc-nome">' + RP.esc(x.nome) + '</b><span class="selo">Nv ' + x.nivel + '</span></div>' +
       '<small class="fraco">' + RP.TIPOS_LOCAL[x.tipo] + ' · ' + terr + ' · ' + RP.icone('escudo', 'ico-p') + RP.esc(x.postura) + '</small>' + linha2 + linhaRel(x) +
+      (RP.muros.de(x.id) ? '<span class="lc-muro">' + RP.icone('muralha', 'ico-p') + RP.esc(RP.muros.de(x.id).nome) + ' · nível ' + RP.muros.de(x.id).nivel + '</span>' : '') +
+      '<span class="lc-estoque"><span class="fraco">Estoque</span>' + RP.estoqueHTML(x.id) + '</span>' +
       (x.obra ? RP.timerHTML(RP.icone('martelo', 'ico-p') + ' ' + x.obra.rotulo, x.obra.seg, x.obra.total) : '') +
       (x.fila ? RP.timerHTML(RP.icone('tropas', 'ico-p') + ' ' + x.fila.rotulo, x.fila.seg, x.fila.total) : '') +
       ameacas.map(function (m) {
@@ -212,7 +214,9 @@
       (x.info || []).map(function (i) { return '<div class="info-linha"><span class="fraco">Detalhe</span><span>' + RP.esc(i) + '</span></div>'; }).join('') +
       '<div class="info-linha"><span class="fraco">Guarnição</span><span>' + RP.esc(x.guarnicao) + '</span></div>' +
       '<div class="info-linha"><span class="fraco">Postura</span><span class="selo selo-info">' + RP.esc(x.postura) + '</span></div>' +
-      '</div>' + (RP.reliquiaEm(x.id) ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(RP.reliquiaEm(x.id)) + '</div>' : '') +
+      (RP.muros.de(x.id) ? '<div class="info-linha"><span class="fraco">Muralha</span><span>' + RP.esc(RP.muros.de(x.id).nome + ' · ' + RP.muros.descricao(RP.muros.de(x.id))) + '</span></div>' : '') +
+      '<div class="info-linha"><span class="fraco">Estoque</span><span>' + RP.estoqueHTML(x.id) + '</span></div>' +
+      '</div><p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Obras aqui usam o estoque deste local. Para trazer material, mande uma caravana.</p>' + (RP.reliquiaEm(x.id) ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(RP.reliquiaEm(x.id)) + '</div>' : '') +
       '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Cada local é um alvo com defesa própria: guarnição, população como milícia e muralhas.' + (RP.reliquiaEm(x.id) ? ' Quem vencer um saque ou uma ocupação aqui leva a relíquia.' : '') + '</p>';
     RP.abrirFolha({
       titulo: RP.esc(x.nome), veu: true,
@@ -221,6 +225,7 @@
       corpo: corpo,
       acoes: '<a class="btn btn-p btn-primario" href="#/mapa?foco=' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>' +
         '<a class="btn btn-p" href="#/construcao">' + RP.icone('martelo') + 'Melhorar</a>' +
+        '<a class="btn btn-p" href="#/caravana?para=' + x.id + '">' + RP.icone('carroca') + 'Trazer recursos</a>' +
         '<a class="btn btn-p" href="#/posturas?local=' + x.id + '">' + RP.icone('escudo') + 'Postura</a>' +
         (x.tipo === 'quartel' ? '<a class="btn btn-p" href="#/recrutamento">' + RP.icone('tropas') + 'Recrutar</a>' : '') +
         (RP.reliquiaEm(x.id) ? '<a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquia</a>' : '')
@@ -292,6 +297,7 @@
         '<div><span class="fraco">Milícia</span><b data-pop>' + RP.num(RP.popAtual()) + '</b></div>' +
         '</div>' +
         '<div class="linha"><span class="selo selo-info">' + RP.icone('escudo') + RP.esc(castelo.postura) + '</span><span class="fraco" style="font-size:var(--fs-2)">' + RP.esc(castelo.guarnicao) + '</span></div>' +
+        '<span class="lc-estoque"><span class="fraco">Estoque</span>' + RP.estoqueHTML(castelo.id) + '</span>' +
         linhaRel(castelo) +
         '</div>' +
 
@@ -307,9 +313,9 @@
         cardReliquias() +
         '<div class="secao-titulo">Valiosos</div>' +
         '<div class="linha" style="flex-wrap:wrap">' + D.valiosos.map(function (v) {
-          return '<span class="selo selo-destaque selo-g">' + RP.icone(v.id, 'r-' + v.id) + v.nome + ' <b class="num">' + v.qtd + '</b></span>';
+          return '<span class="selo selo-destaque selo-g">' + RP.icone(v.id, 'r-' + v.id) + v.nome + ' <b class="num">' + RP.num(RP.totalRecurso(v.id)) + '</b></span>';
         }).join('') + '</div>' +
-        '<p class="fraco" style="margin:var(--esp-3) 0 var(--esp-8);font-size:var(--fs-2)">Recursos valiosos liberam unidades e tecnologias melhores. Encontre jazidas com prospectores.</p>' +
+        '<p class="fraco" style="margin:var(--esp-3) 0 var(--esp-8);font-size:var(--fs-2)">Ficam no Armazém Real. Liberam unidades e tecnologias melhores: leve-os até onde forem usados. Encontre jazidas com prospectores.</p>' +
         '</div>';
 
       el.addEventListener('click', function (e) {

@@ -28,6 +28,39 @@
       { id: 'sal', nome: 'Sal', qtd: 40 },
       { id: 'cavalo', nome: 'Cavalos de raça', qtd: 6 }
     ],
+    /* Estoques por local (no início da sessão). Recursos só podem ser usados onde estão;
+       cada local acumula a própria produção. Valiosos ficam no Armazém Real. */
+    estoques: {
+      castelo: { madeira: 820, pedra: 410, comida: 1500, ferro: 210, couro: 80, peles: 30 },
+      quartel: { madeira: 900, comida: 900, ferro: 300, couro: 120 },
+      armazem: { madeira: 600, pedra: 300, comida: 1200, ferro: 160, couro: 40, peles: 15, ouro: 85, sal: 40, cavalo: 6 },
+      ferraria: { ferro: 150, madeira: 80 },
+      'vila-moinho': { comida: 900 },
+      pasto: { comida: 300 },
+      'mina-vale': { ferro: 180 },
+      'mina-pedra': { pedra: 410 },
+      serraria: { madeira: 540 },
+      'vila-vau': { comida: 120, madeira: 340, pedra: 160 }
+    },
+    /* Veículos de transporte: ficam no castelo; saem para buscar e levar cargas */
+    veiculos: {
+      carroca: { nome: 'Carroça', qtd: 3, carga: 500, vel: 'Lenta', txt: 'Puxada a boi. Barata, lenta.' },
+      carrocao: { nome: 'Carroção', qtd: 0, carga: 1500, vel: 'Média', txt: 'Puxado a cavalos de raça. Leva três vezes mais.' }
+    },
+    /* Caravanas em andamento (exemplo): carga reservada na origem, entregue ao chegar */
+    caravanas: [],
+    /* Muros: envolvem um ou vários locais. Torres põem arqueiros no alto, protegidos até o muro cair. */
+    muros: [
+      { id: 'mu-vale', nome: 'Muralha do Vale', dono: 'meu', locais: ['quartel', 'armazem'], nivel: 2, torres: 2, arqueiros: 8 },
+      { id: 'mu-moinho', nome: 'Paliçada do Moinho', dono: 'meu', locais: ['vila-moinho'], nivel: 1, torres: 0, arqueiros: 0 },
+      { id: 'mu-vmina', nome: 'Muralha', dono: 'valdren', locais: ['v-mina'], nivel: 1, torres: 1, arqueiros: null }
+    ],
+    /* Avistamentos: o que suas tropas viram passar (espiões, exércitos). Somem do mapa depois de 10 h. */
+    avistamentos: [
+      { id: 'av-espiao', tipo: 'espiao', c: 15, l: 26, horas: 3, por: 'Guarnição da Vila do Vau', rumo: 'leste' },
+      { id: 'av-exercito', tipo: 'exercito', c: 21, l: 22, horas: 7.5, por: 'Prospector', resumo: '≈ 40 tropas, sem estandarte', rumo: 'sul' },
+      { id: 'av-antigo', tipo: 'espiao', c: 9, l: 16, horas: 11, por: 'Guarnição do Quartel', rumo: 'norte' }
+    ],
 
     populacao: {
       atual: 1240, teto: 1500, taxa: 18, bonusComida: 30,
@@ -205,7 +238,11 @@
       { id: 'vila-nova', icone: 'vila', nome: 'Nova vila', onde: 'Escolher local no mapa', cat: 'populacao', novo: true,
         efeito: '3 moradias e produção de comida', custo: { madeira: 900, pedra: 600, comida: 400 }, tempo: 4200 },
       { id: 'rota', icone: 'rota', nome: 'Rota', onde: 'Traçar no mapa', cat: 'rotas', novo: true,
-        efeito: 'Rua pública: qualquer jogador usa; reduz animais', custo: { madeira: 120, pedra: 80 }, porHex: true, tempo: 300 }
+        efeito: 'Rua pública: qualquer jogador usa; reduz animais', custo: { madeira: 120, pedra: 80 }, porHex: true, tempo: 300 },
+      { id: 'carroca', icone: 'carroca', nome: 'Carroça', onde: 'Castelo de Pedralva', local: 'castelo', cat: 'transporte', veiculo: 'carroca',
+        efeito: 'Leva 500 de carga · lenta', custo: { madeira: 150, ferro: 20 }, tempo: 300 },
+      { id: 'carrocao', icone: 'carroca', nome: 'Carroção', onde: 'Castelo de Pedralva', local: 'castelo', cat: 'transporte', veiculo: 'carrocao',
+        efeito: 'Leva 1.500 de carga · média · usa 2 cavalos de raça', custo: { madeira: 400, ferro: 80, cavalo: 2 }, tempo: 900 }
     ],
 
     /* Unidades. atk/def/vel/carga em escala 1–5, só para comparação visual. */
@@ -230,7 +267,7 @@
       { id: 'pe', nome: 'A pé', icone: 'bota', velocidade: 'Lenta', visao: 'Média', custo: 'Barato', carac: 'Sem penalidade em floresta e pântano', livres: 2, treino: { comida: 40 } },
       { id: 'cavalo', nome: 'A cavalo', icone: 'cavalo', velocidade: 'Rápida', visao: 'Alta', custo: 'Médio', carac: 'Penalizado em floresta e montanha', livres: 1, treino: { comida: 80, couro: 20 } },
       { id: 'prospector', nome: 'Prospector', icone: 'picareta', velocidade: 'Lenta', visao: 'Baixa', custo: 'Caro', carac: 'Único que revela jazidas valiosas e lendárias', livres: 0, treino: { comida: 120, ferro: 60 } },
-      { id: 'batedor', nome: 'Batedor de elite', icone: 'batedor', velocidade: 'Rápida', visao: 'Alta', custo: 'Caro', carac: 'Furtivo; espiona exércitos e reinos, revela o dono de locais', livres: 1, treino: { comida: 150, couro: 40 } }
+      { id: 'batedor', nome: 'Batedor de elite', icone: 'batedor', velocidade: 'Rápida', visao: 'Alta', custo: 'Caro', carac: 'Furtivo; espiona exércitos e reinos, revela o dono de locais. É descoberto se alguma tropa o vir', livres: 1, treino: { comida: 150, couro: 40 } }
     ],
 
     /* Extração em andamento (exemplo): posto já construído na jazida de prata */
@@ -279,7 +316,7 @@
         perdas: { meu: '6 milicianos', deles: '4 cavaleiros' }, levado: { comida: 420, couro: 30 } },
       { id: 'r-saque', tipo: 'saque', titulo: 'Seu saque à Mina Rubra', horas: 9, lido: true, local: 'v-mina',
         tropas: '24 cavaleiros', resultado: 'Vitória', levado: { ferro: 180 }, decrescente: { vezes: 2, reducao: 40 }, perdas: { meu: '2 cavaleiros', deles: '≈ 6 lanceiros' }, estandarte: false,
-        tatica: 'Equilibrada', retorno: 'O estoque acabou antes de cumprir os objetivos: sem mais o que levar, as tropas voltaram.',
+        tatica: 'Média', retorno: 'O estoque acabou antes de cumprir os objetivos: sem mais o que levar, as tropas voltaram.',
         objetivos: [{ txt: '1.000 de ferro', obtido: '180', estado: 'parcial', nota: 'estoque esgotado por saques repetidos' }, { txt: '500 de pedra', obtido: '0', estado: 'falhou', nota: 'não havia pedra no local' }] },
       { id: 'r-exploracao', tipo: 'exploracao', titulo: 'Exploração ao norte', horas: 2, lido: false,
         quem: 'Explorador a cavalo', revelados: 14, achados: ['Manada de cavalos de raça (valioso)', 'Lobos (perigo alto)', 'Rota pública: Estrada do Rei continua para o leste'] },
@@ -297,6 +334,7 @@
 
     /* Notificações (exemplos). horas: há quanto tempo. ir: rota do protótipo. */
     notificacoes: [
+      { id: 'n12', cat: 'exploracao', titulo: 'Espião visto perto da Vila do Vau', texto: 'A guarnição viu um batedor seguindo para o leste. Avistamentos somem do mapa em 10 h.', horas: 3, lido: false, ir: 'mapa?modo=tatico&abrir=avist:av-espiao' },
       { id: 'n11', cat: 'ataque', titulo: 'Relíquia roubada', texto: 'O Cálice das Colheitas foi levado da Vila do Moinho. As tropas que o levam seguem para o leste: ainda dá para interceptar.', horas: 0.2, lido: false, ir: 'relatorio?id=r-roubo' },
       { id: 'n1', cat: 'ataque', titulo: 'Vila do Vau está sendo atacada', texto: 'Forças desconhecidas. Envie reforços ou recue.', horas: 0.07, lido: false, ir: 'batalha' },
       { id: 'n2', cat: 'ataque', titulo: 'Forças desconhecidas a caminho', texto: 'Alvo provável: Pasto das Éguas. Chegada em cerca de 40 min.', horas: 0.1, lido: false, ir: 'mapa?modo=cena&abrir=marcha:m-inimigo' },
@@ -393,7 +431,7 @@
       crocodilos: { comida: '40–60', couro: '50–70', peles: '0' }
     },
 
-    notificacoesNaoLidas: 4
+    notificacoesNaoLidas: 5
   };
 
   RP.TIPOS_LOCAL = {

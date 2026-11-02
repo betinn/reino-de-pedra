@@ -101,7 +101,7 @@
       (ativa ? '<div class="card linha" style="margin-top:var(--esp-3)">' + RP.icone('picareta') + '<span style="flex:1"><b>Extração em andamento</b><br><small class="fraco">' + U.unidade('lanceiro').nome + 's: ' + ativa.grupo.lanceiro + ' · ' + (ativa.posto ? 'com posto' : 'sem posto') + ' · há ' + ativa.horas + ' h</small></span><b class="num">' + ativa.ritmo + '/h</b></div>' : '') +
       '<div class="secao-titulo">Grupo</div><div class="card pilha">' + linhasGrupo(ext.grupo, ['lanceiro', 'arqueiro', 'cavalaria'], dispDe) +
       '<button type="button" class="alternar" data-posto aria-pressed="' + ext.posto + '" style="width:100%">' + RP.icone('picareta') + '<span>Construir posto de ' + (escav ? 'escavação' : 'extração') + ' <small class="fraco">(' + RP.fmtDuracao(custoPosto.tempo) + ')</small></span><i aria-hidden="true"></i></button>' +
-      (ext.posto ? '<div class="linha" style="flex-wrap:wrap">' + RP.custoHTML(custoPosto.custo) + '<small class="fraco">entra na fila de obras</small></div>' : '') + '</div>' +
+      (ext.posto ? '<div class="linha" style="flex-wrap:wrap">' + RP.custoHTML(custoPosto.custo, 1, RP.SEDE) + '<small class="fraco">sai do castelo com o grupo e entra na fila de obras</small></div>' : '') + '</div>' +
       (escav && !emEscav ? destinoRelHTML(j) : '') +
       (escav
         ? '<div class="secao-titulo">Quanto cada escolha encurta a escavação</div><div class="card">' + graficoCenarios(cen, true) +
@@ -143,9 +143,9 @@
           var escav = j.classe === 'lendario';
           if (escav && !ext.destinoRel) { RP.aviso({ titulo: 'Sem local livre', texto: 'Mova uma relíquia antes de escavar.', icone: 'lendario', tipo: 'alerta' }); return; }
           if (ext.posto) {
-            var cp = D.construcoes.filter(function (x) { return x.id === 'posto'; })[0], falta = RP.faltas(cp.custo);
+            var cp = D.construcoes.filter(function (x) { return x.id === 'posto'; })[0], falta = RP.faltas(cp.custo, 1, RP.SEDE);
             if (falta.length) { RP.aviso({ titulo: 'Sem recursos para o posto', texto: 'Faltam ' + falta.join(', ') + '. Envie sem posto ou espere.', icone: 'alerta', tipo: 'perigo' }); return; }
-            RP.gastar(cp.custo);
+            RP.gastar(cp.custo, 1, RP.SEDE);   /* o material sai do castelo com o grupo */
             var ult = D.filas.obras.length ? RP.fimItem(D.filas.obras[D.filas.obras.length - 1]) : Date.now();
             D.filas.obras.push({ local: null, rotulo: 'Posto de ' + (escav ? 'escavação' : 'extração') + ' · ' + j.nome, fim: Math.max(ult, Date.now()) + cp.tempo * 1000, total: cp.tempo });
           }
@@ -168,7 +168,7 @@
 
   /* ================================================================ Envio de tropas: ataque e reforço */
   var env = { modo: 'ataque', alvo: null, listaAberta: true, tipo: 'saque', grupo: { lanceiro: 0, arqueiro: 0, cavalaria: 0, ariete: 0 }, estandarte: false, caminho: 'curta',
-    obj: {}, objAlvo: null, tatica: 'equilibrada', encher: false };
+    obj: {}, objAlvo: null, tatica: 'media', encher: false };
   var LEVA_RELIQUIA = { saque: true, ocupacao: true, cerco: true };   /* sabotagem e massacre não levam a relíquia */
   function reliquiaAlvo(x) { var r = x && x.reino && x.reino !== 'meu' ? RP.reliquiaEm(x.id, true) : null; return r && r.dono !== 'meu' ? r : null; }
   function alvosAtaque() { return D.locais.filter(function (x) { return x.reino !== 'meu' && W.estado(x.c, x.l).v !== 'desconhecido'; }); }
@@ -181,9 +181,10 @@
      As tropas perseguem os objetivos na ordem escolhida e sabem quando parar e voltar.
      Valores e limites ilustrativos. */
   var TATICAS = [
-    { id: 'cautelosa', nome: 'Cautelosa', icone: 'escudo', txt: 'Pega o que der sem forçar a defesa. Recua com 20% de perdas.', perdas: 20 },
-    { id: 'equilibrada', nome: 'Equilibrada', icone: 'tropas', txt: 'Luta pelos objetivos, em ordem. Recua com 40% de perdas.', perdas: 40 },
-    { id: 'implacavel', nome: 'Até o fim', icone: 'estandarte', txt: 'Insiste até cumprir tudo. Só volta ao cumprir ou sem tropas.', perdas: null }
+    { id: 'conservadora', nome: 'Conservadora', icone: 'escudo', txt: 'Recua com 25% de baixas.', perdas: 25 },
+    { id: 'media', nome: 'Média', icone: 'tropas', txt: 'Recua com 40% de baixas.', perdas: 40 },
+    { id: 'agressiva', nome: 'Agressiva', icone: 'alvo', txt: 'Recua com 60% de baixas.', perdas: 60 },
+    { id: 'sem-limite', nome: 'Sem limite', icone: 'estandarte', txt: 'Não recua por baixas: luta até cumprir ou cair.', perdas: null }
   ];
   var REC_SAQUE = ['madeira', 'pedra', 'comida', 'ferro', 'couro', 'peles'];
   var NOME_REC = { madeira: 'madeira', pedra: 'pedra', comida: 'comida', ferro: 'ferro', couro: 'couro', peles: 'peles' };
@@ -253,8 +254,8 @@
   function quandoVoltam(lista, x, rel, cap) {
     var t = tatica(), itens = [], temRec = lista.some(function (o) { return o.k === 'recurso'; }), levaCarga = env.tipo === 'saque' || env.tipo === 'cerco';
     itens.push(env.tipo === 'ocupacao' ? 'Ao tomar o local, ficam nele como guarnição.' : 'Ao cumprir os objetivos' + (levaCarga && env.encher ? ' e completar a carga com o que houver' : '') + ', voltam.');
-    if (levaCarga && (temRec || env.encher)) itens.push('Se a carga encher antes (' + RP.num(cap) + '), voltam.');
-    itens.push(t.perdas ? 'Se perderem ' + t.perdas + '% das tropas, recuam com o que já pegaram.' : 'Não recuam por perdas: lutam até cumprir ou cair.');
+    if (levaCarga && (temRec || env.encher)) itens.push('Se a carga encher antes' + (cap ? ' (' + RP.num(cap) + ')' : '') + ', voltam.');
+    itens.push(t.perdas ? 'Se tiverem ' + t.perdas + '% de baixas, recuam com o que já pegaram.' : 'Não recuam por baixas: lutam até cumprir ou cair.');
     return itens;
   }
   function htmlObjetivos(x, rel, esp, cap) {
@@ -303,6 +304,8 @@
     var esc = op[env.caminho] || op.curta, n = somaGrupo(env.grupo), carga = Object.keys(env.grupo).reduce(function (s, k) { return s + (env.grupo[k] || 0) * U.unidade(k).carga * 25; }, 0);
     var saques = D.saquesRecentes[x.id] || 0;   /* escudo de novato não aparece aqui: só é descoberto ao chegar */
     var rel = ataque ? reliquiaAlvo(x) : null, levaRel = rel && LEVA_RELIQUIA[env.tipo];
+    var muroAlvo = ataque && RP.muros.de(x.id), estMuro = muroAlvo && RP.muros.estado(muroAlvo);
+    if (estMuro === 'desconhecido') muroAlvo = null;
     var h = (ocupar ? '<div class="nota-regra">' + RP.icone('bandeira', 'ico-p') + '<span>Ruínas e terra livre não têm dono. Ocupar toma o local; depois você pode reconstruí-lo.</span></div>' : '') +
       '<div class="secao-titulo"' + (ocupar ? '' : ' style="margin-top:0"') + '>' + (ataque ? '1. Alvo' : '1. Destino') + '</div><div class="escolhas escolhas-lista">' + lista.filter(function (q) { return env.listaAberta || q.id === env.alvo; }).map(function (q) {
       var ee = W.estado(q.c, q.l), ru = !q.reino;
@@ -315,7 +318,9 @@
       h += '<div class="card pilha" style="margin-top:var(--esp-3)"><div class="info">' +
         '<div class="info-linha"><span class="fraco">Dono</span><span>' + (esp ? RP.esc(D.reinos[x.reino].nome) : 'Desconhecido') + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Defesa</span><span>' + (esp ? RP.esc(esp.defesa) : '<a href="#/exploradores?tipo=batedor&alvo=' + x.c + ',' + x.l + '">Desconhecida · espionar</a>') + '</span></div>' +
-        (rel ? '<div class="info-linha"><span class="fraco">Relíquia</span><span>' + RP.esc(rel.nome) + ' · ' + RP.RELIQUIA[rel.tipo].nome.toLowerCase() + ' +' + rel.bonus + '%</span></div>' : '') + '</div>' +
+        (rel ? '<div class="info-linha"><span class="fraco">Relíquia</span><span>' + RP.esc(rel.nome) + ' · ' + RP.RELIQUIA[rel.tipo].nome.toLowerCase() + ' +' + rel.bonus + '%</span></div>' : '') +
+        (muroAlvo ? '<div class="info-linha"><span class="fraco">Muralha</span><span>' + RP.esc(RP.muros.descricao(muroAlvo).replace(' com null arqueiros', '')) + '</span></div>' : '') + '</div>' +
+        (muroAlvo && muroAlvo.torres ? '<p class="nota-antiga">' + RP.icone('torre', 'ico-p') + '<span>Arqueiros nas torres atiram do alto e ficam protegidos até vocês entrarem ou derrubarem o muro. Aríetes derrubam muros.</span></p>' : '') +
         (rel && rel.tipo === 'resistencia' ? '<p class="nota-antiga">' + RP.icone('escudo', 'ico-p') + '<span>A relíquia de resistência dá +' + rel.bonus + '% de defesa a este local. Leve mais tropas.</span></p>' : '') +
         '<p class="fraco" style="font-size:var(--fs-2)">Se o alvo estiver sob escudo de novato, você só descobre ao chegar: as tropas voltam sem combate.</p></div>' +
         '<div class="secao-titulo">2. Tipo de ataque</div><div class="escolhas">' + D.tiposAtaque.map(function (t) {

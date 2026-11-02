@@ -166,7 +166,28 @@
   function iconeMarcha(m) {
     if (m.d.tipo === 'explorador') return { cavalo: 'cavalo', pe: 'bota', prospector: 'picareta', batedor: 'batedor' }[m.d.sub];
     if (m.d.tipo === 'caca') return 'lobo';
+    if (m.d.tipo === 'caravana') return 'carroca';
     return 'tropas';
+  }
+  /* muros: trechos nas bordas da área murada e torres com arqueiros */
+  function svgMuros() {
+    return D.muros.map(function (m) {
+      var est = RP.muros.estado(m);
+      if (est === 'desconhecido') return '';
+      var d = RP.muros.bordas(m).map(function (s) { return 'M' + n1(s.a.x) + ' ' + n1(s.a.y) + 'L' + n1(s.b.x) + ' ' + n1(s.b.y); }).join('');
+      return '<g class="muro-mapa' + (est === 'explorado' ? ' antigo' : '') + (m.obra ? ' em-obra' : '') + '"><path class="muro-base" d="' + d + '"/><path class="muro-topo" d="' + d + '"/>' +
+        RP.muros.torres(m).map(function (p) { return '<g class="torre-mapa" transform="translate(' + n1(p.x) + ' ' + n1(p.y) + ')"><circle r="7.5"/><use href="#i-torre" x="-5.5" y="-5.5" width="11" height="11"/></g>'; }).join('') + '</g>';
+    }).join('');
+  }
+  /* avistamentos: o que suas tropas viram passar; somem depois de 10 h */
+  function svgAvist() {
+    return RP.avist.ativos().map(function (a) {
+      var ce = H.centro(a.c, a.l), hh = Math.max(1, Math.round(RP.avist.idade(a)));
+      return '<g class="ent avist" data-ent="avist:' + a.id + '" transform="translate(' + n1(ce.x) + ' ' + n1(ce.y) + ')"><circle class="ponto" r="5"/><g class="ent-k"><circle class="alvo-toque" r="22"/><circle class="av-base" r="13"/>' +
+        '<use href="#i-' + (a.tipo === 'espiao' ? 'batedor' : 'tropas') + '" x="-9" y="-9" width="18" height="18"/>' +
+        '<g class="selo-antigo-mapa" transform="translate(11 10)"><circle r="7.5"/><use href="#i-relogio" x="-6" y="-6" width="12" height="12"/></g>' +
+        rotuloSvg((a.tipo === 'espiao' ? 'Espião' : 'Exército') + ' · há ' + hh + ' h', 29, 'rotulo-avist') + '</g></g>';
+    }).join('');
   }
   function svgMarchas() {
     var rotasH = '', tokens = '';
@@ -394,6 +415,8 @@
           : esp ? '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + RP.esc(reino.nome) + '</span>'
           : '<span class="selo selo-desconhecido">' + RP.icone('interrogacao') + 'Desconhecido</span>') +
         linhaInfo('Terreno', H.TERRENOS[T[o.l][o.c]].nome) +
+        (RP.muros.de(o.id) && RP.muros.estado(RP.muros.de(o.id)) !== 'desconhecido' ? linhaInfo('Muralha', RP.esc(RP.muros.descricao(RP.muros.de(o.id)))) : '') +
+        (meu ? linhaInfo('Estoque', RP.estoqueHTML(o.id)) : '') +
         (meu ? linhaInfo('Nível', o.nivel) + linhaInfo('Guarnição', o.guarnicao) + linhaInfo('Postura', '<span class="selo selo-info">' + o.postura + '</span>')
           : linhaInfo('Defesa', esp ? RP.esc(esp.defesa) : '<span class="fraco">Desconhecida</span>')) +
         '</div>' + (RP.reliquiaEm(o.id, true) ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(RP.reliquiaEm(o.id, true)) + '</div>' : '') + (meu ? '' : esp
@@ -404,13 +427,27 @@
         if (mh) corpo = '<button type="button" class="faixa-alerta" data-abrir="marcha:' + mh.d.id + '">' + RP.icone('alerta') + '<span class="txt"><b>Forças desconhecidas a caminho</b><br>Chegada em <span data-fim="' + mh.d.chegada + '">' + RP.fmtResta(mh.d.chegada - Date.now()) + '</span></span>' + RP.icone('avancar', 'ico-p') + '</button>' + corpo;
       }
       acoes = meu
-        ? botao('Abrir no reino', 'castelo', 'btn-primario', 'data-ir="reino?local=' + o.id + '"') + botao('Postura', 'escudo', '', 'data-ir="posturas?local=' + o.id + '"')
+        ? botao('Abrir no reino', 'castelo', 'btn-primario', 'data-ir="reino?local=' + o.id + '"') + botao('Postura', 'escudo', '', 'data-ir="posturas?local=' + o.id + '"') + botao('Levar recursos', 'carroca', '', 'data-ir="caravana?para=' + o.id + '"')
         : botao(RP.reliquiaEm(o.id, true) ? 'Roubar a relíquia' : 'Atacar este local', 'tropas', 'btn-primario', 'data-ir="envio?alvo=' + o.id + '"') + botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"');
       abrirFolhaMapa({
         titulo: RP.esc(o.reino === 'meu' && o.tipo === 'castelo' ? 'Castelo de ' + D.reinos.meu.nome : W.nomeAparente(o)),
         subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
         icone: '<span class="ico-placa folha-ico ' + corDono(W.donoAparente(o)) + '">' + RP.icone(o.tipo) + '</span>',
         corpo: corpo, acoes: acoes
+      }, o.c, o.l);
+    } else if (tipo === 'avist') {
+      o = RP.avist.porId(id);
+      if (!o) return;
+      var idd = Math.max(1, Math.round(RP.avist.idade(o))), resta = RP.avist.restante(o);
+      corpo = '<div class="info">' + linhaInfo('O que', o.tipo === 'espiao' ? 'Espião (batedor)' : 'Exército') + (o.resumo ? linhaInfo('Forças', RP.esc(o.resumo)) : '') +
+        linhaInfo('Visto por', RP.esc(o.por)) + linhaInfo('Quando', 'há ' + idd + ' h') + linhaInfo('Rumo', RP.esc(o.rumo)) + '</div>' +
+        '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('relogio', 'ico-p') + '<span>Some do mapa em ' + RP.fmtDuracao(Math.round(resta * 3600)) + '. Avistamentos duram ' + RP.avist.VALIDADE_H + ' h, para o mapa não se encher de informação velha.</span></p>' +
+        (o.tipo === 'espiao' ? '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Espiões são furtivos, mas são descobertos quando alguma tropa os vê. Quem enviou continua desconhecido.</p>' : '');
+      acoes = botao('Enviar batedor', 'batedor', 'btn-primario', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"') + botao('Explorar a área', 'explorador', '', 'data-ir="exploradores?alvo=' + o.c + ',' + o.l + '"');
+      abrirFolhaMapa({
+        titulo: o.tipo === 'espiao' ? 'Espião visto' : 'Exército visto',
+        subtitulo: '<div class="linha"><span class="selo selo-antigo">' + RP.icone('relogio') + 'Visto há ' + idd + ' h</span>' + coordTxt(o.c, o.l) + '</div>',
+        icone: '<span class="ico-placa folha-ico">' + RP.icone(o.tipo === 'espiao' ? 'batedor' : 'tropas') + '</span>', corpo: corpo, acoes: acoes
       }, o.c, o.l);
     } else if (tipo === 'jazida') {
       o = W.jazida(id); e = estado(o.c, o.l);
@@ -474,7 +511,9 @@
         icone: '<span class="ico-placa folha-ico ' + corDono(o.reino) + '">' + RP.icone('bandeira') + '</span>', corpo: corpo, acoes: acoes
       }, o.c, o.l);
     } else if (tipo === 'marcha') {
-      var m = W.marcha(id), pos = m.posicao();
+      var m = W.marcha(id);
+      if (!m) return;
+      var pos = m.posicao();
       o = m.d; reino = D.reinos[o.dono];
       var alvoNome = alvoTexto(o.alvo);
       var risco = W.riscoMarcha(m);
@@ -488,6 +527,13 @@
           '</div><div style="margin-top:var(--esp-3)">' + RP.seloReliquia(rlm) + '</div>' +
           '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Levam a sua relíquia. Alcance-os no caminho antes que sumam na névoa.</p>';
         acoes = botao('Interceptar', 'alvo', 'btn-primario', 'data-ir="interceptar?marcha=' + o.id + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
+      } else if (o.tipo === 'caravana' && o.dono !== 'meu') {
+        corpo = '<div class="info">' +
+          linhaInfo('Dono', '<span class="selo selo-desconhecido">' + RP.icone('interrogacao') + 'Desconhecido</span>') +
+          linhaInfo('Carroças', o.resumo) + linhaInfo('Carga estimada', o.cargaTxt) + linhaInfo('Rumo', o.rumo || '?') +
+          linhaInfo('Some de vista em', '<b class="num" data-fim="' + o.chegada + '">' + RP.fmtResta(o.chegada - Date.now()) + '</b>') + '</div>' +
+          '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Cargas em trânsito podem ser roubadas no meio do caminho. Alcance a caravana antes que ela saia da sua vista.</p>';
+        acoes = botao('Interceptar', 'alvo', 'btn-primario', 'data-ir="interceptar?marcha=' + o.id + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
       } else if (o.hostil) {
         corpo = '<div class="info">' +
           linhaInfo('Identidade', '<span class="selo selo-perigo">' + RP.icone('interrogacao') + 'Desconhecida</span>') +
@@ -497,7 +543,9 @@
         acoes = botao('Enviar reforços', 'escudo', 'btn-primario', 'data-ir="envio?modo=reforco&destino=' + o.alvo + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
       } else if (o.dono === 'meu') {
         corpo = avisoRisco + '<div class="info">' + linhaInfo('Ordem', o.resumo) + (alvoNome ? linhaInfo('Destino', alvoNome) : '') +
-          (o.objetivos ? linhaInfo('Objetivos', RP.esc(o.objetivos)) + linhaInfo('Tática', RP.esc(o.tatica)) : '') + '</div>' +
+          (o.objetivos ? linhaInfo('Objetivos', RP.esc(o.objetivos)) + linhaInfo('Tática', RP.esc(o.tatica)) : '') +
+          (o.cargaTxt ? linhaInfo('Carga', RP.esc(o.cargaTxt)) : '') + '</div>' +
+          (o.tipo === 'caravana' ? '<p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Visível no mapa: a carga pode ser roubada até chegar. Ao chegar, entra no estoque do destino.</p>' : '') +
           (o.voltam ? '<p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">' + RP.esc(o.voltam.join(' ')) + '</p>' : '') +
           (rlm ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(rlm) + '</div><p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Carregando uma relíquia: visível no mapa e sujeita a roubo até chegar.</p>' : '') +
           '<div style="margin-top:var(--esp-3)">' + RP.timerHTML('Chegada', o.seg, o.seg * 2.2) + '</div>';
@@ -671,6 +719,7 @@
       '<g class="camada-terreno">' + svgTerreno() + '</g>' +
       '<g class="camada-rios">' + svgRios() + '</g>' +
       '<g class="camada-rotas">' + svgRotas() + '</g>' +
+      '<g class="camada-muros">' + svgMuros() + '</g>' +
       svgNevoa() +
       '<g class="camada-marcha-rotas">' + mh.rotas + '</g>' +
       '<polygon class="selecao" hidden points="0,0"/>' +
@@ -679,6 +728,7 @@
       '<g class="camada-locais">' + D.locais.map(svgLocal).join('') + '</g>' +
       '<g class="camada-fauna">' + D.fauna.map(svgFauna).join('') + '</g>' +
       '<g class="camada-bandeiras">' + D.bandeiras.map(svgBandeira).join('') + '</g>' +
+      '<g class="camada-avist">' + svgAvist() + '</g>' +
       '<g class="camada-marchas">' + mh.tokens + '</g>' +
       (RP.batalha && RP.batalha.ativa() ? (function () { var cb = H.centro(bx.c, bx.l); return '<g class="ent batalha-marca" data-ent="batalha:b" transform="translate(' + n1(cb.x) + ' ' + n1(cb.y - 26) + ')"><g class="ent-k"><circle class="alvo-toque" r="22"/><circle class="anel-ameaca" r="18"/><circle class="bt-base" r="14"/><use href="#i-tropas" x="-9" y="-9" width="18" height="18"/></g></g>'; })() : '') +
       '</g></svg></div>' +

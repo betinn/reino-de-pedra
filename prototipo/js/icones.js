@@ -158,6 +158,15 @@
       '<path class="ic-s" d="M4 6.5l1.5-2 1.5 2v15H4Z"/>' +
       '<path class="ic-s" d="M10.5 6.5l1.5-2 1.5 2v15h-3Z"/>' +
       '<path class="ic-s" d="M17 6.5l1.5-2 1.5 2v15h-3Z"/>',
+    carroca:
+      '<path class="ic-s" d="M3 8.5h14.5l-1 7H4Z"/>' +
+      '<path class="ic-d" d="M6.5 8.5v7M10.5 8.5v7M14 8.5v7"/>' +
+      '<circle class="ic-s" cx="7" cy="18" r="3"/><circle class="ic-s" cx="15" cy="18" r="3"/>' +
+      '<path class="ic-l" d="M17.5 11.5h4.5" style="stroke-width:1.8"/>',
+    torre:
+      '<path class="ic-s" d="M6 21.5V8.5h12v13Z"/>' +
+      '<path class="ic-s" d="M5 8.5V4h2.4v1.6h2.1V4h2.4v1.6h2.2V4h2.4v1.6H19V4h0v4.5Z"/>' +
+      '<path class="ic-d" d="M11 12.5h2v3h-2ZM10 21.5v-3a2 2 0 0 1 4 0v3"/>',
     armazem:
       '<path class="ic-s" d="M2.5 21.5V10L12 3.5l9.5 6.5v11.5Z"/>' +
       '<path class="ic-d" d="M7.5 21.5v-8h9v8M7.5 13.5l9 8M16.5 13.5l-9 8"/>',

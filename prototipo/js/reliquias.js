@@ -268,10 +268,11 @@
     var m = W.marcha(it.marcha), r = RP.reliquiaNaMarcha(it.marcha), ativa = m.d.chegada > Date.now();
     var n = G.soma(it.grupo), perfil = G.perfil(it.grupo), enc = ativa && n ? encontro(m, perfil) : null;
     var h = '<div class="card linha atacante">' + RP.brasao(null, { tamanho: 40, desconhecido: true }) + '<span style="flex:1"><b>Forças desconhecidas</b><br><small class="fraco">' + RP.esc(m.d.resumo) + ' · rumo ao ' + RP.esc(m.d.rumo || '?') + '</small></span></div>' +
-      (r ? '<div class="card relq-card tipo-' + r.tipo + '" style="margin-top:var(--esp-3)">' + cabRel(r, '<span class="selo selo-perigo">Sua</span>') + '</div>' : '') +
-      (ativa ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p pulso') + '<span>Somem na névoa em <b class="num" data-fim="' + m.d.chegada + '">' + RP.fmtResta(m.d.chegada - Date.now()) + '</b>. Depois disso, só a espionagem acha a relíquia.</span></p>'
+      (r ? '<div class="card relq-card tipo-' + r.tipo + '" style="margin-top:var(--esp-3)">' + cabRel(r, '<span class="selo selo-perigo">Sua</span>') + '</div>'
+        : m.d.cargaTxt ? '<div class="card linha" style="margin-top:var(--esp-3)"><span class="ico-placa">' + RP.icone('carroca') + '</span><span style="flex:1"><b>Levam</b><br><small class="fraco">' + RP.esc(m.d.cargaTxt) + '</small></span></div>' : '') +
+      (ativa ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p pulso') + '<span>Somem na névoa em <b class="num" data-fim="' + m.d.chegada + '">' + RP.fmtResta(m.d.chegada - Date.now()) + '</b>. Depois disso, só a espionagem acha ' + (r ? 'a relíquia' : 'a carga') + '.</span></p>'
         : '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + '<span>Essas forças já chegaram ao destino. Espione para achar a relíquia.</span></p>') +
-      '<div class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('alvo', 'ico-p') + '<span>Suas tropas vão a um ponto do caminho <b>antes</b> deles. Se vencerem, trazem a relíquia de volta, e na volta ela também pode ser interceptada.</span></div>' +
+      '<div class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('alvo', 'ico-p') + '<span>Suas tropas vão a um ponto do caminho <b>antes</b> deles. Se vencerem, trazem ' + (r ? 'a relíquia' : 'a carga') + ' de volta, e na volta ' + (r ? 'ela' : 'a carga') + ' também pode ser interceptada.</span></div>' +
       '<div class="secao-titulo">1. Tropas</div><div class="card pilha">' + G.linhas(it.grupo, ['lanceiro', 'arqueiro', 'cavalaria'], G.disp) +
       '<div class="ext-numeros"><div><span class="fraco">Tropas</span><b class="num">' + n + '</b></div><div><span class="fraco">Força</span><b class="num">' + Math.round(G.forca(it.grupo)) + '</b></div><div><span class="fraco">Velocidade</span><b>' + perfil.vel + '</b></div></div>' +
       '<p class="fraco" style="font-size:var(--fs-2)">Eles: ' + RP.esc(m.d.resumo) + '. Tropas lentas podem não alcançar.</p></div>' +
@@ -291,7 +292,7 @@
   RP.registrarTela('interceptar', {
     secao: 'tropas',
     montar: function (el) {
-      el.innerHTML = U.topo('Interceptar', 'reliquias', 'Retomar no meio do caminho') + '<div class="conteudo-tela it-conteudo"></div>' +
+      el.innerHTML = U.topo('Interceptar', 'mapa', 'Alcançar no meio do caminho') + '<div class="conteudo-tela it-conteudo"></div>' +
         '<div class="rodape-acao rodape-com-resumo"><div class="rodape-resumo"></div><button type="button" class="btn btn-primario btn-bloco btn-grande" data-interceptar>' + RP.icone('alvo') + 'Enviar para interceptar</button></div>';
       el.addEventListener('click', function (e) {
         if (G.passo(e, it.grupo, G.disp)) { desenharInterceptar(el); return; }
