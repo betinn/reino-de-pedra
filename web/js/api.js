@@ -59,7 +59,13 @@
       fonte.addEventListener(t, function (ev) { var d = {}; try { d = JSON.parse(ev.data); } catch (e) { /* vazio */ } emitir(t, d); });
     });
     fonte.onerror = function () { /* o navegador reconecta sozinho (retry do servidor) */ };
+    /* outra aba ou aparelho abriu uma conexão nova e o servidor fechou esta (teto por conta): só volta quando esta aba aparecer */
+    fonte.addEventListener('substituida', function () { RP.desconectarEventos(); substituida = true; });
   };
+  var substituida = false;
+  document.addEventListener('visibilitychange', function () {
+    if (substituida && document.visibilityState === 'visible') { substituida = false; RP.conectarEventos(); if (RP.recarregarReino) RP.recarregarReino(); }
+  });
   RP.desconectarEventos = function () { if (fonte) { fonte.close(); fonte = null; } };
   /* sistemas novos podem ouvir tipos extras de aviso */
   RP.ouvirTipoSse = function (t) { if (fonte) fonte.addEventListener(t, function (ev) { var d = {}; try { d = JSON.parse(ev.data); } catch (e) { /* vazio */ } emitir(t, d); }); };

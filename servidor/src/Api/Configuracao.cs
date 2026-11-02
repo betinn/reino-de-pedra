@@ -25,6 +25,12 @@ public sealed class Configuracao
     /// <summary>Cria reinos de IA para completar a meta de ocupação. Padrão: sim.</summary>
     public bool IA { get; init; } = Env("REINO_IA") != "0";
 
+    /// <summary>
+    /// Conexões abertas ao mesmo tempo por IP (0 = sem limite). Padrão: 100 servindo direto; atrás de proxy (REINO_PROXY=1)
+    /// todas as conexões vêm do proxy, então o limite fica desligado e vai para o proxy.
+    /// </summary>
+    public int ConexoesPorIp { get; init; } = int.TryParse(Env("REINO_CONEXOES_IP"), out var ci) && ci >= 0 ? ci : Env("REINO_PROXY") == "1" ? 0 : 100;
+
     private static string? Env(string n) { var v = Environment.GetEnvironmentVariable(n); return string.IsNullOrWhiteSpace(v) ? null : v; }
 
     public string LocalizarWeb()

@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using System.Reflection;
-using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
@@ -32,7 +31,10 @@ namespace ReinoDePedra.Api
                 k.AddServerHeader = false;
                 k.Limits.MaxRequestBodySize = 256 * 1024;
                 k.Limits.MaxConcurrentConnections = 2000;
+                k.ConfigureEndpointDefaults(lo => Limites.ConexoesPorIp(lo, cfg.ConexoesPorIp));
             });
+            // parada: SSE fecha na hora (abaixo); o resto termina bem antes do TimeoutStopSec do guia (20 s)
+            builder.Services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(10));
             builder.Logging.ClearProviders();
             builder.Logging.AddSimpleConsole(o => { o.SingleLine = true; o.TimestampFormat = "HH:mm:ss "; });
             builder.Logging.SetMinimumLevel(LogLevel.Warning);
@@ -92,16 +94,8 @@ namespace ReinoDePedra.Api
             });
             builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
             builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
-            builder.Services.AddRateLimiter(o =>
-            {
-                o.RejectionStatusCode = 429;
-                // login e cadastro: 20 tentativas por IP a cada 15 min (o limite por e-mail fica em ServicoContas)
-                o.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(IpDe(ctx), _ => new FixedWindowRateLimiterOptions
-                { PermitLimit = 20, Window = TimeSpan.FromMinutes(15), QueueLimit = 0 }));
-                // API em geral: 30 por segundo por IP, com folga para rajadas
-                o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx => RateLimitPartition.GetTokenBucketLimiter(IpDe(ctx), _ => new TokenBucketRateLimiterOptions
-                { TokenLimit = 60, TokensPerPeriod = 30, ReplenishmentPeriod = TimeSpan.FromSeconds(1), QueueLimit = 0, AutoReplenishment = true }));
-            });
+            // só a API conta (arquivos estáticos ficam de fora): por IP, por sessão e rotas pesadas; login à parte (Limites)
+            builder.Services.AddRateLimiter(Limites.Configurar);
             if (cfg.AtrasDeProxy)
                 builder.Services.Configure<ForwardedHeadersOptions>(o =>
                 {
@@ -126,6 +120,7 @@ namespace ReinoDePedra.Api
                 catch (RegraException e) when (!ctx.Response.HasStarted)
                 {
                     ctx.Response.StatusCode = e.Status;
+                    if (e.Status is 429 or 503) ctx.Response.Headers.RetryAfter = "2";
                     await ctx.Response.WriteAsJsonAsync(new { erro = e.Message });
                 }
                 catch (BadHttpRequestException) when (!ctx.Response.HasStarted)
@@ -163,10 +158,9 @@ namespace ReinoDePedra.Api
 
             app.Lifetime.ApplicationStarted.Register(() => { motor.Iniciar(); log.LogInformation("Reino de Pedra no ar em {Urls} (web: {Web})", cfg.Urls, web); });
             app.Lifetime.ApplicationStopping.Register(() => motor.DisposeAsync().AsTask().GetAwaiter().GetResult());
+            app.Lifetime.ApplicationStopping.Register(canal.FecharTodas);   // roda antes da gravação (ordem inversa do registro)
             app.Lifetime.ApplicationStopped.Register(banco.Dispose);
             return app;
         }
-
-        public static string IpDe(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
     }
 }
