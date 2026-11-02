@@ -467,6 +467,20 @@ public class GuerraTestes
         Assert.Equal(s.M.P.Guerra.ModelosMax - 1, s.Atk.ModelosAtaque.Count);
     }
 
+    [Fact]
+    public void Recurso_auto_vira_o_recurso_principal_do_alvo_e_sem_tipo_vale_o_padrao_do_alvo()
+    {
+        var s = new CombateCenario();
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 5)), 100);
+        var p = Ataques.Normalizar(s.M, alvo, G(("cavalaria", 10)), PlanoAtaque.Ler(new JsonObject
+        {
+            ["tipo"] = "saque", ["objetivos"] = new JsonArray(CombateCenario.Obj("recurso", "auto", 500)),
+        }));
+        Assert.Equal("ferro", p.Objetivos.Single().R);
+        var ruina = s.M.AdicionarLocal(new Local { ReinoId = 0, Ruina = true, Tipo = TipoLocal.Vila, Hex = s.HexLivre(s.CasteloAtk.Hex, 4), Nome = "Ruína" });
+        Assert.Equal(Ataques.Ocupacao, Ataques.Normalizar(s.M, ruina, G(("cavalaria", 10)), PlanoAtaque.Ler(new JsonObject())).Tipo);
+    }
+
     // ---------------------------------------------------------------- persistência
 
     [Fact]

@@ -131,6 +131,7 @@ public static class ExtrasGuerra
             var vistas = ForcasVistas.De(mm, r.Id).OrderByDescending(f => f.Quando).ToList();
             d["avistamentos"] = new { n = vistas.Count, hex = vistas.FirstOrDefault()?.Hex, quando = vistas.FirstOrDefault()?.Quando };
             d["queda"] = r.UltimaQueda is { Vista: false } q ? new { q.Exilio, q.Quando } : null;
+            d["escudoExilio"] = r.UltimaQueda is { Exilio: true } qe && qe.EscudoAte == r.EscudoAte && r.EscudoAte > mm.Agora;
             d["ultimoAtaque"] = r.UltimoAtaque is { } u ? VisaoGuerra.ResumoModelo(mm, r, u) : null;
         });
         VisaoMapa.Extras.Add((mm, r, vis) =>

@@ -75,7 +75,7 @@ namespace ReinoDePedra.Jogo.Combate
         /// <summary>Guarda o último ataque na partida (enviado de um local, ou nova ordem a um exército em campo).</summary>
         internal static void AoPartir(Mundo m, Marcha mc)
         {
-            if (mc is not Exercito ex || ex.Retornando || ex.Partida != m.Agora || !Batalhas.EhAtaque(ex) || m.Reinos.Obter(ex.ReinoId) is not { } r) return;
+            if (mc is not Exercito ex || ex.Retornando || !Batalhas.EhAtaque(ex) || m.Reinos.Obter(ex.ReinoId) is not { } r) return;
             var p = PlanoAtaque.Ler(ex.Dados);
             var alvo = ex.AlvoLocalId is long id ? m.Locais.Obter(id) : null;
             r.UltimoAtaque = new ModeloAtaque

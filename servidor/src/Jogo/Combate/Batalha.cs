@@ -438,7 +438,7 @@ namespace ReinoDePedra.Jogo.Combate
         /// <summary>Tropas saíram de um local em batalha: a composição muda.</summary>
         internal static void AoPartir(Mundo m, Marcha mc)
         {
-            if (mc is not Exercito e || e.Caminho.Count == 0 || e.Partida != m.Agora) return;
+            if (mc is not Exercito e || e.Caminho.Count == 0) return;   // AoPartir só roda na partida (o relógio real anda entre Partir e o gancho)
             var b = Ativa(m, e.OrigemLocalId);
             if (b == null || e.ReinoId != b.DefensorId || e.Caminho[0] != b.Hex) return;
             Recalcular(m, b, "Tropas deixaram o local: " + GT.Partes(m, e.Tropas) + ".", "defesa");

@@ -255,7 +255,7 @@ namespace ReinoDePedra.Jogo.Combate
 
         internal static void AoPartir(Mundo m, Marcha mc)
         {
-            if (!mc.Interceptavel || mc.Caminho.Count < 2 || mc.Partida != m.Agora) return;
+            if (!mc.Interceptavel || mc.Caminho.Count < 2) return;
             var alcance = m.P.Guerra.Postura.Alcance;
             foreach (var v in Todas(m))
             {

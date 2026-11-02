@@ -89,7 +89,7 @@ public static class VisaoCombate
         {
             alvo = new
             {
-                hex = alvo.Hex, c = m.G.C(alvo.Hex), l = m.G.L(alvo.Hex), nome = Ataques.NomeAlvo(alvo), local = alvo.Tipo.Chave(),
+                hex = alvo.Hex, c = m.G.C(alvo.Hex), l = m.G.L(alvo.Hex), nome = Ataques.NomeAlvo(alvo), local = alvo.Tipo.Chave(), produz = alvo.Produz,
                 dono = Ataques.SemDono(m, alvo) ? "livre" : "desconhecido", castelo = alvo.Tipo == TipoLocal.Castelo && !alvo.Ruina,
                 torres = torres.Select(t => new { t.Hex, t.Nivel, alcance = Defesas.Alcance(m, t) }),
             },

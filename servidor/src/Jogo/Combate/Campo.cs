@@ -150,6 +150,6 @@ public static class Campo
             ["levaram"] = levObj.DeepClone(), ["reliquias"] = new JsonArray(rels.Select(x => (JsonNode)x).ToArray()), ["danos"] = new JsonArray(),
             ["linhas"] = new JsonArray(L("Forças", quem), L("Tropas vistas", GT.Partes(m, atkG)), L("Suas perdas", perdasD.Count > 0 ? GT.Partes(m, perdasD) : "nenhuma")),
         };
-        Registros.Relatar(m, alvo.ReinoId, "defesa", seus + " alcançad" + (tipoAlvo == "caravana" ? "a" : "os") + ": " + (resD == "vitoria" ? "vitória" : "derrota"), dD, "ataques");
+        Registros.Relatar(m, alvo.ReinoId, "defesa", seus + " alcançad" + (tipoAlvo switch { "caravana" => "a", "carregadores" => "os", _ => "as" }) + ": " + (resD == "vitoria" ? "vitória" : "derrota"), dD, "ataques");
     }
 }
