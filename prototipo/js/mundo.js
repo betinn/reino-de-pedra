@@ -43,21 +43,25 @@
     return { x: p[n].x, y: p[n].y, i: n, ang: Math.atan2(p[n].y - p[n - 1].y, p[n].x - p[n - 1].x) };
   }
 
-  /* Marchas avançam em tempo real até a chegada */
-  var marchas = D.marchas.map(function (m) {
-    var hexes = H.caminho(m.pts), p = pontosCaminho(hexes);
+  /* Marchas avançam em tempo real até a chegada (m.chegada, em ms) */
+  function criarMarcha(m, hexes) {
+    hexes = hexes || H.caminho(m.pts);
+    var p = pontosCaminho(hexes);
+    if (!m.inicio) m.inicio = RP.t0;
+    if (!m.chegada) m.chegada = m.inicio + m.seg * 1000;
     var o = { d: m, hexes: hexes, p: p };
     o.posicao = function (agora) {
-      var dec = ((agora || Date.now()) - RP.t0) / 1000;
+      var dec = ((agora || Date.now()) - m.inicio) / 1000;
       var frac = m.pos + (1 - m.pos) * Math.min(1, dec / m.seg);
       var a = pontoEm(p, frac), h = H.pixelParaHex(a.x, a.y);
       a.hex = [h.c, h.l]; a.frac = frac;
       return a;
     };
-    var ini = o.posicao(RP.t0);
+    var ini = o.posicao(m.inicio);
     o.atual = ini; o.hex = ini.hex;
     return o;
-  });
+  }
+  var marchas = D.marchas.map(function (m) { return criarMarcha(m); });
 
   /* ---------------------------------------------------------------- visão e névoa */
   var EST = {};
@@ -145,8 +149,12 @@
 
   /* Explorar não revela o dono de locais de outros reinos (só o seu é conhecido) */
   var NOME_TIPO = { castelo: 'Castelo', vila: 'Vila', mina: 'Mina', serraria: 'Serraria', pasto: 'Pasto', armazem: 'Armazém', ferraria: 'Ferraria', quartel: 'Quartel' };
-  function donoAparente(reino) { return reino === 'meu' ? 'meu' : 'desconhecido'; }
-  function nomeAparente(x) { return x.reino === 'meu' ? x.nome : NOME_TIPO[x.tipo]; }
+  /* x: local (ou nome do reino). Espionagem com batedores de elite revela o dono. */
+  function donoAparente(x) {
+    if (typeof x === 'string') return x === 'meu' ? 'meu' : 'desconhecido';
+    return x.reino === 'meu' || x.espionado ? x.reino : 'desconhecido';
+  }
+  function nomeAparente(x) { return x.reino === 'meu' || x.espionado ? x.nome : NOME_TIPO[x.tipo]; }
 
   function achar(lista, id) { return lista.filter(function (x) { return x.id === id; })[0]; }
 
@@ -162,6 +170,15 @@
     bandeira: function (id) { return achar(D.bandeiras, id); },
     fauna: function (id) { return achar(D.fauna, id); },
     marcha: function (id) { return marchas.filter(function (m) { return m.d.id === id; })[0]; },
+    /* nova marcha do jogador (explorador, caça...): hexes = caminho já calculado */
+    adicionarMarcha: function (def, hexes) {
+      def.pos = 0; def.inicio = Date.now(); def.chegada = def.inicio + def.seg * 1000;
+      def.pts = [hexes[0], hexes[hexes.length - 1]];
+      D.marchas.push(def);
+      var m = criarMarcha(def, hexes);
+      marchas.push(m);
+      return m;
+    },
     castelo: function () { return H.centro(castelo.c, castelo.l); }
   };
 })();

@@ -218,19 +218,53 @@
   });
 
   /* ---------------------------------------------------------------- timers ao vivo */
-  RP.timerHTML = function (rotulo, seg, total, extra) {
-    var ini = RP.fim(seg - total), f = RP.fim(seg);
+  /* barra de tempo. fimAbs (ms) opcional; sem ele, seg conta a partir da abertura da página.
+     Itens que ainda não começaram aparecem como "Na fila". */
+  RP.timerHTML = function (rotulo, seg, total, extra, fimAbs) {
+    var f = fimAbs || RP.fim(seg), ini = f - total * 1000, agora = Date.now();
+    var pct = Math.max(0, Math.min(100, (100 * (agora - ini)) / (f - ini)));
     return '<div class="timer">' +
-      '<div class="timer-topo"><b>' + rotulo + '</b><span class="timer-resta" data-fim="' + f + '">' + RP.fmtResta(f - Date.now()) + '</span></div>' +
+      '<div class="timer-topo"><b>' + rotulo + '</b>' + (ini > agora ? '<span class="selo">Na fila</span>' : '') + '<span class="timer-resta" data-fim="' + f + '">' + RP.fmtResta(f - agora) + '</span></div>' +
       '<div class="barra ' + (extra || '') + '" role="progressbar" aria-label="Progresso: ' + RP.esc(rotulo.replace(/<[^>]+>/g, '').trim()) + '"><i data-ini="' + ini + '" data-barra-fim="' + f + '" style="width:' +
-      (100 * (1 - seg / total)).toFixed(1) + '%"></i></div></div>';
+      pct.toFixed(1) + '%"></i></div></div>';
+  };
+  RP.fimItem = function (it) { return it.fim || RP.fim(it.seg); };
+  RP.custoHTML = function (custo, mult) {
+    mult = mult || 1;
+    return '<span class="custos">' + Object.keys(custo).map(function (k) {
+      var v = custo[k] * mult, tem = RP.temRecurso(k, v);
+      return '<span class="custo' + (tem ? '' : ' falta') + '">' + RP.icone(k === 'populacao' ? 'populacao' : k, 'ico-p r-' + k) + RP.num(v) + '</span>';
+    }).join('') + '</span>';
+  };
+  RP.qtdRecurso = function (k) {
+    if (k === 'populacao') return RP.popAtual();
+    if (RP.dados.recursos[k]) return RP.qtdAtual(RP.dados.recursos[k]);
+    var v = RP.dados.valiosos.filter(function (x) { return x.id === k; })[0];
+    return v ? v.qtd : 0;
+  };
+  RP.temRecurso = function (k, v) { return RP.qtdRecurso(k) >= v; };
+  RP.faltas = function (custo, mult) {
+    mult = mult || 1;
+    return Object.keys(custo).filter(function (k) { return !RP.temRecurso(k, custo[k] * mult); }).map(function (k) {
+      var nome = RP.dados.recursos[k] ? RP.dados.recursos[k].nome.toLowerCase() : k === 'populacao' ? 'população' : k;
+      return RP.num(custo[k] * mult - RP.qtdRecurso(k)) + ' ' + nome;
+    });
+  };
+  RP.gastar = function (custo, mult) {
+    mult = mult || 1;
+    Object.keys(custo).forEach(function (k) {
+      var v = custo[k] * mult;
+      if (k === 'populacao') RP.dados.populacao.atual -= v;
+      else if (RP.dados.recursos[k]) RP.dados.recursos[k].qtd -= v;
+      else { var x = RP.dados.valiosos.filter(function (y) { return y.id === k; })[0]; if (x) x.qtd -= v; }
+    });
   };
   function tique() {
     var agora = Date.now();
     RP.$$('[data-fim]').forEach(function (el) { el.textContent = RP.fmtResta(+el.getAttribute('data-fim') - agora); });
     RP.$$('[data-barra-fim]').forEach(function (el) {
       var i = +el.getAttribute('data-ini'), f = +el.getAttribute('data-barra-fim');
-      el.style.width = Math.min(100, (100 * (agora - i)) / (f - i)).toFixed(2) + '%';
+      el.style.width = Math.max(0, Math.min(100, (100 * (agora - i)) / (f - i))).toFixed(2) + '%';
     });
     RP.$$('[data-rec]').forEach(function (el) {
       var r = RP.dados.recursos[el.getAttribute('data-rec')];

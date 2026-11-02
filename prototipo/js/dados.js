@@ -65,7 +65,8 @@
         info: ['Moradias: 1'], guarnicao: '4 milicianos', postura: 'Apenas defender' },
 
       { id: 'v-castelo', reino: 'valdren', tipo: 'castelo', nome: 'Castelo Valdren', c: 32, l: 8, terreno: 'planicie', nivel: '?', info: ['Muralhas altas'] },
-      { id: 'v-mina', reino: 'valdren', tipo: 'mina', nome: 'Mina Rubra', c: 33, l: 12, terreno: 'colina', nivel: '?', info: ['Ferro'] },
+      { id: 'v-mina', reino: 'valdren', tipo: 'mina', nome: 'Mina Rubra', c: 33, l: 12, terreno: 'colina', nivel: '?', info: ['Ferro'],
+        espionado: { horas: 10, defesa: '≈ 15 lanceiros e muralha baixa' } },
       { id: 'v-vila', reino: 'valdren', tipo: 'vila', nome: 'Vila Alta', c: 30, l: 6, terreno: 'planicie', nivel: '?' },
       { id: 'v-pasto', reino: 'valdren', tipo: 'pasto', nome: 'Pasto Leste', c: 35, l: 9, terreno: 'planicie', nivel: '?' },
       { id: 'v-serraria', reino: 'valdren', tipo: 'serraria', nome: 'Serraria Velha', c: 29, l: 14, terreno: 'floresta', nivel: '?' },
@@ -174,12 +175,70 @@
     /* Visão (raio em hexes) */
     visao: { castelo: 4, local: 3, exercito: 2, explorador: { pe: 2, cavalo: 3, prospector: 1, batedor: 3 } },
 
+    /* Filas: seg = tempo restante ao abrir a página; total = duração da etapa */
     filas: {
       obras: [
-        { rotulo: 'Serraria do Bosque → nível 4', seg: 760, total: 1800 },
-        { rotulo: 'Muralha do castelo → nível 4', espera: true }
+        { local: 'serraria', rotulo: 'Serraria do Bosque → nível 4', seg: 760, total: 1800 },
+        { local: 'castelo', rotulo: 'Muralha do castelo → nível 4', seg: 760 + 2700, total: 2700 }
       ],
-      recrutamento: [{ rotulo: '10 arqueiros · Quartel da Guarda', seg: 492, total: 900 }]
+      vagasObras: 3,
+      recrutamento: [{ unidade: 'arqueiro', qtd: 10, rotulo: '10 arqueiros · Quartel da Guarda', seg: 492, total: 900 }],
+      vagasRecrutamento: 4
+    },
+
+    /* Catálogo de construção. Básicas: minutos; fortes/valiosas: mais tempo. */
+    construcoes: [
+      { id: 'moradia-vau', icone: 'moradia', nome: 'Moradia', onde: 'Vila do Vau', local: 'vila-vau', cat: 'populacao', de: 1, para: 2,
+        efeito: '+60 de teto de população', custo: { madeira: 300, pedra: 150 }, tempo: 360 },
+      { id: 'pasto', icone: 'pasto', nome: 'Pasto das Éguas', onde: 'Planície', local: 'pasto', cat: 'economia', de: 1, para: 2,
+        efeito: '+30 comida/h e mais cavalos', custo: { madeira: 250, pedra: 100 }, tempo: 480 },
+      { id: 'mina-vale', icone: 'mina', nome: 'Mina do Vale', onde: 'Colina', local: 'mina-vale', cat: 'economia', de: 2, para: 3,
+        efeito: '+18 ferro/h', custo: { madeira: 400, pedra: 300, ferro: 50 }, tempo: 1500 },
+      { id: 'armazem', icone: 'armazem', nome: 'Armazém Real', onde: 'Planície', local: 'armazem', cat: 'economia', de: 3, para: 4,
+        efeito: 'Capacidade 5.000 → 7.500 por recurso', custo: { madeira: 600, pedra: 500 }, tempo: 2100 },
+      { id: 'quartel', icone: 'quartel', nome: 'Quartel da Guarda', onde: 'Planície', local: 'quartel', cat: 'militar', de: 2, para: 3,
+        efeito: 'Libera o aríete e uma vaga a mais na fila', custo: { madeira: 500, pedra: 400, ferro: 150 }, tempo: 2700 },
+      { id: 'era-aco', icone: 'ferraria', nome: 'Era do Aço', onde: 'Ferraria do Rei', local: 'ferraria', cat: 'militar', tec: true,
+        efeito: 'Armas de aço para lanceiros e cavalaria', custo: { ferro: 800, ouro: 60 }, tempo: 6000, requisito: 'Ferraria nível 3' },
+      { id: 'posto', icone: 'picareta', nome: 'Posto de extração', onde: 'Escolher jazida no mapa', cat: 'economia', novo: true,
+        efeito: 'Opcional: mais velocidade e rendimento na extração', custo: { madeira: 350, pedra: 200 }, tempo: 1200 },
+      { id: 'vila-nova', icone: 'vila', nome: 'Nova vila', onde: 'Escolher local no mapa', cat: 'populacao', novo: true,
+        efeito: '3 moradias e produção de comida', custo: { madeira: 900, pedra: 600, comida: 400 }, tempo: 4200 },
+      { id: 'rota', icone: 'rota', nome: 'Rota', onde: 'Traçar no mapa', cat: 'rotas', novo: true,
+        efeito: 'Rua pública: qualquer jogador usa; reduz animais', custo: { madeira: 120, pedra: 80 }, porHex: true, tempo: 300 }
+    ],
+
+    /* Unidades. atk/def/vel/carga em escala 1–5, só para comparação visual. */
+    unidades: [
+      { id: 'milicia', nome: 'Milícia', icone: 'populacao', papel: 'Defesa barata, perto de casa', forte: [], fraco: ['Todos em campo aberto'],
+        custo: { comida: 20, madeira: 10 }, pop: 1, tempo: 20, atk: 1, def: 2, vel: 3, carga: 1 },
+      { id: 'lanceiro', nome: 'Lanceiro', icone: 'tropas', papel: 'Infantaria de linha', forte: ['Cavalaria'], fraco: ['Arqueiros'],
+        custo: { comida: 30, madeira: 30, ferro: 20 }, pop: 1, tempo: 45, atk: 3, def: 4, vel: 2, carga: 2 },
+      { id: 'arqueiro', nome: 'Arqueiro', icone: 'alvo', papel: 'Ataque à distância', forte: ['Infantaria lenta'], fraco: ['Cavalaria'],
+        custo: { comida: 30, madeira: 50, couro: 10 }, pop: 1, tempo: 50, atk: 4, def: 2, vel: 3, carga: 2 },
+      { id: 'cavalaria', nome: 'Cavalaria', icone: 'cavalo', papel: 'Rápida, boa para saque', forte: ['Arqueiros'], fraco: ['Lanceiros'],
+        custo: { comida: 60, ferro: 40, couro: 30 }, pop: 1, tempo: 90, atk: 4, def: 3, vel: 5, carga: 4 },
+      { id: 'ariete', nome: 'Aríete', icone: 'cerco', papel: 'Cerco: derruba portões', forte: ['Muralhas'], fraco: ['Tropas'],
+        custo: { madeira: 300, ferro: 60 }, pop: 4, tempo: 240, atk: 5, def: 1, vel: 1, carga: 0, requisito: 'Quartel nível 3' },
+      { id: 'trebuchet', nome: 'Trebuchet', icone: 'cerco', papel: 'Cerco a distância', forte: ['Castelos'], fraco: ['Cavalaria'],
+        custo: { madeira: 600, pedra: 200, ferro: 150 }, pop: 6, tempo: 480, atk: 5, def: 1, vel: 1, carga: 0, requisito: 'Era do cerco avançado' }
+    ],
+    disponiveis: { milicia: 0, lanceiro: 20, arqueiro: 15, cavalaria: 0 },
+
+    /* Exploradores (tabela do CLAUDE.md) */
+    exploradores: [
+      { id: 'pe', nome: 'A pé', icone: 'bota', velocidade: 'Lenta', visao: 'Média', custo: 'Barato', carac: 'Sem penalidade em floresta e pântano', livres: 2, treino: { comida: 40 } },
+      { id: 'cavalo', nome: 'A cavalo', icone: 'cavalo', velocidade: 'Rápida', visao: 'Alta', custo: 'Médio', carac: 'Penalizado em floresta e montanha', livres: 1, treino: { comida: 80, couro: 20 } },
+      { id: 'prospector', nome: 'Prospector', icone: 'picareta', velocidade: 'Lenta', visao: 'Baixa', custo: 'Caro', carac: 'Único que revela jazidas valiosas e lendárias', livres: 0, treino: { comida: 120, ferro: 60 } },
+      { id: 'batedor', nome: 'Batedor de elite', icone: 'batedor', velocidade: 'Rápida', visao: 'Alta', custo: 'Caro', carac: 'Furtivo; espiona exércitos e reinos, revela o dono de locais', livres: 1, treino: { comida: 150, couro: 40 } }
+    ],
+
+    /* Rendimento ilustrativo da caça por animal */
+    caca: {
+      lobos: { comida: '30–50', couro: '10–20', peles: '25–40' },
+      javalis: { comida: '80–120', couro: '20–30', peles: '0–5' },
+      ursos: { comida: '60–90', couro: '30–45', peles: '40–60' },
+      crocodilos: { comida: '40–60', couro: '50–70', peles: '0' }
     },
 
     notificacoesNaoLidas: 3
