@@ -82,6 +82,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Recursos valiosos e lendários ficam **ocultos** até serem descobertos.
 - Jazidas são **finitas** e se esgotam com o tempo.
 - **O reino base já gera recursos básicos** suficientes para recrutar tropas básicas, sem depender de exploração.
+- Recursos ficam **no local** onde estão. Para usar (construir, recrutar), é preciso **transportá-los até o local** onde são necessários; não dá para usar recurso "de qualquer lugar". Vale a mesma lógica das relíquias: o transporte é feito por tropas e a carga pode ser **roubada no meio do caminho**.
+- **Veículos de transporte** (ex.: carroças) facilitam o transporte e também são construídos com recursos.
 
 ### Extração
 
@@ -153,10 +155,13 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Ocupação**: toma o local e passa a explorá-lo até alguém retomar.
 - **Cerco ao castelo**: o ataque mais difícil do jogo.
 - Todo ataque é enviado com **objetivos em ordem de prioridade** (ex.: capturar a relíquia + 10 mil de madeira) e uma **tática**. As tropas tentam cumprir os objetivos nessa ordem e sabem quando parar e voltar.
+- A tática define o limite de baixas para recuar: **conservadora 25%**, **média 40%**, **agressiva 60%** e **sem limite**.
 
 ### Defesa
 
 - Guarnição do local + **população como milícia** + muralhas.
+- **Muros** podem envolver uma construção ou várias. São **caros**, porque dão muita vantagem contra invasões.
+- Locais para **arqueiros defenderem do alto** (torres): ficam protegidos até o invasor entrar no reino ou destruir o muro.
 - O atacante chega apenas com as tropas enviadas, após a viagem; o defensor pode enviar reforços durante a batalha.
 - **Recuar** salva tropas e população, mas o local é saqueado.
 - Destruir um reino inteiro deve ser **muito difícil e caro**, mesmo para um veterano contra um iniciante.
@@ -175,6 +180,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Bandeiras **mostram quem as colocou**.
 - Cada jogador tem **até 20 bandeiras ativas**, com recado de até 60 caracteres. **Outros jogadores podem derrubá-las** com tropas no local.
 - Explorar um local de outro reino **não revela o dono**; espionar o local com batedores de elite revela.
+- Espiões são **descobertos se alguma tropa os vir**. Ficam no mapa como "visto há X horas" por apenas **10 horas**.
+- Para não poluir o mapa, objetos vistos ("visto há X") são **limpos periodicamente**.
 
 ### Território
 
