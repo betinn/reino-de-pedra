@@ -1,0 +1,370 @@
+/* =========================================================================
+   Reino de Pedra — tokens de design
+   Duas direções em avaliação, ativadas por data-direcao no <html>
+   (ou em qualquer contêiner, como na página de comparação):
+     A = "Fortaleza"  (pedra escura, ferro e brasa)
+     B = "Cartógrafo" (pergaminho, tinta, lacre e barras de ferro)
+   Componentes usam apenas tokens; nunca cores literais.
+   ========================================================================= */
+
+:root {
+  /* Espaçamento (base 4) */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-10: 40px;
+
+  /* Escala tipográfica */
+  --fs-1: 12px;   /* selos, rótulos mínimos */
+  --fs-2: 14px;   /* texto secundário */
+  --fs-3: 16px;   /* texto base */
+  --fs-4: 18px;   /* destaque */
+  --fs-5: 22px;   /* título de card */
+  --fs-6: 28px;   /* título de tela */
+  --fs-7: 40px;   /* título de entrada */
+  --lh-texto: 1.4;
+  --lh-titulo: 1.15;
+
+  /* Toque */
+  --alvo-min: 44px;
+  --alvo: 48px;
+  --nav-altura: 64px;
+
+  /* Camadas */
+  --z-mapa: 0;
+  --z-controles: 10;
+  --z-barra: 20;
+  --z-folha: 30;
+  --z-modal: 40;
+  --z-aviso: 50;
+
+  /* Movimento */
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 360ms;
+  --curva: cubic-bezier(.2, .8, .2, 1);
+
+  /* Tinturas heráldicas (iguais nas duas direções: são cores do brasão do jogador) */
+  --tin-ouro: #d8a93b;
+  --tin-prata: #e9e6dc;
+  --tin-vermelho: #b0281f;
+  --tin-azul: #23508f;
+  --tin-verde: #2e6b3c;
+  --tin-purpura: #673d86;
+  --tin-negro: #1e1e22;
+  --tin-castanho: #8a5428;
+}
+
+/* -------------------------------------------------------------------------
+   Direção A — Fortaleza
+   ------------------------------------------------------------------------- */
+:root,
+[data-direcao="a"] {
+  color-scheme: dark;
+
+  --fonte-titulo: "Cinzel", "Trajan Pro", "Times New Roman", Georgia, serif;
+  --fonte-texto: "Barlow Semi Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  --peso-titulo: 700;
+  --titulo-caixa: uppercase;
+  --titulo-espaco: .06em;
+  --btn-caixa: uppercase;
+  --btn-espaco: .05em;
+
+  /* Superfícies */
+  --cor-fundo: #111316;
+  --cor-fundo-2: #181b20;
+  --cor-superficie: #22262c;
+  --cor-superficie-2: #2b3037;
+  --cor-superficie-3: #363c46;
+  --cor-borda: #3a4049;
+  --cor-borda-forte: #5b6370;
+
+  /* Texto */
+  --cor-texto: #efe9dd;
+  --cor-texto-2: #bfb6a8;
+  --cor-texto-3: #948c80;
+
+  /* Ação e estado */
+  --cor-primaria: #e07a2e;
+  --cor-primaria-2: #b9581a;
+  --cor-primaria-texto: #1b0e04;
+  --cor-destaque: #d9b25c;
+  --cor-sucesso: #7dbb63;
+  --cor-alerta: #e8b947;
+  --cor-perigo: #f0645a;
+  --cor-perigo-fundo: #3b1a17;
+  --cor-info: #62acdc;
+  --cor-foco: #f0c766;
+
+  /* Donos no mapa */
+  --cor-meu: #5ea6ea;
+  --cor-rival-1: #e0503f;
+  --cor-rival-2: #a77ad9;
+  --cor-desconhecido: #9aa0a8;
+
+  /* Barras (topo, navegação) */
+  --barra-fundo: #0d0f12;
+  --barra-borda: #2c3138;
+  --barra-texto: #efe9dd;
+  --barra-texto-2: #9a9286;
+  --barra-ativo: #e07a2e;
+  --barra-ativo-fundo: rgba(224, 122, 46, .12);
+
+  /* Forma */
+  --raio-1: 6px;
+  --raio-2: 10px;
+  --raio-3: 14px;
+  --raio-pill: 999px;
+  --borda-larg: 1px;
+
+  /* Profundidade: painéis "entalhados" em pedra */
+  --sombra-1: inset 0 1px 0 rgba(255, 255, 255, .06), 0 2px 0 rgba(0, 0, 0, .45), 0 6px 14px rgba(0, 0, 0, .28);
+  --sombra-2: inset 0 1px 0 rgba(255, 255, 255, .07), 0 10px 30px rgba(0, 0, 0, .55);
+  --card-fundo: linear-gradient(180deg, #282d34 0%, #22262c 100%);
+  --campo-fundo: #16191d;
+  --campo-sombra: inset 0 2px 4px rgba(0, 0, 0, .5);
+
+  /* Botão primário (brasa) */
+  --btn-pri-fundo: linear-gradient(180deg, #ee9149 0%, #d06a23 55%, #b9581a 100%);
+  --btn-pri-borda: #6d3110;
+  --btn-pri-sombra: inset 0 1px 0 rgba(255, 255, 255, .3), 0 2px 0 #4f230a, 0 4px 10px rgba(0, 0, 0, .35);
+  /* Botão secundário (ferro) */
+  --btn-sec-fundo: linear-gradient(180deg, #424954 0%, #333942 100%);
+  --btn-sec-borda: #1c1f24;
+  --btn-sec-texto: #efe9dd;
+  --btn-sec-sombra: inset 0 1px 0 rgba(255, 255, 255, .12), 0 2px 0 #121418;
+
+  /* Barras de tempo */
+  --timer-trilho: #15171b;
+  --timer-trilho-borda: #2e333a;
+  --timer-preench: linear-gradient(90deg, #b9581a, #e07a2e 60%, #f0b25c);
+  --timer-brilho: rgba(255, 210, 150, .5);
+
+  /* Ícones: silhueta preenchida com detalhe entalhado */
+  --ico-s-fill: currentColor;
+  --ico-s-stroke: none;
+  --ico-s-w: 0;
+  --ico-d-stroke: rgba(10, 11, 13, .7);
+  --ico-l-stroke: currentColor;
+  --ico-d-w: 1.6;
+
+  /* Cores de recurso */
+  --rec-madeira: #c99059;
+  --rec-pedra: #aab1ba;
+  --rec-comida: #e3c45a;
+  --rec-ferro: #93a8bd;
+  --rec-populacao: #e8ddca;
+  --rec-ouro: #ebc24a;
+  --rec-prata: #d2d9e0;
+  --rec-sal: #ece6da;
+  --rec-cavalo: #c9976a;
+  --rec-ervas: #8fc46c;
+  --rec-gema: #6fcad9;
+  --rec-lendario: #d796f2;
+
+  /* Brasão */
+  --brasao-borda: #0e0f11;
+  --brasao-filete: #d9b25c;
+
+  /* Textura de pedra (ruído suave) */
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* ---- Mapa ---- */
+  --mapa-fundo: #0b0d10;
+  --hex-linha: rgba(0, 0, 0, .22);
+  --t-planicie: #8b9a50;
+  --t-planicie-2: #829147;
+  --t-floresta: #4a7341;
+  --t-floresta-2: #42693a;
+  --t-colina: #9c8961;
+  --t-colina-2: #917e57;
+  --t-montanha: #7c7671;
+  --t-montanha-2: #726c67;
+  --t-pantano: #5c6d4e;
+  --t-pantano-2: #546447;
+  --t-rio: #6f8c6a;
+  --rio-agua: #4f9fd2;
+  --rio-margem: #24485f;
+  --rio-brilho: rgba(190, 228, 255, .45);
+  /* símbolos de terreno */
+  --m-arvore: #2a4c28;
+  --m-arvore-2: #36603a;
+  --m-colina: #7d6a46;
+  --m-colina-luz: #b5a174;
+  --m-monte: #5f5955;
+  --m-monte-sombra: #474340;
+  --m-neve: #e8e5de;
+  --m-junco: #34432f;
+  --m-agua: #6f9fb5;
+  --m-grama: #6b7a3a;
+  --m-traco: rgba(0, 0, 0, .28);
+  --m-traco-l: .8;
+  /* névoa */
+  --nevoa-1: #0d0f12;
+  --nevoa-2: #111418;
+  --nevoa-3: #15191e;
+  --nevoa-borda: rgba(0, 0, 0, .0);
+  --nevoa-rotulo: rgba(239, 233, 221, .16);
+  --explorado-veu: rgba(14, 16, 19, .52);
+  --explorado-hachura: rgba(255, 255, 255, .07);
+  /* rotas */
+  --rota-cor: #d8c08e;
+  --rota-borda: #4d3c28;
+  --rota-traco: none;
+  /* entidades */
+  --ent-fundo: #1b1e23;
+  --ent-borda: #0b0c0e;
+  --ent-texto: #efe9dd;
+  --ent-halo: rgba(10, 11, 13, .85);
+  --selecao: #f0c766;
+}
+
+/* -------------------------------------------------------------------------
+   Direção B — Cartógrafo
+   ------------------------------------------------------------------------- */
+[data-direcao="b"] {
+  color-scheme: light;
+
+  --fonte-titulo: "IM Fell English SC", "Palatino Linotype", Palatino, Georgia, serif;
+  --fonte-texto: "Alegreya Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+  --peso-titulo: 400;
+  --titulo-caixa: none;
+  --titulo-espaco: .02em;
+  --btn-caixa: none;
+  --btn-espaco: .01em;
+
+  --cor-fundo: #e8dbbd;
+  --cor-fundo-2: #e0d1ae;
+  --cor-superficie: #f6eedb;
+  --cor-superficie-2: #efe4ca;
+  --cor-superficie-3: #e4d5b2;
+  --cor-borda: #b9a37c;
+  --cor-borda-forte: #4a3a28;
+
+  --cor-texto: #2a2119;
+  --cor-texto-2: #574634;
+  --cor-texto-3: #6f5d47;
+
+  --cor-primaria: #9b2c22;
+  --cor-primaria-2: #7c2019;
+  --cor-primaria-texto: #fbf3e2;
+  --cor-destaque: #87590f;
+  --cor-sucesso: #3f6f24;
+  --cor-alerta: #94600a;
+  --cor-perigo: #a3261b;
+  --cor-perigo-fundo: #f2d8cc;
+  --cor-info: #2c5d85;
+  --cor-foco: #2c5d85;
+
+  --cor-meu: #2c5d85;
+  --cor-rival-1: #a3261b;
+  --cor-rival-2: #5e3f80;
+  --cor-desconhecido: #6f6658;
+
+  /* Barras em ferro escuro emoldurando o pergaminho */
+  --barra-fundo: #2d3034;
+  --barra-borda: #17191b;
+  --barra-texto: #f1e8d4;
+  --barra-texto-2: #b9b0a0;
+  --barra-ativo: #f1e8d4;
+  --barra-ativo-fundo: rgba(241, 232, 212, .14);
+
+  --raio-1: 3px;
+  --raio-2: 5px;
+  --raio-3: 8px;
+  --raio-pill: 999px;
+  --borda-larg: 1.5px;
+
+  --sombra-1: 0 1px 0 rgba(74, 58, 40, .18), 0 3px 8px rgba(74, 58, 40, .12);
+  --sombra-2: 0 10px 30px rgba(42, 33, 25, .3);
+  --card-fundo: #f6eedb;
+  --campo-fundo: #fbf6ea;
+  --campo-sombra: inset 0 1px 2px rgba(74, 58, 40, .15);
+
+  --btn-pri-fundo: #9b2c22;
+  --btn-pri-borda: #4a1510;
+  --btn-pri-sombra: 0 2px 0 #4a1510;
+  --btn-sec-fundo: #f6eedb;
+  --btn-sec-borda: #4a3a28;
+  --btn-sec-texto: #2a2119;
+  --btn-sec-sombra: 0 2px 0 #4a3a28;
+
+  --timer-trilho: #e4d5b2;
+  --timer-trilho-borda: #4a3a28;
+  --timer-preench: repeating-linear-gradient(135deg, #2c5d85 0 6px, #3a6f99 6px 12px);
+  --timer-brilho: rgba(255, 255, 255, .0);
+
+  /* Ícones: traço de tinta com aguada leve */
+  --ico-s-fill: color-mix(in srgb, currentColor 16%, transparent);
+  --ico-s-stroke: currentColor;
+  --ico-s-w: 1.6;
+  --ico-d-stroke: currentColor;
+  --ico-l-stroke: currentColor;
+  --ico-d-w: 1.4;
+
+  --rec-madeira: #7f4f22;
+  --rec-pedra: #5d6268;
+  --rec-comida: #8a6a0c;
+  --rec-ferro: #3f566b;
+  --rec-populacao: #4a3a28;
+  --rec-ouro: #9a6a14;
+  --rec-prata: #5f6a75;
+  --rec-sal: #7a7062;
+  --rec-cavalo: #74492a;
+  --rec-ervas: #44702a;
+  --rec-gema: #1f7282;
+  --rec-lendario: #74378f;
+
+  --brasao-borda: #2a2119;
+  --brasao-filete: transparent;
+
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .24 0 0 0 0 .14 0 0 0 .13 0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  --mapa-fundo: #ddd0b0;
+  --hex-linha: rgba(74, 58, 40, .16);
+  --t-planicie: #e2d7a2;
+  --t-planicie-2: #dcd099;
+  --t-floresta: #b9c48f;
+  --t-floresta-2: #b0bc87;
+  --t-colina: #dcc394;
+  --t-colina-2: #d5bb8b;
+  --t-montanha: #cbbea9;
+  --t-montanha-2: #c2b5a0;
+  --t-pantano: #bcc39d;
+  --t-pantano-2: #b4bb95;
+  --t-rio: #d3d8bd;
+  --rio-agua: #8fb8cd;
+  --rio-margem: #3e6a86;
+  --rio-brilho: rgba(255, 255, 255, .0);
+  --m-arvore: #98ad6c;
+  --m-arvore-2: #b5c48c;
+  --m-colina: #cfb27d;
+  --m-colina-luz: #e6d3a6;
+  --m-monte: #bcae97;
+  --m-monte-sombra: #94856f;
+  --m-neve: #f6efdd;
+  --m-junco: #4f5f35;
+  --m-agua: #5f8ea6;
+  --m-grama: #8e8a4c;
+  --m-traco: #4a3a28;
+  --m-traco-l: 1.2;
+  --nevoa-1: #e8dbbd;
+  --nevoa-2: #e6d8b9;
+  --nevoa-3: #e4d6b6;
+  --nevoa-borda: rgba(74, 58, 40, .0);
+  --nevoa-rotulo: rgba(74, 58, 40, .38);
+  --explorado-veu: rgba(232, 219, 189, .6);
+  --explorado-hachura: rgba(74, 58, 40, .22);
+  --rota-cor: #7a4f27;
+  --rota-borda: transparent;
+  --rota-traco: 7 5;
+  --ent-fundo: #fbf6ea;
+  --ent-borda: #2a2119;
+  --ent-texto: #2a2119;
+  --ent-halo: rgba(246, 238, 219, .92);
+  --selecao: #9b2c22;
+}
