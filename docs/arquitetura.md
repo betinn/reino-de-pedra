@@ -69,6 +69,9 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Exercitos.BloqueiosOrdem`, `Exercitos.AoEntrarNoLocal` | Impedir nova ordem (ex.: em batalha); reagir a tropas que entram num local (relíquias carregadas). |
 | `Marcha.Interceptavel`, `Marcha.Reliquias`, `Marcha.AoSerVencida(m, vencedor)` | Contrato de interceptação: o combate decide quem vence; quem perde entrega a carga (até a capacidade livre do vencedor) e as relíquias, e sai do mapa. Exploradores e mensageiros devolvem `Interceptavel = false`; caravanas e carregadores sobrescrevem `AoSerVencida` se precisarem reagir. |
 | `Recrutamento.ReqCumprido`, `Recrutamento.Requisitos` | Quem cumpre um `U.req` (eras); bloqueios extras de unidade. |
+| `Marcha.AoPerderNoCaminho` | Quem perde no caminho, antes de ser esvaziado (perdedor, vencedor): o equipamento lendário vai ao vencedor. |
+| `Sistemas.Revelavel/Revelar/Estado/Gatilhos`, `Reino.SistemasVistos` | Sistemas apresentados aos poucos: registre a chave em AoIniciar, chame `Revelar` no gatilho (notifica "Novo: ..."); GET /reino leva `sistemas` com as chaves registradas; `Gatilhos` conferem antes de mostrar (ex.: ferraria ocupada). |
+| `Forja.Ferrarias`, `Forja.BonusFerraria`, `Forja.Lendarios` (`m.Lendarios`) | Eras feitas (`Ferrarias.EraFeita`, `EraAtual`), níveis de armas e armaduras, maior local de um tipo; bônus por família; onde está cada equipamento lendário e o bônus dele. |
 | `Reinos.Tropas` | Ajudantes de grupo de tropas: validar, retirar, devolver, somar, velocidade, carga, força contra fauna, população. Dentro de uma `Marcha`, a propriedade `Tropas` esconde a classe: use um alias (`using GT = ReinoDePedra.Jogo.Reinos.Tropas;`). |
 | `VisaoReino.Extras`, `VisaoReino.ExtrasLocal`, `VisaoMarcha.ExtrasPropria`, `VisaoMapa.Extras` (Api) | Acrescentar dados ao que o cliente recebe. |
 | `Fotos.Fotografos` | Objetos do sistema que ficam na foto da névoa (último estado conhecido fora da visão: torres, bandeiras...). |
@@ -82,6 +85,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `RP.ordensEnvio`, `RP.acoesTropas`, `RP.extrasTropas`, `RP.NOMES_MARCHA` (cliente) | Ordens extras no envio pelo mapa (`{ ordem, rotulo, verbo, icone, descricao, dados, quando(hex, dados, envio) }`), cartões e blocos da tela Tropas, nome dos tipos de marcha. |
 | `RP.TIPOS_ATAQUE`, `RP.graficoBatalha`, `RP.mapa.tiposObjeto.torre/batalha` (cliente) | Tipos de ataque; gráfico de força dos lados (`serie` com `t, meu, eles, proj`); objetos do mapa. O mapa que desenha `tiposObjeto` sozinho marca `RP.mapa.desenhaTiposObjeto = true` e o combate deixa de desenhar e de pôr linhas na folha. |
 | `RP.mapa.tiposObjeto`, `RP.mapa.camadas` (cliente) | Tipos de objeto do mapa (`{ nome, icone, desenharTatico(ctx, o, p, cam), folha(o) }`) e camadas que ligam e desligam (`perigo`). |
+| `RP.ferraria` (`dados`, `carregar`), `RP.reino.ferraria`, `local.lendarios`, `RP.SISTEMAS` (cliente) | Dados de `GET /ferraria`; resumo da ferraria e equipamento lendário em cada local no GET /reino; nome e texto dos sistemas revelados aos poucos (`RP.sistema(k)`). |
 | `RP.exploracao`, `RP.blocoRisco`, `RP.opcaoCaminhoExp`, `RP.perigoConhecido` (cliente) | Dados de `GET /exploracao`, risco da fauna e opção de caminho com risco (caravana, extração, escolta), perigo conhecido de um hexágono. |
 
 ## Regras de visibilidade (o servidor é quem esconde)
