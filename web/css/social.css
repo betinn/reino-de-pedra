@@ -1,0 +1,17 @@
+/* Reino de Pedra — social: aliança, comércio, mensagens e bandeiras. Só tokens (prototipo/design-system.md). */
+.cor-destaque { color: var(--cor-destaque); }
+
+/* prévia da bandeira: mastro claro, pano na cor do seu reino */
+.bn-mastro { stroke: var(--cor-texto-2); stroke-width: 3; stroke-linecap: round; fill: none; }
+.bn-pano { fill: var(--cor-meu); stroke: var(--barra-fundo); stroke-width: 1.5; stroke-linejoin: round; }
+.bn-topo { fill: var(--cor-destaque); }
+
+/* conversa da aliança: lista rolável, mais recente embaixo */
+.conversa .conversa-lista { max-height: 320px; overflow-y: auto; overscroll-behavior: contain; padding-right: var(--esp-1); }
+.conversa-lista li > span { min-width: 0; overflow-wrap: anywhere; }
+
+/* mensagem nova: filete de destaque */
+.msg-card.nova { border-color: color-mix(in srgb, var(--cor-info) 55%, transparent); }
+
+/* membros e propostas: textos longos quebram sem empurrar os botões */
+.al-conteudo .lista-item b, .com-conteudo .card b, .msg-conteudo .card b { overflow-wrap: anywhere; }
