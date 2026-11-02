@@ -230,4 +230,24 @@ public class VisibilidadeTestes
         Assert.True(cm.Take(cm.Count - 1).All(vis.Contains));   // à vista, mais o próximo hexágono para animar
         Assert.False(o.TryGetProperty("progresso", out _));
     }
+
+    // ---------------------------------------------------------------- ícone só para quem conhece o reino (achado 16)
+
+    [Fact]
+    public async Task Icone_proprio_so_e_servido_a_quem_conhece_o_reino()
+    {
+        await using var s = await ServidorTeste.Iniciar();
+        using var a = s.NovoCliente(); using var b = s.NovoCliente();
+        var ra = await a.ContaComReino("ana@exemplo.com", "Pedralva");
+        var rb = await b.ContaComReino("bia@exemplo.com", "Valdren");
+        var idA = ra.GetProperty("id").GetInt64(); var idB = rb.GetProperty("id").GetInt64();
+        var png = new byte[64];
+        new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, (byte)'I', (byte)'H', (byte)'D', (byte)'R', 0, 0, 0, 32, 0, 0, 0, 32 }.CopyTo(png, 0);
+        var put = await a.Http.PutAsync("reino/icone", new ByteArrayContent(png) { Headers = { ContentType = new("image/png") } });
+        Assert.True(put.IsSuccessStatusCode, put.StatusCode.ToString());
+        Assert.Equal(System.Net.HttpStatusCode.OK, (await a.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);    // o próprio
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, (await b.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);   // não conhece
+        await s.Motor.Executar(m => Conhecimento.Conhecer(m, m.Reinos[idB], m.Reinos[idA], "teste"));
+        Assert.Equal(System.Net.HttpStatusCode.OK, (await b.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);
+    }
 }
