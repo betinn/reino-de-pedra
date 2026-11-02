@@ -140,7 +140,29 @@ public sealed class ParametrosP
 
     // ---------- combate (servidor) ----------
     public CombateP Combate { get; init; } = new();
+
+    // ---------- guerra: exílio, interceptação, posturas e modelos de ataque (servidor) ----------
+    public GuerraP Guerra { get; init; } = new();
 }
+
+public sealed class GuerraP
+{
+    public ExilioP Exilio { get; init; } = new();
+    public InterceptacaoP Interceptacao { get; init; } = new();
+    public PosturaP Postura { get; init; } = new();
+    public int ModelosMax { get; init; }
+    public int ModeloNome { get; init; }
+}
+public sealed class ExilioP
+{
+    public Dictionary<string, double> Kit { get; init; } = new();
+    public Dictionary<string, int> Tropas { get; init; } = new();
+    public double Pop { get; init; }
+    /// <summary>Fração dos pontos livres mais distantes de quem derrubou o reino entre os quais o exílio é sorteado.</summary>
+    public double Longe { get; init; }
+}
+public sealed class InterceptacaoP { public double FolgaSeg { get; init; } }
+public sealed class PosturaP { public int Alcance { get; init; } public double RevidaH { get; init; } }
 
 public sealed class CombateP
 {

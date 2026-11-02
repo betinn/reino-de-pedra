@@ -135,6 +135,21 @@ const P = {
        Nível 1 ≈ 1.000 (pouco mais que uma torre nível 1, 600): ×1,15 na defesa do castelo inteiro vale mais que 6 arqueiros no alto.
        Acima de nivelSemEra (3) exige a Era do Cerco Avançado. */
     portao: { custoN1: 1000, custoCresc: 2.0, tempoN1: 3600, nivelSemEra: 3, receita: { pedra: 0.5, madeira: 0.3, ferro: 0.2 } }
+  },
+
+  /* ---------- guerra: exílio, interceptação, posturas e modelos de ataque (servidor) ---------- */
+  guerra: {
+    /* exílio (o reino perdeu todos os locais): só um castelo nível 1 num ponto novo, com este kit (o do protótipo), 10 milicianos
+       e população de 150 (metade do teto do castelo: recomeça menor que um reino novo, 220). O ponto sai da metade mais
+       distante (longe) dos pontos livres, medida a partir dos locais de quem derrubou o reino. */
+    exilio: { kit: { madeira: 800, pedra: 500, comida: 1000, ferro: 200 }, tropas: { milicia: 10 }, pop: 150, longe: 0.5 },
+    /* interceptação: as tropas precisam chegar ao ponto de encontro pelo menos 60 s antes de a marcha passar (o protótipo usa o mesmo) */
+    interceptacao: { folgaSeg: 60 },
+    /* posturas automáticas: quem "ataca qualquer ameaça" sai contra forças hostis que passam a até 1 hexágono (a visão de tropa);
+       quem "ataca apenas quem atacar" revida contra o reino que atacou nos seus locais ou exércitos na última 1 h (a volta do ataque) */
+    postura: { alcance: 1, revidaH: 1 },
+    /* modelos de ataque guardados por reino (o mesmo limite da fila) e tamanho do nome */
+    modelosMax: 10, modeloNome: 30
   }
 };
 

@@ -427,6 +427,30 @@
      "ferro": 0.2
     }
    }
+  },
+  "guerra": {
+   "exilio": {
+    "kit": {
+     "madeira": 800,
+     "pedra": 500,
+     "comida": 1000,
+     "ferro": 200
+    },
+    "tropas": {
+     "milicia": 10
+    },
+    "pop": 150,
+    "longe": 0.5
+   },
+   "interceptacao": {
+    "folgaSeg": 60
+   },
+   "postura": {
+    "alcance": 1,
+    "revidaH": 1
+   },
+   "modelosMax": 10,
+   "modeloNome": 30
   }
  },
  "U": {
