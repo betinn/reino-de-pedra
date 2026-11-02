@@ -26,6 +26,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Diferencial: **exploração real** de um mapa grande, com recursos valiosos escondidos que precisam ser descobertos.
 - O mundo continua funcionando com o jogador offline: construções terminam, tropas marcham e defesas reagem.
 - **Multiplayer desde o início**: todos os jogadores no mesmo mapa.
+- **Um único mundo**, por enquanto. Novos jogadores entram enquanto houver vaga ou reino de IA para dar lugar; com o mundo cheio e sem IA, ninguém mais entra até a próxima temporada. Não há ajuda especial para quem entra tarde.
 - Sessões curtas no celular: o jogador dá ordens longas, sai e recebe notificações.
 - Notificações são **configuráveis por categoria** (inclusive ataques), liga e desliga, sem horário de silêncio.
 
@@ -89,6 +90,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - O **envio manual** de recursos de um local para outro continua possível.
 - Cada local **acumula a própria produção** e guarda até **10 h** dela; o excedente vai para o armazém, onde também ficam os recursos valiosos. O estoque do local é o que um saque pode levar.
 - **Nenhum local passa do nível do castelo.** Melhorar o castelo custa e demora mais que um local do mesmo nível.
+- **Novos locais podem ser fundados em qualquer hexágono livre**, sem limite de distância, de vizinhança ou de quantidade. O custo crescente de cada novo local e o transporte do material até lá são os únicos freios.
 - A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição vão a pé e sem escolta.
 - Carroças ficam no castelo: saem, buscam a carga na origem e a levam. Escolta é opcional; caravana pouco protegida recebe aviso.
 
@@ -195,7 +197,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Saque**: leva recursos daquele local (madeira, ferro, armas, animais etc.), limitado à capacidade de carga.
 - **Sabotagem**: destrói ou danifica construções.
 - **Massacre**: mata população do local; enfraquece o reino a longo prazo, sem ganho de recurso.
-- **Ocupação**: toma o local e passa a explorá-lo até alguém retomar.
+- **Ocupação**: toma o local e passa a explorá-lo até alguém retomar. O local vira seu e mantém o nível; se estiver acima do seu castelo, só sobe quando o castelo passar dele.
 - **Cerco ao castelo**: o ataque mais difícil do jogo.
 - Todo ataque é enviado com **objetivos em ordem de prioridade** (ex.: capturar a relíquia + 10 mil de madeira) e uma **tática**. As tropas tentam cumprir os objetivos nessa ordem e sabem quando parar e voltar.
 - A tática define o limite de baixas para recuar: **conservadora 25%**, **média 40%**, **agressiva 60%** e **sem limite**.
@@ -275,6 +277,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Reinos podem formar **alianças** e **pedir recursos a aliados**.
 - Alianças têm **limite de membros**, por balanceamento: alianças muito grandes geram problemas. Valor inicial: **5 reinos** por aliança.
 - Aliados se reconhecem (nome e brasão) e veem as marchas uns dos outros. Locais de aliados não são alvo de ataque.
+- **Reforço entre aliados**: um aliado pode mandar tropas para defender um local seu. As tropas continuam ocupando o teto de população de quem mandou. Não há ataque conjunto.
+- **Conversa da aliança**: os membros conversam entre si; é o único chat do jogo.
 - Um pedido de recursos é aceito ou recusado pelo aliado. A ajuda sai dos locais mais próximos dele e viaja visível no mapa, podendo ser roubada.
 - **Cargos**: líder (convida, expulsa e promove), até 2 conselheiros (convidam e aceitam pedidos de entrada) e membros.
 - **Saída**: qualquer membro sai quando quiser, e o líder pode expulsar. Ao sair ou ser expulso, vale uma **trégua de 24 h** entre o reino e a aliança, garantida pelo jogo, e o reino só entra em outra aliança depois de 24 h. A visão das marchas acaba na hora.
@@ -286,6 +290,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ## Comércio e diplomacia
 
 - **Sem mercado global**: um mercado único quebraria as regras de recurso no local e de roubo no caminho.
+- **Sem chat geral.** Fora da aliança, a comunicação é por **mensageiro** e pelos recados curtos que acompanham as propostas.
+- **Mensageiro**: unidade que ocupa 1 de população e leva uma mensagem até um local de outro reino, inclusive de dono desconhecido. Vai com bandeira branca, evidente no mapa como não agressivo; tropas e fauna não o atacam. A mensagem revela quem a mandou; o destinatário só se revela se responder. Depois de entregar, o mensageiro volta.
 - **Troca direta** ("dou X, quero Y") só com reinos conhecidos: aliados, espionados ou identificados por estandarte ou bandeira. A proposta revela quem propõe. Se aceita, as duas cargas saem dos locais mais próximos e viajam visíveis no mapa, podendo ser roubadas.
 - **Reinos de IA comerciantes** compram abaixo e vendem acima do valor de referência, só com o próprio estoque e pelas mesmas regras dos jogadores. Mantêm o comércio vivo quando há poucos jogadores.
 - **Pacto de não agressão**: qualquer lado propõe, com pagamento em qualquer direção (quem ameaça cobra para não atacar, ou quem teme paga para não ser atacado) ou sem pagamento.
