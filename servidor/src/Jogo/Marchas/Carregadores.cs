@@ -19,6 +19,16 @@ public sealed class Carregadores : Marcha
 
     public override int PopOcupada(Mundo m) => 0;
 
+    /// <summary>Roubados no caminho: a carga vai ao vencedor e a obra pede de novo o que se perdeu.</summary>
+    public override void AoSerVencida(Mundo m, Exercito vencedor)
+    {
+        var perdido = Carga.Copia();
+        var item = ItemId; var fila = Fila;
+        base.AoSerVencida(m, vencedor);
+        var r = m.Reinos.Obter(ReinoId);
+        if (r != null && item is long id) Logistica.Repor(m, r, fila, id, perdido);
+    }
+
     public override void Chegou(Mundo m)
     {
         var r = m.Reinos.Obter(ReinoId);

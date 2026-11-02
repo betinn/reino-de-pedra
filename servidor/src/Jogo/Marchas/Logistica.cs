@@ -21,18 +21,43 @@ public static class Logistica
 
         var destinoLocal = item.LocalId is long lid ? m.Locais.Obter(lid) : null;
         // 1) o que já está no local da obra
-        if (destinoLocal != null)
-        {
-            foreach (var k in faltam.Keys.ToList())
-            {
-                var tirado = destinoLocal.Estoque.Retirar(k, faltam[k]);
-                if (tirado > 0) { item.Entregue.Somar(k, tirado); faltam[k] -= tirado; }
-                if (faltam[k] <= 1e-6) faltam.Remove(k);
-            }
-            m.Sujar(destinoLocal);
-        }
+        if (destinoLocal != null) TirarDoLocal(m, destinoLocal, item, faltam);
         if (faltam.Count == 0) return;
         // 2) dos locais mais próximos, um grupo de carregadores por origem
+        EnviarDosProximos(m, r, item, nomeFila, faltam, destinoLocal);
+    }
+
+    /// <summary>
+    /// Material de um item roubado no caminho: pede de novo aos locais mais próximos o que se perdeu.
+    /// O que o reino não tiver fica faltando (o item espera, e o jogador pode cancelar).
+    /// </summary>
+    public static void Repor(Mundo m, Reino r, string nomeFila, long itemId, Recursos perdido)
+    {
+        var item = r.Fila(nomeFila).Itens.FirstOrDefault(i => i.Id == itemId);
+        if (item == null || perdido.Count == 0) return;
+        Economia.Atualizar(m, r);
+        var faltam = perdido.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+        var destinoLocal = item.LocalId is long lid ? m.Locais.Obter(lid) : null;
+        if (destinoLocal != null && destinoLocal.ReinoId == r.Id) TirarDoLocal(m, destinoLocal, item, faltam);
+        if (faltam.Count > 0) EnviarDosProximos(m, r, item, nomeFila, faltam, destinoLocal);
+        m.Sujar(r);
+        Filas.TentarIniciar(m, r, nomeFila);
+    }
+
+    /// <summary>Entrega ao item, direto, o que já está no local da obra.</summary>
+    private static void TirarDoLocal(Mundo m, Local l, ItemFila item, Dictionary<string, double> faltam)
+    {
+        foreach (var k in faltam.Keys.ToList())
+        {
+            var tirado = l.Estoque.Retirar(k, faltam[k]);
+            if (tirado > 0) { item.Entregue.Somar(k, tirado); faltam[k] -= tirado; }
+            if (faltam[k] <= 1e-6) faltam.Remove(k);
+        }
+        m.Sujar(l);
+    }
+
+    private static void EnviarDosProximos(Mundo m, Reino r, ItemFila item, string nomeFila, Dictionary<string, double> faltam, Local? destinoLocal)
+    {
         var vel = m.P.Carregador.Vel;
         var tempos = Caminhos.MinutosAte(m, item.Hex, vel);
         var origens = m.LocaisDe(r.Id).Where(l => l.Id != destinoLocal?.Id && !l.Ruina)

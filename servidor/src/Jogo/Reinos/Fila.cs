@@ -44,6 +44,8 @@ public interface ITipoItemFila
     string Tipo { get; }
     /// <summary>Aplica o efeito do item terminado.</summary>
     void Concluir(Mundo m, Reino r, ItemFila item);
+    /// <summary>Desfaz o que o item reservou além do material (ex.: população do recrutamento). Chamado ao cancelar.</summary>
+    void Cancelado(Mundo m, Reino r, ItemFila item) { }
 }
 
 public static class Filas
@@ -126,6 +128,7 @@ public static class Filas
         Economia.Atualizar(m, r);
         fila.Itens.Remove(it);
         m.Cancelar(it.EventoId);
+        if (TiposRegistrados.TryGetValue(it.Tipo, out var tipo)) tipo.Cancelado(m, r, it);
         var destino = (it.LocalId is long lid ? m.Locais.Obter(lid) : null) ?? m.Locais.Obter(r.CasteloId);
         if (destino != null) { destino.Estoque.Somar(it.Entregue); m.Sujar(destino); }
         foreach (var mc in m.Marchas.Where(x => x is Carregadores c && c.ItemId == it.Id).Cast<Carregadores>())
