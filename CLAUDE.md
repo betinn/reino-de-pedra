@@ -27,6 +27,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - O mundo continua funcionando com o jogador offline: construções terminam, tropas marcham e defesas reagem.
 - **Multiplayer desde o início**: todos os jogadores no mesmo mapa.
 - Sessões curtas no celular: o jogador dá ordens longas, sai e recebe notificações.
+- Notificações são **configuráveis por categoria** (inclusive ataques), liga e desliga, sem horário de silêncio.
 
 ---
 
@@ -86,6 +87,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - **Nada é obrigatório.** Qualquer tropa pode coletar um recurso descoberto, inclusive uma única unidade sem preparo.
 - Posto de extração, mais tropas, unidades adequadas e rotas são **opcionais** e aumentam velocidade e rendimento da extração.
+- Unidades adequadas são as de **maior capacidade de carga**: rendem mais por viagem.
 
 ### Tempos
 
@@ -126,6 +128,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Atacar qualquer ameaça.
   - Apenas defender.
   - Atacar apenas quem atacar.
+- Postura padrão: guarnições em **apenas defender**; exércitos em campo em **atacar apenas quem atacar**.
 
 ### Reino como conjunto de alvos
 
@@ -144,12 +147,14 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - Guarnição do local + **população como milícia** + muralhas.
 - O atacante chega apenas com as tropas enviadas, após a viagem; o defensor pode enviar reforços durante a batalha.
+- **Recuar** salva tropas e população, mas o local é saqueado.
 - Destruir um reino inteiro deve ser **muito difícil e caro**, mesmo para um veterano contra um iniciante.
 
 ### Queda do castelo
 
 - Se o reino ainda possui outros locais: o castelo vira ruína e a sede se transfere para outro local, com perdas pesadas, sem extinção.
 - Se perder tudo: o jogador recomeça **em exílio** em um novo ponto do mapa, com um kit de recomeço, mantendo linhagem e relíquias, e recebe **escudo temporário** contra ataques.
+- O ponto do exílio é **aleatório e longe de quem derrubou** o reino; escolher a região depende da linhagem.
 
 ### Anonimato e bandeiras
 
@@ -157,6 +162,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - A identidade só é revelada se o atacante escolher levar seu **estandarte**, ou se o defensor descobrir via batedores e espionagem.
 - **Bandeiras** podem ser colocadas em qualquer lugar do mapa, como sinal para outros jogadores (reivindicação, ameaça, aliança). Têm valor social, não mecânico.
 - Bandeiras **mostram quem as colocou**.
+- Cada jogador tem **até 20 bandeiras ativas**, com recado de até 60 caracteres. **Outros jogadores podem derrubá-las** com tropas no local.
 - Explorar um local de outro reino **não revela o dono**; espionar o local com batedores de elite revela.
 
 ### Território
@@ -168,6 +174,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ### Pontos de atenção no balanceamento
 
 - Evitar farm de iniciantes: escudo de novato, rendimento decrescente em saques repetidos ao mesmo alvo, milícia proporcional à população.
+- O escudo de novato **só é descoberto ao chegar**: o atacante não vê a proteção antes, e as tropas voltam sem combate.
+- Saques repetidos ao mesmo alvo rendem **progressivamente menos**, e o atacante é avisado antes de enviar.
 - Monitorar abuso do anonimato para assédio.
 
 ---
@@ -192,10 +200,11 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Mundo organizado em **temporadas** (ordem de grandeza: 2 a 3 meses), com reset de mapa e reinos.
 - Objetivo: evitar domínio permanente dos primeiros jogadores sem desanimar veteranos.
 - **Legado** que atravessa temporadas:
-  - **Relíquias da temporada**: itens únicos e limitados, ganhos por conquistas, com bônus pequeno e com teto.
+  - **Relíquias da temporada**: itens únicos e limitados, ganhos por conquistas, com bônus pequeno e com teto (o teto vale para a soma das relíquias).
   - **Títulos, brasões e skins** permanentes, mostrando o histórico do jogador.
   - **Linhagem**: progressão de conta que desbloqueia opções (ex.: escolha de região inicial), não poder bruto.
 - Novos jogadores devem conseguir competir; veteranos carregam identidade e vantagem pequena.
+- **Ranking da temporada** por reino: total de baixas causadas, perdas, quantidade de tropas e famílias. Não mede território (continua sem placar de domínio).
 
 ---
 
