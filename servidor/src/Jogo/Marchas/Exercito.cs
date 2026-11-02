@@ -109,7 +109,7 @@ public static class Exercitos
     /// <summary>Caminho do exército (rota curta ou segura, conforme <see cref="Exercito.Seguro"/>).</summary>
     public static Rota Rota(Mundo m, Exercito ex, int de, int para)
     {
-        var op = new OpcoesCaminho { Seguro = ex.Seguro, Forca = GT.ForcaFauna(m, ex.Tropas) };
+        var op = new OpcoesCaminho { Seguro = ex.Seguro, Forca = GT.ForcaFauna(m, ex.Tropas), ReinoId = ex.ReinoId };
         var rota = Caminhos.Calcular(m, de, para, ex.Vel, op);
         if (rota.Hexes[^1] != para) throw new RegraException("Não há caminho até o destino.");
         return rota;
@@ -180,7 +180,7 @@ public static class Exercitos
             foreach (var l in m.LocaisDe(ex.ReinoId).Where(l => !l.Ruina))
             {
                 if (l.Hex == de) { alvo = l; rota = null; break; }
-                var rr = Caminhos.Calcular(m, de, l.Hex, ex.Vel, new OpcoesCaminho { Seguro = ex.Seguro, Forca = GT.ForcaFauna(m, ex.Tropas) });
+                var rr = Caminhos.Calcular(m, de, l.Hex, ex.Vel, new OpcoesCaminho { Seguro = ex.Seguro, Forca = GT.ForcaFauna(m, ex.Tropas), ReinoId = ex.ReinoId });
                 if (rr.Hexes[^1] != l.Hex) continue;
                 if (rota == null || rr.TotalMin < rota.TotalMin) { alvo = l; rota = rr; }
             }

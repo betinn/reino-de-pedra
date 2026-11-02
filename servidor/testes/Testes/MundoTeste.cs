@@ -5,7 +5,10 @@ using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Testes;
 
-/// <summary>Mundo de teste: relógio falso, semente fixa, sistemas iniciados. Avance o tempo com <see cref="Avancar"/>.</summary>
+/// <summary>
+/// Mundo de teste: relógio falso, semente fixa, sistemas iniciados. Avance o tempo com <see cref="Avancar"/>.
+/// Sem fauna por padrão (ataques de fauna são sorteios); <c>fauna: true</c> mantém a fauna gerada com o mundo.
+/// </summary>
 public sealed class MundoTeste
 {
     public static readonly long Inicio = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
@@ -13,11 +16,12 @@ public sealed class MundoTeste
     public Mundo M { get; }
     public Balanceamento B => M.B;
 
-    public MundoTeste(ulong semente = 7)
+    public MundoTeste(ulong semente = 7, bool fauna = false)
     {
         M = new Mundo(Balanceamento.Padrao, Relogio);
         M.CriarNovo(semente);
         Sistemas.IniciarTodos(M);
+        if (!fauna) ReinoDePedra.Jogo.Exploracao.Fauna.Limpar(M);
     }
 
     /// <summary>Avança o relógio e executa os eventos vencidos, cada um no seu instante.</summary>

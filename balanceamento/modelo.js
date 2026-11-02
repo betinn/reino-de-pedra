@@ -128,10 +128,10 @@ const P = {
     captura: { base: 0.05, porTropa: 0.01, max: 0.5, furtivo: 0 }
   },
   /* fauna gerada com o mundo: 2 regiões por reino (raio 1 ou 2, centros a 4+ hexágonos uns dos outros, longe 2+ dos castelos).
-     Nível base = o da caça do animal, com 25% de chance de um nível abaixo e 25% acima. A até 4 hexágonos de um castelo
-     inicial, sempre baixo. O bando muda de hexágono dentro da região a cada 3 a 5 h. Tamanho do bando (contador no mapa). */
+     Nível base = o da caça do animal, com 25% de chance de um nível abaixo e 25% acima. A até 3 hexágonos de um castelo
+     inicial (o que o castelo vê), sempre baixo. O bando muda de hexágono dentro da região a cada 3 a 5 h. Tamanho do bando (contador no mapa). */
   faunaServ: {
-    regioesPorReino: 2, raio: [1, 2], distanciaMin: 4, longeCastelo: 2, pertoReino: 4, variacao: 0.25, moverH: [3, 5],
+    regioesPorReino: 2, raio: [1, 2], distanciaMin: 4, longeCastelo: 2, pertoReino: 3, variacao: 0.25, moverH: [3, 5],
     bando: { lobos: [4, 8], javalis: [3, 6], ursos: [1, 3], crocodilos: [2, 5] },
     /* carregadores sem escolta: força 5 por pessoa (gente sem armas, metade de uma milícia) */
     forcaCarregador: 5,

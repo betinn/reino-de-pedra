@@ -22,13 +22,15 @@ public sealed class ServidorTeste : IAsyncDisposable
 
     private ServidorTeste(WebApplication app, string dir, string b, RelogioFalso r) { App = app; _dir = dir; Base = b; Relogio = r; }
 
-    public static async Task<ServidorTeste> Iniciar()
+    /// <summary>Sobe o servidor. Sem fauna por padrão (ataques de fauna são sorteios).</summary>
+    public static async Task<ServidorTeste> Iniciar(bool fauna = false)
     {
         var dir = Path.Combine(Path.GetTempPath(), "rp-srv-" + Guid.NewGuid().ToString("N"));
         var relogio = new RelogioFalso(MundoTeste.Inicio);
         var cfg = new Configuracao { Dados = dir, Urls = "http://127.0.0.1:0", CookieSeguro = false, Semente = 7, IA = false };
         var app = Servidor.Construir([], cfg, relogio);
         await app.StartAsync();
+        if (!fauna) await app.Services.GetRequiredService<Motor>().Executar(m => ReinoDePedra.Jogo.Exploracao.Fauna.Limpar(m));
         var end = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         return new ServidorTeste(app, dir, end, relogio);
     }
