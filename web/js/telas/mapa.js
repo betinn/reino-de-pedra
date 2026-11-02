@@ -6,6 +6,7 @@
 
   var COR_TERRENO = { p: '#5d6b3a', f: '#2f4a2c', c: '#7a6a45', m: '#6d6a68', b: '#3e4a3a' };
   var dados = null, cv = null, ctx = null, cam = { x: 0, y: 0, z: 0.6 }, alvoFundar = null, selecionado = -1, anim = 0;
+  /* RP.NOMES_MARCHA: sistemas dão nome aos seus tipos de marcha ({ exercito: 'Exército' }) */
   RP.mapa = { dados: function () { return dados; }, extrasFolhaHex: [], acoesFolhaHex: [], desenhosExtras: [] };
 
   function carregar() {
@@ -130,7 +131,7 @@
         if (o.tipo === 'local') return '<div class="info-linha"><span class="fraco">' + (o.dono === 'meu' ? 'Seu local' : 'Local') + '</span><span>' + RP.esc(o.nome) + (o.nivel ? ' · Nv ' + o.nivel : '') + '</span></div>';
         if (o.tipo === 'jazida') return '<div class="info-linha"><span class="fraco">Jazida</span><span>' + RP.NOMES_REC[o.recurso] + ' · ' + Math.round(o.restante * 100) + '% restante</span></div>';
         if (o.tipo === 'ruina-antiga') return '<div class="info-linha"><span class="fraco">Ruína antiga</span><span>' + (o.esgotada ? 'já escavada' : 'guarda uma relíquia') + '</span></div>';
-        if (o.tipo === 'marcha') return '<div class="info-linha"><span class="fraco">' + (o.dono === 'meu' ? 'Sua marcha' : 'Forças desconhecidas') + '</span><span>' + RP.esc(o.marcha) + '</span></div>';
+        if (o.tipo === 'marcha') return '<div class="info-linha"><span class="fraco">' + (o.dono === 'meu' ? 'Sua marcha' : 'Forças desconhecidas') + '</span><span>' + RP.esc((RP.NOMES_MARCHA || {})[o.marcha] || o.marcha) + '</span></div>';
         return '';
       }).join('') +
       RP.mapa.extrasFolhaHex.map(function (f) { return f(h, dados) || ''; }).join('') + '</div>';

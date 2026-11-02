@@ -1,0 +1,14 @@
+/* Reino de Pedra — tropas: hub, recrutamento, posturas e envio pelo mapa (sempre com os tokens de tokens.css). */
+.tropas-selos { display: flex; flex-wrap: wrap; gap: 6px; }
+.exercito-card { position: relative; align-items: flex-start; }
+.emcampo-abrir { position: absolute; inset: 0; background: none; border: 0; border-radius: inherit; cursor: pointer; }
+.emcampo-abrir:focus-visible { outline: 2px solid var(--cor-primaria); outline-offset: 2px; }
+.exercito-card .ico-placa, .exercito-card .emcampo-tempo { pointer-events: none; }
+.exercito-acoes { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: var(--esp-2); margin-top: var(--esp-1); }
+.guarnicao-card .linha { flex-wrap: wrap; }
+.guarnicao-sem { font-size: var(--fs-2); }
+.grupo-ctrl { gap: var(--esp-1); flex: none; }
+.grupo-ctrl .btn-fantasma { padding: 0 var(--esp-2); }
+.envio-origens { margin-bottom: var(--esp-3); }
+.recrut-locais { margin-bottom: var(--esp-3); }
+.mapa-topo .ordem-barra { max-width: 100%; }
