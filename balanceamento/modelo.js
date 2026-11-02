@@ -44,8 +44,25 @@ const P = {
   escudoNovatoH: 72, escudoExilioH: 24, regenciaH: 48,
   /* legado: relíquias da temporada (+1% a +2% cada, até 3 equipadas, teto somado de 5%) */
   legado: { relMin: 0.01, relMax: 0.02, equipadas: 3, teto: 0.05 },
-  /* fauna (força = soma de (ataque + defesa) / 2 do grupo) */
+  /* fauna (força = soma de (ataque + defesa) / 2 do grupo): com o dobro do limite, passa ileso; acima do limite, risco um nível menor.
+     Chance de ataque por região de fauna atravessada; num ataque, o grupo perde 5% (acima do limite) ou 25% (abaixo); explorador sozinho morre. */
   fauna: { baixo: 40, medio: 120, alto: 300 },
+  ataqueFauna: { baixo: 0.10, medio: 0.25, alto: 0.50 }, perdaFauna: { acima: 0.05, abaixo: 0.25 }, faunaVoltaH: 24,
+  /* caça: rendimento por bando abatido (o bando reaparece em 24 h); 20 min no local */
+  caca: { javalis: { comida: 120, couro: 40, peles: 5, nivel: 'baixo' }, lobos: { comida: 50, couro: 30, peles: 40, nivel: 'alto' },
+          ursos: { comida: 90, couro: 60, peles: 60, nivel: 'alto' }, crocodilos: { comida: 50, couro: 90, peles: 0, nivel: 'medio' } },
+  cacasDia: 3,
+  /* exploradores: ocupam 1 de população; força só conta contra fauna */
+  exploradores: {
+    pe:         { nome: 'A pé', custo: { comida: 40 }, tempo: 60, vel: 'Lenta', visao: 2, forca: 10 },
+    cavalo:     { nome: 'A cavalo', custo: { comida: 80, couro: 20 }, tempo: 180, vel: 'Rápida', visao: 3, forca: 15 },
+    prospector: { nome: 'Prospector', custo: { comida: 120, ferro: 60 }, tempo: 360, vel: 'Lenta', visao: 1, jazidas: 2, forca: 8 },
+    batedor:    { nome: 'Batedor de elite', custo: { comida: 150, couro: 40 }, tempo: 480, vel: 'Rápida', visao: 3, forca: 20 }
+  },
+  /* rotas e pontes: custo por hexágono × fator do terreno; ponte sobre rio */
+  rota: { custo: { madeira: 120, pedra: 80 }, tempo: 300 }, ponte: { custo: { madeira: 600, pedra: 400 }, tempo: 1800 },
+  /* espionagem: chance de o batedor ser visto ao espionar um local; visto: metade das vezes é capturado (sem relatório) */
+  espiao: { base: 0.15, porTorre: 0.10, porTropa: 0.005, max: 0.60, capturado: 0.5, tempoNoLocal: 600 },
   /* alianças */
   alianca: 5,
 
@@ -345,7 +362,7 @@ for (let n = 1; n <= P.torre.nivelMax; n++) {
 out('\nPortões do castelo: ' + P.portoesEstrutura + ' de estrutura por nível (nível 3: ' + 3 * P.portoesEstrutura + ', ' + Math.ceil(3 * P.portoesEstrutura / U.ariete.cerco) + ' aríetes ou ' + Math.ceil(3 * P.portoesEstrutura / U.trebuchet.cerco) + ' trebuchets). Aríetes batem por combate; o trebuchet bate à distância, sem entrar no alcance dos arqueiros.\n');
 
 out('## Fauna, saque, relíquias e proteções\n');
-out('- Fauna (força = soma de (ataque + defesa)/2): baixo ' + P.fauna.baixo + ', médio ' + P.fauna.medio + ', alto ' + P.fauna.alto + '. Com o dobro do limite, o grupo passa ileso. 20 lanceiros = ' + forcaFauna({ lanceiro: 20 }) + ' (ileso em qualquer nível); 1 explorador a cavalo ≈ ' + forcaFauna({ cavalaria: 1 }) + '.');
+out('- Fauna (força = soma de (ataque + defesa)/2): baixo ' + P.fauna.baixo + ', médio ' + P.fauna.medio + ', alto ' + P.fauna.alto + '. Com o dobro do limite, o grupo passa ileso. 20 lanceiros = ' + forcaFauna({ lanceiro: 20 }) + ' (ileso em qualquer nível); 1 explorador a cavalo = ' + P.exploradores.cavalo.forca + '.');
 out('- Saque repetido ao mesmo alvo em 24 h: −' + P.saqueQueda * 100 + '% por saque, até restar ' + P.saqueMinimo * 100 + '%.');
 out('- Relíquias: ataque +' + P.reliquia.ataque * 100 + '%, produção +' + P.reliquia.producao * 100 + '%, resistência +' + P.reliquia.resistencia * 100 + '%. Produção +15% num local de nível 6 = +' + r0(prod(6) * 0.15) + '/h, perto de meio nível (' + r0(prod(7) - prod(6)) + '/h). Escavação: ' + P.reliquia.escavarHoras1 + ' h com 1 unidade, mínimo ' + P.reliquia.escavarMin + ' h.');
 out('- Escudo de novato ' + P.escudoNovatoH + ' h; escudo de exílio ' + P.escudoExilioH + ' h; regência após ' + P.regenciaH + ' h sem entrar. Relíquias da temporada (legado): +' + P.legado.relMin * 100 + '% a +' + P.legado.relMax * 100 + '% cada, até ' + P.legado.equipadas + ' equipadas, teto somado de ' + P.legado.teto * 100 + '%. Aliança: até ' + P.alianca + ' reinos.\n');
@@ -448,6 +465,39 @@ out('- **Veterania**: cada vitória com perdas abaixo de ' + P.veterania.perdasM
 out('- **Feridos**: ' + P.feridos.frac * 100 + '% das baixas de quem vence, ou recua pela tática, voltam feridos. ' + P.feridos.ervas + ' ervas curam 1 em ' + P.feridos.curaH + ' h, no castelo; sem ervas em ' + P.feridos.esperaH + ' h, morrem. Curar custa ' + P.feridos.ervas * P.valor.ervas + ' de valor, ' + r0(100 * P.feridos.ervas * P.valor.ervas / valorDe(U.lanceiro.custo)) + '% de um lanceiro, e devolve a população. No caso dos 40 arqueiros sem bônus, as perdas caem de ' + r0(resCasos[9].perdaA * 100) + '% para ' + r0(resCasos[9].perdaA * (1 - P.feridos.frac) * 100) + '%.');
 out('- **Teto de bônus**: a soma de armas ou armaduras (+' + r0(BONUS.armas * 100) + '%), veterania (+' + r0(BONUS.vet * 100) + '%), relíquia (+' + P.reliquia.ataque * 100 + '% ataque, +' + P.reliquia.resistencia * 100 + '% resistência), lendário (+' + r0(BONUS.lend * 100) + '%) e legado (+' + r0(BONUS.leg * 100) + '%) chega a +' + r0(BONUS.maxAtk * 100) + '% no ataque e +' + r0(BONUS.maxDef * 100) + '% na defesa; vale até +' + P.tetoBonus * 100 + '%. Torres e portões ficam fora do teto. Com o teto, um exército no máximo vence uma defesa até ' + (1 + P.tetoBonus) + '× maior e perde para 2×.\n');
 
+/* ---------- fauna, caça, exploradores, rotas e espionagem ---------- */
+const chanceEspiao = (torres, tropas) => Math.min(P.espiao.max, P.espiao.base + torres * P.espiao.porTorre + tropas * P.espiao.porTropa);
+const riscoFauna = (nivel, forca) => forca >= 2 * P.fauna[nivel] ? 'nenhum' : forca >= P.fauna[nivel] ? ['nenhum', 'baixo', 'medio'][['baixo', 'medio', 'alto'].indexOf(nivel)] : nivel;
+const NIVEL_NOME = { nenhum: 'nenhum', baixo: 'baixo', medio: 'médio', alto: 'alto' };
+out('## Fauna, caça, exploradores, rotas e espionagem\n');
+out('Fauna: força ' + P.fauna.baixo + ' / ' + P.fauna.medio + ' / ' + P.fauna.alto + ' (baixo, médio, alto). Chance de ataque por região atravessada: ' + Object.entries(P.ataqueFauna).map(([k, v]) => NIVEL_NOME[k] + ' ' + r0(v * 100) + '%').join(', ') + '. Num ataque, o grupo perde ' + r0(P.perdaFauna.acima * 100) + '% se tiver força acima do limite e ' + r0(P.perdaFauna.abaixo * 100) + '% se abaixo; um explorador sozinho morre. O bando abatido volta em ' + P.faunaVoltaH + ' h.\n');
+out('| Grupo | Força | Perigo baixo | Perigo médio | Perigo alto |');
+out('|---|---|---|---|---|');
+[['Explorador a pé', P.exploradores.pe.forca], ['Explorador a cavalo', P.exploradores.cavalo.forca], ['Explorador + 5 lanceiros de escolta', P.exploradores.cavalo.forca + 5 * (U.lanceiro.atk + U.lanceiro.def) / 2],
+ ['4 arqueiros', forcaFauna({ arqueiro: 4 })], ['10 lanceiros (extração)', forcaFauna({ lanceiro: 10 })], ['20 arqueiros', forcaFauna({ arqueiro: 20 })]].forEach(([rot, f]) => {
+  out('| ' + rot + ' | ' + r0(f) + ' | ' + ['baixo', 'medio', 'alto'].map(n => { const r = riscoFauna(n, f); return r === 'nenhum' ? 'ileso' : 'risco ' + NIVEL_NOME[r]; }).join(' | ') + ' |');
+});
+out('\n**Caça** (por bando abatido; 20 min no local):\n');
+out('| Animal | Perigo | Comida | Couro | Peles | Valor | Grupo para ir ileso |');
+out('|---|---|---|---|---|---|---|');
+Object.entries(P.caca).forEach(([k, c]) => {
+  out('| ' + k[0].toUpperCase() + k.slice(1) + ' | ' + NIVEL_NOME[c.nivel] + ' | ' + c.comida + ' | ' + c.couro + ' | ' + c.peles + ' | ' + valorDe({ comida: c.comida, couro: c.couro, peles: c.peles }) + ' | ' + Math.ceil(2 * P.fauna[c.nivel] / 30) + ' arqueiros |');
+});
+const couroMedioCaca = Object.values(P.caca).reduce((s, c) => s + c.couro, 0) / Object.keys(P.caca).length;
+const couroDemanda = sims.medio.log[35].tropas * (U.arqueiro.custo.couro / 3 + U.cavalaria.custo.couro / 6) / 35;
+out('\nCouro: ' + P.cacasDia + ' caçadas por dia rendem ≈ ' + r0(P.cacasDia * couroMedioCaca) + '; o médio usa ≈ ' + r0(couroDemanda) + ' por dia para recrutar (1/3 arqueiros, 1/6 cavalaria).\n');
+out('**Exploradores** (1 de população cada):\n');
+out('| Tipo | Custo | Valor | Treino | Velocidade | Visão | Força contra fauna |');
+out('|---|---|---|---|---|---|---|');
+Object.values(P.exploradores).forEach(x => out('| ' + x.nome + ' | ' + fmtC(x.custo) + ' | ' + valorDe(x.custo) + ' | ' + fmtT(x.tempo) + ' | ' + x.vel + ' | ' + x.visao + (x.jazidas ? ' (jazidas a ' + x.jazidas + ')' : '') + ' | ' + x.forca + ' |'));
+const rota10 = 10 * soma(P.rota.custo);
+out('\n**Rotas**: ' + fmtC(P.rota.custo) + ' e ' + fmtT(P.rota.tempo) + ' por hexágono, multiplicados pelo terreno (' + Object.entries(P.terreno).map(([k, v]) => ({ planicie: 'planície', pantano: 'pântano' }[k] || k) + ' ×' + v).join(', ') + '). **Ponte** (hexágono de rio): ' + fmtC(P.ponte.custo) + ', ' + fmtT(P.ponte.tempo) + '. Vau: grátis e mais lento. 10 hexágonos de rota em planície: ' + rota10 + ' (' + r1(rota10 / prodDia(14)) + ' h de produção do médio no dia 14).\n');
+out('**Espionagem**: chance de o batedor ser visto ao espionar = ' + r0(P.espiao.base * 100) + '% + ' + r0(P.espiao.porTorre * 100) + '% por torre no alcance + ' + r1(P.espiao.porTropa * 100) + '% por tropa da guarnição, até ' + r0(P.espiao.max * 100) + '%. Visto, metade das vezes é capturado (sem relatório); na outra, foge com o relatório. Em ambos os casos, o alvo vê o espião por 10 h. ' + fmtT(P.espiao.tempoNoLocal) + ' no local.\n');
+out('| Alvo | Chance de ser visto |');
+out('|---|---|');
+[['Local sem torre e sem tropas', 0, 0], ['Mina com 15 lanceiros e 1 torre', 1, 15], ['Castelo médio (60 tropas, 4 torres)', 4, 60]].forEach(([rot, t, n]) => out('| ' + rot + ' | ' + r0(chanceEspiao(t, n) * 100) + '% |'));
+out('');
+
 /* ================================================================ metas */
 const metas = [
   ['M1', 'Kit inicial recruta 10 lanceiros na primeira sessão', 'pode', Object.keys(U.lanceiro.custo).every(k => P.kit[k] >= U.lanceiro.custo[k] * 10)],
@@ -484,7 +534,12 @@ const metas = [
   ['M19', 'Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria', U.elite.atk + ' > ' + U.cavalaria.atk + ' · ' + r1(100 * U.elite.atk / valorDe(U.elite.custo)) + ' < ' + r1(100 * U.cavalaria.atk / valorDe(U.cavalaria.custo)),
     U.elite.atk > U.cavalaria.atk && U.elite.atk / valorDe(U.elite.custo) < U.cavalaria.atk / valorDe(U.cavalaria.custo)],
   ['M20', 'Reino sob escudo recebe no máximo 30% do que ele mesmo produz no escudo', r0(100 * recebivelNovato / sims.medio.prodEscudo) + '%', recebivelNovato / sims.medio.prodEscudo <= 0.3],
-  ['M21', 'Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias', quedaS.recupCastelo != null ? quedaS.recupCastelo + ' dias' : 'não volta', quedaS.recupCastelo >= 2 && quedaS.recupCastelo <= 6]
+  ['M21', 'Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias', quedaS.recupCastelo != null ? quedaS.recupCastelo + ' dias' : 'não volta', quedaS.recupCastelo >= 2 && quedaS.recupCastelo <= 6],
+  ['M22', 'Explorador sozinho corre risco em qualquer perigo; 20 arqueiros passam ilesos até no alto', ['baixo', 'medio', 'alto'].every(n => riscoFauna(n, P.exploradores.cavalo.forca) !== 'nenhum') && riscoFauna('alto', forcaFauna({ arqueiro: 20 })) === 'nenhum' ? 'sim' : 'não',
+    ['baixo', 'medio', 'alto'].every(n => riscoFauna(n, P.exploradores.cavalo.forca) !== 'nenhum') && riscoFauna('alto', forcaFauna({ arqueiro: 20 })) === 'nenhum'],
+  ['M23', P.cacasDia + ' caçadas por dia cobrem 70% a 150% do couro que o médio usa para recrutar', r0(100 * P.cacasDia * couroMedioCaca / couroDemanda) + '%', (x => x >= 0.7 && x <= 1.5)(P.cacasDia * couroMedioCaca / couroDemanda)],
+  ['M24', '10 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14', r1(rota10 / prodDia(14)) + ' h', (x => x >= 1 && x <= 3)(rota10 / prodDia(14))],
+  ['M25', 'Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo', r0(chanceEspiao(1, 15) * 100) + '% / ' + r0(chanceEspiao(4, 60) * 100) + '%', chanceEspiao(1, 15) >= 0.25 && chanceEspiao(1, 15) <= 0.4 && chanceEspiao(4, 60) >= P.espiao.max]
 ];
 out('## Metas verificadas\n');
 out('| | Meta | Resultado | |');

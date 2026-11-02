@@ -215,6 +215,30 @@ Tabelas completas (valiosos, extração, eras, ferraria, queda do castelo) em [`
 
 Esses valores estão aplicados no protótipo: ferraria e eras, cavaleiro de elite, feridos, veterania, equipamento lendário, extração, comércio, pactos e resgate.
 
+## Fauna, caça, exploradores, rotas e espionagem
+
+| Tema | Valor |
+|---|---|
+| Fauna | Força 40 / 120 / 300 (baixo, médio, alto). Com o dobro, passa ileso; acima do limite, risco um nível menor |
+| Ataque de fauna | Chance por região atravessada: baixo 10%, médio 25%, alto 50%. Atacado, o grupo perde 5% (acima do limite) ou 25% (abaixo); explorador sozinho morre |
+| Caça (por bando) | Javalis 120 comida, 40 couro, 5 peles · lobos 50, 30, 40 · ursos 90, 60, 60 · crocodilos 50, 90, 0. 20 min no local; o bando volta em 24 h |
+| Exploradores | 1 de população cada. A pé 40 comida, 1 min, visão 2 · a cavalo 80 comida e 20 couro, 3 min, visão 3 · prospector 120 comida e 60 ferro, 6 min, visão 1 (jazidas a 2) · batedor 150 comida e 40 couro, 8 min, visão 3 |
+| Rotas | 120 madeira e 80 pedra, 5 min por hexágono, × terreno (floresta 1,8; montanha 2,3; pântano 2,8). Ponte: 600 madeira, 400 pedra, 30 min |
+| Espionagem | Chance de ser visto: 15% + 10% por torre no alcance + 0,5% por tropa, até 60%. Visto: metade das vezes capturado (sem relatório) |
+
+Por quê:
+- **Fauna com números reais**: os mesmos valores de força das tropas. Um explorador sozinho corre risco em qualquer região; uma escolta de 5 lanceiros já livra o perigo baixo; 20 arqueiros atravessam tudo.
+- **Caça paga o couro**: três caçadas por dia rendem ≈ 165 de couro, o que o jogador médio usa para recrutar arqueiros e cavalaria (≈ 160). Couro deixa de ser gargalo para quem caça, e a caça vira rotina com risco.
+- **Rotas são investimento de verdade**: 10 hexágonos em planície custam ≈ 1,3 h de produção do médio no dia 14. Em floresta ou montanha, o dobro: rota boa é onde mais se ganha tempo.
+- **Espionagem tem risco proporcional**: espionar uma mina com torre e 15 lanceiros tem 1 chance em 3 de ser visto; um castelo médio chega ao máximo de 60%. Nunca é certo nem impossível.
+
+| | Meta | Resultado |
+|---|---|---|
+| M22 | Explorador sozinho corre risco em qualquer perigo; 20 arqueiros passam ilesos até no alto | ✓ |
+| M23 | 3 caçadas por dia cobrem 70% a 150% do couro que o médio usa para recrutar | 103% |
+| M24 | 10 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14 | 1,3 h |
+| M25 | Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo | 33% / 60% |
+
 ## Como mudar um número
 
 1. Edite o parâmetro em `P` (ou a unidade em `U`) no `modelo.js`.

@@ -83,7 +83,7 @@ Portões do castelo: 500 de estrutura por nível (nível 3: 1500, 38 aríetes ou
 
 ## Fauna, saque, relíquias e proteções
 
-- Fauna (força = soma de (ataque + defesa)/2): baixo 40, médio 120, alto 300. Com o dobro do limite, o grupo passa ileso. 20 lanceiros = 650 (ileso em qualquer nível); 1 explorador a cavalo ≈ 37.5.
+- Fauna (força = soma de (ataque + defesa)/2): baixo 40, médio 120, alto 300. Com o dobro do limite, o grupo passa ileso. 20 lanceiros = 650 (ileso em qualquer nível); 1 explorador a cavalo = 15.
 - Saque repetido ao mesmo alvo em 24 h: −20% por saque, até restar 20%.
 - Relíquias: ataque +15%, produção +15%, resistência +20%. Produção +15% num local de nível 6 = +17/h, perto de meio nível (33/h). Escavação: 12 h com 1 unidade, mínimo 4 h.
 - Escudo de novato 72 h; escudo de exílio 24 h; regência após 48 h sem entrar. Relíquias da temporada (legado): +1% a +2% cada, até 3 equipadas, teto somado de 5%. Aliança: até 5 reinos.
@@ -204,6 +204,49 @@ Duas linhas por família (infantaria, arqueiros, cavalaria): armas dão +8% de a
 - **Feridos**: 30% das baixas de quem vence, ou recua pela tática, voltam feridos. 5 ervas curam 1 em 2 h, no castelo; sem ervas em 24 h, morrem. Curar custa 40 de valor, 44% de um lanceiro, e devolve a população. No caso dos 40 arqueiros sem bônus, as perdas caem de 43% para 30%.
 - **Teto de bônus**: a soma de armas ou armaduras (+24%), veterania (+15%), relíquia (+15% ataque, +20% resistência), lendário (+25%) e legado (+5%) chega a +84% no ataque e +89% na defesa; vale até +50%. Torres e portões ficam fora do teto. Com o teto, um exército no máximo vence uma defesa até 1.5× maior e perde para 2×.
 
+## Fauna, caça, exploradores, rotas e espionagem
+
+Fauna: força 40 / 120 / 300 (baixo, médio, alto). Chance de ataque por região atravessada: baixo 10%, médio 25%, alto 50%. Num ataque, o grupo perde 5% se tiver força acima do limite e 25% se abaixo; um explorador sozinho morre. O bando abatido volta em 24 h.
+
+| Grupo | Força | Perigo baixo | Perigo médio | Perigo alto |
+|---|---|---|---|---|
+| Explorador a pé | 10 | risco baixo | risco médio | risco alto |
+| Explorador a cavalo | 15 | risco baixo | risco médio | risco alto |
+| Explorador + 5 lanceiros de escolta | 178 | ileso | risco baixo | risco alto |
+| 4 arqueiros | 120 | ileso | risco baixo | risco alto |
+| 10 lanceiros (extração) | 325 | ileso | ileso | risco médio |
+| 20 arqueiros | 600 | ileso | ileso | ileso |
+
+**Caça** (por bando abatido; 20 min no local):
+
+| Animal | Perigo | Comida | Couro | Peles | Valor | Grupo para ir ileso |
+|---|---|---|---|---|---|---|
+| Javalis | baixo | 120 | 40 | 5 | 210 | 3 arqueiros |
+| Lobos | alto | 50 | 30 | 40 | 190 | 20 arqueiros |
+| Ursos | alto | 90 | 60 | 60 | 330 | 20 arqueiros |
+| Crocodilos | médio | 50 | 90 | 0 | 230 | 8 arqueiros |
+
+Couro: 3 caçadas por dia rendem ≈ 165; o médio usa ≈ 160 por dia para recrutar (1/3 arqueiros, 1/6 cavalaria).
+
+**Exploradores** (1 de população cada):
+
+| Tipo | Custo | Valor | Treino | Velocidade | Visão | Força contra fauna |
+|---|---|---|---|---|---|---|
+| A pé | 40 comida | 40 | 1 min | Lenta | 2 | 10 |
+| A cavalo | 80 comida, 20 couro | 120 | 3 min | Rápida | 3 | 15 |
+| Prospector | 120 comida, 60 ferro | 180 | 6 min | Lenta | 1 (jazidas a 2) | 8 |
+| Batedor de elite | 150 comida, 40 couro | 230 | 8 min | Rápida | 3 | 20 |
+
+**Rotas**: 120 madeira, 80 pedra e 5 min por hexágono, multiplicados pelo terreno (planície ×1, colina ×1.25, floresta ×1.8, montanha ×2.3, pântano ×2.8). **Ponte** (hexágono de rio): 600 madeira, 400 pedra, 30 min. Vau: grátis e mais lento. 10 hexágonos de rota em planície: 2000 (1.3 h de produção do médio no dia 14).
+
+**Espionagem**: chance de o batedor ser visto ao espionar = 15% + 10% por torre no alcance + 0.5% por tropa da guarnição, até 60%. Visto, metade das vezes é capturado (sem relatório); na outra, foge com o relatório. Em ambos os casos, o alvo vê o espião por 10 h. 10 min no local.
+
+| Alvo | Chance de ser visto |
+|---|---|
+| Local sem torre e sem tropas | 15% |
+| Mina com 15 lanceiros e 1 torre | 33% |
+| Castelo médio (60 tropas, 4 torres) | 60% |
+
 ## Metas verificadas
 
 | | Meta | Resultado | |
@@ -241,5 +284,9 @@ Duas linhas por família (infantaria, arqueiros, cavalaria): armas dão +8% de a
 | M19 | Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria | 60 > 45 · 24 < 26.5 | ✓ |
 | M20 | Reino sob escudo recebe no máximo 30% do que ele mesmo produz no escudo | 24% | ✓ |
 | M21 | Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias | 2.7 dias | ✓ |
+| M22 | Explorador sozinho corre risco em qualquer perigo; 20 arqueiros passam ilesos até no alto | sim | ✓ |
+| M23 | 3 caçadas por dia cobrem 70% a 150% do couro que o médio usa para recrutar | 103% | ✓ |
+| M24 | 10 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14 | 1.3 h | ✓ |
+| M25 | Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo | 33% / 60% | ✓ |
 
 Todas as metas no alvo.
