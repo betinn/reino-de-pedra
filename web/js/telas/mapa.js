@@ -179,7 +179,7 @@
     var titulo = rev ? nome : 'Forças desconhecidas';
     var corpo = '<div class="info">' + linhaInfo('Quem', o.dono === 'meu' ? 'Seu reino' : o.dono === 'aliado' ? 'Aliado' : rev ? 'Identificado pelo estandarte' : 'Desconhecido · sem estandarte') +
       (o.tamanho ? linhaInfo('Tamanho', RP.esc(o.tamanho)) : '') +
-      (cheg ? linhaInfo(fimConhecido(o) ? 'Chegada' : 'Some da vista', '<span data-fim="' + cheg + '">' + RP.fmtResta(cheg - ag) + '</span>') : '') +
+      (cheg && fimConhecido(o) ? linhaInfo('Chegada', '<span data-fim="' + cheg + '">' + RP.fmtResta(cheg - ag) + '</span>') : '') +
       (o.dono !== 'meu' && o.caminho ? linhaInfo('Rumo', destinoTxt(o)) : '') + '</div>' +
       (rev ? '' : '<p class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Ser atacado não revela o atacante. Só o estandarte ou a espionagem mostram quem é.</span></p>');
     abrirFolhaMapa({
@@ -256,7 +256,7 @@
     var hostis = d.marchas.filter(function (m) { var p = M.posMarcha(m, ag); return !RP.mapaTatico.revelada(m) && M.chegada(m) > ag && M.marchaVisivel(m, p); });
     var faixas = hostis.map(function (m) {
       return '<button type="button" class="faixa-alerta" data-faixa-marcha="' + m._k + '">' + RP.icone('alerta', 'pulso') +
-        '<span class="txt"><b>Forças desconhecidas</b> → ' + destinoTxt(m) + '<br>' + (fimConhecido(m) ? 'chegada em' : 'somem da vista em') + ' <b class="num" data-fim="' + M.chegada(m) + '">' + RP.fmtResta(M.chegada(m) - ag) + '</b></span>' + RP.icone('avancar', 'ico-p') + '</button>';
+        '<span class="txt"><b>Forças desconhecidas</b> → ' + destinoTxt(m) + '<br>' + (fimConhecido(m) ? 'chegada em <b class="num" data-fim="' + M.chegada(m) + '">' + RP.fmtResta(M.chegada(m) - ag) + '</b>' : 'em movimento à vista') + '</span>' + RP.icone('avancar', 'ico-p') + '</button>';
     });
     box.innerHTML = faixas.slice(0, 2).join('') + (faixas.length > 2
       ? '<div class="faixas-extra" id="faixas-extra" hidden>' + faixas.slice(2).join('') + '</div><button type="button" class="faixa-mais" data-faixas-mais aria-expanded="false" aria-controls="faixas-extra">' +
