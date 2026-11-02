@@ -54,6 +54,16 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Exploradores podem ser capturados ou mortos.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
 
+### Fauna hostil
+
+- Animais selvagens ocupam o mapa conforme o terreno: lobos e javalis em florestas, ursos em montanhas e colinas, crocodilos em pântanos e rios.
+- Ameaçam principalmente **exploradores sozinhos, grupos pequenos de extração e caravanas**; exércitos médios passam praticamente ilesos.
+- Criam a escolha entre **rota curta e perigosa** ou **longa e segura**, ou levar escolta. Rotas construídas reduzem a presença de animais.
+- **Caçar** rende comida e materiais (couro, peles).
+- Áreas exploradas mostram o **nível de perigo**, sujeito ao mesmo envelhecimento de informação da névoa.
+- Animais se movem e **reaparecem** por região ao longo do tempo; área limpa não fica segura para sempre.
+- Perto dos reinos iniciais a fauna é mais fraca, para não punir iniciantes.
+
 ### Rotas
 
 - Rotas construídas funcionam como **ruas públicas**: qualquer jogador vê, usa e recebe as mesmas vantagens de deslocamento.
