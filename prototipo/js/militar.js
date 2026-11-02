@@ -137,19 +137,19 @@
     var op = U.opcoesCaminho(U.castelo(), [x.c, x.l], perfilGrupo(env.grupo));
     if (env.caminho === 'segura' && !op.segura) env.caminho = 'curta';
     var esc = op[env.caminho] || op.curta, n = somaGrupo(env.grupo), carga = Object.keys(env.grupo).reduce(function (s, k) { return s + (env.grupo[k] || 0) * U.unidade(k).carga * 25; }, 0);
-    var protegido = !!x.escudo, saques = D.saquesRecentes[x.id] || 0;
+    var saques = D.saquesRecentes[x.id] || 0;   /* escudo de novato não aparece aqui: só é descoberto ao chegar */
     var h = (ocupar ? '<div class="nota-regra">' + RP.icone('bandeira', 'ico-p') + '<span>Ruínas e terra livre não têm dono. Ocupar toma o local; depois você pode reconstruí-lo.</span></div>' : '') +
       '<div class="secao-titulo"' + (ocupar ? '' : ' style="margin-top:0"') + '>' + (ataque ? '1. Alvo' : '1. Destino') + '</div><div class="escolhas escolhas-lista">' + lista.filter(function (q) { return env.listaAberta || q.id === env.alvo; }).map(function (q) {
       var ee = W.estado(q.c, q.l), ru = !q.reino;
       return '<button type="button" class="escolha escolha-linha" data-alvo="' + q.id + '" aria-pressed="' + (q.id === env.alvo) + '"><span class="ico-placa dono-' + (ru ? 'desconhecido' : D.reinos[W.donoAparente(q)].cor) + '">' + RP.icone(ru ? (q.tipo === 'livre' ? 'estaca' : 'escombros') : q.tipo) + '</span>' +
         '<span class="escolha-txt"><b>' + RP.esc(nomeAlvo(q)) + '</b><small class="fraco">' + (ru ? 'Sem dono · ' + (ee.v === 'visivel' ? 'visível' : 'visto ' + RP.fmtHa(ee.horas)) : ataque ? (q.espionado ? D.reinos[q.reino].nome + ' · espionado' : 'Dono desconhecido') + ' · ' + (ee.v === 'visivel' ? 'visível' : 'visto ' + RP.fmtHa(ee.horas)) : RP.esc(q.guarnicao)) + '</small></span>' +
-        (q.escudo ? '<span class="selo selo-info">' + RP.icone('escudo') + 'Escudo</span>' : q.ameaca ? '<span class="selo selo-perigo">Ameaçado</span>' : '') + '</button>';
+        (q.ameaca ? '<span class="selo selo-perigo">Ameaçado</span>' : '') + '</button>';
     }).join('') + '</div>' + (!env.listaAberta && lista.length > 1 ? '<button type="button" class="btn btn-p btn-fantasma trocar-alvo" data-trocar-alvo>' + RP.icone('menu') + 'Trocar ' + (ataque ? 'alvo' : 'destino') + ' (' + lista.length + ' opções)</button>' : '');
     if (ataque) {
       h += '<div class="card pilha" style="margin-top:var(--esp-3)"><div class="info">' +
         '<div class="info-linha"><span class="fraco">Dono</span><span>' + (esp ? RP.esc(D.reinos[x.reino].nome) : 'Desconhecido') + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Defesa</span><span>' + (esp ? RP.esc(esp.defesa) : '<a href="#/exploradores?tipo=batedor&alvo=' + x.c + ',' + x.l + '">Desconhecida · espionar</a>') + '</span></div></div>' +
-        (protegido ? '<div class="perigo-linha nivel-baixo">' + RP.icone('escudo') + '<span><b>Protegido por escudo de novato</b><br><small>Este local não pode ser atacado enquanto o escudo durar.</small></span></div>' : '') + '</div>' +
+        '<p class="fraco" style="font-size:var(--fs-2)">Se o alvo estiver sob escudo de novato, você só descobre ao chegar: as tropas voltam sem combate.</p></div>' +
         '<div class="secao-titulo">2. Tipo de ataque</div><div class="escolhas">' + D.tiposAtaque.map(function (t) {
           var bloq = t.soCastelo && x.tipo !== 'castelo';
           return '<button type="button" class="escolha' + (bloq ? ' bloqueado' : '') + '" data-tipo-ataque="' + t.id + '" aria-pressed="' + (env.tipo === t.id) + '"' + (bloq ? ' aria-disabled="true"' : '') + '>' +
@@ -176,7 +176,7 @@
     RP.$('.rodape-resumo', el).innerHTML = n && esc ? '<div class="resumo-linha"><b>' + tipoNome + ' · ' + RP.esc(nomeAlvo(x)) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + 'chega em ' + RP.fmtDuracao(esc.seg) + '</span></div><div class="resumo-linha fraco">' + partesGrupo(env.grupo) + (ataque ? (env.estandarte ? ' · com estandarte' : ' · sem estandarte') : '') + '</div>' : '<div class="resumo-linha fraco">Escolha as tropas.</div>';
     var btn = RP.$('[data-enviar-tropas]', el);
     btn.innerHTML = RP.icone(ataque ? 'tropas' : ocupar ? 'bandeira' : 'escudo') + (ataque ? 'Enviar ataque' : ocupar ? 'Enviar para ocupar' : 'Enviar reforços');
-    btn.classList.toggle('btn-inativo', !n || !esc || protegido);
+    btn.classList.toggle('btn-inativo', !n || !esc);
     env._esc = esc;
   }
   RP.registrarTela('envio', {
@@ -194,7 +194,6 @@
         if (passoGrupo(e, env.grupo, dispDe)) { desenharEnvio(el); return; }
         if (e.target.closest('[data-enviar-tropas]')) {
           var x = acharAlvo(env.alvo), n = somaGrupo(env.grupo), esc = env._esc, ataque = env.modo === 'ataque', ocupar = env.modo === 'ocupar';
-          if (x.escudo) { RP.aviso({ titulo: 'Alvo protegido', texto: 'Escudo de novato ativo.', icone: 'escudo', tipo: 'alerta' }); return; }
           if (!n || !esc) { RP.aviso({ titulo: 'Escolha as tropas', texto: 'Use + e − em cada unidade.', icone: 'info', tipo: 'alerta' }); return; }
           var tipo = ataque ? D.tiposAtaque.filter(function (t) { return t.id === env.tipo; })[0] : null;
           var enviar = function () {

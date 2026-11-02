@@ -458,8 +458,9 @@
       corpo = notaAntiga(e) + '<blockquote class="bandeira-texto">“' + RP.esc(o.texto) + '”</blockquote><div class="info">' +
         linhaInfo('Tipo', RP.TIPOS_BANDEIRA[o.tipo]) +
         linhaInfo('Colocada por', '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + RP.esc(o.reino === 'meu' ? 'Você' : reino.nome) + '</span>') +
-        '</div><p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Bandeiras são sinais sociais: não dão bônus nem bloqueiam passagem.</p>';
-      acoes = botao('Colocar bandeira aqui', 'bandeira', 'btn-primario', 'data-ir="bandeira-nova?alvo=' + o.c + ',' + o.l + '"') + (o.reino === 'meu' ? botao('Suas bandeiras', 'menu', '', 'data-ir="bandeiras"') : botao('Denunciar texto', 'alerta', '', 'data-ir="bandeiras"'));
+        '</div>' + (o.derrubarEm ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('tropas', 'ico-p') + 'Suas tropas derrubam esta bandeira em <b class="num" data-fim="' + o.derrubarEm + '">' + RP.fmtResta(o.derrubarEm - Date.now()) + '</b>.</p>' : '') +
+        '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Bandeiras são sinais sociais: não dão bônus nem bloqueiam passagem. Qualquer jogador pode derrubá-las com tropas no local.</p>';
+      acoes = botao('Colocar bandeira aqui', 'bandeira', 'btn-primario', 'data-ir="bandeira-nova?alvo=' + o.c + ',' + o.l + '"') + (o.reino === 'meu' ? botao('Suas bandeiras', 'menu', '', 'data-ir="bandeiras"') : botao('Derrubar', 'tropas', '', 'data-derrubar="' + o.id + '"'));
       abrirFolhaMapa({
         titulo: 'Bandeira de ' + RP.esc(o.reino === 'meu' ? D.reinos.meu.nome : reino.nome), subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
         icone: '<span class="ico-placa folha-ico ' + corDono(o.reino) + '">' + RP.icone('bandeira') + '</span>', corpo: corpo, acoes: acoes

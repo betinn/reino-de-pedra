@@ -774,3 +774,24 @@ a.guia-item { color: inherit; text-decoration: none; }
 .chips-rapidos .btn { min-width: 44px; }
 /* rodapés com dois botões não esticam em telas largas */
 .bat-acoes .btn, .rel-acoes .btn { max-width: 300px; }
+
+/* ================================================================ Ranking */
+.rank-atalho { margin-top: var(--esp-3); color: inherit; text-decoration: none; gap: var(--esp-3); }
+.rank-eu { display: flex; align-items: center; gap: var(--esp-3); margin-top: var(--esp-3); border-color: var(--cor-primaria); }
+.rank-eu .rotulo, .rank-eu small { display: block; }
+.rank-eu-pos { display: block; font-size: var(--fs-5); }
+.rank-eu-valor { font-size: var(--fs-5); }
+.rank-lista { list-style: none; margin: 0; padding: 0 var(--esp-3); }
+.rank-linha { display: flex; align-items: center; gap: var(--esp-2); padding: var(--esp-2) 0; border-bottom: 1px solid var(--cor-borda); }
+.rank-linha:last-child { border-bottom: 0; }
+.rank-pos { width: 34px; flex: none; font-weight: 700; color: var(--cor-texto-2); text-align: right; }
+.rank-linha.podio .rank-pos { color: var(--cor-destaque); }
+.rank-linha.meu .rank-pos { color: var(--cor-primaria); }
+.rank-corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rank-corpo small { font-size: var(--fs-1); }
+.rank-valor { font-size: var(--fs-3); }
+.rank-barra { display: block; height: 6px; border-radius: 3px; background: var(--cor-superficie-3); overflow: hidden; }
+.rank-barra i { display: block; height: 100%; border-radius: 0 3px 3px 0; background: var(--grafico-meu); }
+.band-acoes .selo { min-height: 44px; }
+.band-acoes { flex-wrap: wrap; justify-content: flex-start; }
+.band-acoes .btn-icone { margin-left: auto; }

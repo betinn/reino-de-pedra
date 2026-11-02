@@ -53,7 +53,7 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 11 | Relatórios | `#/relatorios`, `#/relatorio?id=<id>` |
 | 12 | Bandeiras | `#/bandeiras`, `#/bandeira-nova` (`?alvo=c,l`) |
 | 13 | Notificações | `#/notificacoes` (sino) |
-| 14 | Temporada e legado | `#/temporada` |
+| 14 | Temporada e legado | `#/temporada`, `#/ranking` |
 | 15 | Exílio | `#/exilio` (exemplo, em Mais) |
 | 16 | Retorno após regência | `#/regencia` (exemplo, em Mais) |
 | — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
@@ -85,8 +85,8 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 17. **Posturas:** Tropas → Posturas: as três posturas explicadas, uma por guarnição e por exército em campo, ou "aplicar a todas".
 18. **Relatórios:** aba Relatórios → filtro → detalhe: ataque anônimo x identificado pelo estandarte, saque com rendimento decrescente, exploração, espionagem (revela o dono), fauna, caça, extração.
 19. **Notificações:** sino → avisos de agora, de hoje e antes; como chegam no celular; o que avisar e silêncio noturno.
-20. **Bandeira:** hexágono → Colocar bandeira → tipo, recado (até 60), prévia com seu brasão → aparece na Vista e no Mapa; Mais → Bandeiras para remover as suas ou denunciar texto alheio.
-21. **Temporada e legado:** Mais → dias restantes, o que fica e o que recomeça, linhagem, relíquias (com teto), títulos, brasões, histórico.
+20. **Bandeira:** hexágono → Colocar bandeira → tipo, recado (até 60), prévia com seu brasão → aparece na Vista e no Mapa; Mais → Bandeiras para remover as suas (até 20) ou derrubar e denunciar as alheias.
+21. **Temporada e legado:** Mais → dias restantes, o que fica e o que recomeça, ranking da temporada (baixas, perdas, tropas e famílias), linhagem, relíquias (com teto), títulos, brasões, histórico.
 22. **Exílio:** Mais → Exílio → o que aconteceu, novo ponto do mapa, kit de recomeço, escudo temporário, legado mantido → Recomeçar.
 
 ---
@@ -158,25 +158,30 @@ prototipo/
 7. **Colina:** deslocamento normal.
 8. **Espionagem revela o dono:** espionar um local com batedor de elite revela a quem ele pertence (e a defesa).
 
-## Decisões tomadas sem consulta (aguardam aprovação)
+## Decisões do último bloco (revisadas)
 
-Problemas que surgiram ao desenhar o último bloco. A primeira coluna é o que está aplicado no protótipo.
+Regras confirmadas estão no `CLAUDE.md`.
 
-| Tema | Aplicado | Alternativas |
-|---|---|---|
-| Batalha | Curvas roteirizadas: reforços sobem a sua força quando chegam; recuo zera a defesa. Mostra "tendência", não resultado garantido. | Simulação simples por tipo de unidade; só barras de força, sem gráfico. |
-| Recuo | Tropas e população se salvam; o local é saqueado. | Recuo com perda parcial de tropas; recuo só antes do inimigo romper a muralha. |
-| "Unidades adequadas" na extração | Unidades com mais carga rendem mais (cavalaria leva mais por viagem). | Unidade de trabalho própria (carroceiro, mineiro); bônus por tipo de jazida (ex.: cavalaria para cavalos de raça). |
-| Ruínas lendárias | Fora da extração: só exploração. | Escavação lenta que rende relíquia; ocupar a ruína para ganhar o bônus. |
-| Escudo de novato | O atacante vê que o alvo está protegido e não consegue enviar. | Só descobrir ao chegar (pior para quem joga). |
-| Saque repetido | −20% por saque ao mesmo alvo em 24 h, até −80%, avisado antes de enviar. | Imunidade temporária do alvo após N saques. |
-| Bandeiras | Até 10 ativas, ficam até você remover, recado de até 60 caracteres; bandeiras alheias têm "Denunciar texto". | Expirar em X dias; pequeno custo para colocar; limite por região. |
-| Notificações | Ataques sempre avisam (não dá para desligar); silêncio das 22h às 7h para o resto. | Resumo matinal único; horário de silêncio configurável. |
-| Relíquias | Bônus pequenos com teto somado de 5%. | Teto por relíquia; relíquias só cosméticas. |
-| Temporada | Sem ranking (a regra proíbe placar de domínio); histórico pessoal de temporadas. | Conquistas não territoriais compartilháveis (exploração, defesas). |
-| Exílio | Região aleatória longe de quem derrubou você; escolha libera no nível 5 da linhagem. | Escolher entre 3 regiões sugeridas. |
-| Posturas padrão | Guarnições: "Apenas defender"; exércitos em campo: "Atacar quem atacar". | Padrão por tipo de local; perguntar na primeira vez. |
-| Reforço e ocupação | Mesma tela do envio de ataque, em outros modos. | Telas separadas. |
+| Tema | Aplicado |
+|---|---|
+| Batalha | Curvas roteirizadas: reforços sobem a sua força quando chegam; recuo zera a defesa. Mostra "tendência", não resultado garantido. |
+| Recuo | Tropas e população se salvam; o local é saqueado. |
+| Unidades adequadas na extração | Unidades com mais carga rendem mais por viagem. |
+| Escudo de novato | Só é descoberto ao chegar: o atacante não vê a proteção; as tropas voltam sem combate (relatório "Ataque sem combate"). |
+| Saque repetido | Rendimento cai a cada saque ao mesmo alvo (mock: −20% por saque em 24 h, até −80%), com aviso antes de enviar. |
+| Bandeiras | Até 20 ativas, recado de até 60 caracteres. Outros jogadores podem derrubá-las mandando tropas até o local. "Denunciar" continua para texto ofensivo. |
+| Notificações | Todas as categorias ligam e desligam, inclusive ataques; sem horário de silêncio. |
+| Relíquias | Bônus pequenos com teto somado (mock: 5%). |
+| Ranking da temporada | Por reino: baixas causadas, perdas, tropas e famílias (população). Os 10 primeiros por categoria e a sua posição. Não mede território. |
+| Exílio | Região aleatória longe de quem derrubou você; a escolha libera pela linhagem. |
+| Posturas padrão | Guarnições: "Apenas defender"; exércitos em campo: "Atacar quem atacar". |
+| Reforço e ocupação | Mesma tela do envio de ataque, em outros modos. |
+
+## Pontos em aberto
+
+1. **Ruínas lendárias:** o que o jogador ganha com elas. Hoje só podem ser exploradas, sem recompensa definida.
+2. **Famílias no ranking:** o protótipo trata como a população do reino.
+3. **Quem derruba uma bandeira:** o protótipo não revela ao dono quem derrubou (mesma lógica do anonimato).
 
 ## Valores ilustrativos
 

@@ -365,6 +365,7 @@
     montar: function (el) {
       el.innerHTML = guia('Mais', 'Temporada, legado, bandeiras e avisos.', [
         ['temporada', 'Temporada e legado', 'Tempo restante, linhagem, relíquias, títulos e brasões', '#/temporada'],
+        ['coroa', 'Ranking da temporada', 'Baixas, perdas, tropas e famílias', '#/ranking'],
         ['bandeira', 'Bandeiras', 'Sinais que você colocou e os de perto', '#/bandeiras'],
         ['sino', 'Notificações', 'Avisos recentes e o que chega no celular', '#/notificacoes'],
         ['escudo', 'Posturas', 'Como cada guarnição reage sem você', '#/posturas'],

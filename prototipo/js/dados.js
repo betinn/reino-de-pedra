@@ -287,7 +287,8 @@
         quem: 'Explorador a pé', animal: 'crocodilos', onde: 'Pântano a sudoeste', resultado: 'O explorador foi morto. Tropas mortas não retornam.' },
       { id: 'r-caca', tipo: 'caca', titulo: 'Caçada aos javalis', horas: 14, lido: true,
         grupo: '6 arqueiros', animal: 'javalis', ganho: { comida: 96, couro: 24, peles: 2 }, perdas: 'Nenhuma' },
-      { id: 'r-extracao', tipo: 'extracao', titulo: 'Prata extraída', horas: 1, lido: true, jazida: 'j-prata', ganho: { prata: 34 }, restante: 0.74 }
+      { id: 'r-extracao', tipo: 'extracao', titulo: 'Prata extraída', horas: 1, lido: true, jazida: 'j-prata', ganho: { prata: 34 }, restante: 0.74 },
+      { id: 'r-escudo', tipo: 'bloqueio', titulo: 'Ataque sem combate', horas: 20, lido: true, local: 'x-mina', tropas: '12 lanceiros', tipoAtaque: 'Saque' }
     ],
 
     /* Notificações (exemplos). horas: há quanto tempo. ir: rota do protótipo. */
@@ -299,9 +300,11 @@
       { id: 'n5', cat: 'social', titulo: 'Nova bandeira perto do seu reino', texto: 'Casa Valdren: “Este ouro é de Valdren.”', horas: 4, lido: true, ir: 'mapa?modo=tatico&abrir=bandeira:b-1' },
       { id: 'n6', cat: 'recrutamento', titulo: '15 arqueiros prontos', texto: 'Quartel da Guarda.', horas: 7, lido: true, ir: 'tropas' },
       { id: 'n7', cat: 'fauna', titulo: 'Explorador morto por crocodilos', texto: 'Pântano a sudoeste. Prefira a rota segura ou leve escolta.', horas: 30, lido: true, ir: 'relatorio?id=r-fauna' },
+      { id: 'n9', cat: 'social', titulo: 'Sua bandeira foi derrubada', texto: '“Fica longe da Salina.” não está mais no mapa.', horas: 18, lido: true, ir: 'bandeiras' },
+      { id: 'n10', cat: 'ataque', titulo: 'Ataque sem combate', texto: 'O alvo estava protegido por escudo de novato. Suas tropas voltaram.', horas: 20, lido: true, ir: 'relatorio?id=r-escudo' },
       { id: 'n8', cat: 'temporada', titulo: 'Faltam 41 dias para o fim da temporada', texto: 'Relíquias e títulos da temporada ainda podem ser conquistados.', horas: 30, lido: true, ir: 'temporada' }
     ],
-    preferenciasPush: { ataque: true, construcao: true, recrutamento: false, exploracao: true, fauna: true, social: false, temporada: true, silencioNoturno: true },
+    preferenciasPush: { ataque: true, construcao: true, recrutamento: false, exploracao: true, fauna: true, social: false, temporada: true },
 
     /* Temporada e legado (exemplos) */
     legado: {
@@ -335,6 +338,25 @@
         { temporada: 2, nome: 'Temporada das Cinzas', resumo: 'Caiu no dia 34, recomeçou em exílio e terminou com 6 locais.' },
         { temporada: 1, nome: 'Temporada da Fundação', resumo: 'Sobreviveu até o fim com 12 locais.' }
       ]
+    },
+
+    /* Ranking da temporada (exemplo). famílias = população do reino. */
+    ranking: {
+      reinos: [
+        { reino: 'valdren', baixas: 4820, perdas: 2130, tropas: 1860, familias: 3120 },
+        { reino: 'corvo', baixas: 3990, perdas: 1410, tropas: 2240, familias: 2780 },
+        { nome: 'Clã Ferrugem', brasao: { forma: 'classico', divisao: 'cortado', cor1: 'castanho', cor2: 'negro', simbolo: 'martelo', corSimbolo: 'ouro' }, baixas: 3610, perdas: 2950, tropas: 1310, familias: 2410 },
+        { nome: 'Reino de Altamar', brasao: { forma: 'portugues', divisao: 'partido', cor1: 'azul', cor2: 'verde', simbolo: 'lua', corSimbolo: 'prata' }, baixas: 2870, perdas: 980, tropas: 1720, familias: 3460 },
+        { nome: 'Senhorio de Brumas', brasao: { forma: 'redondo', divisao: 'pleno', cor1: 'purpura', cor2: 'purpura', simbolo: 'estrela', corSimbolo: 'prata' }, baixas: 2140, perdas: 1660, tropas: 990, familias: 1980 },
+        { nome: 'Casa Aranda', brasao: { forma: 'classico', divisao: 'banda', cor1: 'vermelho', cor2: 'prata', simbolo: 'chave', corSimbolo: 'negro' }, baixas: 1930, perdas: 870, tropas: 1450, familias: 2650 },
+        { nome: 'Marca do Norte', brasao: { forma: 'portugues', divisao: 'chaveirao', cor1: 'negro', cor2: 'prata', simbolo: 'montes', corSimbolo: 'prata' }, baixas: 1720, perdas: 2210, tropas: 760, familias: 1540 },
+        { nome: 'Torre Cinzenta', brasao: { forma: 'classico', divisao: 'pleno', cor1: 'negro', cor2: 'negro', simbolo: 'torre', corSimbolo: 'prata' }, baixas: 1380, perdas: 640, tropas: 1120, familias: 2190 },
+        { nome: 'Reino de Solar', brasao: { forma: 'redondo', divisao: 'esquartelado', cor1: 'ouro', cor2: 'vermelho', simbolo: 'coroa', corSimbolo: 'negro' }, baixas: 1210, perdas: 1530, tropas: 840, familias: 1760 },
+        { nome: 'Casa Mirante', brasao: { forma: 'portugues', divisao: 'cortado', cor1: 'verde', cor2: 'ouro', simbolo: 'espada', corSimbolo: 'prata' }, baixas: 990, perdas: 410, tropas: 1030, familias: 2020 },
+        { nome: 'Vale do Junco', brasao: { forma: 'classico', divisao: 'partido', cor1: 'verde', cor2: 'prata', simbolo: 'lua', corSimbolo: 'negro' }, baixas: 760, perdas: 1180, tropas: 540, familias: 3010 },
+        { reino: 'meu', baixas: 640, perdas: 390, tropas: 420, familias: 1240 }
+      ],
+      minhaPosicao: { baixas: 214, perdas: 388, tropas: 302, familias: 167 }
     },
 
     /* Exílio (exemplo) */

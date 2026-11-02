@@ -12,7 +12,8 @@
       '<div class="temp-dias"><b>' + t.diasRestantes + '</b><span>dias restantes</span></div>' +
       '<div class="barra barra-grossa" role="progressbar" aria-label="Dia ' + passados + ' de ' + total + '"><i style="width:' + ((100 * passados) / total).toFixed(1) + '%"></i></div>' +
       '<div class="linha-entre fraco" style="font-size:var(--fs-1);margin-top:4px"><span>Dia ' + passados + '</span><span>Dia ' + total + '</span></div>' +
-      '<p class="suave" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Ao fim, mapa e reinos recomeçam do zero. A disputa não tem placar: não existe "mapa conquistado".</p></div>' +
+      '<p class="suave" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Ao fim, mapa e reinos recomeçam do zero. O território não tem placar: não existe "mapa conquistado".</p></div>' +
+      '<a class="card linha rank-atalho" href="#/ranking"><span class="ico-placa">' + RP.icone('coroa') + '</span><span style="flex:1"><b>Ranking da temporada</b><br><small class="fraco">Baixas, perdas, tropas e famílias · você: ' + D.ranking.minhaPosicao.baixas + 'º em baixas</small></span>' + RP.icone('avancar', 'ico-p') + '</a>' +
       '<div class="temp-duas"><div class="card"><span class="rotulo">Fica com você</span><ul class="regras-lista">' +
       ['Linhagem', 'Relíquias da temporada', 'Títulos', 'Brasões e cosméticos'].map(function (x) { return '<li>' + RP.icone('check', 'ico-p r-ervas') + x + '</li>'; }).join('') + '</ul></div>' +
       '<div class="card"><span class="rotulo">Recomeça</span><ul class="regras-lista">' +

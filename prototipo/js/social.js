@@ -27,7 +27,8 @@
     espionagem: { nome: 'Espionagem', icone: 'batedor', cls: 'info', filtro: 'espionagem' },
     fauna: { nome: 'Fauna', icone: 'pata', cls: 'perigo', filtro: 'outros' },
     caca: { nome: 'Caça', icone: 'lobo', cls: 'sucesso', filtro: 'outros' },
-    extracao: { nome: 'Extração', icone: 'picareta', cls: 'sucesso', filtro: 'outros' }
+    extracao: { nome: 'Extração', icone: 'picareta', cls: 'sucesso', filtro: 'outros' },
+    bloqueio: { nome: 'Ataque sem combate', icone: 'escudo', cls: 'info', filtro: 'saques' }
   };
   var filtroRel = 'todos';
   function resumoRel(r) {
@@ -39,6 +40,7 @@
     if (r.tipo === 'caca') return '+' + r.ganho.comida + ' comida, +' + r.ganho.couro + ' couro';
     if (r.tipo === 'extracao') return '+' + r.ganho.prata + ' prata';
     if (r.tipo === 'batalha') return 'Em andamento · toque para acompanhar';
+    if (r.tipo === 'bloqueio') return 'Alvo sob escudo de novato · tropas voltaram';
     return '';
   }
   function itemRel(r) {
@@ -101,6 +103,11 @@
       h += '<div class="card info">' + linha('Grupo', RP.esc(r.grupo)) + linha('Animais', W.ANIMAL[r.animal].nome) + linha('Ganho', ganhoHTML(r.ganho)) + linha('Perdas', RP.esc(r.perdas)) + '</div>' +
         '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-3)">Os animais reaparecem com o tempo.</p>';
       acoes = '<a class="btn btn-p btn-primario" href="#/caca">' + RP.icone('lobo') + 'Caçar de novo</a>';
+    } else if (r.tipo === 'bloqueio') {
+      h += '<div class="card info">' + linha('Alvo', RP.esc(W.nomeAparente(x)) + ' · dono desconhecido') + linha('Tipo de ataque', r.tipoAtaque) + linha('Tropas', RP.esc(r.tropas)) +
+        linha('Resultado', '<span class="selo selo-info">' + RP.icone('escudo') + 'Sem combate</span>') + linha('Perdas', 'Nenhuma') + '</div>' +
+        '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + '<span>O alvo estava sob escudo de novato. O escudo só é descoberto ao chegar: suas tropas voltaram para o castelo.</span></p>';
+      acoes = '<a class="btn btn-p btn-primario" href="#/envio">' + RP.icone('tropas') + 'Escolher outro alvo</a><a class="btn btn-p" href="#/mapa?modo=tatico&abrir=local:' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>';
     } else if (r.tipo === 'extracao') {
       var j = W.jazida(r.jazida);
       h += '<div class="card info">' + linha('Jazida', RP.esc(j.nome)) + linha('Ganho', ganhoHTML(r.ganho)) + '</div>' +
@@ -124,7 +131,7 @@
 
   /* ================================================================ Notificações */
   var CAT = {
-    ataque: { nome: 'Ataques e batalhas', icone: 'alerta', cls: 'perigo', sempre: true },
+    ataque: { nome: 'Ataques e batalhas', icone: 'alerta', cls: 'perigo' },
     construcao: { nome: 'Construções', icone: 'martelo', cls: 'destaque' },
     recrutamento: { nome: 'Recrutamento', icone: 'tropas', cls: 'destaque' },
     exploracao: { nome: 'Exploração e espionagem', icone: 'explorador', cls: 'info' },
@@ -150,15 +157,14 @@
         var l = D.notificacoes.filter(g[1]);
         return l.length ? '<div class="secao-titulo">' + g[0] + '</div><div class="card lista-not">' + l.map(itemNot).join('') + '</div>' : '';
       }).join('') +
-      '<div class="secao-titulo">No celular</div><p class="fraco" style="font-size:var(--fs-2);margin-bottom:var(--esp-3)">Assim os avisos chegam com o jogo fechado. Ataques sempre avisam; o resto você escolhe.</p>' +
+      '<div class="secao-titulo">No celular</div><p class="fraco" style="font-size:var(--fs-2);margin-bottom:var(--esp-3)">Assim os avisos chegam com o jogo fechado. Você escolhe, por categoria, o que chega.</p>' +
       '<div class="pushes">' + push('Vila do Vau está sendo atacada', 'Forças desconhecidas. Toque para enviar reforços ou recuar.', 'agora', true) +
       push('Explorador chegou ao destino', 'Explorador a cavalo revelou 14 hexágonos ao norte.', '2 h') +
       push('Fila de obras concluída', 'Todas as 3 obras terminaram durante a noite.', '06:40') + '</div>' +
       '<div class="secao-titulo">Avisar no celular</div><div class="card pilha">' + Object.keys(CAT).map(function (k) {
         var c = CAT[k];
-        return '<button type="button" class="alternar" data-pref="' + k + '" aria-pressed="' + (c.sempre ? true : !!pref[k]) + '"' + (c.sempre ? ' aria-disabled="true"' : '') + '>' + RP.icone(c.icone) + '<span>' + c.nome + (c.sempre ? ' <small class="fraco">(sempre)</small>' : '') + '</span><i aria-hidden="true"></i></button>';
-      }).join('') +
-      '<button type="button" class="alternar" data-pref="silencioNoturno" aria-pressed="' + !!pref.silencioNoturno + '">' + RP.icone('relogio') + '<span>Silêncio das 22h às 7h <small class="fraco">(menos ataques)</small></span><i aria-hidden="true"></i></button></div>' +
+        return '<button type="button" class="alternar" data-pref="' + k + '" aria-pressed="' + !!pref[k] + '">' + RP.icone(c.icone) + '<span>' + c.nome + '</span><i aria-hidden="true"></i></button>';
+      }).join('') + '</div>' +
       '<div style="height:var(--esp-8)"></div>';
   }
   RP.registrarTela('notificacoes', {
@@ -169,7 +175,6 @@
         if (e.target.closest('[data-ler-todas]')) { D.notificacoes.forEach(function (n) { n.lido = true; }); desenharNotificacoes(el); RP.atualizarContadores(); return; }
         if ((b = e.target.closest('[data-notificacao]'))) { D.notificacoes.filter(function (n) { return n.id === b.getAttribute('data-notificacao'); })[0].lido = true; return; }
         if ((b = e.target.closest('[data-pref]'))) {
-          if (b.getAttribute('aria-disabled') === 'true') { RP.aviso({ titulo: 'Ataques sempre avisam', texto: 'Você precisa saber quando seu reino está em perigo.', icone: 'alerta', tipo: 'alerta' }); return; }
           var k = b.getAttribute('data-pref'); D.preferenciasPush[k] = !D.preferenciasPush[k]; b.setAttribute('aria-pressed', String(D.preferenciasPush[k]));
         }
       });
@@ -181,7 +186,7 @@
   });
 
   /* ================================================================ Bandeiras */
-  var LIMITE_BANDEIRAS = 10;
+  var LIMITE_BANDEIRAS = 20;
   var TIPOS_B = [
     { id: 'reivindicacao', icone: 'coroa', txt: 'Diz que o lugar é seu ou será.' },
     { id: 'ameaca', icone: 'tropas', txt: 'Avisa que quem passar será atacado.' },
@@ -195,18 +200,54 @@
       '<span style="flex:1;min-width:0"><b>“' + RP.esc(b.texto) + '”</b><br><small class="fraco">' + RP.TIPOS_BANDEIRA[b.tipo] + ' · ' + (minha ? 'você' : RP.esc(r.nome)) + ' · ' + b.c + ', ' + b.l + (e.v === 'explorado' ? ' · visto ' + RP.fmtHa(e.horas) : '') + '</small></span></div>' +
       '<div class="linha band-acoes"><a class="btn btn-p" href="#/mapa?modo=cena&abrir=bandeira:' + b.id + '">' + RP.icone('vista') + 'Ver</a>' +
       (minha ? '<button type="button" class="btn btn-p btn-fantasma" data-remover-bandeira="' + b.id + '">' + RP.icone('fechar') + 'Remover</button>'
-        : '<button type="button" class="btn btn-p btn-fantasma" data-denunciar="' + b.id + '">' + RP.icone('alerta') + 'Denunciar texto</button>') + '</div></div>';
+        : (b.derrubarEm ? '<span class="selo selo-info">' + RP.icone('tropas') + 'Derrubando · <span data-fim="' + b.derrubarEm + '">' + RP.fmtResta(b.derrubarEm - Date.now()) + '</span></span>'
+          : '<button type="button" class="btn btn-p" data-derrubar="' + b.id + '">' + RP.icone('tropas') + 'Derrubar</button>') +
+          '<button type="button" class="btn btn-p btn-fantasma btn-icone" data-denunciar="' + b.id + '" aria-label="Denunciar texto" title="Denunciar texto">' + RP.icone('alerta') + '</button>') + '</div></div>';
   }
   function desenharBandeiras(el) {
     var m = minhas(), outras = D.bandeiras.filter(function (b) { return b.reino !== 'meu' && W.estado(b.c, b.l).v !== 'desconhecido'; });
     RP.$('.band-conteudo', el).innerHTML =
-      '<div class="nota-regra">' + RP.icone('bandeira', 'ico-p') + '<span>Bandeiras são sinais para outros jogadores: valor social, sem efeito no jogo. <b>Sempre mostram quem as colocou.</b></span></div>' +
+      '<div class="nota-regra">' + RP.icone('bandeira', 'ico-p') + '<span>Bandeiras são sinais para outros jogadores: valor social, sem efeito no jogo. <b>Sempre mostram quem as colocou.</b> Qualquer jogador pode derrubá-las com tropas no local.</span></div>' +
       '<div class="secao-titulo">Suas bandeiras · ' + m.length + ' de ' + LIMITE_BANDEIRAS + '</div><div class="pilha">' + (m.length ? m.map(function (b) { return itemBandeira(b, true); }).join('') : '<p class="fraco">Nenhuma bandeira colocada.</p>') + '</div>' +
       '<div class="secao-titulo">Perto de você</div><div class="pilha">' + outras.map(function (b) { return itemBandeira(b, false); }).join('') + '</div><div style="height:120px"></div>';
   }
+  /* derrubar bandeira alheia: uma tropa vai até o local (o dono não é avisado de quem foi) */
+  var telaBandeiras = null;
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-derrubar]');
+    if (!b) return;
+    var band = W.bandeira(b.getAttribute('data-derrubar'));
+    if (!band || band.derrubarEm) return;
+    var c0 = W.local('castelo'), r = RP.caminho([c0.c, c0.l], [band.c, band.l], { vel: 'Lenta' });
+    if (!r) { RP.aviso({ titulo: 'Sem caminho até a bandeira', icone: 'alerta', tipo: 'alerta' }); return; }
+    RP.modal({
+      titulo: 'Derrubar esta bandeira?',
+      corpo: '<p class="suave">“' + RP.esc(band.texto) + '”<br>Um lanceiro do castelo vai até o local e derruba a bandeira. Chegada em ' + RP.fmtDuracao(r.seg) + '.</p>',
+      acoes: [{ rotulo: RP.icone('tropas') + 'Derrubar', classe: 'btn-primario', acao: function () {
+        W.adicionarMarcha({ id: 'm-derrubar-' + Date.now(), dono: 'meu', tipo: 'exercito', nome: 'Derrubar bandeira', resumo: '1 lanceiro → bandeira de ' + D.reinos[band.reino].nome, seg: r.seg }, r.hexes);
+        band.derrubarEm = Date.now() + r.seg * 1000;
+        D.disponiveis.lanceiro = Math.max(0, (D.disponiveis.lanceiro || 0) - 1);
+        RP.fecharFolha();
+        RP.invalidarTela('mapa'); RP.invalidarTela('tropas');
+        RP.aviso({ titulo: 'Lanceiro a caminho', texto: 'A bandeira cai em ' + RP.fmtDuracao(r.seg) + '.', icone: 'tropas', tipo: 'sucesso' });
+        if (telaBandeiras && !telaBandeiras.hidden) desenharBandeiras(telaBandeiras);
+      } }, { rotulo: 'Cancelar' }]
+    });
+  });
+  document.addEventListener('rp:tique', function () {
+    var agora = Date.now(), caidas = D.bandeiras.filter(function (b) { return b.derrubarEm && b.derrubarEm <= agora; });
+    if (!caidas.length) return;
+    D.bandeiras = D.bandeiras.filter(function (b) { return !(b.derrubarEm && b.derrubarEm <= agora); });
+    caidas.forEach(function (b) { var k = W.chave(b.c, b.l); if (W.porHex[k]) W.porHex[k] = W.porHex[k].filter(function (it) { return it.o !== b; }); });
+    RP.invalidarTela('mapa');
+    caidas.forEach(function (b) { RP.aviso({ titulo: 'Bandeira derrubada', texto: '“' + b.texto + '”', icone: 'bandeira', tipo: 'sucesso' }); });
+    if (telaBandeiras && !telaBandeiras.hidden) desenharBandeiras(telaBandeiras);
+  });
+
   RP.registrarTela('bandeiras', {
     secao: 'mais',
     montar: function (el) {
+      telaBandeiras = el;
       el.innerHTML = U.topo('Bandeiras', 'mais') + '<div class="conteudo-tela band-conteudo"></div><div class="rodape-acao"><a class="btn btn-primario btn-bloco btn-grande" href="#/bandeira-nova">' + RP.icone('bandeira') + 'Colocar bandeira</a></div>';
       el.addEventListener('click', function (e) {
         var b;
@@ -276,5 +317,41 @@
       nova.alvo = a ? a.split(',').map(Number) : (nova.alvo || [16, 21]);
       desenharNova(el);
     }
+  });
+  /* ================================================================ Ranking da temporada */
+  var CAT_RANK = [
+    { id: 'baixas', nome: 'Baixas', txt: 'Tropas inimigas abatidas', icone: 'tropas' },
+    { id: 'perdas', nome: 'Perdas', txt: 'Tropas próprias perdidas', icone: 'escudo' },
+    { id: 'tropas', nome: 'Tropas', txt: 'Tamanho do exército hoje', icone: 'estandarte' },
+    { id: 'familias', nome: 'Famílias', txt: 'População do reino', icone: 'populacao' }
+  ];
+  var catRank = 'baixas';
+  function nomeRank(r) { return r.reino ? (r.reino === 'meu' ? 'Reino de ' + RP.estado.nome : D.reinos[r.reino].nome) : r.nome; }
+  function brasaoRank(r) { return r.reino ? (r.reino === 'meu' ? RP.estado.brasao : D.reinos[r.reino].brasao) : r.brasao; }
+  function desenharRanking(el) {
+    var cat = CAT_RANK.filter(function (c) { return c.id === catRank; })[0];
+    var lista = D.ranking.reinos.slice().sort(function (a, b) { return b[catRank] - a[catRank]; });
+    var top = lista.filter(function (r) { return r.reino !== 'meu'; }).slice(0, 10), eu = lista.filter(function (r) { return r.reino === 'meu'; })[0];
+    var max = top[0][catRank], pos = D.ranking.minhaPosicao[catRank];
+    function linhaRank(r, p, meu) {
+      var outros = CAT_RANK.filter(function (c) { return c.id !== catRank; }).map(function (c) { return c.nome.toLowerCase() + ' ' + RP.num(r[c.id]); }).join(' · ');
+      return '<li class="rank-linha' + (meu ? ' meu' : '') + (p <= 3 ? ' podio' : '') + '"><span class="rank-pos num">' + p + 'º</span>' + RP.brasao(brasaoRank(r), { tamanho: 28 }) +
+        '<span class="rank-corpo"><span class="linha-entre"><b>' + RP.esc(nomeRank(r)) + '</b><b class="num rank-valor">' + RP.num(r[catRank]) + '</b></span>' +
+        '<span class="rank-barra" aria-hidden="true"><i style="width:' + Math.max(2, (100 * r[catRank]) / max).toFixed(1) + '%"></i></span><small class="fraco">' + outros + '</small></span></li>';
+    }
+    RP.$('.rank-conteudo', el).innerHTML =
+      '<div class="nota-regra">' + RP.icone('info', 'ico-p') + '<span>O ranking não mede território: a disputa pelo mapa continua sem placar. Famílias = população do reino.</span></div>' +
+      '<div class="abas" role="tablist" aria-label="Categoria do ranking" style="margin-top:var(--esp-3)">' + CAT_RANK.map(function (c) { return '<button class="aba" role="tab" data-cat-rank="' + c.id + '" aria-selected="' + (c.id === catRank) + '">' + c.nome + '</button>'; }).join('') + '</div>' +
+      '<div class="card rank-eu"><span class="ico-placa">' + RP.icone(cat.icone) + '</span><span style="flex:1"><span class="rotulo">' + cat.txt + '</span><b class="rank-eu-pos">Você: ' + pos + 'º</b><small class="fraco">de ' + RP.num(D.temporada.reinos) + ' reinos</small></span><b class="num rank-eu-valor">' + RP.num(eu[catRank]) + '</b></div>' +
+      '<div class="secao-titulo">Os 10 primeiros · ' + cat.nome.toLowerCase() + '</div><ol class="card rank-lista">' + top.map(function (r, i) { return linhaRank(r, i + 1, false); }).join('') + '</ol>' +
+      '<div class="secao-titulo">Sua posição</div><ol class="card rank-lista">' + linhaRank(eu, pos, true) + '</ol><div style="height:var(--esp-8)"></div>';
+  }
+  RP.registrarTela('ranking', {
+    secao: 'mais',
+    montar: function (el) {
+      el.innerHTML = U.topo('Ranking da temporada', 'temporada', 'Temporada ' + D.temporada.numero + ' · ' + RP.num(D.temporada.reinos) + ' reinos') + '<div class="conteudo-tela rank-conteudo"></div>';
+      el.addEventListener('click', function (e) { var b = e.target.closest('[data-cat-rank]'); if (b) { catRank = b.getAttribute('data-cat-rank'); desenharRanking(el); } });
+    },
+    entrar: function (el) { desenharRanking(el); }
   });
 })();

@@ -254,7 +254,9 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Lista com "Trocar" | `.trocar-alvo` | Quando o alvo vem do mapa, mostra só ele; "Trocar alvo (N opções)" abre a lista. |
 | Relatório | `.rel-item`, `.rel-cab`, `.atacante` | Ícone por tipo, ponto de não lido; detalhe com atacante (brasão "?" ou brasão do estandarte), linhas de informação, ganhos em verde e perdas em vermelho, ações no rodapé. |
 | Notificação | `.not-item`, `.push` | Agrupadas em Agora/Hoje/Antes; prévia de como chegam no celular (crítico em vermelho). |
-| Preferência | `.alternar` | Liga/desliga por categoria; ataques fixos em ligado. |
+| Preferência | `.alternar` | Liga/desliga por categoria, todas configuráveis. |
+| Ranking | `.rank-eu`, `.rank-lista > .rank-linha` | Abas por categoria; sua posição em destaque; 10 primeiros com posição, brasão, nome, valor, barra fina relativa ao 1º e as outras três medidas em texto pequeno. Pódio com a posição em `--cor-destaque`. |
+| Bandeira alheia | botão "Derrubar" + "Denunciar" | Derrubar manda uma tropa ao local (mostra "Derrubando · tempo"); denunciar oculta o texto para você e envia para revisão. |
 | Relíquia / título / brasão | `.reliquia`, `.lista-item`, `.brasao-item` | Bloqueados esmaecem só a imagem; o texto mantém contraste. |
 
 ---
@@ -277,7 +279,8 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 - Rotas só aparecem em área explorada; bandeiras sempre mostram o autor.
 - Tempo de viagem sempre visível e curto: nada de esperas de muitas horas sem o que fazer.
 - Filas longas são permitidas (até 10): o jogador planeja horas ou a noite inteira, e a tela mostra quando tudo termina.
-- Ataques sempre geram notificação; o jogador não pode desligá-la.
+- Toda categoria de notificação liga e desliga (ataques vêm ligados por padrão); sem horário de silêncio.
+- O escudo de novato de outro reino nunca aparece antes do ataque.
 - Item bloqueado nunca reduz o contraste do texto.
 - Não marcar reino como IA de nenhuma forma.
 - Não esconder ação principal atrás de gesto.
