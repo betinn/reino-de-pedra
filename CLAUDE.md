@@ -285,7 +285,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Em aberto
 
-- Valores concretos de tempos, custos e rendimentos (balanceamento).
+- Valores concretos de tempos, custos e rendimentos (balanceamento): **proposta v1 em validação** em `balanceamento/README.md`, com modelo e simulação em `balanceamento/modelo.js`.
 - Lista final de recursos valiosos e lendários.
 - Duração exata das temporadas e regras precisas de legado.
 - Detalhes de diplomacia e regras finas de alianças (cargos, saída e traição).
