@@ -1,0 +1,42 @@
+/* Reino de Pedra — Vista e Mapa tático com dados reais: o que não existia no protótipo (sempre com os tokens). */
+
+/* Mapa tático: terreno em Canvas, marcadores em SVG por cima */
+.mapa-vp .tatico-cv, .mapa-vp .mapa-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.mapa-vp .tatico-cv { background: var(--mapa-fundo); }
+
+/* faixa "toque no destino para fundar" (no topo, abaixo da barra de recursos) */
+.mapa-faixa {
+  display: flex; align-items: center; gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-2) var(--esp-2) var(--esp-3);
+  background: var(--barra-fundo); border: 1px solid var(--cor-primaria); border-radius: var(--raio-2); box-shadow: var(--sombra-1);
+}
+.mapa-faixa[hidden] { display: none; }
+.mapa-faixa > .ico { color: var(--cor-primaria); flex: none; }
+.mapa-faixa span { flex: 1; min-width: 0; font-size: var(--fs-2); line-height: 1.3; }
+.mapa-faixas { display: flex; flex-direction: column; gap: var(--esp-2); }
+.mapa-faixas:empty { display: none; }
+.em-fundar .mapa-faixas { display: none; }
+
+/* hexágonos onde o tipo escolhido pode ser fundado */
+.fundar-ok { fill: var(--selecao); fill-opacity: .14; stroke: var(--selecao); stroke-width: 2; stroke-dasharray: 5 4; stroke-linejoin: round; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) { .fundar-ok { animation: fundar-ok 1.6s ease-in-out infinite; } }
+@keyframes fundar-ok { 50% { fill-opacity: .04; stroke-opacity: .5; } }
+
+/* nível do local no marcador */
+.lc-nivel circle { fill: var(--ent-fundo); stroke: var(--dono); stroke-width: 1.4; }
+.lc-nivel text { fill: var(--ent-texto); font: 700 10px var(--fonte-texto); text-anchor: middle; font-variant-numeric: tabular-nums; }
+[data-zoom="zoom-longe"] .lc-nivel, [data-zoom="zoom-mundo"] .lc-nivel { display: none; }
+
+/* objeto de tipo desconhecido (sistema novo sem desenho próprio) */
+.gen-base { fill: var(--ent-fundo); stroke: var(--cor-destaque); stroke-width: 2.5; }
+.camada-objetos use { color: var(--cor-destaque); --ico-d-stroke: var(--ent-fundo); }
+[data-zoom="zoom-mundo"] .camada-objetos .ent-k { display: none; }
+[data-zoom="zoom-mundo"] .camada-objetos .ponto { display: block; }
+
+/* fundação na fila */
+.obra-fundar .ru-base { stroke: var(--cor-alerta); }
+.obra-fundar use { color: var(--cor-alerta); }
+
+/* folha do hexágono: lista do que há nele */
+.lista-conteudo .conteudo { width: 100%; }
+.legenda-nota { margin-top: var(--esp-2); font-size: var(--fs-2); }

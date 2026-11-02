@@ -103,6 +103,7 @@
     var r = RP.reino; if (!r) return;
     var c = RP.castelo(), outros = r.locais.filter(function (l) { return l.id !== r.casteloId; });
     var resta = RP.mundo ? Math.max(0, Math.ceil((RP.mundo.fim - RP.agora()) / 86400000)) : 0;
+    var vistaAntiga = RP.$('.reino-vista', el);
     el.innerHTML =
       '<header class="topo topo-reino">' + RP.iconeReino(r, 36) +
       '<div class="topo-titulos"><h1>Reino de ' + RP.esc(r.nome) + '</h1><small>' + RP.icone('temporada', 'ico-p') + (RP.mundo ? 'Temporada ' + RP.mundo.temporada + ' · ' + resta + ' dias restantes' : '') + '</small></div>' +
@@ -128,7 +129,12 @@
       '<div class="secao-titulo">Castelo (capital)</div>' + (c ? cardLocal(c) : '') +
       '<div class="secao-titulo">Locais</div><div class="pilha">' + outros.map(cardLocal).join('') + '</div>' +
       '</div>';
-    if (RP.vistaReino) RP.vistaReino.montar(RP.$('.reino-vista', el));
+    if (RP.vistaReino) {
+      /* a Vista continua a mesma entre atualizações do reino (sem piscar nem perder a câmera) */
+      var nova = RP.$('.reino-vista', el);
+      if (vistaAntiga && vistaAntiga.querySelector('canvas')) { nova.parentNode.replaceChild(vistaAntiga, nova); nova = vistaAntiga; }
+      RP.vistaReino.montar(nova);
+    }
   }
 
   RP.registrarTela('reino', {

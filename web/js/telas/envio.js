@@ -79,7 +79,9 @@
       var html = '';
       var meu = obj.filter(function (o) { return o.tipo === 'local' && o.dono === 'meu'; })[0], l = meu && RP.local(meu.id);
       if (l && RP.somaGrupo(l.guarnicao)) html += '<button type="button" class="btn btn-p" data-envio-iniciar="' + l.id + '">' + RP.icone('tropas') + 'Enviar tropas daqui</button>';
-      obj.filter(function (o) { return o.tipo === 'marcha' && o.dono === 'meu' && o.marcha === 'exercito'; }).forEach(function (o) {
+      ((dados && dados.marchas) || []).filter(function (o) {
+        return o.dono === 'meu' && o.marcha === 'exercito' && RP.mapaModelo && RP.mapaModelo.posMarcha(o, RP.agora()).hex === h;
+      }).forEach(function (o) {
         html += '<button type="button" class="btn btn-p" data-exercito="' + o.id + '">' + RP.icone('tropas') + 'Ordens ao exército</button>';
       });
       return html;
@@ -199,43 +201,7 @@
     else barra();
   });
 
-  /* ---------------------------------------------------------------- exércitos no mapa (ícone de tropas) */
-  var imgTropas = null;
-  function iconeTropas() {
-    if (imgTropas) return imgTropas.complete ? imgTropas : null;
-    var s = document.getElementById('i-tropas'); if (!s) return null;
-    var cs = getComputedStyle(document.documentElement);
-    var claro = (cs.getPropertyValue('--barra-texto') || '').trim() || 'white', escuro = (cs.getPropertyValue('--barra-fundo') || '').trim() || 'black';
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><style>.ic-s{fill:' + claro + ';stroke:' + escuro + ';stroke-width:1;stroke-linejoin:round}' +
-      '.ic-d{fill:none;stroke:' + escuro + ';stroke-width:1.4;stroke-linecap:round}.ic-l{fill:none;stroke:' + claro + ';stroke-width:2;stroke-linecap:round;stroke-linejoin:round}</style>' + s.innerHTML + '</svg>';
-    imgTropas = new Image();
-    imgTropas.onload = function () { if (RP.mapa.desenhar) RP.mapa.desenhar(); };
-    imgTropas.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    return null;
-  }
-  function posicao(o, t) {
-    var tp = o.tempos, cm = o.caminho;
-    if (!cm || !cm.length) return H.centroH(o.hex);
-    if (!tp || tp.length < 2 || t <= tp[0]) return H.centroH(cm[0]);
-    if (t >= tp[tp.length - 1]) return H.centroH(cm[cm.length - 1]);
-    for (var i = 0; i < tp.length - 1; i++) {
-      if (t < tp[i + 1]) {
-        var a = H.centroH(cm[i]), b = H.centroH(cm[i + 1]), f = (t - tp[i]) / Math.max(1, tp[i + 1] - tp[i]);
-        return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
-      }
-    }
-    return H.centroH(cm[cm.length - 1]);
-  }
-  RP.mapa.desenhosExtras.push(function (ctx, dados, cam, agora) {
-    var img = iconeTropas(), cs = getComputedStyle(document.documentElement);
-    var corMeu = (cs.getPropertyValue('--cor-info') || '').trim() || 'steelblue', corOutro = (cs.getPropertyValue('--cor-perigo') || '').trim() || 'firebrick';
-    dados.objetos.forEach(function (o) {
-      if (o.tipo !== 'marcha' || o.marcha !== 'exercito') return;
-      var p = posicao(o, agora);
-      ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, 7);
-      ctx.fillStyle = o.dono === 'meu' ? corMeu : corOutro; ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.stroke();
-      if (img) ctx.drawImage(img, p.x - 9, p.y - 9, 18, 18);
-    });
-  });
+  /* ---------------------------------------------------------------- exércitos no mapa: o Mapa e a Vista desenham pelo tipo */
+  RP.mapa.tiposMarcha = RP.mapa.tiposMarcha || {};
+  RP.mapa.tiposMarcha.exercito = RP.mapa.tiposMarcha.exercito || { nome: 'Exército', icone: 'tropas' };
 })();
