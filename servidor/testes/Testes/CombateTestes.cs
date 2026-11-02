@@ -558,6 +558,7 @@ public class CombateTestes
         var terceiro = s.T.NovoReino(); terceiro.EscudoAte = 0;
         var ct = s.M.Locais[terceiro.CasteloId];
         s.Guarnecer(ct, G(("cavalaria", 5)));
+        s.Conhecer(terceiro, alvo);
         var e3 = Exercitos.Enviar(s.M, terceiro, ct.Id, G(("cavalaria", 5)), alvo.Hex, OrdemAtacar.Id, false, CombateCenario.Plano());
         s.AvancarAte(Math.Max(e2.Chegada, Math.Min(e3.Chegada, b.FimPrevisto - 1)));
         if (e2.Chegada < b.FimPrevisto) Assert.Contains(e2.Id, b.Exercitos);

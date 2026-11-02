@@ -85,7 +85,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Valiosos**: aço de qualidade, cavalos de raça, ouro, prata, sal, ervas raras e pedras preciosas. Raros, liberam unidades e tecnologias melhores.
 - **Lendários**: minério raro, relíquias, ruínas antigas. Pouquíssimos no mapa, bônus únicos, alvo de disputa.
 - **Couro e peles**: recursos do reino, obtidos pela caça.
-- Recursos valiosos e lendários ficam **ocultos** até serem descobertos.
+- Recursos valiosos e lendários ficam **ocultos** até serem descobertos. Jazida oculta não impede fundar nem erguer torre no hexágono; ela segue oculta embaixo.
 - Jazidas são **finitas** e se esgotam com o tempo.
 - **O reino base já gera recursos básicos** suficientes para recrutar tropas básicas, sem depender de exploração.
 - Recursos ficam **no local** onde estão. Para usar (construir, recrutar), é preciso **transportá-los até o local** onde são necessários; não dá para usar recurso "de qualquer lugar". Vale a mesma lógica das relíquias: o transporte é feito por tropas e a carga pode ser **roubada no meio do caminho**.
@@ -331,7 +331,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Começa quando o pagamento chega; se a carga for roubada no caminho, não começa.
   - **O jogo garante o pacto**: enquanto durar, nenhum dos dois consegue atacar, saquear ou interceptar o outro. Tropas enviadas a um local do outro descobrem o pacto ao chegar e voltam sem combate.
 - **Resgate de explorador**: ver Exploradores.
-- **Limites para o novato**: enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajuda de aliados, pagamentos de pacto e resgate), somada transação a transação em valor de referência, tem limite por dia (janela de 24 h), para que contas secundárias não alimentem outra. Ninguém pode cobrar pacto de um reino sob escudo.
+- **Limites para o novato**: enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajuda de aliados, pagamentos de pacto e resgate), somada transação a transação em valor de referência, tem limite por dia (janela de 24 h), para que contas secundárias não alimentem outra. Ninguém pode cobrar pacto de um reino sob escudo. O escudo e o limite de outro reino não aparecem a quem não é aliado: a recusa sai no aceite, sem revelar o escudo a quem propôs.
 
 ---
 

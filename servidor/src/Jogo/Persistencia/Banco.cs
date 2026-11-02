@@ -151,6 +151,21 @@ public sealed class Banco : IDisposable
             if (d.Dona == null) continue;   // removido depois de sujo
             linhas.Add((d.Dona.Nome, d.Id, RegistroTipos.Nome(d.GetType()), JsonSerializer.Serialize(d, d.GetType(), Json)));
         }
+        try { Transacao(removidos, linhas); }
+        catch
+        {
+            // a transação não entrou (disco cheio, E/S): devolve remoções e sujos para a próxima gravação
+            m.Removidos.InsertRange(0, removidos);
+            foreach (var d in sujos) if (d.Dona != null) m.Sujos.Add(d);
+            throw;
+        }
+        foreach (var (c, i) in removidos) _hashes.Remove((c, i));
+        foreach (var (c, i, _, j) in linhas) _hashes[(c, i)] = Fnv(j);
+        return linhas.Count + removidos.Count;
+    }
+
+    private void Transacao(List<(string colecao, long id)> removidos, List<(string col, long id, string tipo, string json)> linhas)
+    {
         lock (_trava)
         {
             using var tx = _con.BeginTransaction();
@@ -171,9 +186,6 @@ public sealed class Banco : IDisposable
             }
             tx.Commit();
         }
-        foreach (var (c, i) in removidos) _hashes.Remove((c, i));
-        foreach (var (c, i, _, j) in linhas) _hashes[(c, i)] = Fnv(j);
-        return linhas.Count + removidos.Count;
     }
 
     /// <summary>Apaga o mundo (fim de temporada). Contas, sessões e meta ficam.</summary>

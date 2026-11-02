@@ -11,6 +11,8 @@ public sealed record Conta(long Id, string Email);
 public sealed class ServicoContas(Banco banco, TimeProvider? relogio = null)
 {
     private readonly TimeProvider _t = relogio ?? TimeProvider.System;
+    /// <summary>Fila dos hashes de senha deste servidor (um por vez, fila curta, 429 quando cheia).</summary>
+    public FilaHash Fila { get; } = FilaHash.Padrao();
     public static readonly TimeSpan DuracaoSessao = TimeSpan.FromDays(30);
     public const int SenhaMinima = 10, SenhaMaxima = 128;
 
@@ -67,7 +69,7 @@ public sealed class ServicoContas(Banco banco, TimeProvider? relogio = null)
         if (fraca != null) return (null, fraca);
         if (banco.Escalar<long>("SELECT COUNT(*) FROM contas WHERE email=$e", ("$e", email)) > 0)
             return (null, "Já existe uma conta com esse e-mail.");
-        var hash = await Senhas.Hash(senha!);
+        var hash = await Senhas.Hash(senha!, Fila);
         try
         {
             banco.Exec("INSERT INTO contas(email, senha, criada_em, ultimo_acesso) VALUES($e,$s,$t,$t)", ("$e", email), ("$s", hash), ("$t", Agora));
@@ -85,14 +87,14 @@ public sealed class ServicoContas(Banco banco, TimeProvider? relogio = null)
         var linha = banco.Consultar("SELECT id, senha FROM contas WHERE email=$e", rd => (rd.GetInt64(0), rd.GetString(1)), ("$e", email)).FirstOrDefault();
         if (linha.Item2 == null)
         {
-            await Senhas.Verificar(senha ?? "", await Senhas.HashFalso.Value);
+            await Senhas.Verificar(senha ?? "", await Senhas.HashFalso.Value, Fila);
             RegistrarFalha(email);
             return (null, "E-mail ou senha incorretos.", 0);
         }
-        var (ok, refazer) = await Senhas.Verificar(senha ?? "", linha.Item2);
+        var (ok, refazer) = await Senhas.Verificar(senha ?? "", linha.Item2, Fila);
         if (!ok) { RegistrarFalha(email); return (null, "E-mail ou senha incorretos.", 0); }
         _porEmail.TryRemove(email, out _);
-        if (refazer) banco.Exec("UPDATE contas SET senha=$s WHERE id=$i", ("$s", await Senhas.Hash(senha!)), ("$i", linha.Item1));
+        if (refazer) banco.Exec("UPDATE contas SET senha=$s WHERE id=$i", ("$s", await Senhas.Hash(senha!, Fila)), ("$i", linha.Item1));
         banco.Exec("UPDATE contas SET ultimo_acesso=$t WHERE id=$i", ("$t", Agora), ("$i", linha.Item1));
         return (new Conta(linha.Item1, email), null, 0);
     }
@@ -104,11 +106,11 @@ public sealed class ServicoContas(Banco banco, TimeProvider? relogio = null)
     {
         var linha = banco.Consultar("SELECT email, senha FROM contas WHERE id=$i", rd => (rd.GetString(0), rd.GetString(1)), ("$i", contaId)).FirstOrDefault();
         if (linha.Item1 == null) return "Conta não encontrada.";
-        var (ok, _) = await Senhas.Verificar(atual, linha.Item2);
+        var (ok, _) = await Senhas.Verificar(atual, linha.Item2, Fila);
         if (!ok) { RegistrarFalha(linha.Item1); return "Senha atual incorreta."; }
         var fraca = MotivoSenhaFraca(nova, linha.Item1);
         if (fraca != null) return fraca;
-        banco.Exec("UPDATE contas SET senha=$s WHERE id=$i", ("$s", await Senhas.Hash(nova)), ("$i", contaId));
+        banco.Exec("UPDATE contas SET senha=$s WHERE id=$i", ("$s", await Senhas.Hash(nova, Fila)), ("$i", contaId));
         banco.Exec("DELETE FROM sessoes WHERE conta_id=$i", ("$i", contaId));
         foreach (var k in _cache.Where(kv => kv.Value.conta == contaId).Select(kv => kv.Key).ToList()) _cache.TryRemove(k, out _);
         return null;

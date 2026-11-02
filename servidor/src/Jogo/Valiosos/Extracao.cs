@@ -76,7 +76,7 @@ namespace ReinoDePedra.Jogo.Valiosos
             }
             return melhor;
         }
-        private static OpcoesCaminho Opcoes(Mundo m, Exercito ex) => new() { Seguro = ex.Seguro, Forca = GT.ForcaFauna(m, ex.Tropas) };
+        private static OpcoesCaminho Opcoes(Mundo m, Exercito ex) => new() { Seguro = ex.Seguro, Forca = GT.ForcaFauna(m, ex.Tropas), ReinoId = ex.ReinoId };
 
         public static IEnumerable<Exercito> Extratores(Mundo m, Jazida j) =>
             j.Extratores.Select(id => m.Marchas.Obter(id) as Exercito).OfType<Exercito>().Where(e => e.ExtraiJazidaId == j.Id);

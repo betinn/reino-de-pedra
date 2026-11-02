@@ -191,7 +191,7 @@ public static class VisaoGuerra
             alvo = new
             {
                 id = alvo.Id, marcha = alvo.Tipo, nome = Campo.NomeMarcha(alvo.Tipo), hex = alvo.HexEm(agora), tamanho = VisaoMapa.Aproximado(GT.Total(alvo.Tropas)),
-                some, chegada = alvo.Chegada, rumo = alvo.Caminho.Count > 1 ? m.G.Direcao(alvo.HexEm(agora), alvo.Destino) : null,
+                some, chegada = VisaoMapa.ParaMim(m, r, alvo) ? alvo.Chegada : (long?)null, rumo = alvo.Caminho.Count > 1 ? m.G.Direcao(alvo.HexEm(agora), alvo.Destino) : null,
                 carga = alvo.Carga.Total >= 1, forcasDesconhecidas = true,
             },
             bloqueio, tropas = grupo, total = GT.Total(grupo), vel = GT.Velocidade(m, grupo), forca = Math.Round(m.F.ValorAtaque(grupo, new Dictionary<string, int>(), 0)),

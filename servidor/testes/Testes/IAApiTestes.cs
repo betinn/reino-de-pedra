@@ -65,7 +65,8 @@ public class IAApiTestes
         var deIA = conhecidos.Single(c => c.GetProperty("reino").GetProperty("id").GetInt64() == idIA);
         var deB = conhecidos.Single(c => c.GetProperty("reino").GetProperty("id").GetInt64() == idB);
         Assert.Equal(Chaves(deB).OrderBy(x => x), Chaves(deIA).OrderBy(x => x));
-        Assert.Equal(deB.GetProperty("escudo").GetBoolean(), deIA.GetProperty("escudo").GetBoolean());   // os dois acabaram de chegar
+        // o escudo de quem não é aliado não aparece antes da chegada (de nenhum dos dois)
+        Assert.False(deB.TryGetProperty("escudo", out _)); Assert.False(deIA.TryGetProperty("escudo", out _));
         // mapa: os locais de um e de outro chegam com os mesmos campos
         var (_, mapa) = await a.Get("mapa");
         var (hexIA, hexB) = await s.Motor.Executar(m => (m.LocaisDe(idIA).Select(l => l.Hex).ToHashSet(), m.LocaisDe(idB).Select(l => l.Hex).ToHashSet()));

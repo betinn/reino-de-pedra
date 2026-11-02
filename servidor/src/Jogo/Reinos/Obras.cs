@@ -68,7 +68,7 @@ public static class Obras
         if (!Nevoas.Explorado(m, r.Id, hex)) return "Explore a área antes de fundar.";
         if (m.Mapa.Rio[hex]) return "Não dá para fundar sobre o rio.";
         if (!f.terrenos.Contains(m.Mapa.Terrenos[hex])) return "Este terreno não serve para esse local.";
-        if (!HexLivre(m, hex)) return "O hexágono não está livre.";
+        if (!HexLivrePara(m, r, hex)) return "O hexágono não está livre.";
         if (r.Fila(Fila).Itens.Any(i => i.Tipo == ObraFundar.Id && i.Hex == hex)) return "Já há uma fundação na fila para este hexágono.";
         return null;
     }
@@ -78,6 +78,27 @@ public static class Obras
 
     public static bool HexLivre(Mundo m, int hex) =>
         m.LocalNoHex(hex) == null && !m.Ruinas.Any(x => x.Hex == hex) && !m.Jazidas.Any(j => j.Hex == hex)
+        && !HexOcupado.Any(f => f(m, hex));
+
+    /// <summary>Objetos próprios do reino que ocupam o hexágono (torres...): (mundo, reino, hexágono) → ocupado.</summary>
+    public static List<Func<Mundo, Reino, int, bool>> HexOcupadoPara { get; } = new();
+    private static readonly HashSet<string> OcupamNaFoto = ["local", "ruina-antiga", "torre"];
+
+    /// <summary>
+    /// Livre pelo que o reino sabe (motivo de fundar e de erguer torre): os próprios locais e objetos, o que a foto da névoa
+    /// guarda e as jazidas que ele descobriu. Jazida oculta não ocupa; o resto se resolve na conclusão da obra.
+    /// </summary>
+    public static bool HexLivrePara(Mundo m, Reino r, int hex)
+    {
+        if (m.LocalNoHex(hex) is { } l && l.ReinoId == r.Id) return false;
+        if (m.Jazidas.Any(j => j.Hex == hex && j.DescobertaPor.Contains(r.Id))) return false;
+        if (Fotos.De(m, r.Id).Objetos.TryGetValue(hex, out var objs) && objs.Any(o => o["tipo"]?.GetValue<string>() is { } k && OcupamNaFoto.Contains(k))) return false;
+        return !HexOcupadoPara.Any(f => f(m, r, hex));
+    }
+
+    /// <summary>Na conclusão da obra: o estado real, sem contar jazidas que o reino não descobriu (a obra fica sobre ela, que segue oculta).</summary>
+    public static bool HexLivreParaObra(Mundo m, Reino r, int hex) =>
+        m.LocalNoHex(hex) == null && !m.Ruinas.Any(x => x.Hex == hex) && !m.Jazidas.Any(j => j.Hex == hex && j.DescobertaPor.Contains(r.Id))
         && !HexOcupado.Any(f => f(m, hex));
 
     public static ItemFila Fundar(Mundo m, Reino r, string tipo, int hex)
@@ -168,7 +189,7 @@ public sealed class ObraFundar : ITipoItemFila
     public void Concluir(Mundo m, Reino r, ItemFila item)
     {
         var (tipo, produz, _) = Obras.Fundaveis[item.Param!];
-        if (!Obras.HexLivre(m, item.Hex))
+        if (!Obras.HexLivreParaObra(m, r, item.Hex))
         {
             // alguém ocupou o hexágono antes: o material volta ao castelo
             var c = m.Locais.Obter(r.CasteloId);

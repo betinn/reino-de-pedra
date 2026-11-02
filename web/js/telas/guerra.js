@@ -245,7 +245,7 @@
       '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + a.hex + '">' + RP.icone('mapa') + 'Mapa</a></div>' +
       (a.carga ? '<div class="card linha" style="margin-top:var(--esp-3)"><span class="ico-placa">' + RP.icone('carroca') + '</span><span style="flex:1"><b>Levam carga</b><br><small class="fraco">Se vencerem, suas tropas trazem o que couber na carga delas.</small></span></div>' : '') +
       (a.some ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p pulso') + '<span>Somem na névoa em <b class="num" data-fim="' + a.some + '">' + RP.fmtResta(a.some - agora) + '</b>. Depois disso, só a espionagem acha ' + (a.carga ? 'a carga' : 'essas forças') + '.</span></p>'
-        : '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('olho', 'ico-p') + '<span>Seguem à vista até chegar, em <b class="num" data-fim="' + a.chegada + '">' + RP.fmtResta(a.chegada - agora) + '</b>.</span></p>') +
+        : '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('olho', 'ico-p') + '<span>Seguem à vista até chegar' + (a.chegada ? ', em <b class="num" data-fim="' + a.chegada + '">' + RP.fmtResta(a.chegada - agora) + '</b>' : '') + '.</span></p>') +
       '<div class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('alvo', 'ico-p') + '<span>Suas tropas vão a um ponto do caminho <b>antes</b> deles e esperam. Se vencerem, trazem a carga e as relíquias de volta, e na volta elas também podem ser interceptadas. Se eles mudarem de rota, a interceptação falha.</span></div>' +
       '<div class="secao-titulo">1. Tropas</div>' +
       (ors.length > 1 ? '<div class="abas abas-rolagem envio-origens" role="group" aria-label="De onde saem">' + ors.map(function (x) {

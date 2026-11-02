@@ -27,6 +27,7 @@ public class CombateApiTestes
             var c = m.Locais[casteloA];
             c.Guarnicao["cavalaria"] = 20; c.Guarnicao["milicia"] = 3;
             m.Sujar(c); m.Sujar(def);
+            ReinoDePedra.Jogo.Exploracao.Nevoas.RevelarArea(m, m.Locais[casteloA].ReinoId, alvoHex, 0);   // A já viu a mina
         });
 
         var (sp, previa) = await a.Post("ataques/previa", new { deLocalId = casteloA, tropas = new { cavalaria = 20 }, destinoHex = alvoHex });

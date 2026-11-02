@@ -35,7 +35,7 @@ public sealed class Motor : IAsyncDisposable
                 try { tcs.SetResult(f(Mundo)); }
                 catch (Exception e) { tcs.SetException(e); }
             }))
-            tcs.SetException(new InvalidOperationException("motor parado"));
+            tcs.SetException(new RegraException("O servidor está reiniciando. Tente de novo em instantes.", 503));
         return tcs.Task;
     }
     public Task Executar(Action<Mundo> f) => Executar<bool>(m => { f(m); return true; });

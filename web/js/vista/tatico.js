@@ -390,7 +390,7 @@
   }
   function svgMarcha(o, pos, agora) {
     var rev = revelada(o), cls = classeDono(o.dono) + (rev ? '' : ' hostil'), expl = /explor|batedor|prospector|mensageiro/.test(String(o.marcha || ''));
-    var r = expl ? 12 : 15, ic = iconeMarcha(o), cheg = M.chegada(o);
+    var r = expl ? 12 : 15, ic = iconeMarcha(o), cheg = M.chegadaConhecida(o);
     return '<g class="ent marcha ' + cls + (expl ? ' explorador' : '') + '" data-k="' + o._k + '" data-marcha="' + o._k + '" transform="translate(' + n1(pos.x) + ' ' + n1(pos.y) + ')">' +
       '<g class="ent-k"><circle class="alvo-toque" r="24"/>' + (rev ? '' : '<circle class="anel-ameaca" r="' + (r + 6) + '"/>') +
       '<circle class="mc-base" r="' + r + '"/><use href="#i-' + ic + '" x="' + (-r * 0.66) + '" y="' + (-r * 0.66) + '" width="' + (r * 1.32) + '" height="' + (r * 1.32) + '"/>' +

@@ -14,7 +14,7 @@ public sealed class ColecaoCarga;
 /// <summary>
 /// Teste de carga: um mundo com P.reinos reinos (5 jogadores simulados + 25 de IA), com fauna, por dias de jogo avançando o
 /// relógio falso evento a evento. Mede eventos, tempo de CPU (total, por evento e por dia de jogo), pico de memória
-/// gerenciada e o tamanho do banco depois de salvar. Os limites têm folga larga para a VM (1/8 de OCPU ≈ 12% de um núcleo):
+/// gerenciada e o tamanho do banco depois de salvar. Os limites têm folga larga para o orçamento de projeto (≈ 12% de um núcleo):
 /// o mundo inteiro precisa custar muito menos que isso em tempo real. REINO_CARGA_DIAS muda a duração (padrão: 10).
 /// Os números medidos estão em docs/decisoes/0021-ia.md e docs/desempenho.md.
 /// </summary>
@@ -111,12 +111,12 @@ public class CargaIATestes(ITestOutputHelper saida)
         saida.WriteLine($"eventos {eventos} ({eventos / (double)dias:0} por dia), sessões de jogador {jogadas}");
         saida.WriteLine($"sessões de IA {sessoesIA}: {tempoSessoes.Elapsed.TotalSeconds:0.00} s ({tempoSessoes.Elapsed.TotalMilliseconds / Math.Max(1, sessoesIA):0.00} ms por sessão)");
         saida.WriteLine($"CPU {cpu:0.00} s ({porDia:0.000} s por dia de jogo; {cpu / Math.Max(1, eventos) * 1e6:0} µs por evento); parede {relogio.Elapsed.TotalSeconds:0.00} s");
-        saida.WriteLine($"fração de um núcleo em tempo real: {porDia / 86400 * 100:0.0000}% (VM: 12,5%)");
+        saida.WriteLine($"fração de um núcleo em tempo real: {porDia / 86400 * 100:0.0000}% (orçamento: 12,5%)");
         saida.WriteLine($"memória gerenciada: pico {picoMemoria / 1048576.0:0.0} MB, viva no fim {viva / 1048576.0:0.0} MB");
         saida.WriteLine($"banco {mb:0.00} MB, salvo em {segSalvar:0.00} s; documentos {m.Colecoes.Sum(c => c.Count)}");
         saida.WriteLine($"IA: castelo médio {nivelCastelo:0.0}, tropas médias {tropas:0}; batalhas {batalhas} ({atkIA} atacadas por IA)");
 
-        // limites com folga: menos de 0,05% de um núcleo por dia de jogo (a VM tem 12,5%), memória e banco pequenos
+        // limites com folga: menos de 0,05% de um núcleo por dia de jogo (o orçamento é 12,5%), memória e banco pequenos
         Assert.True(porDia < 43, $"CPU por dia de jogo: {porDia:0.00} s");
         Assert.True(paredePorDia < 43, $"tempo de parede por dia de jogo: {paredePorDia:0.00} s");
         Assert.True(picoMemoria < 400L * 1048576, $"pico de memória: {picoMemoria / 1048576.0:0} MB");

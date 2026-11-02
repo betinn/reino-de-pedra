@@ -105,10 +105,13 @@ public static class VisaoSocial
         var conhecidos = r.ReinosConhecidos.Select(id => m.Reinos.Obter(id)).OfType<Reino>().Where(q => q.Ativo).OrderBy(q => q.Nome).Select(q =>
         {
             var pc = Comercio.PactoEntre(m, r.Id, q.Id);
+            // o escudo de quem não é aliado só é descoberto ao chegar: nem o campo vai (null some no JSON)
+            var aliado = Aliancas.SaoAliados(m, r.Id, q.Id);
+            var escudo = aliado && q.SobEscudo(agora);
             return new
             {
-                reino = Espionagem.Identidade(q), aliado = Aliancas.SaoAliados(m, r.Id, q.Id), escudo = q.SobEscudo(agora),
-                novatoRestante = q.SobEscudo(agora) ? Math.Floor(Comercio.NovatoRestante(m, q)) : (double?)null,
+                reino = Espionagem.Identidade(q), aliado, escudo = aliado ? escudo : (bool?)null,
+                novatoRestante = escudo ? Math.Floor(Comercio.NovatoRestante(m, q)) : (double?)null,
                 pacto = pc?.Estado,
             };
         }).ToList();

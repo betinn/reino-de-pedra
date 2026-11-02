@@ -26,17 +26,34 @@ public static class VisaoCombate
         return new JsonObject { ["tipo"] = p.Tipo, ["objetivos"] = arr, ["tatica"] = p.Tatica, ["completar"] = p.Completar == true, ["estandarte"] = p.Estandarte == true };
     }
 
-    /// <summary>Torres que cobrem o local e que o reino conhece (viu ao vivo ou já tinha visto).</summary>
-    public static List<Torre> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null)
+    public sealed record TorreConhecida(int Hex, int Nivel, int Alcance);
+
+    /// <summary>
+    /// Torres que cobrem o local pelo que o reino sabe: as próprias e as à vista como estão agora; fora da vista, as da foto
+    /// da névoa como foram vistas (nível e alcance daquele momento).
+    /// </summary>
+    public static List<TorreConhecida> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null)
     {
         vis ??= Nevoas.VisiveisAgora(m, r.Id);
-        return Defesas.NoAlcance(m, l).Where(t => t.ReinoId == r.Id || t.ConhecidaPor.Contains(r.Id) || vis.Contains(t.Hex)).ToList();
+        var lista = Defesas.NoAlcance(m, l).Where(t => t.ReinoId == r.Id || vis.Contains(t.Hex))
+            .Select(t => new TorreConhecida(t.Hex, t.Nivel, Defesas.Alcance(m, t))).ToList();
+        foreach (var (h, objs) in Fotos.De(m, r.Id).Objetos)
+        {
+            if (vis.Contains(h)) continue;
+            foreach (var o in objs)
+                if (o["tipo"]?.GetValue<string>() == "torre" && o["alcance"]?.GetValue<int>() is int alc && m.G.Distancia(h, l.Hex) <= alc)
+                    lista.Add(new TorreConhecida(h, o["nivel"]?.GetValue<int>() ?? 1, alc));
+        }
+        return lista;
     }
 
     /// <summary>Prévia do envio: chegada, carga, objetivos normalizados, saque decrescente e avisos, sem enviar nada.</summary>
     public static object Previa(Mundo m, Reino r, PedidoAtaque p, int para)
     {
-        var alvo = Ataques.Alvo(m, r, para);
+        var vis = Nevoas.VisiveisAgora(m, r.Id);
+        var alvo = Ataques.Alvo(m, r, para, vis);
+        // fora da vista, o alvo aparece como a foto da névoa o guarda (último estado conhecido)
+        var foto = vis.Contains(para) ? null : Ataques.FotoDoLocal(m, r, para);
         int de; Dictionary<string, int> grupo;
         if (p.MarchaId is long mid)
         {
@@ -61,7 +78,7 @@ public static class VisaoCombate
         object Op(bool seguro)
         {
             if (grupo.Count == 0) return new { ok = false };
-            var rota = Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca });
+            var rota = Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca, ReinoId = r.Id });
             var ok = rota.Hexes[^1] == para;
             return new { ok, min = ok ? Math.Round(rota.TotalMin, 1) : (double?)null, hexes = ok ? rota.Hexes.Count : 0, caminho = ok ? rota.Hexes : null };
         }
@@ -69,7 +86,6 @@ public static class VisaoCombate
         var recentes = levaCarga ? Ataques.SaquesRecentes(m, r, alvo.Id) : 0;
         var rendimento = Ataques.Rendimento(m, recentes);
         var cargaObj = plano.Objetivos.Where(o => o.K == "recurso").Sum(o => o.Q);
-        var vis = Nevoas.VisiveisAgora(m, r.Id);
         var torres = TorresConhecidas(m, r, alvo, vis);
         var avisos = new List<object>();
         if (levaCarga && recentes > 0)
@@ -89,9 +105,12 @@ public static class VisaoCombate
         {
             alvo = new
             {
-                hex = alvo.Hex, c = m.G.C(alvo.Hex), l = m.G.L(alvo.Hex), nome = Ataques.NomeAlvo(alvo), local = alvo.Tipo.Chave(), produz = alvo.Produz,
-                dono = Ataques.SemDono(m, alvo) ? "livre" : "desconhecido", castelo = alvo.Tipo == TipoLocal.Castelo && !alvo.Ruina,
-                torres = torres.Select(t => new { t.Hex, t.Nivel, alcance = Defesas.Alcance(m, t) }),
+                hex = alvo.Hex, c = m.G.C(alvo.Hex), l = m.G.L(alvo.Hex), aoVivo = foto == null,
+                nome = foto != null ? (string?)foto["nome"] : Ataques.NomeAlvo(alvo),
+                local = foto != null ? (string?)foto["local"] : alvo.Tipo.Chave(), produz = foto != null ? null : alvo.Produz,
+                dono = foto != null ? (string?)foto["dono"] : Ataques.SemDono(m, alvo) ? "livre" : "desconhecido",
+                castelo = foto != null ? (string?)foto["local"] == TipoLocal.Castelo.Chave() && foto["ruina"]?.GetValue<bool>() != true : alvo.Tipo == TipoLocal.Castelo && !alvo.Ruina,
+                torres = torres.Select(t => new { t.Hex, t.Nivel, t.Alcance }),
             },
             tipos = Ataques.TiposPara(m, alvo), bloqueio,
             plano = new
@@ -159,7 +178,7 @@ public static class VisaoCombate
                 var g = papel == "ataque" ? x.Guarnicao.Where(kv => m.B.U.TryGetValue(kv.Key, out var u) && u.So != "defesa").ToDictionary(kv => kv.Key, kv => kv.Value) : GT.Limpo(x.Guarnicao);
                 if (GT.Total(g) == 0) continue;
                 var vel = GT.Velocidade(m, g);
-                var rota = Caminhos.Calcular(m, x.Hex, l.Hex, vel, new OpcoesCaminho { Forca = GT.ForcaFauna(m, g) });
+                var rota = Caminhos.Calcular(m, x.Hex, l.Hex, vel, new OpcoesCaminho { Forca = GT.ForcaFauna(m, g), ReinoId = r.Id });
                 if (rota.Hexes[^1] != l.Hex) continue;
                 var chega = agora + (long)Math.Round(rota.TotalMin * T.Min);
                 reforcos.Add(new { localId = x.Id, x.Nome, tropas = GT.Limpo(x.Guarnicao), vel, min = Math.Round(rota.TotalMin, 1), chega, aTempo = chega < b.FimPrevisto });

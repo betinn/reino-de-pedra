@@ -118,8 +118,12 @@ public sealed class CombateCenario
     public Exercito Atacar(Local alvo, IReadOnlyDictionary<string, int> tropas, JsonObject? plano = null, string ordem = OrdemAtacar.Id)
     {
         Guarnecer(CasteloAtk, tropas);
+        Conhecer(Atk, alvo);
         return Exercitos.Enviar(M, Atk, CasteloAtk.Id, tropas, alvo.Hex, ordem, false, plano ?? Plano());
     }
+
+    /// <summary>O reino já viu o local (fica na foto da névoa): só se ataca o que se conhece.</summary>
+    public void Conhecer(Reino r, Local l) => ReinoDePedra.Jogo.Exploracao.Nevoas.RevelarArea(M, r.Id, l.Hex, 0);
 
     public void AvancarAte(long t) { T.Avancar(TimeSpan.FromMilliseconds(Math.Max(0, t - M.Agora))); AjustesTeste.FalharSeErro(); }
 

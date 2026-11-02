@@ -105,9 +105,14 @@ public sealed class ModuloReino : IModuloApi
             return Results.NoContent();
         });
 
-        // a imagem só é servida para quem está logado; o id do reino só chega a quem conhece o reino
-        conta.MapGet("/reinos/{id:long}/icone", (long id, HttpContext ctx, Banco banco) =>
+        // a imagem só é servida a quem pode conhecer a identidade: o próprio reino, quem o conhece e aliados (ids são sequenciais;
+        // sem isso, varrer ids diria quais reinos têm imagem própria). Para os outros, 404 como se não houvesse imagem.
+        conta.MapGet("/reinos/{id:long}/icone", async (long id, HttpContext ctx, Banco banco, Motor motor) =>
         {
+            var conta_ = ctx.ContaId();
+            var pode = await motor.Executar(m => Sessao.ReinoOuNulo(m, conta_) is { } r
+                && (ReinoDePedra.Jogo.Exploracao.Conhecimento.Conhece(r, id) || ReinoDePedra.Jogo.Social.Aliancas.SaoAliados(m, r.Id, id)));
+            if (!pode) return Results.NotFound();
             var l = banco.Consultar("SELECT tipo, dados FROM icones WHERE reino_id=$r", rd => (rd.GetString(0), (byte[])rd[1]), ("$r", id)).FirstOrDefault();
             if (l.Item2 == null) return Results.NotFound();
             ctx.Response.Headers.CacheControl = "private, max-age=86400";
@@ -149,7 +154,8 @@ public sealed class ModuloReino : IModuloApi
         conta.MapGet("/fundar/motivo", async (string tipo, int hex, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => new { motivo = Obras.MotivoNaoFundar(m, Sessao.ReinoDa(m, id), tipo, hex) }), Json.Web);
+            // a foto da névoa em dia com o que o reino vê agora (o motivo usa só o que ele sabe)
+            return Results.Json(await motor.Executar(m => { var r = Sessao.ReinoDa(m, id); ReinoDePedra.Jogo.Exploracao.Nevoas.VisiveisAgora(m, r.Id); return new { motivo = Obras.MotivoNaoFundar(m, r, tipo, hex) }; }), Json.Web);
         });
     }
 }

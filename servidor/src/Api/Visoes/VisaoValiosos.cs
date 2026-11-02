@@ -22,10 +22,10 @@ public static class VisaoValiosos
             : new { ok = r.Hexes[^1] == destino, min = (double?)Math.Round(r.TotalMin, 1), hexes = r.Hexes.Count, caminho = (IReadOnlyList<int>?)r.Hexes };
 
     /// <summary>Caminho curto e seguro de um grupo entre dois hexágonos.</summary>
-    public static object Viagem(Mundo m, int de, int para, string vel, double forca)
+    public static object Viagem(Mundo m, long reinoId, int de, int para, string vel, double forca)
     {
         object Op(bool seguro) => de == para ? new { ok = true, min = (double?)0, hexes = 1, caminho = (IReadOnlyList<int>?)new[] { de } }
-            : Rota(Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca }), para);
+            : Rota(Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca, ReinoId = reinoId }), para);
         return new { curta = Op(false), segura = Op(true) };
     }
 
@@ -107,6 +107,8 @@ public static class VisaoValiosos
         var de = m.Locais.Obter(deLocalId);
         if (de == null || de.ReinoId != r.Id) throw new RegraException("Local não é seu.", 404);
         var dest = m.Locais.Obter(destinoLocalId);
+        // como em ReliquiasLendarias.Mover: só para local próprio (o caminho e a concentração de um local alheio não vazam)
+        if (dest != null && !Exercitos.LocalProprio(dest, r.Id)) throw new RegraException("Local não é seu.", 404);
         var g = GT.Limpo(tropas);
         var vel = GT.Velocidade(m, g);
         var forca = GT.ForcaFauna(m, g);
@@ -115,8 +117,8 @@ public static class VisaoValiosos
         return new
         {
             vel, forca, poucoProtegida = Caravanas.PoucoProtegida(m, g), escoltaMin = m.P.Caravana.EscoltaMin,
-            buscar = Viagem(m, de.Hex, orig!.Hex, vel, forca),
-            levar = dest == null ? null : Viagem(m, orig.Hex, dest.Hex, vel, forca),
+            buscar = Viagem(m, r.Id, de.Hex, orig!.Hex, vel, forca),
+            levar = dest == null ? null : Viagem(m, r.Id, orig.Hex, dest.Hex, vel, forca),
             depois, nivelDepois = ReliquiasLendarias.Nivel(m, depois),
         };
     }
@@ -176,14 +178,14 @@ public static class VisaoValiosos
         var g = GT.Limpo(tropas);
         var vel = GT.Velocidade(m, g);
         var forca = GT.ForcaFauna(m, g);
-        var viagem = Viagem(m, l.Hex, hex, vel, forca);
+        var viagem = Viagem(m, r.Id, l.Hex, hex, vel, forca);
         var um = g.Count > 0 ? new Dictionary<string, int> { [g.Keys.First()] = 1 } : new Dictionary<string, int>();
         var nomeUm = g.Count > 0 && m.B.U.TryGetValue(g.Keys.First(), out var u1) ? "1 " + GT.Nome(u1, 1) : "1 unidade";
         var j = Extracoes.Conhecida(m, r.Id, hex);
         var posto = Extracoes.TemPosto(m, r.Id, hex);
         if (j != null)
         {
-            var dep = Extracoes.Deposito(m, r.Id, hex, vel, new OpcoesCaminho { Forca = forca });
+            var dep = Extracoes.Deposito(m, r.Id, hex, vel, new OpcoesCaminho { Forca = forca, ReinoId = r.Id });
             var rota = dep is { } d && Extracoes.RotaNoCaminho(m, d.rota);
             double Rit(IReadOnlyDictionary<string, int> gg, bool p) => Extracoes.Ritmo(m, gg, j.Recurso, p, rota);
             var ritmo = Rit(g, posto);
@@ -207,7 +209,7 @@ public static class VisaoValiosos
         if (ru == null || !Nevoas.Explorado(m, r.Id, hex)) throw new RegraException("Não há jazida nem ruína antiga conhecida neste hexágono.");
         var destinos = m.LocaisDe(r.Id).Where(x => !x.Ruina).Select(x =>
         {
-            var rr = Caminhos.Calcular(m, hex, x.Hex, vel, new OpcoesCaminho { Forca = forca });
+            var rr = Caminhos.Calcular(m, hex, x.Hex, vel, new OpcoesCaminho { Forca = forca, ReinoId = r.Id });
             return new { x.Id, x.Nome, tipo = x.Tipo.Chave(), x.Produz, min = rr.Hexes[^1] == x.Hex ? Math.Round(rr.TotalMin, 1) : (double?)null, n = ReliquiasLendarias.Concentracoes(m).GetValueOrDefault(x.Id) };
         }).OrderBy(x => x.min ?? double.MaxValue).ToList();
         return new
