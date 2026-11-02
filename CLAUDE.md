@@ -152,6 +152,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Massacre**: mata população do local; enfraquece o reino a longo prazo, sem ganho de recurso.
 - **Ocupação**: toma o local e passa a explorá-lo até alguém retomar.
 - **Cerco ao castelo**: o ataque mais difícil do jogo.
+- Todo ataque é enviado com **objetivos em ordem de prioridade** (ex.: capturar a relíquia + 10 mil de madeira) e uma **tática**. As tropas tentam cumprir os objetivos nessa ordem e sabem quando parar e voltar.
 
 ### Defesa
 
