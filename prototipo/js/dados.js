@@ -19,7 +19,9 @@
       madeira: { nome: 'Madeira', qtd: 2340, cap: 5000, taxa: 180 },
       pedra: { nome: 'Pedra', qtd: 1120, cap: 5000, taxa: 95 },
       comida: { nome: 'Comida', qtd: 4870, cap: 5000, taxa: 120 },
-      ferro: { nome: 'Ferro', qtd: 640, cap: 5000, taxa: 42 }
+      ferro: { nome: 'Ferro', qtd: 640, cap: 5000, taxa: 42 },
+      couro: { nome: 'Couro', qtd: 120, cap: 2000, taxa: 0, origem: 'Obtido pela caça' },
+      peles: { nome: 'Peles', qtd: 45, cap: 2000, taxa: 0, origem: 'Obtidas pela caça' }
     },
     valiosos: [
       { id: 'ouro', nome: 'Ouro', qtd: 85 },
@@ -95,14 +97,14 @@
       { id: 'r-valdren', nome: 'Caminho de Valdren', por: 'valdren', pts: [[32, 8], [29, 11], [26, 13], [23, 16]] },
       { id: 'r-sul', nome: 'Trilha do Sul', por: 'meu', pts: [[14, 19], [13, 23], [13, 27]] }
     ],
-    vaus: [{ c: 16, l: 26, nome: 'Vau do Salgueiro' }],
+    vaus: [{ c: 17, l: 26, nome: 'Vau do Salgueiro' }],
 
     /* Movimentos no mapa. pos = fração (0–1) do caminho já percorrida. */
     marchas: [
       { id: 'm-inimigo', dono: 'desconhecido', tipo: 'exercito', hostil: true, pts: [[25, 8], [21, 11], [18, 14]], pos: 0.62,
         nome: 'Forças desconhecidas', resumo: '≈ 60 tropas · infantaria e cavalaria', origem: 'nordeste', alvo: 'pasto', seg: 2472 },
-      { id: 'm-valdren', dono: 'valdren', tipo: 'exercito', estandarte: true, pts: [[27, 13], [25, 15], [23, 16]], pos: 0.5,
-        nome: 'Exército de Casa Valdren', resumo: '≈ 35 tropas · lanceiros', alvo: 'j-prata', seg: 1310 },
+      { id: 'm-valdren', dono: 'valdren', tipo: 'exercito', estandarte: true, pts: [[29, 11], [26, 13], [23, 16]], pos: 0.96,
+        nome: 'Exército de Casa Valdren', resumo: '≈ 35 tropas · lanceiros, pela rota pública', alvo: 'j-prata', seg: 600 },
       { id: 'm-extracao', dono: 'meu', tipo: 'exercito', pts: [[14, 19], [13, 23], [12, 27], [9, 29]], pos: 0.45,
         nome: 'Grupo de extração', resumo: '20 lanceiros → Salina', alvo: 'j-sal', seg: 1080 },
       { id: 'm-cavalo', dono: 'meu', tipo: 'explorador', sub: 'cavalo', pts: [[18, 14], [20, 11], [21, 7], [19, 4]], pos: 0.5,
@@ -118,8 +120,45 @@
       { id: 'b-4', reino: 'valdren', tipo: 'alianca', texto: 'Aceitamos tratados.', c: 28, l: 9 }
     ],
 
+    /* Fauna hostil: grupos por terreno, com território (raio) e nível de perigo.
+       Perto dos reinos iniciais a fauna é mais fraca; rotas reduzem a presença. */
+    fauna: [
+      { id: 'f-lobos-norte', tipo: 'lobos', c: 19, l: 8, raio: 2, qtd: 6, nivel: 'alto' },
+      { id: 'f-javalis-bosque', tipo: 'javalis', c: 17, l: 24, raio: 1, qtd: 3, nivel: 'baixo' },
+      { id: 'f-crocodilos-rio', tipo: 'crocodilos', c: 18, l: 23, raio: 1, qtd: 2, nivel: 'medio' },
+      { id: 'f-ursos-serra', tipo: 'ursos', c: 24, l: 11, raio: 2, qtd: 2, nivel: 'alto' },
+      { id: 'f-crocodilos-pantano', tipo: 'crocodilos', c: 6, l: 27, raio: 2, qtd: 4, nivel: 'alto' },
+      { id: 'f-lobos-leste', tipo: 'lobos', c: 36, l: 22, raio: 2, qtd: 5, nivel: 'alto' },
+      { id: 'f-javalis-oeste', tipo: 'javalis', c: 7, l: 13, raio: 2, qtd: 4, nivel: 'medio' }
+    ],
+
+    /* Locais sem dono: ruínas e terra livre (ex.: reino que deixou de existir) */
+    ruinas: [
+      { id: 'ru-castelo', tipo: 'castelo', nome: 'Ruína de castelo', c: 5, l: 10, terreno: 'planicie' },
+      { id: 'ru-vila', tipo: 'vila', nome: 'Ruína de vila', c: 3, l: 12, terreno: 'planicie' },
+      { id: 'ru-livre', tipo: 'livre', nome: 'Terra livre', c: 7, l: 9, terreno: 'planicie' }
+    ],
+
+    /* Exemplo de retorno após regência (jogador ausente) */
+    regencia: {
+      diasFora: 12,
+      producao: { madeira: 18400, pedra: 9600, comida: 11200, ferro: 4100 },
+      ataques: { total: 4, repelidos: 3 },
+      perdas: [{ local: 'Mina de Pedra Alta', como: 'Ocupada por forças desconhecidas' }],
+      acoes: [
+        { dia: 2, txt: 'Recrutou 30 milicianos para reforçar o Pasto das Éguas.' },
+        { dia: 4, txt: 'Repeliu um saque na Vila do Moinho.' },
+        { dia: 6, txt: 'Construiu uma moradia na Vila do Vau.' },
+        { dia: 8, txt: 'Perdeu a Mina de Pedra Alta para uma ocupação.' },
+        { dia: 9, txt: 'Repeliu um ataque à Serraria do Bosque.' },
+        { dia: 11, txt: 'Melhorou a muralha do castelo para o nível 4.' }
+      ],
+      restou: { locais: '9 de 10', populacao: 1020 }
+    },
+
     /* Áreas já exploradas: informação envelhece ("horas" desde a última visão) */
     explorado: [
+      { c: 5, l: 10, raio: 2, horas: 40 },
       { c: 20, l: 10, raio: 3, horas: 20 },
       { c: 22, l: 6, raio: 2, horas: 22 },
       { c: 25, l: 12, raio: 3, horas: 30 },
