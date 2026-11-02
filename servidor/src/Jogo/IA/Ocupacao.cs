@@ -82,7 +82,7 @@ public static class Ocupacao
     public static int VagaLonge(Mundo m)
     {
         var ocupadas = Ativos(m).Select(r => r.Vaga).ToHashSet();
-        var livres = m.Mapa.Vagas.Where(v => !ocupadas.Contains(v.Indice)).ToList();
+        var livres = m.Mapa.Vagas.Where(v => !ocupadas.Contains(v.Indice) && CriacaoReino.VagaUtilizavel(m, v)).ToList();
         if (livres.Count == 0) return -1;
         var jogadores = Ativos(m).Where(r => !r.EhIA).Select(r => m.Locais.Obter(r.CasteloId)).OfType<Local>().Select(l => l.Hex).ToList();
         if (jogadores.Count == 0) return livres.MaxBy(v => v.Indice)!.Indice;
@@ -120,11 +120,12 @@ public static class Ocupacao
 
     /// <summary>
     /// Gancho de <see cref="CriacaoReino.LiberarVagaDeIA"/>: o reino de IA de menor porte abdica e devolve a vaga
-    /// (a do castelo inicial dele). -1 se não houver reino de IA.
+    /// (a do castelo inicial dele). Só abdica quem deixa uma vaga que o jogador pode usar (sem locais de outros reinos nem
+    /// relíquias nos hexágonos dela). -1 se não houver.
     /// </summary>
     public static int LiberarVaga(Mundo m)
     {
-        var ia = DeIA(m).Where(r => r.Vaga >= 0).OrderBy(r => Porte(m, r)).ThenBy(r => r.Vaga).FirstOrDefault();
+        var ia = DeIA(m).Where(r => r.Vaga >= 0 && CriacaoReino.VagaUtilizavel(m, m.Mapa.Vagas[r.Vaga], r.Id)).OrderBy(r => Porte(m, r)).ThenBy(r => r.Vaga).FirstOrDefault();
         if (ia == null) return -1;
         var vaga = ia.Vaga;
         Abdicar(m, ia);

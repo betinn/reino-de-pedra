@@ -186,12 +186,12 @@ namespace ReinoDePedra.Jogo.Combate
             return c;
         }
 
-        /// <summary>Hexágono serve para um castelo de exílio (livre, ou só uma ruína sem dono; fora do rio).</summary>
+        /// <summary>Hexágono serve para um castelo de exílio (livre, ou só uma ruína sem dono, sem relíquia nem lendário; fora do rio).</summary>
         public static bool PontoLivre(Mundo m, int h)
         {
             if (!m.G.Valido(h) || m.Mapa.Rio[h]) return false;
             var l = m.LocalNoHex(h);
-            if (l != null) return Ataques.SemDono(m, l) && !m.Ruinas.Any(x => x.Hex == h) && !m.Jazidas.Any(j => j.Hex == h) && !Obras.HexOcupado.Any(f => f(m, h));
+            if (l != null) return CriacaoReino.LocalSubstituivel(m, l) && !m.Ruinas.Any(x => x.Hex == h) && !m.Jazidas.Any(j => j.Hex == h) && !Obras.HexOcupado.Any(f => f(m, h));
             return Obras.HexLivre(m, h);
         }
 

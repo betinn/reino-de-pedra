@@ -51,7 +51,7 @@ namespace ReinoDePedra.Jogo.Reinos
         {
             var centro = Regioes.Centro(m, regiao);
             var ocupadas = m.Reinos.Where(r => r.Ativo).Select(r => r.Vaga).ToHashSet();
-            return m.Mapa.Vagas.Where(v => !ocupadas.Contains(v.Indice))
+            return m.Mapa.Vagas.Where(v => !ocupadas.Contains(v.Indice) && VagaUtilizavel(m, v))
                 .OrderBy(v => m.G.Distancia(v.Castelo, centro)).ThenBy(v => v.Indice)
                 .Select(v => v.Indice).DefaultIfEmpty(-1).First();
         }

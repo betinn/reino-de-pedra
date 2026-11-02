@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using ReinoDePedra.Jogo.Exploracao;
+using ReinoDePedra.Jogo.Mapa;
 using ReinoDePedra.Jogo.Nucleo;
 
 namespace ReinoDePedra.Jogo.Reinos;
@@ -25,8 +26,31 @@ public static partial class CriacaoReino
     public static int VagaLivre(Mundo m)
     {
         var ocupadas = m.Reinos.Where(r => r.Ativo).Select(r => r.Vaga).ToHashSet();
-        foreach (var v in m.Mapa.Vagas) if (!ocupadas.Contains(v.Indice)) return v.Indice;
+        foreach (var v in m.Mapa.Vagas) if (!ocupadas.Contains(v.Indice) && VagaUtilizavel(m, v)) return v.Indice;
         return -1;
+    }
+
+    /// <summary>Hexágonos do castelo e dos 4 locais iniciais da vaga.</summary>
+    public static int[] Hexes(Vaga v) => [v.Castelo, v.Comida, v.Madeira, v.Pedra, v.Ferro];
+
+    /// <summary>
+    /// Um local inicial só toma o lugar de um local sem dono (ruína ou terra livre) que não guarda relíquia nem equipamento
+    /// lendário. Locais de reinos ativos ficam com quem os tem (território é presença física). <paramref name="saindo"/>: reino
+    /// que vai deixar o mundo (abdicação) e cujos locais vão ficar sem dono.
+    /// </summary>
+    public static bool LocalSubstituivel(Mundo m, Local l, long saindo = 0) =>
+        (saindo != 0 && l.ReinoId == saindo || Combate.Ataques.SemDono(m, l))
+        && !m.Reliquias.Any(x => x.LocalId == l.Id) && !m.Lendarios.Any(e => e.LocalId == l.Id);
+
+    /// <summary>Os 5 hexágonos da vaga estão livres ou só têm locais que podem dar lugar (ver <see cref="LocalSubstituivel"/>).</summary>
+    public static bool VagaUtilizavel(Mundo m, Vaga v, long saindo = 0)
+    {
+        foreach (var h in Hexes(v))
+        {
+            if (m.LocalNoHex(h) is { } l) { if (!LocalSubstituivel(m, l, saindo)) return false; }
+            else if (!Obras.HexLivre(m, h)) return false;
+        }
+        return true;
     }
 
     /// <summary>
@@ -57,10 +81,11 @@ public static partial class CriacaoReino
         if (vaga < 0) vaga = contaId != null ? VagaParaJogador(m) : VagaLivre(m);
         if (vaga < 0) throw new RegraException("Não há vaga no mapa.", 409);
         var V = m.Mapa.Vagas[vaga];
-        foreach (var h in new[] { V.Castelo, V.Comida, V.Madeira, V.Pedra, V.Ferro })
+        if (!VagaUtilizavel(m, V)) throw new RegraException("Esta vaga do mapa está ocupada.", 409);
+        foreach (var h in Hexes(V))
         {
             var antigo = m.LocalNoHex(h);
-            if (antigo != null) m.RemoverLocal(antigo);   // ruínas de um reino que ocupou esta vaga antes
+            if (antigo != null) m.RemoverLocal(antigo);   // ruínas sem dono de um reino que ocupou esta vaga antes
         }
         var agora = m.Agora;
         var r = m.Reinos.Adicionar(new Reino
