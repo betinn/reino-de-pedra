@@ -15,3 +15,4 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0009](0009-economia.md) | Produção sob demanda, checkpoint horário, excedente ao armazém |
 | [0010](0010-logistica.md) | Requisição: reserva na hora, carregadores por origem |
 | [0011](0011-icone-do-reino.md) | Ícone: brasão sorteado/editável ou imagem própria pequena |
+| [0012](0012-vista-e-mapa-no-cliente.md) | Vista 2.5D e Mapa tático (Canvas + marcadores SVG) com um modelo e pontos de extensão |
