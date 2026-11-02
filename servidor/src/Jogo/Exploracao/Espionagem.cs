@@ -177,8 +177,11 @@ namespace ReinoDePedra.Jogo.Exploracao
             m.Agendar(new FimAvistamentoEvento { AvistamentoId = a.Id, Quando = a.Ate });
             Registros.Notificar(m, reinoId, "ataques", titulo, "Fica no mapa por " + m.P.AvistamentoH + " h.", "mapa?foco=" + hex);
             m.Avisar(reinoId, "mapa");
+            AoRegistrar?.Invoke(m, a);
             return a;
         }
+        /// <summary>Depois de cada avistamento (gatilho da espionagem: o primeiro espião visto).</summary>
+        public static event Action<Mundo, Avistamento>? AoRegistrar;
         public static IEnumerable<Avistamento> De(Mundo m, long reinoId) => m.Avistamentos.Where(a => a.ReinoId == reinoId && a.Ate > m.Agora);
     }
 

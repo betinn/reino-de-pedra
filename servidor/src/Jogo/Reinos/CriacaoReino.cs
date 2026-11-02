@@ -49,7 +49,8 @@ public static partial class CriacaoReino
         nome = NormalizarNome(nome);
         var motivo = MotivoNomeInvalido(m, nome);
         if (motivo != null) throw new RegraException(motivo);
-        if (!brasao.Valido()) throw new RegraException("Brasão inválido.");
+        var (extras, moldura) = BrasaoLiberado?.Invoke(m, contaId) ?? (false, false);
+        if (!brasao.Valido(extras, moldura)) throw new RegraException("Brasão inválido.");
         if (contaId != null && m.Reinos.Any(r => r.Ativo && r.ContaId == contaId)) throw new RegraException("Você já tem um reino neste mundo.", 409);
         if (vaga < 0) vaga = contaId != null ? VagaParaJogador(m) : VagaLivre(m);
         if (vaga < 0) throw new RegraException("Não há vaga no mapa.", 409);
@@ -84,4 +85,6 @@ public static partial class CriacaoReino
         return r;
     }
     public static event Action<Mundo, Reino>? AoCriar;
+    /// <summary>Gancho do legado: o que a linhagem da conta libera no brasão (cores e formas extras, moldura).</summary>
+    public static Func<Mundo, long?, (bool extras, bool moldura)>? BrasaoLiberado { get; set; }
 }

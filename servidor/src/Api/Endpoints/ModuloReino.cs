@@ -6,7 +6,7 @@ using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Api.Endpoints;
 
-public sealed record PedidoCriarReino(string Nome, Brasao Brasao);
+public sealed record PedidoCriarReino(string Nome, Brasao Brasao, string? Regiao = null);
 public sealed record PedidoObra(string Acao, long? LocalId, string? Tipo, int? Hex, int? C, int? L);
 
 /// <summary>Mundo, criação do reino, ícone, estado do reino e obras.</summary>
@@ -23,8 +23,8 @@ public sealed class ModuloReino : IModuloApi
             return Results.Json(new
             {
                 temporada = e.NumeroTemporada, inicio = e.InicioTemporada, dias = m.P.TemporadaDias,
-                dia = (int)((m.Agora - e.InicioTemporada) / T.Dia) + 1,
-                fim = e.InicioTemporada + m.P.TemporadaDias * T.Dia,
+                dia = Jogo.Temporada.Temporadas.DiaIndice(m) + 1,
+                fim = Jogo.Temporada.Temporadas.Fim(m), diasRestantes = Jogo.Temporada.Temporadas.DiasRestantes(m),
                 reinos = ativos, limite = m.P.Reinos, agora = m.Agora,
                 vagas = CriacaoReino.VagaLivre(m) >= 0 || m.Reinos.Any(r => r.Ativo && r.EhIA),
                 cols = m.G.Cols, lins = m.G.Lins,
@@ -41,7 +41,7 @@ public sealed class ModuloReino : IModuloApi
         conta.MapPost("/reino", async (PedidoCriarReino p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            var r = await motor.Executar(m => VisaoReino.Montar(m, CriacaoReino.Criar(m, id, p.Nome, p.Brasao ?? new Brasao())));
+            var r = await motor.Executar(m => VisaoReino.Montar(m, CriacaoReino.CriarNaRegiao(m, id, p.Nome, p.Brasao ?? new Brasao(), string.IsNullOrWhiteSpace(p.Regiao) ? null : p.Regiao)));
             return Results.Json(r, Json.Web, statusCode: 201);
         });
 
@@ -59,8 +59,13 @@ public sealed class ModuloReino : IModuloApi
         conta.MapPut("/reino/brasao", async (Brasao b, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            if (!b.Valido()) throw new RegraException("Brasão inválido.");
-            await motor.Executar(m => { var r = Sessao.ReinoDa(m, id); r.Brasao = b; m.Sujar(r); });
+            await motor.Executar(m =>
+            {
+                var r = Sessao.ReinoDa(m, id);
+                var (extras, moldura) = CriacaoReino.BrasaoLiberado?.Invoke(m, id) ?? (false, false);
+                if (!b.Valido(extras, moldura)) throw new RegraException("Brasão inválido.");
+                r.Brasao = b; m.Sujar(r);
+            });
             return Results.NoContent();
         });
 

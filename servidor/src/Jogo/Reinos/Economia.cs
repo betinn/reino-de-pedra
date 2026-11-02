@@ -134,10 +134,14 @@ public static class Economia
         var sobra = castelo != null && comidaH > m.F.ProducaoCastelo(castelo.Nivel) * 2;
         var livreTeto = Math.Max(1, Teto(m, r) - Tropas(m, r));
         var taxaPop = m.P.CrescPop * (sobra ? 1 + m.P.BonusComida : 1);
+        foreach (var f in ModificadoresCrescimento) taxaPop *= f(m, r);
         r.Pop = Logistica(r.Pop, livreTeto, taxaPop, dtH);
         r.AtualizadoEm = agora;
         m.Sujar(r);
     }
+
+    /// <summary>Multiplicadores da taxa de crescimento da população do reino (legado: relíquia de crescimento).</summary>
+    public static List<Func<Mundo, Reino, double>> ModificadoresCrescimento { get; } = new();
 
     /// <summary>Solução fechada de dP/dt = k·P·(1 − P/K).</summary>
     public static double Logistica(double p0, double K, double k, double dtH)

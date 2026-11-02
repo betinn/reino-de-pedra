@@ -20,6 +20,8 @@ public sealed class Configuracao
     public bool AtrasDeProxy { get; init; } = Env("REINO_PROXY") == "1";
     /// <summary>Cookie de sessão só em HTTPS. Padrão: sim, exceto se REINO_COOKIE_INSEGURO=1 (desenvolvimento em http).</summary>
     public bool CookieSeguro { get; init; } = Env("REINO_COOKIE_INSEGURO") != "1";
+    /// <summary>Só para desenvolvimento e testes: a temporada dura N minutos de jogo em vez de P.temporadaDias.</summary>
+    public double? TemporadaMin { get; init; } = double.TryParse(Env("REINO_TEMPORADA_MIN"), System.Globalization.CultureInfo.InvariantCulture, out var tm) && tm > 0 ? tm : null;
     /// <summary>Cria reinos de IA para completar a meta de ocupação. Padrão: sim.</summary>
     public bool IA { get; init; } = Env("REINO_IA") != "0";
 

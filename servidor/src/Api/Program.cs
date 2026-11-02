@@ -43,6 +43,8 @@ namespace ReinoDePedra.Api
             var mundo = new Mundo(b, relogio ?? new RelogioReal(cfg.Aceleracao));
             var canal = new CanalSse();
             mundo.Avisos = canal;
+            mundo.Banco = banco;   // legado por conta e reset da temporada
+            if (cfg.TemporadaMin is double tm) mundo.DuracaoTemporadaMs = (long)(tm * T.Min);
             RegistroTipos.Garantir();
             if (banco.MundoExiste())
             {

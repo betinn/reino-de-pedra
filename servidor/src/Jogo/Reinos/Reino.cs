@@ -46,25 +46,35 @@ public sealed class Brasao
     public string Cor2 { get; set; } = "vermelho";
     public string Simbolo { get; set; } = "torre";
     public string CorSimbolo { get; set; } = "ouro";
+    /// <summary>Moldura de linhagem (brasão da casa, linhagem nível P.temporadaServ.desbloqueios.moldura).</summary>
+    public bool Moldura { get; set; }
 
     public static readonly string[] Formas = ["portugues", "classico", "redondo"];
     public static readonly string[] Divisoes = ["pleno", "partido", "cortado", "esquartelado", "banda", "chaveirao"];
     public static readonly string[] Tinturas = ["ouro", "prata", "vermelho", "azul", "verde", "purpura", "negro", "castanho"];
     public static readonly string[] Simbolos = ["torre", "espada", "estrela", "coroa", "chave", "martelo", "lua", "montes"];
+    /// <summary>Formas e cores extras, liberadas pela linhagem (nível P.temporadaServ.desbloqueios.brasoes).</summary>
+    public static readonly string[] FormasExtras = ["frances", "losango"];
+    public static readonly string[] TinturasExtras = ["celeste", "laranja", "carmesim"];
     private static readonly HashSet<string> Metais = ["ouro", "prata"];
 
-    public bool Valido() =>
-        Formas.Contains(Forma) && Divisoes.Contains(Divisao) && Tinturas.Contains(Cor1) && Tinturas.Contains(Cor2)
-        && Simbolos.Contains(Simbolo) && Tinturas.Contains(CorSimbolo) && Cor1 != Cor2;
+    /// <summary>Brasão válido. <paramref name="extras"/>: formas e cores da linhagem; <paramref name="moldura"/>: moldura de linhagem.</summary>
+    public bool Valido(bool extras = false, bool moldura = false)
+    {
+        bool F(string f) => Formas.Contains(f) || extras && FormasExtras.Contains(f);
+        bool C(string c) => Tinturas.Contains(c) || extras && TinturasExtras.Contains(c);
+        return F(Forma) && Divisoes.Contains(Divisao) && C(Cor1) && C(Cor2) && Simbolos.Contains(Simbolo) && C(CorSimbolo)
+               && Cor1 != Cor2 && (moldura || !Moldura);
+    }
 
     /// <summary>Sorteia um brasão legível (símbolo em metal sobre cores, ou em cor sobre metal).</summary>
-    public static Brasao Aleatorio(Rng r)
+    public static Brasao Aleatorio(Rng r, bool extras = false)
     {
-        var cores = Tinturas.Where(t => !Metais.Contains(t)).ToArray();
+        var cores = Tinturas.Where(t => !Metais.Contains(t)).Concat(extras ? TinturasExtras : []).ToArray();
         var metais = Metais.ToArray();
         var b = new Brasao
         {
-            Forma = r.Escolher(Formas), Divisao = r.Escolher(Divisoes), Simbolo = r.Escolher(Simbolos),
+            Forma = r.Escolher(extras ? Formas.Concat(FormasExtras).ToArray() : Formas), Divisao = r.Escolher(Divisoes), Simbolo = r.Escolher(Simbolos),
         };
         if (r.Chance(0.7))
         {

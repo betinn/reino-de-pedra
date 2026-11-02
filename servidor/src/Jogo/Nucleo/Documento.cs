@@ -24,6 +24,8 @@ public interface IColecao : IEnumerable
     void AdicionarCarregado(Documento d);
     IEnumerable<Documento> Todos { get; }
     bool ContemId(long id);
+    /// <summary>Esvazia a coleção na memória, sem marcar remoções (reset de temporada: o banco é apagado à parte).</summary>
+    void Limpar();
 }
 
 /// <summary>Coleção de documentos de um tipo (ou de subtipos dele), indexada por id.</summary>
@@ -58,6 +60,7 @@ public sealed class Colecao<T>(string nome) : IColecao, IEnumerable<T> where T :
         return true;
     }
     public bool Remover(T d) => Remover(d.Id);
+    public void Limpar() { foreach (var d in _itens.Values) d.Dona = null; _itens.Clear(); }
     public IEnumerator<T> GetEnumerator() => _itens.Values.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
