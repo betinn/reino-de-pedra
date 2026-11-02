@@ -86,6 +86,11 @@
     } else if (r.tipo === 'saque') {
       h += '<div class="card info">' + linha('Alvo', RP.esc(x.nome) + ' · ' + RP.esc(D.reinos[x.reino].nome)) + linha('Tropas', RP.esc(r.tropas)) + linha('Resultado', '<span class="selo selo-visivel">' + r.resultado + '</span>') +
         linha('Levado', ganhoHTML(r.levado)) + linha('Suas perdas', RP.esc(r.perdas.meu)) + linha('Perdas deles', RP.esc(r.perdas.deles)) + linha('Estandarte', r.estandarte ? 'Levado' : 'Não levado: o alvo não sabe quem foi') + '</div>' +
+        (r.objetivos ? '<div class="secao-titulo">Objetivos · tática ' + RP.esc(r.tatica.toLowerCase()) + '</div><div class="card lista">' + r.objetivos.map(function (o, i) {
+          var ic = o.estado === 'ok' ? 'check' : o.estado === 'parcial' ? 'alerta' : 'fechar', cls = o.estado === 'ok' ? 'selo-visivel' : o.estado === 'parcial' ? 'selo-antigo' : 'selo-perigo';
+          return '<div class="lista-item"><span class="obj-n">' + (i + 1) + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(o.txt) + '</b><br><small class="fraco">' + RP.esc(o.nota) + '</small></span><span class="selo ' + cls + '">' + RP.icone(ic) + RP.esc(o.obtido) + '</span></div>';
+        }).join('') + '</div>' +
+          '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('voltar', 'ico-p') + '<span><b>Por que voltaram:</b> ' + RP.esc(r.retorno) + '</span></p>' : '') +
         (r.decrescente ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + r.decrescente.vezes + 'º saque a este alvo em 24 h: rendimento −' + r.decrescente.reducao + '%. Saques repetidos rendem cada vez menos.</p>' : '');
       acoes = '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + x.id + '">' + RP.icone('tropas') + 'Atacar de novo</a><a class="btn btn-p" href="#/mapa?modo=tatico&abrir=local:' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>';
     } else if (r.tipo === 'exploracao') {
@@ -94,7 +99,7 @@
       acoes = '<a class="btn btn-p btn-primario" href="#/mapa?modo=tatico">' + RP.icone('mapa') + 'Ver no mapa</a><a class="btn btn-p" href="#/exploradores">' + RP.icone('explorador') + 'Explorar mais</a>';
     } else if (r.tipo === 'espionagem') {
       h += '<div class="card linha atacante">' + RP.brasao(D.reinos[r.dono].brasao, { tamanho: 40 }) + '<span><b>' + RP.esc(D.reinos[r.dono].nome) + '</b><br><small class="fraco">Dono de ' + RP.esc(x.nome) + ', revelado pela espionagem</small></span></div>' +
-        '<div class="card info" style="margin-top:var(--esp-3)">' + linha('Quem', RP.esc(r.quem)) + linha('Defesa', RP.esc(r.defesa)) + linha('Produção', RP.esc(r.producao)) + linha('Tropas vistas', RP.esc(r.tropasVistas)) +
+        '<div class="card info" style="margin-top:var(--esp-3)">' + linha('Quem', RP.esc(r.quem)) + linha('Defesa', RP.esc(r.defesa)) + linha('Produção', RP.esc(r.producao)) + (r.estoque ? linha('Estoque', RP.esc(r.estoque)) : '') + linha('Tropas vistas', RP.esc(r.tropasVistas)) +
         linha('Batedor', r.descoberto ? '<span class="selo selo-perigo">Descoberto</span>' : '<span class="selo selo-visivel">Não foi descoberto</span>') + '</div>' +
         (r.reliquia ? '<div class="secao-titulo">Relíquia encontrada</div><div class="card relq-card tipo-' + reliquia(r.reliquia).tipo + '"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(reliquia(r.reliquia).nome) + '</b><br><small class="fraco">Guardada em ' + RP.esc(x.nome) + '</small></span></div>' +
           '<p class="relq-efeito">' + RP.icone('subir', 'ico-p') + RP.RELIQUIA[reliquia(r.reliquia).tipo].efeito(reliquia(r.reliquia).bonus) + '</p><small class="fraco">Saque, ocupação ou cerco vitorioso neste local levam a relíquia.</small></div>' : '');

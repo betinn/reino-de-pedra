@@ -258,6 +258,10 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Gráfico de linha | `.grafico-linha` | Força ao longo da batalha: sólido até agora, tracejado = tendência; marco de chegada de reforços. |
 | Seletor de postura | `.abas-postura` (`role=radiogroup`) | Três opções curtas; o nome completo vai no `aria-label`. |
 | Lista com "Trocar" | `.trocar-alvo` | Quando o alvo vem do mapa, mostra só ele; "Trocar alvo (N opções)" abre a lista. |
+| Objetivos do ataque | `.obj-lista > .obj-item` (`.obj-n`, `.obj-txt`, `.obj-qtd`), `.obj-add`, `.obj-carga` | Número de prioridade em disco laranja; ícone; nome com quantidade; previsão da espionagem em texto pequeno; subir (↑) e remover (×) de 44 px; quantidade com − / + / +5k na linha de baixo. "Adicionar" lista só o que cabe no tipo de ataque. Carga dos objetivos em barra; acima da capacidade, vermelho e aviso. |
+| Tática | `.escolha[role=radio][aria-checked]` | Três cartões; o escolhido com contorno de brasa. |
+| Quando param | `.quando-voltam` | Condições de parada em frases curtas: cumprir (✓), carga cheia, perdas (escudo). Repetidas na confirmação e na folha da marcha. |
+| Objetivos no relatório | `.lista-item` + `.obj-n` + selo | Resultado por objetivo: cumprido (verde), parcial (amarelo), falhou (vermelho), com o obtido; "Por que voltaram" em nota. |
 | Relatório | `.rel-item`, `.rel-cab`, `.atacante` | Ícone por tipo, ponto de não lido; detalhe com atacante (brasão "?" ou brasão do estandarte), linhas de informação, ganhos em verde e perdas em vermelho, ações no rodapé. |
 | Notificação | `.not-item`, `.push` | Agrupadas em Agora/Hoje/Antes; prévia de como chegam no celular (crítico em vermelho). |
 | Preferência | `.alternar` | Liga/desliga por categoria, todas configuráveis. |

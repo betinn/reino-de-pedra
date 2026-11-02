@@ -167,7 +167,8 @@
   });
 
   /* ================================================================ Envio de tropas: ataque e reforço */
-  var env = { modo: 'ataque', alvo: null, listaAberta: true, tipo: 'saque', grupo: { lanceiro: 0, arqueiro: 0, cavalaria: 0, ariete: 0 }, estandarte: false, caminho: 'curta', priorizar: true };
+  var env = { modo: 'ataque', alvo: null, listaAberta: true, tipo: 'saque', grupo: { lanceiro: 0, arqueiro: 0, cavalaria: 0, ariete: 0 }, estandarte: false, caminho: 'curta',
+    obj: {}, objAlvo: null, tatica: 'equilibrada', encher: false };
   var LEVA_RELIQUIA = { saque: true, ocupacao: true, cerco: true };   /* sabotagem e massacre não levam a relíquia */
   function reliquiaAlvo(x) { var r = x && x.reino && x.reino !== 'meu' ? RP.reliquiaEm(x.id, true) : null; return r && r.dono !== 'meu' ? r : null; }
   function alvosAtaque() { return D.locais.filter(function (x) { return x.reino !== 'meu' && W.estado(x.c, x.l).v !== 'desconhecido'; }); }
@@ -175,6 +176,122 @@
   function ruinasConhecidas() { return D.ruinas.filter(function (r) { return W.estado(r.c, r.l).v !== 'desconhecido'; }); }
   function nomeAlvo(x) { return x.reino ? W.nomeAparente(x) : x.nome; }
   function acharAlvo(id) { return W.local(id) || W.ruina(id); }
+
+  /* ---------------------------------------------------------------- objetivos e tática do ataque
+     As tropas perseguem os objetivos na ordem escolhida e sabem quando parar e voltar.
+     Valores e limites ilustrativos. */
+  var TATICAS = [
+    { id: 'cautelosa', nome: 'Cautelosa', icone: 'escudo', txt: 'Pega o que der sem forçar a defesa. Recua com 20% de perdas.', perdas: 20 },
+    { id: 'equilibrada', nome: 'Equilibrada', icone: 'tropas', txt: 'Luta pelos objetivos, em ordem. Recua com 40% de perdas.', perdas: 40 },
+    { id: 'implacavel', nome: 'Até o fim', icone: 'estandarte', txt: 'Insiste até cumprir tudo. Só volta ao cumprir ou sem tropas.', perdas: null }
+  ];
+  var REC_SAQUE = ['madeira', 'pedra', 'comida', 'ferro', 'couro', 'peles'];
+  var NOME_REC = { madeira: 'madeira', pedra: 'pedra', comida: 'comida', ferro: 'ferro', couro: 'couro', peles: 'peles' };
+  function tatica() { return TATICAS.filter(function (t) { return t.id === env.tatica; })[0]; }
+  function recursoDoAlvo(x) {
+    var i = ((x.info || [])[0] || '').toLowerCase();
+    return REC_SAQUE.indexOf(i) >= 0 ? i : ({ mina: 'ferro', serraria: 'madeira', vila: 'comida', pasto: 'couro', armazem: 'madeira', ferraria: 'ferro' }[x.tipo] || 'madeira');
+  }
+  function objPadrao(tipo, x, rel) {
+    var l = [];
+    if (tipo === 'ocupacao') l.push({ k: 'tomar', fixo: true });
+    if (rel && LEVA_RELIQUIA[tipo]) l.push({ k: 'reliquia' });
+    if (tipo === 'saque') l.push({ k: 'recurso', r: recursoDoAlvo(x), q: 1000 });
+    if (tipo === 'sabotagem') l.push({ k: 'construcao', q: 1 });
+    if (tipo === 'massacre') l.push({ k: 'populacao', q: 100 });
+    if (tipo === 'cerco') l.push({ k: 'muralha', q: 2 });
+    return l;
+  }
+  function catalogo(tipo, rel) {
+    var c = [];
+    if (rel && LEVA_RELIQUIA[tipo]) c.push({ k: 'reliquia' });
+    if (tipo === 'saque' || tipo === 'cerco') REC_SAQUE.forEach(function (r) { c.push({ k: 'recurso', r: r, q: 1000 }); });
+    if (tipo === 'sabotagem' || tipo === 'cerco') c.push({ k: 'muralha', q: 1 });
+    if (tipo === 'sabotagem') c.push({ k: 'construcao', q: 1 });
+    if (tipo === 'massacre') c.push({ k: 'populacao', q: 100 });
+    return c;
+  }
+  function chaveObj(o) { return o.k + (o.r ? ':' + o.r : ''); }
+  function objetivos() {
+    var x = acharAlvo(env.alvo);
+    if (env.objAlvo !== env.alvo) { env.obj = {}; env.objAlvo = env.alvo; }
+    if (!env.obj[env.tipo]) env.obj[env.tipo] = objPadrao(env.tipo, x, reliquiaAlvo(x));
+    return env.obj[env.tipo];
+  }
+  function nomeObj(o, x, rel) {
+    if (o.k === 'reliquia') return rel ? rel.nome : 'Relíquia';
+    if (o.k === 'recurso') return RP.num(o.q) + ' de ' + NOME_REC[o.r];
+    if (o.k === 'muralha') return 'Muralha −' + o.q + (o.q > 1 ? ' níveis' : ' nível');
+    if (o.k === 'construcao') return RP.TIPOS_LOCAL[x.tipo] + ' −' + o.q + (o.q > 1 ? ' níveis' : ' nível');
+    if (o.k === 'populacao') return RP.num(o.q) + ' de população';
+    if (o.k === 'tomar') return 'Tomar o local';
+    return '';
+  }
+  function rotuloAdd(o) { return o.k === 'reliquia' ? 'Relíquia' : o.k === 'recurso' ? NOME_REC[o.r].charAt(0).toUpperCase() + NOME_REC[o.r].slice(1) : o.k === 'muralha' ? 'Muralha' : o.k === 'construcao' ? 'Construção' : 'População'; }
+  function iconeObj(o, x) { return { reliquia: 'lendario', recurso: o.r, muralha: 'muralha', construcao: x.tipo, populacao: 'populacao', tomar: 'bandeira' }[o.k]; }
+  /* o que a espionagem diz sobre cada objetivo */
+  function previsaoObj(o, x, rel, esp) {
+    if (o.k === 'tomar') return 'O local passa a ser seu até alguém retomar.';
+    if (o.k === 'reliquia') return env.tipo === 'ocupacao' ? 'Fica no local tomado.' : 'Volta com as tropas e pode ser interceptada na volta.';
+    if (!esp) return '<a href="#/exploradores?tipo=batedor&alvo=' + x.c + ',' + x.l + '">Desconhecido · espione antes</a>';
+    if (o.k === 'recurso') {
+      var est = esp.estoque && esp.estoque[o.r];
+      if (!est) return 'Não visto no alvo (espionagem ' + RP.fmtHa(esp.horas) + ').';
+      return '≈ ' + RP.num(est) + ' no alvo (espionagem ' + RP.fmtHa(esp.horas) + ')' + (est < o.q ? ' · <b class="txt-alerta">pode faltar</b>' : '') + '.';
+    }
+    if (o.k === 'muralha') return 'Espionagem: ' + RP.esc(esp.defesa) + '.';
+    if (o.k === 'populacao') return 'A população reage como milícia.';
+    return 'Espionado ' + RP.fmtHa(esp.horas) + '.';
+  }
+  function passoObj(o, d) {
+    if (o.k === 'recurso') o.q = Math.max(500, Math.min(50000, o.q + d * 500));   /* d = ±1: 500; d = 10: +5.000 */
+    else if (o.k === 'muralha' || o.k === 'construcao') o.q = Math.max(1, Math.min(3, o.q + Math.sign(d)));
+    else if (o.k === 'populacao') o.q = Math.max(25, Math.min(1000, o.q + d * 25));
+  }
+  function textoObjs(lista, x, rel) { return lista.map(function (o) { return nomeObj(o, x, rel); }).join(', '); }
+  function cargaObjs(lista) { return lista.reduce(function (s, o) { return s + (o.k === 'recurso' ? o.q : 0); }, 0); }
+  function quandoVoltam(lista, x, rel, cap) {
+    var t = tatica(), itens = [], temRec = lista.some(function (o) { return o.k === 'recurso'; }), levaCarga = env.tipo === 'saque' || env.tipo === 'cerco';
+    itens.push(env.tipo === 'ocupacao' ? 'Ao tomar o local, ficam nele como guarnição.' : 'Ao cumprir os objetivos' + (levaCarga && env.encher ? ' e completar a carga com o que houver' : '') + ', voltam.');
+    if (levaCarga && (temRec || env.encher)) itens.push('Se a carga encher antes (' + RP.num(cap) + '), voltam.');
+    itens.push(t.perdas ? 'Se perderem ' + t.perdas + '% das tropas, recuam com o que já pegaram.' : 'Não recuam por perdas: lutam até cumprir ou cair.');
+    return itens;
+  }
+  function htmlObjetivos(x, rel, esp, cap) {
+    var lista = objetivos(), cat = catalogo(env.tipo, rel).filter(function (c) { return !lista.some(function (o) { return chaveObj(o) === chaveObj(c); }); });
+    var levaCarga = env.tipo === 'saque' || env.tipo === 'cerco', soma = cargaObjs(lista), t = tatica();
+    var h = '<div class="secao-titulo">4. Objetivos</div>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-bottom:var(--esp-2)">As tropas perseguem os objetivos nesta ordem. Se um não existir no local, passam ao próximo.</p>' +
+      '<div class="card pilha obj-lista">' + (lista.length ? lista.map(function (o, i) {
+        var ajustavel = o.k !== 'reliquia' && o.k !== 'tomar', primeiro = i === 0 || (lista[i - 1] && lista[i - 1].fixo);
+        return '<div class="obj-item' + (o.k === 'reliquia' && rel ? ' tipo-' + rel.tipo : '') + '">' +
+          '<div class="obj-linha"><span class="obj-n" aria-label="Prioridade ' + (i + 1) + '">' + (i + 1) + '</span><span class="ico-placa' + (o.k === 'reliquia' ? ' obj-relq' : '') + '">' + RP.icone(iconeObj(o, x), o.k === 'recurso' ? 'r-' + o.r : '') + '</span>' +
+          '<span class="obj-txt"><b>' + RP.esc(nomeObj(o, x, rel)) + '</b><small class="fraco">' + previsaoObj(o, x, rel, esp) + '</small></span>' +
+          (o.fixo ? '' : '<button type="button" class="btn btn-icone btn-fantasma" data-obj-subir="' + i + '" aria-label="Subir prioridade de ' + RP.esc(nomeObj(o, x, rel)) + '"' + (primeiro ? ' disabled' : '') + '>' + RP.icone('subir') + '</button>' +
+            '<button type="button" class="btn btn-icone btn-fantasma" data-obj-tirar="' + i + '" aria-label="Remover ' + RP.esc(nomeObj(o, x, rel)) + '">' + RP.icone('fechar') + '</button>') + '</div>' +
+          (ajustavel ? '<div class="obj-qtd"><div class="stepper"><button type="button" class="btn btn-icone" data-obj-passo="' + i + '" data-d="-1" aria-label="Menos">' + RP.icone('menos') + '</button>' +
+            '<output class="num">' + (o.k === 'recurso' ? RP.numCurto(o.q) : o.k === 'populacao' ? o.q : '−' + o.q) + '</output>' +
+            '<button type="button" class="btn btn-icone" data-obj-passo="' + i + '" data-d="1" aria-label="Mais">' + RP.icone('mais') + '</button></div>' +
+            (o.k === 'recurso' ? '<button type="button" class="btn btn-p" data-obj-passo="' + i + '" data-d="10">+5k</button>' : '') + '</div>' : '') + '</div>';
+      }).join('') : '<p class="fraco">Sem objetivos. Adicione ao menos um.</p>') +
+      (cat.length ? '<div class="obj-add"><span class="fraco">Adicionar</span><div class="obj-add-lista">' + cat.map(function (c) {
+        return '<button type="button" class="btn btn-p" data-obj-add="' + chaveObj(c) + '">' + RP.icone(iconeObj(c, x), c.k === 'recurso' ? 'ico-p r-' + c.r : c.k === 'reliquia' ? 'ico-p r-lendario' : 'ico-p') + rotuloAdd(c) + '</button>';
+      }).join('') + '</div></div>' : '') +
+      (levaCarga && soma ? '<div class="obj-carga"><div class="linha-entre"><span class="fraco">Carga dos objetivos</span><b class="num' + (soma > cap ? ' txt-perigo' : '') + '">' + RP.num(soma) + ' de ' + RP.num(cap) + '</b></div>' +
+        '<div class="barra' + (soma > cap ? ' barra-perigo' : '') + '" role="progressbar" aria-label="Carga dos objetivos em relação à capacidade das tropas"><i style="width:' + Math.min(100, cap ? (100 * soma) / cap : 100).toFixed(1) + '%"></i></div>' +
+        (soma > cap ? '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + '<span>Os objetivos passam da carga. As tropas param quando a carga encher: leve mais tropas (cavalaria carrega mais) ou reduza.</span></p>' : '') + '</div>' : '') +
+      '</div>' +
+      '<div class="secao-titulo">5. Tática</div><div class="escolhas escolhas-lista" role="radiogroup" aria-label="Tática">' + TATICAS.map(function (tt) {
+        return '<button type="button" class="escolha escolha-linha" role="radio" data-tatica="' + tt.id + '" aria-checked="' + (env.tatica === tt.id) + '"><span class="ico-placa">' + RP.icone(tt.icone) + '</span><span class="escolha-txt"><b>' + tt.nome + '</b><small class="fraco">' + tt.txt + '</small></span></button>';
+      }).join('') + '</div>' +
+      (levaCarga ? '<button type="button" class="alternar" data-encher aria-pressed="' + env.encher + '" style="width:100%;margin-top:var(--esp-3)">' + RP.icone('ouro') + '<span>Depois dos objetivos, encher a carga<br><small class="fraco">com o que houver no local</small></span><i aria-hidden="true"></i></button>' : '') +
+      '<div class="card quando-voltam"><span class="rotulo">Quando param</span><ul class="regras-lista">' + quandoVoltam(lista, x, rel, cap).map(function (q, i, arr) {
+        return '<li>' + RP.icone(i === 0 ? 'check' : i === arr.length - 1 ? 'escudo' : 'ouro', 'ico-p') + '<span>' + RP.esc(q) + '</span></li>';
+      }).join('') + '</ul>' +
+      (lista.some(function (o) { return o.k === 'reliquia'; }) && env.tipo !== 'ocupacao' ? '<p class="nota-antiga">' + RP.icone('lendario', 'ico-p') + '<span>A relíquia não volta sozinha: vem com as tropas e pode ser interceptada no caminho de volta.</span></p>' : '') + '</div>';
+    return h;
+  }
+
   function desenharEnvio(el) {
     var ataque = env.modo === 'ataque', ocupar = env.modo === 'ocupar';
     var lista = ataque ? alvosAtaque() : ocupar ? ruinasConhecidas() : destinosReforco();
@@ -206,10 +323,7 @@
           return '<button type="button" class="escolha' + (bloq ? ' bloqueado' : '') + '" data-tipo-ataque="' + t.id + '" aria-pressed="' + (env.tipo === t.id) + '"' + (bloq ? ' aria-disabled="true"' : '') + '>' +
             '<span class="linha"><span class="ico-placa">' + RP.icone(t.icone) + '</span><b>' + t.nome + '</b></span><small class="fraco">' + t.txt + '</small>' + (bloq ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + 'Só castelos</span>' : '') + '</button>';
         }).join('') + '</div>' +
-        (rel ? (levaRel
-          ? '<button type="button" class="alternar alternar-relq" data-priorizar aria-pressed="' + env.priorizar + '" style="width:100%;margin-top:var(--esp-3)">' + RP.icone('lendario') + '<span>Priorizar a relíquia<br><small class="fraco">' + (env.tipo === 'ocupacao' ? 'se vencer, ' + RP.esc(rel.nome) + ' fica no local tomado, agora seu' : 'se vencer, as tropas trazem ' + RP.esc(rel.nome) + ' ao castelo' + (env.tipo === 'saque' ? ', antes dos recursos' : '')) + '</small></span><i aria-hidden="true"></i></button>' +
-            (env.tipo !== 'ocupacao' && env.priorizar ? '<p class="nota-antiga">' + RP.icone('tropas', 'ico-p') + '<span>A relíquia não volta sozinha: vem com as suas tropas e pode ser interceptada no caminho de volta. Leve tropas suficientes para a escolta.</span></p>' : '')
-          : '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('lendario', 'ico-p') + '<span>' + (env.tipo === 'sabotagem' ? 'Sabotagem' : 'Massacre') + ' não leva a relíquia. Para tomá-la, use saque, ocupação ou cerco.</span></p>') : '') +
+        (rel && !levaRel ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('lendario', 'ico-p') + '<span>' + (env.tipo === 'sabotagem' ? 'Sabotagem' : 'Massacre') + ' não leva a relíquia. Para tomá-la, use saque, ocupação ou cerco.</span></p>' : '') +
         (env.tipo === 'saque' && saques ? '<div class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('info', 'ico-p') + 'Você saqueou este alvo ' + saques + (saques > 1 ? ' vezes' : ' vez') + ' nas últimas 24 h: rendimento −' + Math.min(80, saques * 20) + '%. Saques repetidos rendem cada vez menos.</div>' : '');
     }
     h += '<div class="secao-titulo">' + (ataque ? '3. Tropas' : '2. Tropas') + '</div><div class="card pilha">' + linhasGrupo(env.grupo, ['lanceiro', 'arqueiro', 'cavalaria', 'ariete'], dispDe) +
@@ -217,21 +331,26 @@
       (ataque ? '<div><span class="fraco">Carga</span><b class="num">' + RP.num(carga) + '</b></div>' : '<div><span class="fraco">Velocidade</span><b>' + perfilGrupo(env.grupo).vel + '</b></div>') + '</div>' +
       (ataque && env.tipo === 'cerco' && !env.grupo.ariete ? '<p class="nota-antiga">' + RP.icone('cerco', 'ico-p') + 'Sem máquinas de cerco, muralhas quase não sofrem dano.</p>' : '') + '</div>';
     if (ataque) {
-      h += '<div class="secao-titulo">4. Estandarte</div>' +
+      h += htmlObjetivos(x, rel, esp, carga);
+      h += '<div class="secao-titulo">6. Estandarte</div>' +
         '<button type="button" class="alternar" data-estandarte aria-pressed="' + env.estandarte + '" style="width:100%">' + RP.icone('estandarte') + '<span>Levar o estandarte de ' + RP.esc(RP.estado.nome) + '</span><i aria-hidden="true"></i></button>' +
         '<div class="card previa-relatorio"><span class="rotulo">O defensor verá no relatório</span><div class="linha" style="margin-top:6px">' +
         (env.estandarte ? RP.brasao(RP.estado.brasao, { tamanho: 28 }) + '<span><b>Reino de ' + RP.esc(RP.estado.nome) + '</b><br><small class="fraco">identificado pelo estandarte</small></span>'
           : RP.brasao(null, { tamanho: 28, desconhecido: true }) + '<span><b>Forças desconhecidas</b><br><small class="fraco">tropas, tipo e direção de origem</small></span>') + '</div></div>';
     }
-    h += '<div class="secao-titulo">' + (ataque ? '5. Caminho' : '3. Caminho') + '</div>' +
+    h += '<div class="secao-titulo">' + (ataque ? '7. Caminho' : '3. Caminho') + '</div>' +
       (esc ? '<div class="card mini-rota-card">' + U.miniRota(op, env.caminho, nomeAlvo(x)) + '</div><div class="pilha" style="margin-top:var(--esp-3)">' + U.opcaoCaminho('curta', op.curta, env.caminho) + U.opcaoCaminho('segura', op.segura, env.caminho) + '</div>' +
         '<p class="fraco" style="font-size:var(--fs-2);margin:var(--esp-3) 0 var(--esp-6)">A viagem segue a unidade mais lenta (' + perfilGrupo(env.grupo).vel.toLowerCase() + '). ' + (ataque ? 'O atacante chega só com as tropas enviadas.' : 'Reforços entram na defesa ao chegar, inclusive durante uma batalha.') + '</p>' : '<p class="fraco">Sem caminho possível.</p>');
     RP.$('.env-conteudo', el).innerHTML = h;
     var tipoNome = ataque ? D.tiposAtaque.filter(function (t) { return t.id === env.tipo; })[0].nome : ocupar ? 'Ocupação' : 'Reforço';
-    RP.$('.rodape-resumo', el).innerHTML = n && esc ? '<div class="resumo-linha"><b>' + tipoNome + ' · ' + RP.esc(nomeAlvo(x)) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + 'chega em ' + RP.fmtDuracao(esc.seg) + '</span></div><div class="resumo-linha fraco">' + partesGrupo(env.grupo) + (ataque ? (env.estandarte ? ' · com estandarte' : ' · sem estandarte') : '') + (levaRel && env.priorizar ? ' · relíquia primeiro' : '') + '</div>' : '<div class="resumo-linha fraco">Escolha as tropas.</div>';
+    var objs = ataque ? objetivos() : [], semObj = ataque && !objs.length;
+    RP.$('.rodape-resumo', el).innerHTML = semObj && n ? '<div class="resumo-linha fraco">Escolha ao menos um objetivo.</div>'
+      : n && esc ? '<div class="resumo-linha"><b>' + tipoNome + ' · ' + RP.esc(nomeAlvo(x)) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + 'chega em ' + RP.fmtDuracao(esc.seg) + '</span></div><div class="resumo-linha fraco">' + partesGrupo(env.grupo) +
+        (ataque ? ' · ' + RP.esc(textoObjs(objs, x, rel)) + ' · ' + tatica().nome.toLowerCase() : '') + '</div>' : '<div class="resumo-linha fraco">Escolha as tropas.</div>';
     var btn = RP.$('[data-enviar-tropas]', el);
     btn.innerHTML = RP.icone(ataque ? 'tropas' : ocupar ? 'bandeira' : 'escudo') + (ataque ? 'Enviar ataque' : ocupar ? 'Enviar para ocupar' : 'Enviar reforços');
-    btn.classList.toggle('btn-inativo', !n || !esc);
+    btn.classList.toggle('btn-inativo', !n || !esc || semObj);
+    env._carga = carga;
     env._esc = esc;
   }
   RP.registrarTela('envio', {
@@ -246,17 +365,29 @@
         if ((b = e.target.closest('[data-tipo-ataque]'))) { if (b.getAttribute('aria-disabled') === 'true') { RP.aviso({ titulo: 'Só castelos', texto: 'Cerco ao castelo exige um castelo como alvo.', icone: 'cadeado', tipo: 'alerta' }); return; } env.tipo = b.getAttribute('data-tipo-ataque'); desenharEnvio(el); return; }
         if ((b = e.target.closest('[data-caminho]'))) { env.caminho = b.getAttribute('data-caminho'); desenharEnvio(el); return; }
         if (e.target.closest('[data-estandarte]')) { env.estandarte = !env.estandarte; desenharEnvio(el); return; }
-        if (e.target.closest('[data-priorizar]')) { env.priorizar = !env.priorizar; desenharEnvio(el); return; }
+        if ((b = e.target.closest('[data-obj-subir]'))) { var li = objetivos(), i = +b.getAttribute('data-obj-subir'); if (i > 0 && !li[i - 1].fixo) { var tmp = li[i - 1]; li[i - 1] = li[i]; li[i] = tmp; } desenharEnvio(el); return; }
+        if ((b = e.target.closest('[data-obj-tirar]'))) { objetivos().splice(+b.getAttribute('data-obj-tirar'), 1); desenharEnvio(el); return; }
+        if ((b = e.target.closest('[data-obj-passo]'))) { passoObj(objetivos()[+b.getAttribute('data-obj-passo')], +b.getAttribute('data-d')); desenharEnvio(el); return; }
+        if ((b = e.target.closest('[data-obj-add]'))) {
+          var xa = acharAlvo(env.alvo), c = catalogo(env.tipo, reliquiaAlvo(xa)).filter(function (q) { return chaveObj(q) === b.getAttribute('data-obj-add'); })[0];
+          if (c) { var lo = objetivos(); if (c.k === 'reliquia') lo.splice(lo.length && lo[0].fixo ? 1 : 0, 0, c); else lo.push(c); }
+          desenharEnvio(el); return;
+        }
+        if ((b = e.target.closest('[data-tatica]'))) { env.tatica = b.getAttribute('data-tatica'); desenharEnvio(el); return; }
+        if (e.target.closest('[data-encher]')) { env.encher = !env.encher; desenharEnvio(el); return; }
         if (passoGrupo(e, env.grupo, dispDe)) { desenharEnvio(el); return; }
         if (e.target.closest('[data-enviar-tropas]')) {
           var x = acharAlvo(env.alvo), n = somaGrupo(env.grupo), esc = env._esc, ataque = env.modo === 'ataque', ocupar = env.modo === 'ocupar';
           if (!n || !esc) { RP.aviso({ titulo: 'Escolha as tropas', texto: 'Use + e − em cada unidade.', icone: 'info', tipo: 'alerta' }); return; }
+          if (ataque && !objetivos().length) { RP.aviso({ titulo: 'Escolha um objetivo', texto: 'As tropas precisam saber o que buscar e quando voltar.', icone: 'alvo', tipo: 'alerta' }); return; }
           var tipo = ataque ? D.tiposAtaque.filter(function (t) { return t.id === env.tipo; })[0] : null;
+          var relX = ataque ? reliquiaAlvo(x) : null, objs = ataque ? objetivos().map(function (o) { return Object.assign({}, o); }) : null, tat = tatica();
           var enviar = function () {
             Object.keys(env.grupo).forEach(function (k) { D.disponiveis[k] = dispDe(k) - (env.grupo[k] || 0); });
-            var rl = ataque && LEVA_RELIQUIA[env.tipo] && env.priorizar ? reliquiaAlvo(x) : null;
-            var m = W.adicionarMarcha({ id: 'm-env-' + Date.now(), dono: 'meu', tipo: 'exercito', estandarte: ataque && env.estandarte, alvo: x.id, reliquia: rl ? rl.id : undefined,
-              nome: ataque ? tipo.nome + ': ' + nomeAlvo(x) : ocupar ? 'Ocupação: ' + x.nome : 'Reforço: ' + x.nome, resumo: partesGrupo(env.grupo) + (ataque ? (env.estandarte ? ' · com estandarte' : ' · sem estandarte') : '') + (rl ? ' · relíquia primeiro' : ''), seg: esc.seg }, esc.hexes);
+            var m = W.adicionarMarcha({ id: 'm-env-' + Date.now(), dono: 'meu', tipo: 'exercito', estandarte: ataque && env.estandarte, alvo: x.id, grupo: Object.assign({}, env.grupo),
+              objetivos: ataque ? textoObjs(objs, x, relX) : undefined, tatica: ataque ? tat.nome : undefined,
+              voltam: ataque ? quandoVoltam(objs, x, relX, env._carga) : undefined,
+              nome: ataque ? tipo.nome + ': ' + nomeAlvo(x) : ocupar ? 'Ocupação: ' + x.nome : 'Reforço: ' + x.nome, resumo: partesGrupo(env.grupo) + (ataque ? (env.estandarte ? ' · com estandarte' : ' · sem estandarte') : ''), seg: esc.seg }, esc.hexes);
             env.grupo = { lanceiro: 0, arqueiro: 0, cavalaria: 0, ariete: 0 };
             RP.aviso({ titulo: ataque ? 'Ataque a caminho' : ocupar ? 'Tropas a caminho da ruína' : 'Reforços a caminho', texto: 'Chegam em ' + RP.fmtDuracao(esc.seg) + '.', icone: ataque ? 'tropas' : 'escudo', tipo: 'sucesso' });
             U.irParaMarcha(m);
@@ -265,8 +396,9 @@
           RP.modal({
             titulo: 'Confirmar ' + tipo.nome.toLowerCase(),
             corpo: '<p class="suave">' + RP.esc(W.nomeAparente(x)) + ' · ' + (x.espionado ? RP.esc(D.reinos[x.reino].nome) : 'dono desconhecido') + '<br>' + partesGrupo(env.grupo) + ' · chegada em ' + RP.fmtDuracao(esc.seg) + '</p>' +
-              '<p class="selo ' + (env.estandarte ? 'selo-info' : 'selo-desconhecido') + '" style="margin-top:var(--esp-3)">' + RP.icone('estandarte') + (env.estandarte ? 'Com estandarte: o defensor saberá que foi você' : 'Sem estandarte: você não será identificado') + '</p>' +
-              (reliquiaAlvo(x) && LEVA_RELIQUIA[env.tipo] && env.priorizar ? '<p class="selo selo-relq tipo-' + reliquiaAlvo(x).tipo + '" style="margin-top:var(--esp-2)">' + RP.icone('lendario') + (env.tipo === 'ocupacao' ? 'Se vencer, ' + RP.esc(reliquiaAlvo(x).nome) + ' fica no local tomado' : 'Se vencer, as tropas trazem ' + RP.esc(reliquiaAlvo(x).nome) + ' e podem ser interceptadas na volta') + '</p>' : ''),
+              '<ol class="obj-confirma">' + objs.map(function (o) { return '<li>' + RP.icone(iconeObj(o, x), 'ico-p' + (o.k === 'recurso' ? ' r-' + o.r : o.k === 'reliquia' ? ' r-lendario' : '')) + RP.esc(nomeObj(o, x, relX)) + '</li>'; }).join('') + '</ol>' +
+              '<p class="suave" style="font-size:var(--fs-2)">Tática ' + tat.nome.toLowerCase() + '. ' + RP.esc(quandoVoltam(objs, x, relX, env._carga).join(' ')) + '</p>' +
+              '<p class="selo ' + (env.estandarte ? 'selo-info' : 'selo-desconhecido') + '" style="margin-top:var(--esp-3)">' + RP.icone('estandarte') + (env.estandarte ? 'Com estandarte: o defensor saberá que foi você' : 'Sem estandarte: você não será identificado') + '</p>',
             acoes: [{ rotulo: RP.icone('tropas') + 'Enviar ataque', classe: 'btn-primario', acao: enviar }, { rotulo: 'Voltar' }]
           });
         }

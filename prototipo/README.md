@@ -81,7 +81,9 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 12. **Espionar:** local de outro reino → Espionar → Exploradores com batedor de elite. A Mina Rubra mostra o resultado: dono e defesa revelados por espionagem.
 13. **Caçar:** animal no mapa → Caçar (ou Tropas → Caça) → alvo, rendimento estimado, grupo de caça com força x perigo, caminho → os caçadores saem do castelo na Vista.
 14. **Extrair:** jazida no mapa → Extrair (ou Tropas → Extração) → grupo (uma unidade já basta), posto opcional, gráfico de rendimento por cenário, duração da jazida e caminho → os trabalhadores aparecem na Vista (exemplo ativo: Jazida de prata, com posto).
-15. **Atacar:** local de outro reino → Atacar este local → tipo de ataque, tropas, estandarte (com prévia do que o defensor verá) e caminho → confirmação → o ataque sai do castelo. Alvo com escudo de novato fica bloqueado; saque repetido avisa do rendimento menor.
+15. **Atacar:** local de outro reino → Atacar este local → tipo de ataque, tropas, **objetivos** (em ordem de prioridade, com quantidade e o que a espionagem sabe do alvo), **tática**, estandarte (com prévia do que o defensor verá) e caminho → confirmação com os objetivos e "quando param" → o ataque sai do castelo. Escudo de novato só é descoberto ao chegar; saque repetido avisa do rendimento menor.
+    - Exemplo: Mina Rubra → objetivos "Lâmina do Rei Antigo" e "10.000 de madeira" (adicionar, +5k duas vezes) → a carga de 10 lanceiros (500) não cabe e a tela avisa → tática Cautelosa → "Quando param" mostra as três condições.
+    - O relatório do saque à Mina Rubra mostra cada objetivo (cumprido, parcial ou falhou), o que foi obtido e por que as tropas voltaram.
 16. **Defender:** faixa "Batalha em andamento" → Batalha: Vista do combate, força dos lados, gráfico ao longo do tempo (toque mostra os valores; também há tabela), acontecimentos → Enviar reforços (a curva muda quando chegam) ou Recuar.
 17. **Posturas:** Tropas → Posturas: as três posturas explicadas, uma por guarnição e por exército em campo, ou "aplicar a todas".
 18. **Relatórios:** aba Relatórios → filtro → detalhe: ataque anônimo x identificado pelo estandarte, saque com rendimento decrescente, exploração, espionagem (revela o dono e a relíquia guardada), relíquia roubada, fauna, caça, extração.
@@ -207,6 +209,21 @@ As regras definidas estão no `CLAUDE.md`. Detalhes que o protótipo precisou as
 | Bônus (mock) | Ataque +15% nas tropas que saem do local; produção +15% do local; resistência +20% na defesa do local. | Bônus que cresce com o tempo guardado; bônus menor fora do castelo. |
 | Fim da temporada | Relíquias lendárias ficam na temporada (recomeçam com o mapa). São distintas das relíquias da temporada do legado. | Quem termina com relíquias ganha um título ou uma relíquia de legado. |
 | Mundo mock | 240 reinos → 240 relíquias (antes o mock tinha 12.408 reinos). | — |
+
+## Objetivos e tática do ataque (sub-decisões aplicadas, para aprovar)
+
+A regra (objetivos em ordem de prioridade + tática; as tropas sabem quando parar e voltar) está no `CLAUDE.md`.
+
+| Tema | Aplicado | Alternativas |
+|---|---|---|
+| Objetivos por tipo | Saque: relíquia e recursos (madeira, pedra, comida, ferro, couro, peles) com quantidade. Sabotagem: muralha e a construção do local, em níveis (1 a 3). Massacre: população. Ocupação: "Tomar o local" (fixo) + relíquia. Cerco: muralha, relíquia e recursos. | Objetivos livres para qualquer tipo; incluir animais e armas no saque. |
+| Ordem | O jogador ordena (subir prioridade); se um objetivo não existe no local, as tropas passam ao próximo. | Objetivos simultâneos, sem ordem. |
+| Padrão | Ao escolher o alvo: relíquia espionada (se houver) + o recurso principal do local, 1.000. Sem objetivo, o envio fica bloqueado. | Começar vazio; permitir enviar sem objetivo ("pegar o que der"). |
+| Tática | Cautelosa (recua com 20% de perdas), Equilibrada (padrão, 40%), Até o fim (não recua por perdas). | Limite de perdas livre (controle deslizante); táticas de combate (flanquear, focar arqueiros). |
+| Carga | Objetivos de recurso somam carga; acima da capacidade das tropas, aviso. As tropas param quando a carga enche. A relíquia não ocupa carga. | Bloquear o envio quando passa da carga; relíquia ocupa carga. |
+| Encher a carga | Opção "depois dos objetivos, encher a carga com o que houver" (desligada por padrão). | Sempre encher. |
+| Previsão | Espionagem mostra o estoque do alvo ("≈ 2.400 de ferro, há 10 h") e avisa "pode faltar". Sem espionagem: "desconhecido · espione antes". | Mostrar chance de sucesso estimada. |
+| Relatório | Cada objetivo com resultado (cumprido, parcial, falhou), o obtido e o motivo da volta. | — |
 
 ## Pontos em aberto
 

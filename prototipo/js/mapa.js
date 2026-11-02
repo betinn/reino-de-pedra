@@ -496,7 +496,9 @@
           '</div><p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Sem estandarte, o atacante não é revelado. Batedores podem descobrir quem é.</p>';
         acoes = botao('Enviar reforços', 'escudo', 'btn-primario', 'data-ir="envio?modo=reforco&destino=' + o.alvo + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
       } else if (o.dono === 'meu') {
-        corpo = avisoRisco + '<div class="info">' + linhaInfo('Ordem', o.resumo) + (alvoNome ? linhaInfo('Destino', alvoNome) : '') + '</div>' +
+        corpo = avisoRisco + '<div class="info">' + linhaInfo('Ordem', o.resumo) + (alvoNome ? linhaInfo('Destino', alvoNome) : '') +
+          (o.objetivos ? linhaInfo('Objetivos', RP.esc(o.objetivos)) + linhaInfo('Tática', RP.esc(o.tatica)) : '') + '</div>' +
+          (o.voltam ? '<p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">' + RP.esc(o.voltam.join(' ')) + '</p>' : '') +
           (rlm ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(rlm) + '</div><p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Carregando uma relíquia: visível no mapa e sujeita a roubo até chegar.</p>' : '') +
           '<div style="margin-top:var(--esp-3)">' + RP.timerHTML('Chegada', o.seg, o.seg * 2.2) + '</div>';
         acoes = o.tipo === 'explorador'
