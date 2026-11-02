@@ -30,8 +30,11 @@ public static class VisaoMapa
         foreach (var l in m.Locais)
         {
             var meu = l.ReinoId == r.Id;
-            if (!meu && !vis.Contains(l.Hex)) continue;
-            objetos.Add(meu
+            var aliado = !meu && !l.Ruina && Aliado(m, r, l.ReinoId);
+            if (!meu && !vis.Contains(l.Hex) && !(aliado && nevoa.MinutoVisto(l.Hex) > 0)) continue;
+            if (aliado && m.Reinos.Obter(l.ReinoId) is { } dl)   // aliados se reconhecem: nome e brasão
+                objetos.Add(new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)l.Nivel, nome = l.Nome, dono = "aliado", ruina = false, reino = Espionagem.Identidade(dl) });
+            else objetos.Add(meu
                 ? new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)l.Nivel, nome = l.Nome, dono = "meu", ruina = l.Ruina }
                 : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina });
         }
@@ -39,8 +42,16 @@ public static class VisaoMapa
         {
             if (x.ReinoId == r.Id) { objetos.Add(new { tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "meu", hex = x.HexEm(agora), caminho = x.Caminho, tempos = x.Tempos }); continue; }
             var h = x.HexEm(agora);
-            if (!vis.Contains(h) || x.Furtiva) continue;
-            objetos.Add(new { tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "desconhecido", hex = h, progresso = x.ProgressoEm(agora), caminho = x.Caminho, tempos = x.Tempos, tamanho = Aproximado(x.Tropas.Values.Sum()) });
+            var aliada = Aliado(m, r, x.ReinoId);   // aliados veem as marchas uns dos outros
+            if (!aliada && (!vis.Contains(h) || x.Furtiva)) continue;
+            var dm = aliada || x.Estandarte ? m.Reinos.Obter(x.ReinoId) : null;
+            if (dm != null && !aliada) foreach (var f in AoVerEstandarte) f(m, r, x);
+            objetos.Add(new
+            {
+                tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = aliada ? "aliado" : "desconhecido", hex = h, progresso = x.ProgressoEm(agora), caminho = x.Caminho, tempos = x.Tempos,
+                tamanho = Aproximado(x.Tropas.Values.Sum()), estandarte = x.Estandarte ? true : (bool?)null,
+                reino = dm != null ? Espionagem.Identidade(dm) : null, brasao = dm?.Brasao,
+            });
         }
         foreach (var j in m.Jazidas)
             if (j.DescobertaPor.Contains(r.Id))
@@ -57,6 +68,15 @@ public static class VisaoMapa
             objetos,
         };
     }
+
+    /// <summary>
+    /// Reinos que o reino reconhece (aliança): (mundo, reino que vê, outro reino) → true. Locais deles vêm com dono "aliado"
+    /// e a identidade em "reino" em toda área explorada; as marchas aparecem mesmo fora da visão.
+    /// </summary>
+    public static List<Func<Mundo, Reino, long, bool>> Aliados { get; } = new();
+    public static bool Aliado(Mundo m, Reino r, long outro) => outro != 0 && outro != r.Id && Aliados.Any(f => f(m, r, outro));
+    /// <summary>Marcha de outro reino vista com estandarte (a identidade vai junto): o social marca o reino como conhecido.</summary>
+    public static List<Action<Mundo, Reino, Marcha>> AoVerEstandarte { get; } = new();
 
     /// <summary>Sistemas acrescentam objetos ao mapa (fauna, torres, bandeiras, avistamentos...).</summary>
     public static List<Func<Mundo, Reino, HashSet<int>, IEnumerable<object>>> Extras { get; } = new();
