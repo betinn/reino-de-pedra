@@ -310,6 +310,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Torres de arqueiros: ao ver forças desconhecidas perto do reino.
   - Relíquias: ao avistar a primeira ruína antiga ou um farol.
   - Alianças: ao conhecer o primeiro reino.
+  - Comércio e diplomacia: ao conhecer o primeiro reino.
 - Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação e sem recompensa.
 
 ---
@@ -343,5 +344,4 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Em aberto
 
-- Ajuste fino do balanceamento com testes. Valores atuais: **balanceamento v1 aprovado** e **v2 em validação** (valiosos, comércio, ferraria, eras, veterania, feridos, lendário e queda do castelo) em `balanceamento/README.md`, com modelo e simulação em `balanceamento/modelo.js`.
-- Validar as regras propostas de eras, veterania, alianças (cargos, saída e trégua), legado (relíquias da temporada e linhagem) e queda do castelo.
+- Ajuste fino do balanceamento com testes. Valores atuais: **balanceamento aprovado** em `balanceamento/README.md`, com modelo e simulação em `balanceamento/modelo.js`.
