@@ -86,6 +86,9 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Veículos de transporte** (ex.: carroças) facilitam o transporte e também são construídos com recursos.
 - **Construir gera uma requisição**: os recursos que faltam são enviados automaticamente pelos locais **mais próximos**, levados por tropas ou população, sem ação manual. A construção mostra que está **aguardando a chegada dos recursos**, e o transporte é visível no mapa. Quem constrói se preocupa com o tempo, sem precisar aprender a enviar recursos de um lugar para outro desde o início.
 - O **envio manual** de recursos de um local para outro continua possível.
+- Cada local **acumula a própria produção**; recursos valiosos ficam no armazém.
+- A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição vão a pé e sem escolta.
+- Carroças ficam no castelo: saem, buscam a carga na origem e a levam. Escolta é opcional; caravana pouco protegida recebe aviso.
 
 ### Extração
 
@@ -101,7 +104,15 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Tipos: **ataque**, **produção** e **resistência** (defesa).
 - Relíquias podem ser **roubadas** e são **descobertas por espionagem**.
 - Relíquias **não se movem sozinhas**: são sempre transportadas por tropas, e podem ser **roubadas no meio do caminho**.
-- Relíquias podem ficar juntas no mesmo local, mas **quanto mais relíquias no mesmo lugar, maior a visibilidade** desse local para os outros jogadores.
+- Relíquias podem ficar juntas no mesmo local, mas **quanto mais relíquias no mesmo lugar, maior a visibilidade** desse local para os outros jogadores:
+  - 1 relíquia: só a espionagem revela.
+  - 2 no mesmo local: visíveis para quem já explorou a área.
+  - 3 ou mais: o local vira **farol**, visível para todos, até na névoa.
+- Cada ruína antiga guarda **1 relíquia**, de tipo desconhecido até ser achada, e se esgota depois. Uma unidade já escava; mais tropas e posto encurtam, com tempo mínimo. O grupo que escava leva a relíquia ao local escolhido antes de partir.
+- Mover uma relíquia: tropas saem, buscam e levam; até ser pega, ela continua fortalecendo a origem.
+- **Saque, ocupação ou cerco** vitorioso levam a relíquia; sabotagem e massacre, não. No saque e no cerco, as tropas a carregam de volta; na ocupação, ela fica no local tomado.
+- Uma marcha que leva relíquia pode ser **interceptada**: as tropas precisam chegar antes a um ponto do caminho.
+- Relíquias lendárias ficam na temporada e são distintas das relíquias da temporada (legado).
 - Objetivo: tornar o PvP mais desejável, com alvos que dão vantagem real além de recursos.
 
 ### Tempos
@@ -159,12 +170,18 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Cerco ao castelo**: o ataque mais difícil do jogo.
 - Todo ataque é enviado com **objetivos em ordem de prioridade** (ex.: capturar a relíquia + 10 mil de madeira) e uma **tática**. As tropas tentam cumprir os objetivos nessa ordem e sabem quando parar e voltar.
 - A tática define o limite de baixas para recuar: **conservadora 25%**, **média 40%**, **agressiva 60%** e **sem limite**.
+- Objetivos por tipo: saque (relíquia e recursos), sabotagem (construção do local e torres), massacre (população), ocupação (tomar o local e a relíquia), cerco (portões, torres, relíquia e recursos).
+- Se um objetivo não existe no local, as tropas passam ao próximo. Recursos ocupam carga e as tropas voltam quando a carga enche; a relíquia não ocupa carga. Há a opção de completar a carga com o que houver no local.
+- O ataque rápido usa o padrão: saque, objetivos automáticos (relíquia à vista e o recurso principal do local), tática média, sem estandarte e rota curta, com as tropas do último ataque.
+- A espionagem revela também o **estoque** do alvo. O relatório mostra o resultado de cada objetivo e por que as tropas voltaram.
 
 ### Defesa
 
 - Guarnição do local + **população como milícia** + **torres de arqueiros**.
 - **Não há muros.** A defesa construída são **torres de arqueiros**: construções próprias, com **alcance**, que protegem os locais em volta. Os arqueiros ficam no alto, protegidos, e o invasor precisa **derrubar a torre** para se livrar deles.
 - **Aríetes** derrubam torres e os portões do castelo.
+- O alcance e os arqueiros de uma torre crescem com o nível. O castelo tem portões e torres próprias.
+- Torres de outros reinos ficam visíveis quando a área já foi explorada.
 - O atacante chega apenas com as tropas enviadas, após a viagem; o defensor pode enviar reforços durante a batalha.
 - **Recuar** salva tropas e população, mas o local é saqueado.
 - Destruir um reino inteiro deve ser **muito difícil e caro**, mesmo para um veterano contra um iniciante.
@@ -184,7 +201,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Cada jogador tem **até 20 bandeiras ativas**, com recado de até 60 caracteres. **Outros jogadores podem derrubá-las** com tropas no local.
 - Explorar um local de outro reino **não revela o dono**; espionar o local com batedores de elite revela.
 - Espiões são **descobertos se alguma tropa os vir**. Ficam no mapa como "visto há X horas" por apenas **10 horas**.
-- Para não poluir o mapa, objetos vistos ("visto há X") são **limpos periodicamente**.
+- Para não poluir o mapa, objetos vistos ("visto há X") são **limpos periodicamente**. Vale para espiões e exércitos vistos; o nível de perigo da fauna segue a regra da névoa.
 
 ### Território
 
@@ -220,7 +237,9 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ## Alianças
 
 - Reinos podem formar **alianças** e **pedir recursos a aliados**.
-- Alianças têm **limite de membros**, por balanceamento: alianças muito grandes geram problemas.
+- Alianças têm **limite de membros**, por balanceamento: alianças muito grandes geram problemas. Valor inicial: **5 reinos** por aliança.
+- Aliados se reconhecem (nome e brasão) e veem as marchas uns dos outros. Locais de aliados não são alvo de ataque.
+- Um pedido de recursos é aceito ou recusado pelo aliado. A ajuda sai dos locais mais próximos dele e viaja visível no mapa, podendo ser roubada.
 
 ---
 
@@ -229,10 +248,15 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Jogo livre**: sem missões fixas ou obrigatórias; nada força o jogador a fazer algo.
 - Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
 - **Atacar em 3 passos**: escolher a tropa, tocar no destino no mapa e confirmar. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**.
-- Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto.
+- Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.
-- Opções e sistemas só aparecem **quando fazem sentido** para o jogador; nada é bloqueado.
-- Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação.
+- Opções e sistemas só aparecem **quando fazem sentido** para o jogador; nada é bloqueado. Antes do gatilho, somem os menus e botões do sistema; o mundo continua igual. Ao aparecer, um aviso curto apresenta o sistema. Gatilhos:
+  - Transporte manual de recursos: ao fundar o primeiro local longe do castelo.
+  - Espionagem: ao ver o primeiro espião ou sofrer o primeiro ataque.
+  - Torres de arqueiros: ao ver forças desconhecidas perto do reino.
+  - Relíquias: ao avistar a primeira ruína antiga ou um farol.
+  - Alianças: ao conhecer o primeiro reino.
+- Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação e sem recompensa.
 
 ---
 
@@ -264,4 +288,4 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Valores concretos de tempos, custos e rendimentos (balanceamento).
 - Lista final de recursos valiosos e lendários.
 - Duração exata das temporadas e regras precisas de legado.
-- Detalhes de diplomacia e regras finas de alianças (tamanho exato do limite, cargos, saída e traição).
+- Detalhes de diplomacia e regras finas de alianças (cargos, saída e traição).
