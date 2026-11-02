@@ -444,8 +444,37 @@ public class SocialTestes
         var b = rs[4];
         Conhecer(t.M, b, novato);
         t.M.Locais[novato.CasteloId].Estoque.Somar("prata", 100);
-        Assert.Contains("escudo", Assert.Throws<RegraException>(() => Comercio.ProporPacto(t.M, b, novato.Id, 2, "outro", R(("prata", 10)), null)).Message);
+        // a proposta não revela o escudo a quem propõe; o novato é que não consegue aceitar
+        var cobra = Comercio.ProporPacto(t.M, b, novato.Id, 2, "outro", R(("prata", 10)), null);
+        Assert.Contains("escudo", Assert.Throws<RegraException>(() => Comercio.AceitarPacto(t.M, novato, cobra.Id)).Message);
+        Assert.Empty(Comercio.PactosDe(t.M, novato.Id));
+        Comercio.Recusar(t.M, novato, cobra.Id);
         Comercio.ProporPacto(t.M, b, novato.Id, 2, null, null, null);   // sem pagamento, pode
+    }
+
+    [Fact]
+    public void Limite_do_novato_nao_revela_o_escudo_a_quem_nao_e_aliado()
+    {
+        var t = new MundoTeste();
+        var veterano = t.NovoReino(); var novato = t.NovoReino();
+        veterano.EscudoAte = 0;
+        Conhecer(t.M, veterano, novato);
+        t.DarRecursos(veterano, 50000); t.DarRecursos(novato, 50000);
+        var lim = t.M.P.Comercio.NovatoDia;
+        // propor uma troca desequilibrada a quem não é aliado não diz nada sobre o escudo dele
+        var p = Comercio.ProporTroca(t.M, veterano, novato.Id, R(("madeira", lim * 2)), R(("pedra", 10)), null);
+        // o novato, ao aceitar, vê o próprio limite
+        Assert.Contains("escudo de novato", Assert.Throws<RegraException>(() => Comercio.AceitarTroca(t.M, novato, p.Id)).Message);
+        Assert.Equal(Comercio.Aberta, p.Estado);
+        // o novato propõe acima do próprio limite: é avisado na hora (é o escudo dele)
+        Assert.Contains("escudo de novato", Assert.Throws<RegraException>(() => Comercio.ProporTroca(t.M, novato, veterano.Id, R(("pedra", 10)), R(("madeira", lim * 2)), null)).Message);
+        // proposta do novato dentro do limite, que deixa de caber antes do aceite: quem aceita não fica sabendo do escudo
+        var q = Comercio.ProporTroca(t.M, novato, veterano.Id, R(("pedra", 10)), R(("madeira", lim * 0.8)), null);
+        novato.Novato.Add(new RegistroNovato { Quando = t.M.Agora, Valor = lim * 0.5 });
+        var e = Assert.Throws<RegraException>(() => Comercio.AceitarTroca(t.M, veterano, q.Id));
+        Assert.DoesNotContain("escudo", e.Message);
+        Assert.DoesNotContain("novato", e.Message);
+        Assert.Equal(Comercio.Cancelada, q.Estado);
     }
 
     // ---------------------------------------------------------------- limite do novato

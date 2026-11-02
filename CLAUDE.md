@@ -328,7 +328,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Começa quando o pagamento chega; se a carga for roubada no caminho, não começa.
   - **O jogo garante o pacto**: enquanto durar, nenhum dos dois consegue atacar, saquear ou interceptar o outro. Tropas enviadas a um local do outro descobrem o pacto ao chegar e voltam sem combate.
 - **Resgate de explorador**: ver Exploradores.
-- **Limites para o novato**: enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajuda de aliados, pagamentos de pacto e resgate), somada transação a transação em valor de referência, tem limite por dia (janela de 24 h), para que contas secundárias não alimentem outra. Ninguém pode cobrar pacto de um reino sob escudo.
+- **Limites para o novato**: enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajuda de aliados, pagamentos de pacto e resgate), somada transação a transação em valor de referência, tem limite por dia (janela de 24 h), para que contas secundárias não alimentem outra. Ninguém pode cobrar pacto de um reino sob escudo. O escudo e o limite de outro reino não aparecem a quem não é aliado: a recusa sai no aceite, sem revelar o escudo a quem propôs.
 
 ---
 

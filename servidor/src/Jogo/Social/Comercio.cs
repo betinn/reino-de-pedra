@@ -127,20 +127,35 @@ namespace ReinoDePedra.Jogo.Social
 
         /// <summary>
         /// Enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajudas, pagamentos),
-        /// em valor de referência, fica em até <c>P.comercio.novatoDia</c> por dia. <paramref name="daA"/> é o que A dá a B e vice-versa.
+        /// em valor de referência, fica em até <c>P.comercio.novatoDia</c> por dia. <paramref name="daQuem"/> é o que
+        /// <paramref name="quem"/> (quem age) dá a <paramref name="outro"/> e vice-versa.
+        /// O escudo só é descoberto ao chegar: o limite de <paramref name="quem"/> (o próprio) e o de um aliado lançam com a explicação;
+        /// o de outro reino não é dito a quem age: devolve esse reino para quem chama decidir (conferir no aceite, cancelar sem motivo).
         /// </summary>
-        public static void ConferirNovato(Mundo m, Reino a, Reino b, IReadOnlyDictionary<string, double> daA, IReadOnlyDictionary<string, double> daB)
+        public static Reino? ConferirNovato(Mundo m, Reino quem, Reino outro, IReadOnlyDictionary<string, double> daQuem, IReadOnlyDictionary<string, double> daOutro)
         {
-            var dif = Math.Abs(Remessas.Valor(m, daA) - Remessas.Valor(m, daB));
-            if (dif < 1e-6) return;
-            foreach (var x in new[] { a, b })
-            {
-                var resta = NovatoRestante(m, x);
-                if (dif > resta + 1e-6)
-                    throw new RegraException(x.Nome + " está sob escudo de novato: a diferença entre o que dá e recebe fica em até " +
-                        Combate.Combates.Num(m.P.Comercio.NovatoDia) + " de valor por dia. Hoje restam " + Combate.Combates.Num(resta) +
-                        "; esta tem " + Combate.Combates.Num(Math.Ceiling(dif)) + ".");
-            }
+            var dif = Math.Abs(Remessas.Valor(m, daQuem) - Remessas.Valor(m, daOutro));
+            if (dif < 1e-6) return null;
+            if (dif > NovatoRestante(m, quem) + 1e-6) throw ExcedeNovato(m, quem, dif);
+            if (dif <= NovatoRestante(m, outro) + 1e-6) return null;
+            if (Aliancas.SaoAliados(m, quem.Id, outro.Id)) throw ExcedeNovato(m, outro, dif);
+            return outro;
+        }
+
+        private static RegraException ExcedeNovato(Mundo m, Reino x, double dif) =>
+            new(x.Nome + " está sob escudo de novato: a diferença entre o que dá e recebe fica em até " +
+                Combate.Combates.Num(m.P.Comercio.NovatoDia) + " de valor por dia. Hoje restam " + Combate.Combates.Num(NovatoRestante(m, x)) +
+                "; esta tem " + Combate.Combates.Num(Math.Ceiling(dif)) + ".");
+
+        /// <summary>
+        /// No aceite, a parte de quem propôs (sob escudo, não aliado) deixou de caber no limite: a proposta é cancelada, quem propôs
+        /// fica sabendo por quê, e quem aceita recebe só que ela não vale mais.
+        /// </summary>
+        private static RegraException CancelarPorNovato(Mundo m, Proposta p, Reino propos)
+        {
+            Responder(m, p, Cancelada);
+            Registros.Notificar(m, propos.Id, "comercio", "Proposta cancelada", "Seu reino está sob escudo de novato e a diferença de valor passaria do limite de hoje.", "comercio");
+            return new RegraException("Esta proposta não vale mais.");
         }
 
         private static void RegistrarNovato(Mundo m, Reino a, Reino b, IReadOnlyDictionary<string, double> daA, IReadOnlyDictionary<string, double> daB)
@@ -168,7 +183,7 @@ namespace ReinoDePedra.Jogo.Social
             if (d.Keys.Any(q.ContainsKey)) throw new RegraException("Escolha recursos diferentes para dar e receber.");
             var txt = Recado(m, recado);
             Remessas.Conferir(m, r, d);
-            ConferirNovato(m, r, para, d, q);
+            ConferirNovato(m, r, para, d, q);   // o limite do outro (se não for aliado) fica para o aceite
             var p = Nova(m, new Proposta { Tipo = Troca, DeId = r.Id, ParaId = para.Id, Da = d, Quer = q, Recado = txt });
             Conhecimento.Conhecer(m, para, r, "proposta");
             Registros.Notificar(m, para.Id, "comercio", "Proposta de troca de " + r.Nome, "Oferece " + Remessas.Texto(d) + " por " + Remessas.Texto(q) + ".", "comercio");
@@ -181,7 +196,7 @@ namespace ReinoDePedra.Jogo.Social
             var p = Aberta_(m, r, propostaId, Troca);
             var de = m.Reinos.Obter(p.DeId);
             if (de == null || !de.Ativo) { Responder(m, p, Cancelada); throw new RegraException("O outro reino não existe mais."); }
-            ConferirNovato(m, de, r, p.Da, p.Quer);
+            if (ConferirNovato(m, r, de, p.Quer, p.Da) != null) throw CancelarPorNovato(m, p, de);
             Remessas.Conferir(m, r, p.Quer);
             Remessas.Conferir(m, de, p.Da, de.Nome);
             Remessas.Enviar(m, de, r, null, p.Da, Troca, p.Id);
@@ -201,7 +216,7 @@ namespace ReinoDePedra.Jogo.Social
             var l = m.Locais.Obter(localId ?? r.CasteloId);
             if (l == null || l.ReinoId != r.Id || l.Ruina) throw new RegraException("Escolha um local seu para receber.");
             var txt = Recado(m, recado);
-            ConferirNovato(m, r, al, new Recursos(), q);
+            ConferirNovato(m, r, al, new Recursos(), q);   // aliados: o limite dos dois é dito
             var p = Nova(m, new Proposta { Tipo = Pedido, DeId = r.Id, ParaId = al.Id, Quer = q, LocalId = l.Id, Recado = txt });
             Registros.Notificar(m, al.Id, "alianca", r.Nome + " pede recursos", Remessas.Texto(q) + ". Aceite ou recuse em Aliança.", "alianca");
             m.Avisar(r.Id, "alianca"); m.Avisar(al.Id, "alianca");
@@ -230,7 +245,7 @@ namespace ReinoDePedra.Jogo.Social
         /// <summary>Pacto em vigor entre os dois: nenhum ataca, saqueia ou intercepta o outro.</summary>
         public static bool PactoAtivo(Mundo m, long a, long b) => m.Pactos.Any(p => p.Entre(a, b) && p.Estado == Ativo && p.Fim > m.Agora);
 
-        private static void ConferirPacto(Mundo m, Reino a, Reino b, int dias, Reino? pagador, Reino quemCobra)
+        private static void ConferirPacto(Mundo m, Reino a, Reino b, int dias, Reino? pagador, Reino quemCobra, Reino quemAge)
         {
             if (Aliancas.SaoAliados(m, a.Id, b.Id)) throw new RegraException("Aliados já não se atacam.");
             if (dias < m.P.Pacto.DiasMin || dias > m.P.Pacto.DiasMax) throw new RegraException($"O pacto dura de {m.P.Pacto.DiasMin} a {m.P.Pacto.DiasMax} dias.");
@@ -238,8 +253,9 @@ namespace ReinoDePedra.Jogo.Social
             foreach (var x in new[] { a, b })
                 if (PactosDe(m, x.Id).Count() >= m.P.Pacto.AtivosMax)
                     throw new RegraException(x.Nome + $" já tem {m.P.Pacto.AtivosMax} pactos, o máximo.");
-            if (pagador != null && pagador.Id != quemCobra.Id && pagador.SobEscudo(m.Agora))
-                throw new RegraException("Ninguém pode cobrar pacto de um reino sob escudo de novato.");
+            // ninguém cobra pacto de quem tem escudo; quem propõe não fica sabendo do escudo: é recusado a quem paga, no aceite
+            if (pagador != null && pagador.Id != quemCobra.Id && pagador.Id == quemAge.Id && pagador.SobEscudo(m.Agora))
+                throw new RegraException("Seu reino está sob escudo de novato: ninguém pode cobrar pacto dele.");
         }
 
         /// <summary>
@@ -253,12 +269,12 @@ namespace ReinoDePedra.Jogo.Social
             if (pagador is not (null or "" or "eu" or "outro")) throw new RegraException("Diga quem paga.");
             var paga = pagador == "eu" ? r : pagador == "outro" ? para : null;
             var carga = paga != null ? Remessas.Ler(m, pagamento) : new Recursos();
-            ConferirPacto(m, r, para, dias, paga, r);
+            ConferirPacto(m, r, para, dias, paga, r, r);
             if (m.Propostas.Any(x => x.Tipo == PactoT && x.Estado == Aberta && x.Ate > m.Agora && ((x.DeId == r.Id && x.ParaId == para.Id) || (x.DeId == para.Id && x.ParaId == r.Id))))
                 throw new RegraException("Já há uma proposta de pacto aberta com este reino.");
             var txt = Recado(m, recado);
             if (paga == r) Remessas.Conferir(m, r, carga);
-            ConferirNovato(m, r, para, paga == r ? carga : new Recursos(), paga == para ? carga : new Recursos());
+            ConferirNovato(m, r, para, paga == r ? carga : new Recursos(), paga == para ? carga : new Recursos());   // o do outro, no aceite
             var p = Nova(m, new Proposta
             {
                 Tipo = PactoT, DeId = r.Id, ParaId = para.Id, Dias = dias, Recado = txt,
@@ -278,9 +294,9 @@ namespace ReinoDePedra.Jogo.Social
             if (de == null || !de.Ativo) { Responder(m, p, Cancelada); throw new RegraException("O outro reino não existe mais."); }
             var pagador = p.Da.Count > 0 ? de : p.Quer.Count > 0 ? r : null;
             var carga = p.Da.Count > 0 ? p.Da : p.Quer;
-            ConferirPacto(m, de, r, p.Dias, pagador, de);
+            ConferirPacto(m, de, r, p.Dias, pagador, de, r);
             if (pagador != null) Remessas.Conferir(m, pagador, carga, pagador.Id == r.Id ? null : pagador.Nome);
-            ConferirNovato(m, de, r, p.Da, p.Quer);
+            if (ConferirNovato(m, r, de, p.Quer, p.Da) != null) throw CancelarPorNovato(m, p, de);
             var pc = m.Pactos.Adicionar(new Pacto { AId = de.Id, BId = r.Id, Dias = p.Dias, PagadorId = pagador?.Id, Pagamento = carga.Copia(), Aceito = m.Agora });
             Responder(m, p, Aceita);
             if (pagador == null) { Iniciar(m, pc); return pc; }
@@ -338,7 +354,8 @@ namespace ReinoDePedra.Jogo.Social
             if (p.Estado != Capturas.ResgatePedido) throw new RegraException("Ninguém pediu resgate por este explorador.");
             if (Remessas.Do(m, Resgate, p.Id).Any()) throw new RegraException("O resgate já está a caminho.");
             var captor = Outro(m, p.CaptorId);
-            ConferirNovato(m, r, captor, p.Resgate, new Recursos());
+            if (ConferirNovato(m, r, captor, p.Resgate, new Recursos()) != null)
+                throw new RegraException("O resgate não pode ser pago agora. Tente mais tarde.");   // não diz por quê: o escudo do captor só se descobre ao chegar
             Remessas.Enviar(m, r, captor, null, p.Resgate, Resgate, p.Id);
             RegistrarNovato(m, r, captor, p.Resgate, new Recursos());
             r.ResgatesRecusados.Remove(p.Id); m.Sujar(r);
