@@ -125,6 +125,8 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 48. **Conversa da aliança:** Aliança → Conversa: as últimas mensagens dos membros e um campo para escrever. É o único chat do jogo.
 49. **Reforço a aliado:** Mapa → Enviar tropas → tocar no Castelo de Lúmen → Reforçar (as tropas continuam ocupando o seu teto). No envio completo, os locais aliados aparecem como destinos de reforço.
 50. **Recados:** ofertas e propostas de pacto mostram o recado de quem propôs; Propor troca e Propor pacto têm um campo de recado de até 120 caracteres.
+51. **Espionar com risco:** Exploradores → Batedor de elite → destino na Mina Rubra → "Chance de ser visto ≈ 33%" (15% de base, 10% da torre, 8% dos 15 lanceiros da espionagem antiga). Sem destino de outro reino, a faixa vai de 15% a 60%.
+52. **Fauna com números:** Caça mostra a força do grupo contra o que precisa para ir ileso (ex.: 120 de 80 para javalis) e o rendimento por bando; os alertas de risco dizem a chance de ataque por região.
 
 ---
 
@@ -307,7 +309,7 @@ Nenhum no protótipo. As duas pendências antigas estão no `CLAUDE.md`: famíli
 
 ## Valores
 
-Seguem o **balanceamento aprovado** ([`../balanceamento/README.md`](../balanceamento/README.md)): custos e tempos de unidades e obras, produção e níveis dos locais, torres, temporada de 70 dias, eras, armas e armaduras, cavaleiro de elite, equipamento lendário, veterania, feridos, teto de bônus, extração (ritmo em valor), valor de referência, pactos e limite do novato. Ataque e defesa aparecem em escala de 1 a 5, só para comparação visual. Rendimento de caça e força × perigo continuam ilustrativos. Seguem as regras: construções básicas em minutos e fortes/tecnologias mais demoradas; deslocamentos curtos (dezenas de minutos); a viagem segue a unidade mais lenta; rio só com ponte ou vau; rotas reduzem o custo e o perigo; grupos médios passam ilesos pela fauna. Não existe atalho pago para encurtar timers.
+Seguem o **balanceamento aprovado** ([`../balanceamento/README.md`](../balanceamento/README.md)): custos e tempos de unidades e obras, produção e níveis dos locais, torres, temporada de 70 dias, eras, armas e armaduras, cavaleiro de elite, equipamento lendário, veterania, feridos, teto de bônus, extração (ritmo em valor), valor de referência, pactos e limite do novato. Também seguem o balanceamento a força contra a fauna (mesma escala das tropas) e a chance de ataque, o rendimento da caça, o custo e a visão dos exploradores, rotas e pontes e a chance de o batedor ser visto. Ataque e defesa aparecem em escala de 1 a 5, só para comparação visual. Seguem as regras: construções básicas em minutos e fortes/tecnologias mais demoradas; deslocamentos curtos (dezenas de minutos); a viagem segue a unidade mais lenta; rio só com ponte ou vau; rotas reduzem o custo e o perigo; grupos médios passam ilesos pela fauna. Não existe atalho pago para encurtar timers.
 
 ---
 
@@ -316,7 +318,7 @@ Seguem o **balanceamento aprovado** ([`../balanceamento/README.md`](../balanceam
 As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e os fluxos de criação, construção, recrutamento, exploração, caça, extração, ataque, batalha e bandeira.
 
 Revisão final:
-- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 60 rotas (todas as telas, ordem rápida, folha de torre, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque, ferraria, comércio, troca, pacto, extração de minério raro, jazida de aço, mensagens, escrever mensagem, criação do reino, reforço a aliado): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
+- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 61 rotas (todas as telas, ordem rápida, folha de torre, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque, ferraria, comércio, troca, pacto, extração de minério raro, jazida de aço, mensagens, escrever mensagem, criação do reino, reforço a aliado, espionagem com chance de ser visto): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
 - **Toque:** todos os botões e links com pelo menos 44 × 44 px.
 - **Toques por ação** (medidos no navegador headless, contando a abertura da aba ou do mapa):
 

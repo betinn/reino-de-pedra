@@ -14,7 +14,7 @@
     resistencia: { nome: 'Resistência', icone: 'escudo', txt: 'O local se defende melhor.', efeito: function (b) { return '+' + b + '% de defesa do local'; } }
   };
   RP.RELIQUIA = TIPOS;
-  var ESCOLTA_MIN = 15;   /* força abaixo disso: escolta frágil (ilustrativo) */
+  var ESCOLTA_MIN = 120;   /* força abaixo do perigo médio da fauna: escolta frágil */
 
   function relq(id) { return D.reliquias.filter(function (q) { return q.id === id; })[0]; }
   /* relíquia guardada num local. soVisivel: só as suas e as de outros reinos já espionadas */
@@ -208,7 +208,7 @@
       (volta && ida ? (ida.seg ? '<div class="card linha"><span class="ico-placa dono-meu">' + RP.icone('castelo') + '</span><span style="flex:1"><b>Buscar</b><br><small class="fraco">Castelo → ' + RP.esc(nomeLocal(de.id)) + '</small></span><span class="rota-tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(ida.seg) + '</span></div>' : '') +
         '<div class="card mini-rota-card" style="margin-top:var(--esp-3)">' + U.miniRota(op, tr.caminho, nomeLocal(para.id), de.tipo) + '</div>' +
         '<div class="pilha" style="margin-top:var(--esp-3)">' + U.opcaoCaminho('curta', op.curta, tr.caminho) + U.opcaoCaminho('segura', op.segura, tr.caminho) + '</div>' +
-        U.blocoRisco(volta.perigo ? (G.forca(tr.grupo) >= 12 ? 'nenhum' : volta.perigo.nivel) : null, volta.perigo, false) +
+        U.blocoRisco(volta.perigo ? RP.fauna.risco(volta.perigo.nivel, G.forca(tr.grupo)) : null, volta.perigo, false) +
         '<div style="height:var(--esp-6)"></div>'
         : '<p class="fraco">Sem caminho possível.</p>');
     RP.$('.tr-conteudo', el).innerHTML = h;
@@ -311,7 +311,7 @@
       (!n ? '<p class="fraco">Escolha as tropas para calcular onde alcançam.</p>'
         : enc ? '<div class="card mini-rota-card">' + U.miniRota({ curta: enc.cam, segura: null }, 'curta', 'o ponto de encontro') + '</div>' +
           '<div class="ext-numeros" style="margin-top:var(--esp-3)"><div><span class="fraco">Vocês chegam</span><b class="num">' + RP.fmtDuracao(enc.cam.seg) + '</b></div><div><span class="fraco">Eles passam</span><b class="num">' + RP.fmtDuracao(Math.round((enc.eles - Date.now()) / 1000)) + '</b></div><div><span class="fraco">Folga</span><b class="num">' + RP.fmtDuracao(Math.round((enc.eles - enc.nos) / 1000)) + '</b></div></div>' +
-          U.blocoRisco(enc.cam.perigo ? (G.forca(it.grupo) >= 12 ? 'nenhum' : enc.cam.perigo.nivel) : null, enc.cam.perigo, false)
+          U.blocoRisco(enc.cam.perigo ? RP.fauna.risco(enc.cam.perigo.nivel, G.forca(it.grupo)) : null, enc.cam.perigo, false)
         : '<p class="nota-antiga">' + RP.icone('relogio', 'ico-p') + '<span><b>Não alcançam a tempo.</b> Com velocidade ' + perfil.vel.toLowerCase() + ', eles somem na névoa antes. Tire as unidades lentas ou use cavalaria.</span></p>') +
       '<div style="height:var(--esp-6)"></div>';
     RP.$('.it-conteudo', el).innerHTML = h;

@@ -255,7 +255,9 @@
       { id: 'vila-nova', icone: 'vila', nome: 'Nova vila', onde: 'Escolher local no mapa', cat: 'populacao', novo: true,
         efeito: '3 moradias e produção de comida · em qualquer hexágono livre, sem limite de distância', custo: { madeira: 3310, pedra: 2570, ferro: 740, comida: 740 }, tempo: 5400 },
       { id: 'rota', icone: 'rota', nome: 'Rota', onde: 'Traçar no mapa', cat: 'rotas', novo: true,
-        efeito: 'Rua pública: qualquer jogador usa; reduz animais', custo: { madeira: 120, pedra: 80 }, porHex: true, tempo: 300 },
+        efeito: 'Rua pública: qualquer jogador usa; reduz animais. Custo e tempo × terreno (floresta ×1,8, montanha ×2,3, pântano ×2,8)', custo: { madeira: 120, pedra: 80 }, porHex: true, tempo: 300 },
+      { id: 'ponte', icone: 'ponte', nome: 'Ponte', onde: 'Escolher trecho de rio no mapa', cat: 'rotas', novo: true,
+        efeito: 'Atravessa o rio e vira parte da rota pública. Sem ponte, só pelo vau, mais lento', custo: { madeira: 600, pedra: 400 }, tempo: 1800 },
       { id: 'carroca', icone: 'carroca', nome: 'Carroça', onde: 'Castelo de Pedralva', local: 'castelo', cat: 'transporte', veiculo: 'carroca',
         efeito: 'Leva 500 de carga · lenta', custo: { madeira: 150, ferro: 20 }, tempo: 300 },
       { id: 'carrocao', icone: 'carroca', nome: 'Carroção', onde: 'Castelo de Pedralva', local: 'castelo', cat: 'transporte', veiculo: 'carrocao',
@@ -284,10 +286,10 @@
 
     /* Exploradores (tabela do CLAUDE.md) */
     exploradores: [
-      { id: 'pe', nome: 'A pé', icone: 'bota', velocidade: 'Lenta', visao: 'Média', custo: 'Barato', carac: 'Sem penalidade em floresta e pântano', livres: 2, treino: { comida: 40 } },
-      { id: 'cavalo', nome: 'A cavalo', icone: 'cavalo', velocidade: 'Rápida', visao: 'Alta', custo: 'Médio', carac: 'Penalizado em floresta e montanha', livres: 1, treino: { comida: 80, couro: 20 } },
-      { id: 'prospector', nome: 'Prospector', icone: 'picareta', velocidade: 'Lenta', visao: 'Baixa', custo: 'Caro', carac: 'Único que revela jazidas valiosas e lendárias', livres: 0, treino: { comida: 120, ferro: 60 } },
-      { id: 'batedor', nome: 'Batedor de elite', icone: 'batedor', velocidade: 'Rápida', visao: 'Alta', custo: 'Caro', carac: 'Furtivo; espiona exércitos e reinos, revela o dono de locais. É descoberto se alguma tropa o vir', livres: 1, treino: { comida: 150, couro: 40 } }
+      { id: 'pe', nome: 'A pé', icone: 'bota', velocidade: 'Lenta', visao: 'Média', custo: 'Barato', carac: 'Sem penalidade em floresta e pântano · vê 2 hexágonos', livres: 2, treino: { comida: 40 }, tempo: 60, forca: 10 },
+      { id: 'cavalo', nome: 'A cavalo', icone: 'cavalo', velocidade: 'Rápida', visao: 'Alta', custo: 'Médio', carac: 'Penalizado em floresta e montanha · vê 3 hexágonos', livres: 1, treino: { comida: 80, couro: 20 }, tempo: 180, forca: 15 },
+      { id: 'prospector', nome: 'Prospector', icone: 'picareta', velocidade: 'Lenta', visao: 'Baixa', custo: 'Caro', carac: 'Único que revela jazidas valiosas e lendárias, a até 2 hexágonos · vê 1', livres: 0, treino: { comida: 120, ferro: 60 }, tempo: 360, forca: 8 },
+      { id: 'batedor', nome: 'Batedor de elite', icone: 'batedor', velocidade: 'Rápida', visao: 'Alta', custo: 'Caro', carac: 'Furtivo; espiona exércitos e reinos, revela o dono de locais. Pode ser visto ao espionar · vê 3 hexágonos', livres: 1, treino: { comida: 150, couro: 40 }, tempo: 480, forca: 20 }
     ],
 
     /* Extração em andamento (exemplo): posto já construído na jazida de prata */
@@ -310,12 +312,12 @@
     batalha: {
       id: 'b-vau', local: 'vila-vau', inicio: -240, duracao: 900,
       atacante: { nome: 'Forças desconhecidas', resumo: '≈ 40 tropas · lanceiros e arqueiros', origem: 'sudoeste', tipo: 'Saque', forca: 100 },
-      defensor: { resumo: '4 milicianos, população como milícia (≈ 180) e paliçada', forca: 82 },
+      defensor: { resumo: '4 milicianos e população como milícia (≈ 180)', forca: 82 },
       eventos: [
         { t: 0, txt: 'Forças desconhecidas chegaram pelo sudoeste.' },
         { t: 50, txt: 'A população pegou em armas como milícia.' },
         { t: 170, txt: 'Arqueiros inimigos incendiaram um celeiro.' },
-        { t: 330, txt: 'A paliçada cedeu no lado sul.' },
+        { t: 330, txt: 'A milícia perdeu a passagem do vau.' },
         { t: 520, txt: 'Os atacantes começam a carregar comida.' },
         { t: 760, txt: 'A milícia recua para a praça da vila.' }
       ],
@@ -347,7 +349,7 @@
       { id: 'r-fauna', tipo: 'fauna', titulo: 'Explorador morto no pântano', horas: 30, lido: true,
         quem: 'Explorador a pé', animal: 'crocodilos', onde: 'Pântano a sudoeste', resultado: 'O explorador foi morto. Tropas mortas não retornam.' },
       { id: 'r-caca', tipo: 'caca', titulo: 'Caçada aos javalis', horas: 14, lido: true,
-        grupo: '6 arqueiros', animal: 'javalis', ganho: { comida: 96, couro: 24, peles: 2 }, perdas: 'Nenhuma' },
+        grupo: '6 arqueiros', animal: 'javalis', ganho: { comida: 120, couro: 40, peles: 5 }, perdas: 'Nenhuma' },
       { id: 'r-extracao', tipo: 'extracao', titulo: 'Prata extraída', horas: 1, lido: true, jazida: 'j-prata', ganho: { prata: 29 }, restante: 0.74 },
       { id: 'r-escudo', tipo: 'bloqueio', titulo: 'Ataque sem combate', horas: 20, lido: true, local: 'x-mina', tropas: '12 lanceiros', tipoAtaque: 'Saque' }
     ],
@@ -527,12 +529,12 @@
       mantido: ['Linhagem nível 4', '1 relíquia da temporada', '3 títulos', 'Brasões e cosméticos']
     },
 
-    /* Rendimento ilustrativo da caça por animal */
+    /* Rendimento da caça por bando abatido (balanceamento); o bando volta em 24 h */
     caca: {
-      lobos: { comida: '30–50', couro: '10–20', peles: '25–40' },
-      javalis: { comida: '80–120', couro: '20–30', peles: '0–5' },
-      ursos: { comida: '60–90', couro: '30–45', peles: '40–60' },
-      crocodilos: { comida: '40–60', couro: '50–70', peles: '0' }
+      lobos: { comida: 50, couro: 30, peles: 40 },
+      javalis: { comida: 120, couro: 40, peles: 5 },
+      ursos: { comida: 90, couro: 60, peles: 60 },
+      crocodilos: { comida: 50, couro: 90, peles: 0 }
     },
 
     notificacoesNaoLidas: 8

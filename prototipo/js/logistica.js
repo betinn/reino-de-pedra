@@ -176,13 +176,13 @@
       '<div class="barra' + (soma > cap.total ? ' barra-perigo' : '') + '" role="progressbar" aria-label="Carga em relação à capacidade"><i style="width:' + Math.min(100, cap.total ? (100 * soma) / cap.total : (soma ? 100 : 0)).toFixed(1) + '%"></i></div>' +
       (soma > cap.total ? '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + '<span>Não cabe. Adicione carroças ou tropas, ou leve menos.</span></p>' : '') +
       '<div class="ext-numeros"><div><span class="fraco">Carroças</span><b class="num">' + RP.num(cap.veiculos) + '</b></div><div><span class="fraco">Escolta</span><b class="num">' + RP.num(cap.tropas) + '</b></div><div><span class="fraco">Velocidade</span><b>' + vel + '</b></div></div></div>' +
-      (usaVeic ? (forca < 15 ? '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + '<span><b>Pouco protegida.</b> Animais e saqueadores atacam caravanas fracas. Uma escolta maior reduz o risco.</span></p>'
+      (usaVeic ? (forca < 120 ? '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + '<span><b>Pouco protegida.</b> Animais e saqueadores atacam caravanas fracas. Uma escolta maior reduz o risco.</span></p>'
         : '<div class="risco-linha ok">' + RP.icone('escudo') + '<span><b>Escolta forte</b><br><small>Roubar esta caravana exige um exército.</small></span></div>') : '') + '</div>' +
       '<div class="secao-titulo">5. Caminho</div>' +
       (de && para && volta && ida ? (ida.seg ? '<div class="card linha"><span class="ico-placa dono-meu">' + RP.icone('castelo') + '</span><span style="flex:1"><b>Buscar</b><br><small class="fraco">Castelo → ' + RP.esc(nomeLocal(de.id)) + '</small></span><span class="rota-tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(ida.seg) + '</span></div>' : '') +
         '<div class="card mini-rota-card" style="margin-top:var(--esp-3)">' + U.miniRota(op, cv.caminho, nomeLocal(para.id), de.tipo) + '</div>' +
         '<div class="pilha" style="margin-top:var(--esp-3)">' + U.opcaoCaminho('curta', op.curta, cv.caminho) + U.opcaoCaminho('segura', op.segura, cv.caminho) + '</div>' +
-        U.blocoRisco(volta.perigo ? (forca >= 12 ? 'nenhum' : volta.perigo.nivel) : null, volta.perigo, false) + '<div style="height:var(--esp-6)"></div>'
+        U.blocoRisco(volta.perigo ? RP.fauna.risco(volta.perigo.nivel, forca) : null, volta.perigo, false) + '<div style="height:var(--esp-6)"></div>'
         : '<p class="fraco">Escolha origem e destino.</p>');
     RP.$('.cv-conteudo', el).innerHTML = h;
     var total = volta && ida ? ida.seg + volta.seg : 0, ok = soma > 0 && usaVeic && soma <= cap.total && total;

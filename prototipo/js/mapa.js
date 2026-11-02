@@ -567,7 +567,7 @@
         '</div><ul class="regras-lista">' +
         '<li>' + RP.icone('explorador', 'ico-p') + 'Ameaça exploradores sozinhos, grupos pequenos de extração e caravanas. Exércitos médios passam praticamente ilesos.</li>' +
         '<li>' + RP.icone('rota', 'ico-p') + 'Rotas construídas reduzem a presença de animais. Escolha entre rota curta e perigosa, longa e segura, ou leve escolta.</li>' +
-        '<li>' + RP.icone('relogio', 'ico-p') + 'Os animais se movem e reaparecem: área limpa não fica segura para sempre.</li>' +
+        '<li>' + RP.icone('relogio', 'ico-p') + 'Os animais se movem e reaparecem: um bando abatido volta em 24 h, e área limpa não fica segura para sempre.</li>' +
         (perto ? '<li>' + RP.icone('castelo', 'ico-p') + 'Perto do seu reino a fauna é mais fraca.</li>' : '') +
         '</ul><p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Caçar rende comida, couro e peles.</p>';
       acoes = botao('Caçar', 'lobo', 'btn-primario', 'data-ir="caca?fauna=' + o.id + '"') + botao('Colocar bandeira', 'bandeira', '', 'data-ir="bandeira-nova?alvo=' + o.c + ',' + o.l + '"');

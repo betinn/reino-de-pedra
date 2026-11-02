@@ -29,7 +29,7 @@
   function partesGrupo(g) {
     return Object.keys(g).filter(function (k) { return g[k]; }).map(function (k) { return g[k] + ' ' + U.unidade(k).nome.toLowerCase() + (g[k] > 1 ? 's' : ''); }).join(', ');
   }
-  function forcaGrupo(g) { return Object.keys(g).reduce(function (s, k) { var u = U.unidade(k); return s + (g[k] || 0) * (u.atk + u.def) / 2; }, 0); }
+  function forcaGrupo(g) { return RP.fauna.forca(g); }   /* soma de (ataque + defesa)/2 (balanceamento) */
   /* usados também pelas telas de relíquias (transporte e interceptação) */
   U.grupo = { soma: somaGrupo, perfil: perfilGrupo, linhas: linhasGrupo, passo: passoGrupo, partes: partesGrupo, forca: forcaGrupo, disp: function (id) { return D.disponiveis[id] || 0; } };
 
@@ -117,7 +117,7 @@
           '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">' + (naRota ? 'O caminho usa rota pública: viagens mais rápidas (+20%).' : 'Sem rota pública no caminho. Construir uma rota acelera as viagens.') + ' Jazidas são finitas. O ritmo é medido em valor: ' + RP.esc(RP.nomeRecurso(j.tipo)) + ' vale ' + valorRec(j.tipo) + (valorRec(j.tipo) > 1 ? ' básicos, então sai mais devagar' : '') + '. Até ' + MAX_TROPAS + ' tropas por jazida.</p></div>') +
       '<div class="secao-titulo">Caminho</div>' +
       (esc ? '<div class="card mini-rota-card">' + U.miniRota(op, ext.caminho, j.nome) + '</div><div class="pilha" style="margin-top:var(--esp-3)">' + U.opcaoCaminho('curta', op.curta, ext.caminho) + U.opcaoCaminho('segura', op.segura, ext.caminho) + '</div>' +
-        U.blocoRisco(esc.perigo ? (forcaGrupo(ext.grupo) >= 12 ? 'nenhum' : esc.perigo.nivel) : null, esc.perigo, false) : '<p class="fraco">Sem caminho possível.</p>');
+        U.blocoRisco(esc.perigo ? RP.fauna.risco(esc.perigo.nivel, forcaGrupo(ext.grupo)) : null, esc.perigo, false) : '<p class="fraco">Sem caminho possível.</p>');
     RP.$('.ext-conteudo', el).innerHTML = h;
     RP.$('.rodape-resumo', el).innerHTML = emEscav ? '<div class="resumo-linha fraco">Esta ruína já está sendo escavada.</div>'
       : n && esc ? '<div class="resumo-linha"><b>' + partesGrupo(ext.grupo) + ' → ' + RP.esc(j.nome) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(esc.seg) + '</span></div>' + (escav ? '<div class="resumo-linha fraco">depois ≈ ' + Math.round(hEsc) + ' h escavando</div>' : '') : '<div class="resumo-linha fraco">Escolha ao menos uma unidade.</div>';
@@ -340,7 +340,7 @@
       }
       r.html = '<div class="info">' + linhaO('Tropas', n ? RP.esc(partesGrupo(grupo)) : '<span class="txt-alerta">nenhuma</span>') + h +
         linhaO('Chegada', cam ? 'em ' + RP.fmtDuracao(cam.seg) + ' · rota curta' : '—') + '</div>' +
-        (cam && cam.perigo ? U.blocoRisco(forcaGrupo(grupo) >= 12 ? 'nenhum' : cam.perigo.nivel, cam.perigo, false) : '');
+        (cam && cam.perigo ? U.blocoRisco(RP.fauna.risco(cam.perigo.nivel, forcaGrupo(grupo)), cam.perigo, false) : '');
       return r;
     },
     enviar: function (alvo, grupo) {

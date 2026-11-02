@@ -226,7 +226,13 @@
         if ((b = e.target.closest('[data-aba-obra]'))) { abaObra = b.getAttribute('data-aba-obra'); desenharConstrucao(el); return; }
         if (RP.defesas.clique(e, function () { desenharConstrucao(el); })) return;
         if ((b = e.target.closest('[data-escolher-local]'))) {
-          RP.aviso({ titulo: 'Escolha o local no mapa', texto: 'Qualquer hexágono livre, a qualquer distância e sem limite de locais: quanto mais longe, mais o material demora a chegar. No protótipo, este passo é só ilustrado.', icone: 'mapa', tipo: 'alerta', ms: 4200 });
+          var qual = b.getAttribute('data-escolher-local'), txt = {
+            'vila-nova': 'Qualquer hexágono livre, a qualquer distância e sem limite de locais: quanto mais longe, mais o material demora a chegar.',
+            rota: 'Trace a rota no mapa: custo e tempo por hexágono, multiplicados pelo terreno.',
+            ponte: 'Toque num trecho de rio: a ponte vira parte da rota pública.',
+            posto: 'Toque numa jazida descoberta.'
+          }[qual] || 'Toque no mapa e confirme.';
+          RP.aviso({ titulo: 'Escolha no mapa', texto: txt + ' No protótipo, este passo é só ilustrado.', icone: 'mapa', tipo: 'alerta', ms: 4200 });
           return;
         }
         if ((b = e.target.closest('[data-construir]'))) {
@@ -352,17 +358,34 @@
     if (escolta) return { vel: 'Lenta', semPenalidade: false, penaliza: false };
     return { vel: tipo.velocidade, semPenalidade: t === 'pe', penaliza: t === 'cavalo' };
   }
-  function riscoGrupo(perigo, forca) {
-    if (!perigo) return null;
-    var lim = { baixo: 4, medio: 12, alto: 24 }[perigo.nivel];
+  /* fauna (balanceamento): força do grupo = soma de (ataque + defesa)/2. Com o dobro do limite, passa ileso;
+     acima do limite, o risco cai um nível. Chance de ataque por região atravessada; num ataque, perde 5% (acima) ou 25% (abaixo). */
+  var LIMITE_FAUNA = { baixo: 40, medio: 120, alto: 300 }, ATAQUE_FAUNA = { baixo: 10, medio: 25, alto: 50 };
+  var FORCA_UN = { milicia: 10, lanceiro: 32.5, arqueiro: 30, cavalaria: 37.5, elite: 50, ariete: 10, trebuchet: 5 };
+  function forcaFauna(g) { return Object.keys(g || {}).reduce(function (s, k) { return s + (g[k] || 0) * (FORCA_UN[k] || 0); }, 0); }
+  function riscoFauna(nivel, forca) {
+    var lim = LIMITE_FAUNA[nivel];
     if (forca >= lim * 2) return 'nenhum';
-    var n = NIV.indexOf(perigo.nivel) - (forca >= lim ? 1 : 0);
+    var n = NIV.indexOf(nivel) - (forca >= lim ? 1 : 0);
     return n < 0 ? 'nenhum' : NIV[n];
   }
+  function riscoGrupo(perigo, forca) { return perigo ? riscoFauna(perigo.nivel, forca) : null; }
+  RP.fauna = { limite: LIMITE_FAUNA, ataque: ATAQUE_FAUNA, forca: forcaFauna, risco: riscoFauna };
   function blocoRisco(risco, perigo, sozinho) {
     if (!perigo) return '<div class="risco-linha ok">' + RP.icone('check') + '<span><b>Sem fauna perigosa conhecida no caminho</b><br><small>Área desconhecida pode esconder animais.</small></span></div>';
-    if (risco === 'nenhum') return '<div class="risco-linha ok">' + RP.icone('escudo') + '<span><b>Grupo forte o bastante</b><br><small>Grupos médios passam praticamente ilesos por ' + W.ANIMAL[perigo.fauna.tipo].nome.toLowerCase() + '.</small></span></div>';
-    return '<div class="perigo-linha nivel-' + risco + '">' + RP.icone(W.ANIMAL[perigo.fauna.tipo].icone) + '<span><b>Risco ' + W.NOME_NIVEL[risco].toLowerCase() + '</b> · ' + W.ANIMAL[perigo.fauna.tipo].nome.toLowerCase() + ' no caminho<br><small>' + (sozinho ? 'Exploradores sozinhos podem ser mortos. Escolha a rota segura ou leve escolta.' : 'Grupo pequeno: reforce o grupo ou use a rota segura.') + '</small></span></div>';
+    if (risco === 'nenhum') return '<div class="risco-linha ok">' + RP.icone('escudo') + '<span><b>Grupo forte o bastante</b><br><small>Com o dobro da força dos animais (' + LIMITE_FAUNA[perigo.nivel] + ' aqui), o grupo passa ileso por ' + W.ANIMAL[perigo.fauna.tipo].nome.toLowerCase() + '.</small></span></div>';
+    return '<div class="perigo-linha nivel-' + risco + '">' + RP.icone(W.ANIMAL[perigo.fauna.tipo].icone) + '<span><b>Risco ' + W.NOME_NIVEL[risco].toLowerCase() + '</b> · ' + W.ANIMAL[perigo.fauna.tipo].nome.toLowerCase() + ' no caminho<br><small>Chance de ataque de ' + ATAQUE_FAUNA[perigo.nivel] + '% em cada região assim. ' + (sozinho ? 'Um explorador sozinho atacado morre. Escolha a rota segura ou leve escolta.' : 'Atacado, o grupo perde até 25%. Reforce o grupo ou use a rota segura.') + '</small></span></div>';
+  }
+  /* espionagem (balanceamento): 15% + 10% por torre no alcance + 0,5% por tropa da guarnição, até 60% */
+  function espiaHTML(alvo) {
+    var x = D.locais.filter(function (q) { return q.c === alvo[0] && q.l === alvo[1] && q.reino !== 'meu' && !W.aliado(q.reino); })[0];
+    var regra = '<p class="fraco" style="font-size:var(--fs-2)">Visto, metade das vezes o batedor é capturado e o relatório não volta; na outra, foge com o relatório. Nos dois casos, o alvo vê "espião visto" por 10 h. O batedor fica 10 min no local.</p>';
+    if (!x) return '<div class="card pilha espia-card"><b>Chance de ser visto: 15% a 60%</b><p class="fraco" style="font-size:var(--fs-2)">Escolha um local de outro reino como destino para ver a estimativa. Torres no alcance e guarnição grande aumentam a chance.</p>' + regra + '</div>';
+    var torres = RP.torres.de(x.id).length, m = x.espionado && /(\d+)/.exec(x.espionado.defesa || ''), tropas = m ? +m[1] : null;
+    var min = Math.min(60, 15 + 10 * torres), est = tropas != null ? Math.min(60, min + 0.5 * tropas) : null;
+    return '<div class="card pilha espia-card"><div class="linha-entre"><b>Chance de ser visto</b><b class="num">' + (est != null ? '≈ ' + Math.round(est) + '%' : min + '% a ' + Math.min(60, min + 20) + '%') + '</b></div>' +
+      '<div class="barra"><i style="width:' + ((est != null ? est : min) / 60 * 100).toFixed(0) + '%"></i></div>' +
+      '<small class="fraco">' + RP.esc(W.nomeAparente(x)) + ': 15% de base' + (torres ? ' + ' + torres * 10 + '% de ' + torres + (torres > 1 ? ' torres' : ' torre') + ' no alcance' : '') + (tropas != null ? ' + ' + Math.round(0.5 * tropas) + '% por ' + tropas + ' tropas (espionagem antiga)' : ' + até 20% pela guarnição, ainda desconhecida') + '. Máximo de 60%.</small>' + regra + '</div>';
   }
   function desenharExploradores(el, params) {
     var ativo = params && params.get('ativo') && W.marcha(params.get('ativo'));
@@ -373,7 +396,7 @@
     var esc = op[ex.caminho] || op.curta;
     var t = W.T[ex.alvo[1]][ex.alvo[0]], e = W.estado(ex.alvo[0], ex.alvo[1]);
     var destino = (e.v === 'desconhecido' ? 'Terra desconhecida' : H.TERRENOS[t].nome) + ' · ' + ex.alvo[0] + ', ' + ex.alvo[1];
-    var risco = esc ? riscoGrupo(esc.perigo, ex.escolta ? 10 : 1) : null;
+    var risco = esc ? riscoGrupo(esc.perigo, tipoInfo.forca + (ex.escolta ? 5 * FORCA_UN.lanceiro : 0)) : null;
     var h = '';
     if (ativo) {
       h += '<div class="card card-moldura pilha"><div class="linha"><span class="ico-placa dono-meu">' + RP.icone(RP.mapa.iconeMarcha(ativo)) + '</span><div style="flex:1"><b>' + RP.esc(ativo.d.nome) + '</b><br><small class="fraco">' + RP.esc(ativo.d.resumo) + '</small></div><b class="num" data-fim="' + ativo.d.chegada + '">' + RP.fmtResta(ativo.d.chegada - Date.now()) + '</b></div>' +
@@ -385,10 +408,12 @@
         '<span class="linha"><span class="ico-placa">' + RP.icone(x.icone) + '</span><b>' + x.nome + '</b></span>' +
         '<span class="escolha-atrib"><span>Velocidade <b>' + x.velocidade + '</b></span><span>Visão <b>' + x.visao + '</b></span><span>Custo <b>' + x.custo + '</b></span></span>' +
         '<small class="fraco">' + x.carac + '</small>' +
+        '<small class="fraco">Treino: ' + RP.esc(RP.cargaTxt(x.treino)) + ' · ' + RP.fmtDuracao(x.tempo) + ' · 1 de população · força ' + x.forca + ' contra fauna</small>' +
         (x.livres ? '<span class="selo selo-visivel">' + x.livres + ' livre' + (x.livres > 1 ? 's' : '') + '</span>' : '<span class="selo selo-desconhecido">Nenhum livre · treinar ' + RP.custoHTML(x.treino) + '</span>') + '</button>';
     }).join('') + '</div>' +
       '<div class="secao-titulo">2. Ordem</div><div class="abas" role="group" aria-label="Ordem">' + ['explorar', 'rota', 'patrulhar'].map(function (k) { return '<button type="button" class="aba" data-ordem="' + k + '" aria-pressed="' + (ex.ordem === k) + '">' + ORDENS[k].nome + '</button>'; }).join('') + '</div>' +
       '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">' + ORDENS[ex.ordem].txt + (ex.tipo === 'batedor' ? ' Batedor de elite furtivo: espiona exércitos e reinos e revela o dono de locais.' : '') + (ex.tipo === 'prospector' ? ' Só o prospector revela jazidas valiosas e lendárias.' : '') + '</p>' +
+      (ex.tipo === 'batedor' ? espiaHTML(ex.alvo) : '') +
       '<div class="secao-titulo">3. Destino</div><div class="card linha destino-card"><span class="ico-placa">' + RP.icone(e.v === 'desconhecido' ? 'nevoa' : 'alvo') + '</span><div style="flex:1"><b>' + destino + '</b><br><small class="fraco">' + (e.v === 'explorado' ? 'Visto ' + RP.fmtHa(e.horas) : e.v === 'visivel' ? 'Visível agora' : 'Nunca visto') + '</small></div>' +
       '<a class="btn btn-p" href="#/mapa?modo=tatico">' + RP.icone('mapa') + 'Trocar</a></div>' +
       '<div class="secao-titulo">4. Caminho</div>' +
@@ -446,7 +471,7 @@
   /* ================================================================ Caça */
   var caca = { fauna: null, grupo: { lanceiro: 0, arqueiro: 4, cavalaria: 0 }, caminho: 'segura' };
   function faunaConhecida() { return D.fauna.filter(function (f) { return W.estado(f.c, f.l).v !== 'desconhecido'; }); }
-  function forcaGrupo(g) { return g.lanceiro * 2 + g.arqueiro * 1.5 + g.cavalaria * 3; }
+  function forcaGrupo(g) { return forcaFauna(g); }
   function perfilGrupo(g) {
     var vels = Object.keys(g).filter(function (k) { return g[k]; }).map(function (k) { return unidade(k).vel; });
     var v = vels.length ? Math.min.apply(null, vels) : 3;
@@ -461,8 +486,8 @@
     if (caca.caminho === 'segura' && !op.segura) caca.caminho = 'curta';
     var esc = op[caca.caminho] || op.curta;
     var total = caca.grupo.lanceiro + caca.grupo.arqueiro + caca.grupo.cavalaria;
-    var lim = { baixo: 4, medio: 12, alto: 24 }[f.nivel], forca = forcaGrupo(caca.grupo);
-    var riscoAlvo = forca >= lim * 2 ? 'nenhum' : forca >= lim ? NIV[Math.max(0, NIV.indexOf(f.nivel) - 1)] : f.nivel;
+    var lim = LIMITE_FAUNA[f.nivel], forca = forcaGrupo(caca.grupo);
+    var riscoAlvo = riscoFauna(f.nivel, forca);
     var h = '<div class="secao-titulo" style="margin-top:0">Alvo</div><div class="escolhas escolhas-lista">' + lista.map(function (x) {
       var ee = W.estado(x.c, x.l), vv = W.faunaVisivel(x), AA = W.ANIMAL[x.tipo];
       return '<button type="button" class="escolha escolha-linha" data-fauna="' + x.id + '" aria-pressed="' + (x.id === caca.fauna) + '"><span class="ico-placa nivel-' + x.nivel + '">' + RP.icone(AA.icone) + '</span>' +
@@ -470,12 +495,12 @@
     }).join('') + '</div>' +
       '<div class="card rend-card"><span class="rotulo">Rendimento estimado · ' + A.nome.toLowerCase() + '</span><div class="linha" style="flex-wrap:wrap;margin-top:6px">' +
       ['comida', 'couro', 'peles'].map(function (r) { return '<span class="selo selo-g">' + RP.icone(r, 'r-' + r) + D.recursos[r].nome + ' <b class="num">' + rend[r] + '</b></span>'; }).join('') + '</div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Os animais reaparecem com o tempo: caçar não limpa a região para sempre.' + (vivo ? '' : ' Última posição conhecida ' + RP.fmtHa(e.horas) + '.') + '</p></div>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Por bando abatido, com 20 min no local. O bando volta em 24 h: caçar não limpa a região para sempre.' + (vivo ? '' : ' Última posição conhecida ' + RP.fmtHa(e.horas) + '.') + '</p></div>' +
       '<div class="secao-titulo">Grupo de caça</div><div class="card pilha">' + ['arqueiro', 'lanceiro', 'cavalaria'].map(function (id) {
         var u = unidade(id), disp = D.disponiveis[id] || 0;
         return '<div class="linha-entre grupo-linha" data-unidade-caca="' + id + '"><span class="linha">' + RP.icone(u.icone) + '<span><b>' + u.nome + '</b><br><small class="fraco">' + disp + ' na guarnição</small></span></span>' + stepper(id, caca.grupo[id], disp) + '</div>';
       }).join('') +
-      '<div class="forca"><div class="linha-entre"><span class="rotulo">Força do grupo</span><span class="fraco">' + total + ' ' + (total === 1 ? 'unidade' : 'unidades') + '</span></div>' +
+      '<div class="forca"><div class="linha-entre"><span class="rotulo">Força do grupo: ' + Math.round(forca) + ' de ' + lim * 2 + '</span><span class="fraco">' + total + ' ' + (total === 1 ? 'unidade' : 'unidades') + '</span></div>' +
       '<div class="barra barra-grossa forca-' + riscoAlvo + '"><i style="width:' + Math.min(100, (100 * forca) / (lim * 2)).toFixed(0) + '%"></i></div>' +
       '<div class="forca-marcas"><span>Grupo pequeno</span><span>Passa ileso</span></div></div></div>' +
       (riscoAlvo === 'nenhum' ? '<div class="risco-linha ok">' + RP.icone('escudo') + '<span><b>Grupo forte o bastante</b><br><small>Grupos médios passam praticamente ilesos.</small></span></div>'
