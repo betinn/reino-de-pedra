@@ -97,7 +97,7 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 23. **Relíquias:** Mais (ou Meu reino) → Relíquias → as suas (onde estão e o efeito), as espionadas, a roubada e as ruínas antigas.
 24. **Escavar:** Relíquias → Escavar (ou a ruína no mapa) → grupo, posto opcional, gráfico de horas por cenário e **para onde levar ao achar** → os trabalhadores aparecem na Vista com "Escavando · tempo" → ao achar, o próprio grupo carrega a relíquia até o local escolhido (marcha com baú, sujeita a roubo).
 25. **Mover com escolta:** Relíquias → Mover → destino (os que já guardam uma ficam bloqueados) → escolta (sem tropas o botão fica inativo; escolta pequena recebe aviso) → caminho: buscar (castelo → local da relíquia) e levar (rota curta ou segura, risco de fauna) → a escolta sai; ao pegar a relíquia, ela deixa de fortalecer a origem e passa a ser carregada, visível no mapa.
-26. **Roubar de outro reino:** Mina Rubra (espionada) → Roubar a relíquia → saque ou cerco com "Priorizar a relíquia": as tropas trazem a relíquia ao castelo e podem ser interceptadas na volta. Na ocupação, a relíquia fica no local tomado. Sabotagem e massacre avisam que não levam a relíquia.
+26. **Roubar de outro reino:** Mina Rubra (espionada) → Roubar a relíquia → confirmação com a relíquia já como primeiro objetivo (ou Ajustar). No saque e no cerco, as tropas trazem a relíquia ao castelo e podem ser interceptadas na volta. Na ocupação, a relíquia fica no local tomado. Sabotagem e massacre avisam que não levam a relíquia.
 27. **Interceptar:** o Cálice das Colheitas acabou de ser roubado e as forças que o levam ainda marcham para o leste (faixa no mundo, notificação, relatório, Relíquias e Meu reino) → Interceptar → tropas → ponto de encontro calculado sobre o caminho deles, com "vocês chegam", "eles passam" e folga. Lanceiros (lentos) não alcançam; arqueiros alcançam por pouco. Se as forças chegam ao destino, a relíquia some na névoa e só a espionagem a acha.
 28. **Recursos no lugar certo:** a barra mostra o estoque do castelo; tocar nela abre o estoque de cada local e "Transportar recursos". Na Construção, cada obra mostra se o material está no local; se falta, "Trazer recursos" abre a caravana já preenchida (origem com mais estoque, carga e carroças). O recrutamento usa o estoque do quartel.
 29. **Caravana:** destino → origem → carga (−/+, Tudo) → carroças e escolta (capacidade, velocidade, aviso de caravana pouco protegida) → caminho (buscar no castelo + levar; rota curta ou segura; risco de fauna) → a caravana sai na Vista (carroças puxadas a boi, escolta). Ao chegar, a carga entra no estoque do destino. Exemplo em andamento: 500 de madeira da Serraria para o Castelo.
@@ -209,80 +209,80 @@ Regras confirmadas estão no `CLAUDE.md`.
 | Posturas padrão | Guarnições: "Apenas defender"; exércitos em campo: "Atacar quem atacar". |
 | Reforço e ocupação | Mesma tela do envio de ataque, em outros modos. |
 
-## Relíquias lendárias (sub-decisões aplicadas, para aprovar)
+## Relíquias lendárias (aprovadas)
 
-As regras definidas estão no `CLAUDE.md`. Detalhes que o protótipo precisou assumir:
+Detalhes que o protótipo assumiu, aprovados e registrados no `CLAUDE.md` (os números são valores de teste):
 
-| Tema | Aplicado | Alternativas |
-|---|---|---|
-| Quantas por local | Sem limite: relíquias juntas somam bônus. Regra sua: quanto mais juntas, mais visíveis. Aplicado: 1 só aparece com espionagem; 2 brilham para quem já explorou a área; 3 ou mais viram farol, visível para todos, até na névoa. | Visibilidade por raio crescente em vez de degraus. |
-| Roubo | Saque, ocupação ou cerco vitorioso levam a relíquia. No saque, "Priorizar a relíquia" a traz antes dos recursos. Sabotagem e massacre não levam. | Só ocupação leva; ou a relíquia ocupa carga como recurso. |
-| Escolta ao mover | As tropas saem do castelo, buscam a relíquia e a levam (duas pernas). A relíquia fortalece a origem até ser pega. Escolta escolhida pelo jogador; abaixo de uma força mínima, aviso de escolta pequena. | Usar a guarnição do próprio local; escolta mínima obrigatória. |
-| Depois de escavar | O grupo de escavação carrega a relíquia até um local escolhido antes de enviar. | Escolher o destino só ao achar (a relíquia espera na ruína, exposta). |
-| Depois de roubar | Saque e cerco: as tropas trazem a relíquia ao castelo, interceptáveis na volta. Ocupação: fica no local tomado. | Trazer sempre ao castelo, inclusive na ocupação. |
-| Interceptar | Tropas vão a um hexágono do caminho deles e precisam chegar ao menos 1 min antes. Quem vence fica com a relíquia, que volta escoltada. | Alcançar por perseguição (atacar a marcha por trás); ou interceptar só em rotas. |
-| Quem vê a relíquia em marcha | Você vê as suas e a sua que foi roubada (sabe que ela vai ali). Marchas de outros reinos não mostram se carregam relíquia sem espionagem. | Relíquia em marcha sempre visível para todos (brilho no mapa). |
-| Visibilidade | Só a espionagem mostra relíquias de outros reinos (selo no mapa, pedestal na Vista, linha no envio). Relíquia roubada de você some até ser espionada. | Brilho visível de longe, sem revelar o tipo nem o dono. |
-| Ruína antiga | Guarda 1 relíquia; o tipo só se conhece ao achar; esgota depois. | Tipo visível antes de escavar; ruína com várias relíquias. |
-| Escavação | Uma unidade já escava (≈ 12 h); mais tropas e posto encurtam, mínimo de 4 h. Tropas ficam paradas na ruína. | Tempo fixo; ou exigir prospector. |
-| Bônus (mock) | Ataque +15% nas tropas que saem do local; produção +15% do local; resistência +20% na defesa do local. | Bônus que cresce com o tempo guardado; bônus menor fora do castelo. |
-| Fim da temporada | Relíquias lendárias ficam na temporada (recomeçam com o mapa). São distintas das relíquias da temporada do legado. | Quem termina com relíquias ganha um título ou uma relíquia de legado. |
-| Mundo | Até 30 reinos por mundo (regra sua) → até 30 relíquias. | — |
+| Tema | Decisão |
+|---|---|
+| Quantas por local | Sem limite: relíquias juntas somam bônus e ficam mais visíveis. 1 só aparece com espionagem; 2 brilham para quem já explorou a área; 3 ou mais viram farol, visível para todos, até na névoa. |
+| Roubo | Saque, ocupação ou cerco vitorioso levam a relíquia; ela entra como objetivo do ataque. Sabotagem e massacre não levam. |
+| Escolta ao mover | As tropas saem do castelo, buscam a relíquia e a levam (duas pernas). A relíquia fortalece a origem até ser pega. Escolta escolhida pelo jogador; abaixo de uma força mínima, aviso de escolta pequena. |
+| Depois de escavar | O grupo de escavação carrega a relíquia até um local escolhido antes de enviar. |
+| Depois de roubar | Saque e cerco: as tropas trazem a relíquia ao castelo, interceptáveis na volta. Ocupação: fica no local tomado. |
+| Interceptar | Tropas vão a um hexágono do caminho deles e precisam chegar ao menos 1 min antes. Quem vence fica com a relíquia, que volta escoltada. |
+| Quem vê a relíquia em marcha | Você vê as suas e a sua que foi roubada (sabe que ela vai ali). Marchas de outros reinos não mostram se carregam relíquia sem espionagem. |
+| Visibilidade | Só a espionagem mostra relíquias de outros reinos (selo no mapa, pedestal na Vista, linha no envio). Relíquia roubada de você some até ser espionada. |
+| Ruína antiga | Guarda 1 relíquia; o tipo só se conhece ao achar; esgota depois. |
+| Escavação | Uma unidade já escava (≈ 12 h); mais tropas e posto encurtam, mínimo de 4 h. Tropas ficam paradas na ruína. |
+| Bônus (mock) | Ataque +15% nas tropas que saem do local; produção +15% do local; resistência +20% na defesa do local. |
+| Fim da temporada | Relíquias lendárias ficam na temporada (recomeçam com o mapa). São distintas das relíquias da temporada do legado. |
+| Mundo | Até 30 reinos por mundo (regra sua) → até 30 relíquias. |
 
-## Objetivos e tática do ataque (sub-decisões aplicadas, para aprovar)
+## Objetivos e tática do ataque (aprovadas)
 
-A regra (objetivos em ordem de prioridade + tática; as tropas sabem quando parar e voltar) está no `CLAUDE.md`.
+Aprovadas e registradas no `CLAUDE.md` (os números são valores de teste).
 
-| Tema | Aplicado | Alternativas |
-|---|---|---|
-| Objetivos por tipo | Saque: relíquia e recursos (madeira, pedra, comida, ferro, couro, peles) com quantidade. Sabotagem: derrubar torre e a construção do local, em níveis (1 a 3). Massacre: população. Ocupação: "Tomar o local" (fixo) + relíquia. Cerco: portões, torres, relíquia e recursos. | Objetivos livres para qualquer tipo; incluir animais e armas no saque. |
-| Ordem | O jogador ordena (subir prioridade); se um objetivo não existe no local, as tropas passam ao próximo. | Objetivos simultâneos, sem ordem. |
-| Padrão | Ao escolher o alvo: relíquia espionada (se houver) + o recurso principal do local, 1.000. Sem objetivo, o envio fica bloqueado. | Começar vazio; permitir enviar sem objetivo ("pegar o que der"). |
-| Tática | Conservadora 25%, Média 40% (padrão), Agressiva 60%, Sem limite: definidas por você e registradas no `CLAUDE.md`. | — |
-| Carga | Objetivos de recurso somam carga; acima da capacidade das tropas, aviso. As tropas param quando a carga enche. A relíquia não ocupa carga. | Bloquear o envio quando passa da carga; relíquia ocupa carga. |
-| Encher a carga | Opção "depois dos objetivos, encher a carga com o que houver" (desligada por padrão). | Sempre encher. |
-| Previsão | Espionagem mostra o estoque do alvo ("≈ 2.400 de ferro, há 10 h") e avisa "pode faltar". Sem espionagem: "desconhecido · espione antes". | Mostrar chance de sucesso estimada. |
-| Relatório | Cada objetivo com resultado (cumprido, parcial, falhou), o obtido e o motivo da volta. | — |
+| Tema | Decisão |
+|---|---|
+| Objetivos por tipo | Saque: relíquia e recursos (madeira, pedra, comida, ferro, couro, peles) com quantidade. Sabotagem: derrubar torre e a construção do local, em níveis (1 a 3). Massacre: população. Ocupação: "Tomar o local" (fixo) + relíquia. Cerco: portões, torres, relíquia e recursos. |
+| Ordem | O jogador ordena (subir prioridade); se um objetivo não existe no local, as tropas passam ao próximo. |
+| Padrão | Ao escolher o alvo: relíquia espionada (se houver) + o recurso principal do local, 1.000. Sem objetivo, o envio fica bloqueado. |
+| Tática | Conservadora 25%, Média 40% (padrão), Agressiva 60%, Sem limite: definidas por você e registradas no `CLAUDE.md`. |
+| Carga | Objetivos de recurso somam carga; acima da capacidade das tropas, aviso. As tropas param quando a carga enche. A relíquia não ocupa carga. |
+| Encher a carga | Opção "depois dos objetivos, encher a carga com o que houver" (desligada por padrão). |
+| Previsão | Espionagem mostra o estoque do alvo ("≈ 2.400 de ferro, há 10 h") e avisa "pode faltar". Sem espionagem: "desconhecido · espione antes". |
+| Relatório | Cada objetivo com resultado (cumprido, parcial, falhou), o obtido e o motivo da volta. |
 
-## Logística, torres e avistamentos (sub-decisões aplicadas, para aprovar)
+## Logística, torres e avistamentos (aprovadas)
 
-As regras (recursos transportados até onde são usados, veículos construídos com recursos, torres de arqueiros no lugar dos muros, espiões vistos por 10 h, limpeza do mapa) estão no `CLAUDE.md`.
+Aprovadas e registradas no `CLAUDE.md` (os números são valores de teste).
 
-| Tema | Aplicado | Alternativas |
-|---|---|---|
-| Barra de recursos | Mostra o estoque do castelo (sede); a folha mostra cada local e o total do reino. | Mostrar o total do reino com aviso; seletor de local na barra. |
-| Produção | Cada local acumula a própria produção (serraria: madeira; minas: ferro e pedra; vilas e pasto: comida). Valiosos ficam no Armazém Real. | Toda produção vai direto ao armazém mais próximo. |
-| Onde se usa | Obra usa o estoque do local da obra; o que falta vem por requisição automática dos locais mais próximos (regra sua). Recrutamento: quartel, idem. | — |
-| Requisição | Origens em ordem de distância; a obra entra na fila e só começa quando o material chega. A carga sai da origem na hora e é consumida pela obra ao chegar. Carregadores: 1 a cada 50 de carga, a pé, sem escolta. | Usar carroças livres quando houver; escolta automática para cargas grandes. |
-| Veículos | Carroça (500, lenta, madeira + ferro) e Carroção (1.500, média, usa 2 cavalos de raça). Ficam no castelo: saem, buscam na origem e levam. | Veículos parados em qualquer local; animais de carga separados. |
-| Escolta | Opcional; carrega um pouco (25 por ponto de carga). Abaixo de uma força mínima, aviso "pouco protegida" (fauna e saqueadores). | Escolta obrigatória acima de certa carga. |
-| Reserva | A carga sai do estoque da origem ao enviar e entra no destino ao chegar. | Sai só quando a caravana passa pela origem. |
-| Abastecimento | Sem rota repetida (decisão sua: fica para depois). A requisição automática cobre o caso comum. | — |
-| Torres | Construção própria num hexágono ao lado de um local. Alcance = nível + 1 hexágonos (máx. nível 3, alcance 4); 4 arqueiros por nível. Protege todos os seus locais no alcance. Custo 400 de pedra + 150 de madeira; subir nível custa mais a cada nível. | Alcance fixo; arqueiros tirados da guarnição. |
-| Castelo | Sem muros: o castelo tem portões (nível 3) e 4 torres próprias. Aríetes derrubam portões e torres. | Castelo também só com torres. |
-| Torre alheia | Visível quando o hexágono já foi explorado (nível e alcance); arqueiros só para suas torres e de aliados. | Só a espionagem mostra o nível. |
-| Avistamentos | Espiões e exércitos vistos ficam 10 h e somem; a limpeza roda a cada minuto. Placas de perigo da fauna seguem a névoa e não somem. | Validade diferente por tipo; limpar também as placas de perigo. |
+| Tema | Decisão |
+|---|---|
+| Barra de recursos | Mostra o estoque do castelo (sede); a folha mostra cada local e o total do reino. |
+| Produção | Cada local acumula a própria produção (serraria: madeira; minas: ferro e pedra; vilas e pasto: comida). Valiosos ficam no Armazém Real. |
+| Onde se usa | Obra usa o estoque do local da obra; o que falta vem por requisição automática dos locais mais próximos (regra sua). Recrutamento: quartel, idem. |
+| Requisição | Origens em ordem de distância; a obra entra na fila e só começa quando o material chega. A carga sai da origem na hora e é consumida pela obra ao chegar. Carregadores: 1 a cada 50 de carga, a pé, sem escolta. |
+| Veículos | Carroça (500, lenta, madeira + ferro) e Carroção (1.500, média, usa 2 cavalos de raça). Ficam no castelo: saem, buscam na origem e levam. |
+| Escolta | Opcional; carrega um pouco (25 por ponto de carga). Abaixo de uma força mínima, aviso "pouco protegida" (fauna e saqueadores). |
+| Reserva | A carga sai do estoque da origem ao enviar e entra no destino ao chegar. |
+| Abastecimento | Sem rota repetida (decisão sua: fica para depois). A requisição automática cobre o caso comum. |
+| Torres | Construção própria num hexágono ao lado de um local. Alcance = nível + 1 hexágonos (máx. nível 3, alcance 4); 4 arqueiros por nível. Protege todos os seus locais no alcance. Custo 400 de pedra + 150 de madeira; subir nível custa mais a cada nível. |
+| Castelo | Sem muros: o castelo tem portões (nível 3) e 4 torres próprias. Aríetes derrubam portões e torres. |
+| Torre alheia | Visível quando o hexágono já foi explorado (nível e alcance); arqueiros só para suas torres e de aliados. |
+| Avistamentos | Espiões e exércitos vistos ficam 10 h e somem; a limpeza roda a cada minuto. Placas de perigo da fauna seguem a névoa e não somem. |
 
-## Aliança, modelos e "Precisa de você" (sub-decisões aplicadas, para aprovar)
+## Aliança, modelos e "Precisa de você" (aprovadas)
 
-| Tema | Aplicado | Alternativas |
-|---|---|---|
-| Limite de membros | 5 reinos por aliança (num mundo de até 30). | 4 ou 6; limite proporcional ao tamanho do mundo. |
-| O que aliados veem | Nome, brasão e cor verde dos locais aliados (sem espionar) e as marchas uns dos outros. | Ver também a névoa explorada dos aliados. |
-| Pedido de recursos | Pede um recurso, quantidade e local de entrega; o aliado aceita ou recusa. Ao aceitar, a carga sai dos locais mais próximos do aliado e viaja visível e roubável. | Pedidos abertos a toda a aliança; limite de pedidos por dia. |
-| Aliados e ataque | Locais aliados não aparecem como alvo de ataque. | Permitir traição com aviso (sai da aliança). |
-| Modelos | Três modelos de exemplo + "Salvar atual"; "Repetir último" no envio e em Tropas. O recurso do modelo pode ser "principal do alvo". | Modelos por alvo. |
-| Precisa de você | Três grupos (Agora, Oportunidades, No seu reino); resumo de até 3 itens no topo de Meu reino. Sem missões e sem recompensa. | Pontinho de alerta na aba Reino. |
+| Tema | Decisão |
+|---|---|
+| Limite de membros | 5 reinos por aliança (num mundo de até 30). |
+| O que aliados veem | Nome, brasão e cor verde dos locais aliados (sem espionar) e as marchas uns dos outros. |
+| Pedido de recursos | Pede um recurso, quantidade e local de entrega; o aliado aceita ou recusa. Ao aceitar, a carga sai dos locais mais próximos do aliado e viaja visível e roubável. |
+| Aliados e ataque | Locais aliados não aparecem como alvo de ataque. |
+| Modelos | Três modelos de exemplo + "Salvar atual"; "Repetir último" no envio e em Tropas. O recurso do modelo pode ser "principal do alvo". |
+| Precisa de você | Três grupos (Agora, Oportunidades, No seu reino); resumo de até 3 itens no topo de Meu reino. Sem missões e sem recompensa. |
 
-## Ataque em 3 toques e apresentação aos poucos (sub-decisões aplicadas, para aprovar)
+## Ataque em 3 toques e apresentação aos poucos (aprovadas)
 
-| Tema | Aplicado | Alternativas |
-|---|---|---|
-| Tropas padrão da ordem | As do último ataque (limitadas ao que está no castelo); sem histórico, metade de cada tipo. | Sempre todas; perguntar na primeira vez. |
-| Padrão do ataque | Saque, objetivos automáticos (relíquia à vista + recurso principal do local), tática média, sem estandarte, rota curta. | Padrão por tipo de alvo (castelo → cerco). |
-| Destino livre | Hexágono vazio ou local de aliado vira "Mover": as tropas vão e ficam, com postura "atacar apenas quem atacar". | Patrulhar entre dois pontos. |
-| Gatilhos | Transporte manual: primeiro local longe do castelo. Espionagem: primeiro espião visto ou primeiro ataque. Torres: forças desconhecidas perto do reino. Relíquias: primeira ruína antiga ou farol. Alianças: primeiro reino conhecido. Ao aparecer, um aviso curto "Novo: …". | Mostrar também um ponto "novo" no menu até o primeiro uso. |
-| O que some antes do gatilho | Menus, abas e botões do sistema (Mais, Construção, folhas do mapa, "Precisa de você"). O mundo continua igual: nada é bloqueado. | Mostrar esmaecido com o gatilho. |
+| Tema | Decisão |
+|---|---|
+| Tropas padrão da ordem | As do último ataque (limitadas ao que está no castelo); sem histórico, metade de cada tipo. |
+| Padrão do ataque | Saque, objetivos automáticos (relíquia à vista + recurso principal do local), tática média, sem estandarte, rota curta. |
+| Destino livre | Hexágono vazio ou local de aliado vira "Mover": as tropas vão e ficam, com postura "atacar apenas quem atacar". |
+| Gatilhos | Transporte manual: primeiro local longe do castelo. Espionagem: primeiro espião visto ou primeiro ataque. Torres: forças desconhecidas perto do reino. Relíquias: primeira ruína antiga ou farol. Alianças: primeiro reino conhecido. Ao aparecer, um aviso curto "Novo: …". |
+| O que some antes do gatilho | Menus, abas e botões do sistema (Mais, Construção, folhas do mapa, "Precisa de você"). O mundo continua igual: nada é bloqueado. |
 
 ## Pontos em aberto
 
@@ -302,5 +302,14 @@ As telas são conferidas em navegador headless com viewport de celular (390 × 8
 Revisão final:
 - **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 46 rotas (todas as telas, ordem rápida, folha de torre, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
 - **Toque:** todos os botões e links com pelo menos 44 × 44 px.
+- **Toques por ação** (medidos no navegador headless, contando a abertura da aba ou do mapa):
+
+  | Ação | Toques |
+  |---|---|
+  | Construir num local sem material (a requisição traz o resto) | 2 |
+  | Recrutar 10 lanceiros | 4 |
+  | Saquear um local inimigo | 4 |
+  | Responder a um ataque (reforçar) | 4 |
+  | Interceptar uma relíquia roubada (tropa que alcança já vem escolhida) | 2 |
 - **Larguras:** sem rolagem horizontal em 360, 375, 430 e 1024 px.
 - **Gráficos:** cores do gráfico de batalha validadas contra o fundo (faixa de luminosidade, daltonismo e contraste); legenda, rótulos diretos, leitura por toque e tabela.

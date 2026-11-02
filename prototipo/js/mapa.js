@@ -631,7 +631,7 @@
           linhaInfo('Forças', o.resumo) + linhaInfo('Vindo do', o.origem) + linhaInfo('Alvo provável', alvoNome) +
           linhaInfo('Chegada', '<b class="num" data-fim="' + o.chegada + '">' + RP.fmtResta(o.chegada - Date.now()) + '</b>') +
           '</div><p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Sem estandarte, o atacante não é revelado. Batedores podem descobrir quem é.</p>';
-        acoes = botao('Enviar reforços', 'escudo', 'btn-primario', 'data-ir="envio?modo=reforco&destino=' + o.alvo + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
+        acoes = botao('Enviar reforços', 'escudo', 'btn-primario', 'data-ordem-alvo="' + o.alvo + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
       } else if (o.dono === 'meu') {
         corpo = avisoRisco + '<div class="info">' + linhaInfo('Ordem', o.resumo) + (alvoNome ? linhaInfo('Destino', alvoNome) : '') +
           (o.objetivos ? linhaInfo('Objetivos', RP.esc(o.objetivos)) + linhaInfo('Tática', RP.esc(o.tatica)) : '') +

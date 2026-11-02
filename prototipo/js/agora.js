@@ -18,7 +18,7 @@
     W.marchas.forEach(function (m) {
       var x = m.d.alvo && W.local(m.d.alvo);
       if (m.d.hostil && x && x.reino === 'meu' && m.d.chegada > agora)
-        L.push({ g: 'urgente', ic: 'alerta', t: 'Ataque a caminho: ' + x.nome, d: 'forças desconhecidas · chegam em ' + tempo(m.d.chegada), href: '#/envio?modo=reforco&destino=' + x.id, bt: 'Reforçar' });
+        L.push({ g: 'urgente', ic: 'alerta', t: 'Ataque a caminho: ' + x.nome, d: 'forças desconhecidas · chegam em ' + tempo(m.d.chegada), href: '#/mapa?ordem=1&destino=' + x.id, bt: 'Reforçar' });
     });
     if (RP.sistema('reliquias')) D.reliquias.forEach(function (r) {
       var m = RP.ladroesDe && RP.ladroesDe(r);

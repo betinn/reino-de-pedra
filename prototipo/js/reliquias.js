@@ -284,6 +284,17 @@
     cacheEncontro[chave] = { r: r, ate: Date.now() + 20000 };
     return r;
   }
+  /* tropa pré-escolhida: a mais rápida que chega a tempo, até 10 unidades; o jogador pode mudar */
+  function grupoQueAlcanca(m) {
+    var ordem = ['cavalaria', 'arqueiro', 'lanceiro'];
+    for (var i = 0; i < ordem.length; i++) {
+      var k = ordem[i], q = Math.min(10, G.disp(k));
+      if (!q) continue;
+      var g = { lanceiro: 0, arqueiro: 0, cavalaria: 0 }; g[k] = q;
+      if (m.d.chegada > Date.now() && encontro(m, G.perfil(g))) return g;
+    }
+    return { lanceiro: 0, arqueiro: 0, cavalaria: 0 };
+  }
   function desenharInterceptar(el) {
     var m = W.marcha(it.marcha), r = RP.reliquiaNaMarcha(it.marcha), ativa = m.d.chegada > Date.now();
     var n = G.soma(it.grupo), perfil = G.perfil(it.grupo), enc = ativa && n ? encontro(m, perfil) : null;
@@ -328,8 +339,10 @@
       });
     },
     entrar: function (el, params) {
+      var antes = it.marcha;
       it.marcha = params.get('marcha') || it.marcha || 'm-roubo';
       if (!W.marcha(it.marcha)) { RP.ir('reliquias'); return; }
+      if (antes !== it.marcha || !G.soma(it.grupo)) it.grupo = grupoQueAlcanca(W.marcha(it.marcha));
       desenharInterceptar(el);
     }
   });
