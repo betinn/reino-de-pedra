@@ -69,6 +69,11 @@ public sealed class Cliente : IDisposable
         var r = await Http.PostAsJsonAsync(url, corpo ?? new { }, J);
         return (r.StatusCode, await Ler(r));
     }
+    public async Task<(HttpStatusCode status, JsonElement corpo)> Put(string url, object? corpo = null)
+    {
+        var r = await Http.PutAsJsonAsync(url, corpo ?? new { }, J);
+        return (r.StatusCode, await Ler(r));
+    }
     public async Task<(HttpStatusCode status, JsonElement corpo)> Get(string url)
     {
         var r = await Http.GetAsync(url);

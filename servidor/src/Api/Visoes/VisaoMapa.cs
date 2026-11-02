@@ -37,7 +37,7 @@ public static class VisaoMapa
         }
         foreach (var x in m.Marchas)
         {
-            if (x.ReinoId == r.Id) { objetos.Add(new { tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "meu", caminho = x.Caminho, tempos = x.Tempos }); continue; }
+            if (x.ReinoId == r.Id) { objetos.Add(new { tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "meu", hex = x.HexEm(agora), caminho = x.Caminho, tempos = x.Tempos }); continue; }
             var h = x.HexEm(agora);
             if (!vis.Contains(h)) continue;
             objetos.Add(new { tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "desconhecido", hex = h, progresso = x.ProgressoEm(agora), caminho = x.Caminho, tempos = x.Tempos, tamanho = Aproximado(x.Tropas.Values.Sum()) });
