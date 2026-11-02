@@ -585,6 +585,105 @@
     "minimo": 3,
     "caracteres": 60
    }
+  },
+  "temporadaServ": {
+   "linhagem": {
+    "inicial": 1,
+    "max": 10,
+    "diasAtivos": 30
+   },
+   "desbloqueios": {
+    "brasoes": 2,
+    "titulos": 3,
+    "regiao": 5,
+    "exilio": 7,
+    "moldura": 10
+   },
+   "rankingTop": 3,
+   "bonusPos": [
+    0.02,
+    0.015,
+    0.01
+   ],
+   "bonusLendaria": 0.015,
+   "bonusCerco": 0.015,
+   "conquistas": {
+    "baixas": {
+     "tipo": "ataque",
+     "reliquia": "Espada Rubra",
+     "titulo": "Flagelo dos Exércitos"
+    },
+    "tropas": {
+     "tipo": "defesa",
+     "reliquia": "Elmo da Guarda",
+     "titulo": "Senhor das Hostes"
+    },
+    "familias": {
+     "tipo": "crescimento",
+     "reliquia": "Cálice da Fartura",
+     "titulo": "Pai do Povo"
+    },
+    "lendaria": {
+     "tipo": "producao",
+     "reliquia": "Selo do Guardião",
+     "titulo": "Guardião de Relíquia"
+    },
+    "cerco": {
+     "tipo": "ataque",
+     "reliquia": "Aríete de Bronze",
+     "titulo": "Sitiante"
+    }
+   },
+   "titulosLinhagem": [
+    {
+     "nivel": 3,
+     "nome": "Herdeiro da Pedra"
+    },
+    {
+     "nivel": 5,
+     "nome": "Senhor de Terras"
+    },
+    {
+     "nivel": 7,
+     "nome": "Casa Antiga"
+    },
+    {
+     "nivel": 10,
+     "nome": "Linhagem Lendária"
+    }
+   ],
+   "regioes": {
+    "norte": [
+     0.5,
+     0.12
+    ],
+    "sul": [
+     0.5,
+     0.88
+    ],
+    "leste": [
+     0.88,
+     0.5
+    ],
+    "oeste": [
+     0.12,
+     0.5
+    ],
+    "centro": [
+     0.5,
+     0.5
+    ]
+   },
+   "iaExtras": 0.35,
+   "iaMoldura": 0.04
+  },
+  "agoraServ": {
+   "escudoH": 12,
+   "feridosUrgenteH": 6,
+   "popTeto": 0.95,
+   "estoqueCheio": 0.98,
+   "armazem": 0.9,
+   "maxPorTipo": 3
   }
  },
  "U": {

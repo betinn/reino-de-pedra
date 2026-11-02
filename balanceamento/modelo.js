@@ -210,6 +210,40 @@ const P = {
     propostaH: 24,                                         /* convites, pedidos de entrada e de recursos, trocas e pactos sem resposta expiram em 24 h */
     novatoJanelaH: 24,                                     /* o "dia" do limite do novato (P.comercio.novatoDia) é uma janela móvel de 24 h */
     bandeiras: { ativas: 20, minimo: 3, caracteres: 60 }   /* por reino: até 20 ativas; recado de 3 a 60 caracteres */
+  },
+  /* ---------- temporada, legado, ranking e "precisa de você" (servidor) ---------- */
+  temporadaServ: {
+    /* linhagem: começa em 1, +1 por temporada jogada (ativo, isto é, abriu o jogo, em pelo menos diasAtivos dias) e +1 por relíquia
+       da temporada ganha, até o máximo. Desbloqueios por nível: opções e cosméticos, nunca poder. */
+    linhagem: { inicial: 1, max: 10, diasAtivos: 30 },
+    desbloqueios: { brasoes: 2, titulos: 3, regiao: 5, exilio: 7, moldura: 10 },
+    /* relíquias da temporada (entre P.legado.relMin e relMax): top 3 de baixas, tropas ou famílias (perdas não contam) pela posição;
+       terminar com relíquia lendária em seu poder; ter vencido um cerco a um castelo. Uma por conquista. */
+    rankingTop: 3,
+    bonusPos: [0.02, 0.015, 0.01], bonusLendaria: 0.015, bonusCerco: 0.015,
+    /* que bônus cada conquista dá e o título que acompanha */
+    conquistas: {
+      baixas: { tipo: 'ataque', reliquia: 'Espada Rubra', titulo: 'Flagelo dos Exércitos' },
+      tropas: { tipo: 'defesa', reliquia: 'Elmo da Guarda', titulo: 'Senhor das Hostes' },
+      familias: { tipo: 'crescimento', reliquia: 'Cálice da Fartura', titulo: 'Pai do Povo' },
+      lendaria: { tipo: 'producao', reliquia: 'Selo do Guardião', titulo: 'Guardião de Relíquia' },
+      cerco: { tipo: 'ataque', reliquia: 'Aríete de Bronze', titulo: 'Sitiante' }
+    },
+    /* títulos da linhagem (aparecem ao chegar no nível; só podem ser usados a partir de desbloqueios.titulos) */
+    titulosLinhagem: [{ nivel: 3, nome: 'Herdeiro da Pedra' }, { nivel: 5, nome: 'Senhor de Terras' }, { nivel: 7, nome: 'Casa Antiga' }, { nivel: 10, nome: 'Linhagem Lendária' }],
+    /* centro de cada região (fração de colunas e linhas do mapa) para escolher a vaga inicial (nível 5) e o exílio (nível 7) */
+    regioes: { norte: [0.5, 0.12], sul: [0.5, 0.88], leste: [0.88, 0.5], oeste: [0.12, 0.5], centro: [0.5, 0.5] },
+    /* reinos de IA sorteiam o brasão como um jogador veterano às vezes (cores e formas extras, moldura), para não se distinguirem */
+    iaExtras: 0.35, iaMoldura: 0.04
+  },
+  /* "precisa de você": limites para listar (sem tique; calculado a cada GET /agora) */
+  agoraServ: {
+    escudoH: 12,              /* escudo acabando: menos de 12 h */
+    feridosUrgenteH: 6,       /* feridos que morrem em menos de 6 h ficam no grupo "agora" */
+    popTeto: 0.95,            /* população (civil + tropas) a 95% do teto */
+    estoqueCheio: 0.98,       /* local de produção com o estoque a 98% da capacidade: a produção para */
+    armazem: 0.9,             /* armazém a 90% */
+    maxPorTipo: 3             /* no máximo 3 itens de cada tipo (jazidas, ruínas, estoques...) */
   }
 };
 

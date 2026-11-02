@@ -165,6 +165,48 @@ public sealed class ParametrosP
     public FerrariaServP FerrariaServ { get; init; } = new();
     // ---------- social (servidor): alianças, conversa, mensagens, propostas e bandeiras
     public SocialP Social { get; init; } = new();
+    // ---------- temporada, legado, ranking e "precisa de você" (servidor) ----------
+    public TemporadaServP TemporadaServ { get; init; } = new();
+    public AgoraServP AgoraServ { get; init; } = new();
+}
+
+// ---------- temporada, legado, ranking e "precisa de você" (servidor) ----------
+public sealed class TemporadaServP
+{
+    public LinhagemP Linhagem { get; init; } = new();
+    public DesbloqueiosP Desbloqueios { get; init; } = new();
+    /// <summary>Posições do ranking que ganham relíquia da temporada (baixas, tropas e famílias; perdas não contam).</summary>
+    public int RankingTop { get; init; }
+    public double[] BonusPos { get; init; } = [];
+    public double BonusLendaria { get; init; }
+    public double BonusCerco { get; init; }
+    /// <summary>Conquista ("baixas", "tropas", "familias", "lendaria", "cerco") → tipo do bônus, nome da relíquia e título.</summary>
+    public Dictionary<string, ConquistaP> Conquistas { get; init; } = new();
+    public TituloLinhagemP[] TitulosLinhagem { get; init; } = [];
+    /// <summary>Região → centro (fração de colunas, fração de linhas).</summary>
+    public Dictionary<string, double[]> Regioes { get; init; } = new();
+    public double IaExtras { get; init; }
+    public double IaMoldura { get; init; }
+}
+public sealed class LinhagemP { public int Inicial { get; init; } public int Max { get; init; } public int DiasAtivos { get; init; } }
+public sealed class DesbloqueiosP
+{
+    public int Brasoes { get; init; }
+    public int Titulos { get; init; }
+    public int Regiao { get; init; }
+    public int Exilio { get; init; }
+    public int Moldura { get; init; }
+}
+public sealed class ConquistaP { public string Tipo { get; init; } = ""; public string Reliquia { get; init; } = ""; public string Titulo { get; init; } = ""; }
+public sealed class TituloLinhagemP { public int Nivel { get; init; } public string Nome { get; init; } = ""; }
+public sealed class AgoraServP
+{
+    public double EscudoH { get; init; }
+    public double FeridosUrgenteH { get; init; }
+    public double PopTeto { get; init; }
+    public double EstoqueCheio { get; init; }
+    public double Armazem { get; init; }
+    public int MaxPorTipo { get; init; }
 }
 
 // ---------- ferraria, eras e equipamento lendário (servidor) ----------
