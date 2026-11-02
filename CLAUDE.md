@@ -84,6 +84,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **O reino base já gera recursos básicos** suficientes para recrutar tropas básicas, sem depender de exploração.
 - Recursos ficam **no local** onde estão. Para usar (construir, recrutar), é preciso **transportá-los até o local** onde são necessários; não dá para usar recurso "de qualquer lugar". Vale a mesma lógica das relíquias: o transporte é feito por tropas e a carga pode ser **roubada no meio do caminho**.
 - **Veículos de transporte** (ex.: carroças) facilitam o transporte e também são construídos com recursos.
+- **Construir gera uma requisição**: os recursos que faltam são enviados automaticamente pelos locais **mais próximos**, levados por tropas ou população, sem ação manual. A construção mostra que está **aguardando a chegada dos recursos**, e o transporte é visível no mapa. Quem constrói se preocupa com o tempo, sem precisar aprender a enviar recursos de um lugar para outro desde o início.
+- O **envio manual** de recursos de um local para outro continua possível.
 
 ### Extração
 
@@ -99,6 +101,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Tipos: **ataque**, **produção** e **resistência** (defesa).
 - Relíquias podem ser **roubadas** e são **descobertas por espionagem**.
 - Relíquias **não se movem sozinhas**: são sempre transportadas por tropas, e podem ser **roubadas no meio do caminho**.
+- Relíquias podem ficar juntas no mesmo local, mas **quanto mais relíquias no mesmo lugar, maior a visibilidade** desse local para os outros jogadores.
 - Objetivo: tornar o PvP mais desejável, com alvos que dão vantagem real além de recursos.
 
 ### Tempos
@@ -201,6 +204,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ## Reinos controlados por IA
 
 - O mundo nunca deve parecer vazio: existe uma **meta de ocupação** de reinos ativos por mundo, completada por reinos de IA quando faltam jogadores.
+- Cada mundo é **controlado para até 30 reinos**, para manter as relíquias como motivo de confronto (uma por reino).
 - **Indistinguíveis**: reinos de IA não são identificados como tal para os jogadores.
 - **Mesmas regras dos jogadores**: timers, recursos, população e limites idênticos, sem trapaça. Perfis variados (expansionista, defensivo, saqueador, comerciante) e níveis de habilidade diferentes.
 - Respeitam o escudo de novato e calibram a agressividade pelo porte do alvo.
@@ -210,6 +214,22 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - A regência é **conservadora** (defende e produz, sem expansão agressiva), para que abandonar nunca seja vantajoso.
   - Se a ocupação cair abaixo da meta, novos reinos de IA surgem em regiões com pouca atividade.
 - Cada temporada começa com mais reinos de IA, que vão saindo conforme a base de jogadores cresce.
+
+---
+
+## Alianças
+
+- Reinos podem formar **alianças** e **pedir recursos a aliados**.
+- Alianças têm **limite de membros**, por balanceamento: alianças muito grandes geram problemas.
+
+---
+
+## Experiência do jogador
+
+- **Jogo livre**: sem missões fixas ou obrigatórias; nada força o jogador a fazer algo.
+- Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
+- **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.
+- Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação.
 
 ---
 
@@ -241,4 +261,4 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Valores concretos de tempos, custos e rendimentos (balanceamento).
 - Lista final de recursos valiosos e lendários.
 - Duração exata das temporadas e regras precisas de legado.
-- Detalhes de diplomacia e alianças.
+- Detalhes de diplomacia e regras finas de alianças (tamanho exato do limite, cargos, saída e traição).
