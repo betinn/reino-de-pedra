@@ -1,5 +1,4 @@
-/* Reino de Pedra — modelo de balanceamento (v1 aprovado; v2 em validação: valiosos, comércio, ferraria, eras,
-   veterania, feridos, equipamento lendário e queda do castelo).
+/* Reino de Pedra — modelo de balanceamento (aprovado).
    Uso: node balanceamento/modelo.js > balanceamento/tabelas.md
    Sem dependências. Todos os números de jogo saem dos parâmetros abaixo; as metas no fim
    são verificadas a cada execução (✓ ou ✗). Mudar um parâmetro e rodar de novo mostra o efeito. */
@@ -50,7 +49,7 @@ const P = {
   /* alianças */
   alianca: 5,
 
-  /* ---------- v2 ---------- */
+  /* ---------- valiosos, comércio, ferraria e guerra ---------- */
   /* valor de referência em recursos básicos: orienta trocas, a IA comerciante e o limite do novato (não é preço fixo) */
   valor: { comida: 1, madeira: 1, pedra: 1, ferro: 1, couro: 2, peles: 2, sal: 6, ervas: 8, prata: 10, aco: 15, ouro: 20, gema: 30, cavalo: 40, minerio: 60 },
   /* jazidas finitas: cada jazida valiosa guarda 20 mil em valor; 1 de cada valioso para cada 3 reinos; minério raro: 1 para cada 6 */
@@ -359,14 +358,14 @@ Object.entries(PERFIS).forEach(([k, pf]) => {
   out('\nGasto em obras ' + r0(S.gastoObra / 1000) + ' mil · em tropas ' + r0(S.gastoMil / 1000) + ' mil · economia no máximo (nível médio ≥ 9,5), sem guerra: ' + (S.diaMax ? 'dia ' + S.diaMax : 'não chega') + '.\n');
 });
 
-/* ---------- v2: queda do castelo (médio, dia 35) ---------- */
+/* ---------- queda do castelo (médio, dia 35) ---------- */
 const quedaS = simular(PERFIS.medio, { quedaDia: 35 });
 out('### Queda do castelo no dia 35 (médio)\n');
 out('O castelo cai com o reino ainda tendo outros locais: a sede vai para o local de maior nível, que vira castelo com ' + P.queda.nivel * 100 + '% do nível antigo; o reino perde ' + P.queda.recursos * 100 + '% dos recursos guardados e ' + P.queda.populacao * 100 + '% da população civil; as relíquias do castelo vão com o atacante. A simulação supõe ainda ' + P.queda.tropas * 100 + '% das tropas mortas no cerco e a fila de obras perdida.\n');
 out('- Castelo: nível ' + quedaS.casteloAntes + ' → ' + Math.max(1, Math.floor(quedaS.casteloAntes * P.queda.nivel)) + '. Volta ao nível ' + quedaS.casteloAntes + ' em ' + (quedaS.recupCastelo != null ? quedaS.recupCastelo + ' dias' : 'mais que o resto da temporada') + '.');
 out('- Produção: ' + r0(quedaS.prodAntes) + '/h antes da queda; volta a 95% disso em ' + (quedaS.recupProd != null ? quedaS.recupProd + ' dias' : 'mais que o resto da temporada') + '.\n');
 
-/* ---------- v2: valiosos e lendários ---------- */
+/* ---------- valiosos e lendários ---------- */
 const VAL = {
   aco:    { nome: 'Aço de qualidade', onde: 'colina (veio puro)', uso: 'armas e armaduras dos níveis 2 e 3; equipamento lendário' },
   cavalo: { nome: 'Cavalos de raça', onde: 'planície (manadas)', uso: 'cavaleiro de elite (1 por unidade) e carroção (2)' },
@@ -403,7 +402,7 @@ out('- Ouro: demanda ' + r0(demOuro) + ' por reino, ' + r0(demOuro * P.reinos) +
 out('- Aço: demanda ' + r0(demAco) + ' por reino, ' + r0(demAco * P.reinos) + ' no mundo; oferta ' + ofAco + ' (' + r0(100 * ofAco / (demAco * P.reinos)) + '%).');
 out('- Minério raro: ' + nJazidas('minerio') * tamJazida('minerio') + ' no mapa, ' + P.lendario.custo.minerio + ' por equipamento: no máximo ' + r0(nJazidas('minerio') * tamJazida('minerio') / P.lendario.custo.minerio) + ' lendários para ' + P.reinos + ' reinos.\n');
 
-/* ---------- v2: comércio e pactos ---------- */
+/* ---------- comércio e pactos ---------- */
 const recebivelNovato = P.comercio.novatoDia * P.escudoNovatoH / 24;
 out('## Comércio, pactos e resgate\n');
 out('- Sem mercado global. **Troca direta** só com reinos conhecidos; a proposta revela quem propõe. As duas cargas viajam pelo mapa, visíveis e roubáveis.');
@@ -412,7 +411,7 @@ out('- **Reino sob escudo de novato**: a diferença entre o que dá e o que rece
 out('- **Pacto de não agressão**: de ' + P.pacto.diasMin + ' a ' + P.pacto.diasMax + ' dias, até ' + P.pacto.ativosMax + ' ativos por reino; pagamento em qualquer direção (ou nenhum). Começa quando o pagamento chega; se a carga for roubada, não começa. O jogo impede ataques, saques e interceptações entre os dois até o fim.');
 out('- **Resgate de explorador**: quem captura vê o reino de origem e tem ' + P.resgateH + ' h para pedir resgate, libertar ou executar; sem decisão, o explorador é libertado.\n');
 
-/* ---------- v2: eras ---------- */
+/* ---------- eras ---------- */
 const prodDia = d => sims.medio.log[d].prod;
 out('## Eras\n');
 out('A Era do Ferro é a inicial (armas e armaduras do nível 1).\n');
@@ -424,7 +423,7 @@ Object.values(P.eras).forEach(e => {
 });
 out('');
 
-/* ---------- v2: ferraria ---------- */
+/* ---------- ferraria ---------- */
 const nLinhas = P.ferraria.familias * P.ferraria.linhas;
 const valorLinha = P.ferraria.niveis.reduce((s, n) => s + valorDe(n.custo), 0), tempoLinha = P.ferraria.niveis.reduce((s, n) => s + n.tempo, 0);
 const equilibrio = fam => r0(valorDe(P.ferraria.niveis[0].custo) / (P.ferraria.bonusNivel * valorDe(U[{ infantaria: 'lanceiro', arqueiros: 'arqueiro', cavalaria: 'cavalaria' }[fam]].custo)));
@@ -436,7 +435,7 @@ P.ferraria.niveis.forEach((n, i) => out('| ' + (i + 1) + ' | +' + r0((i + 1) * P
 out('\n- Uma linha completa: ' + valorLinha + ' de valor e ' + fmtT(tempoLinha) + '. As ' + nLinhas + ' linhas: ' + r0(valorLinha * nLinhas / 1000) + ' mil e ' + r0(tempoLinha * nLinhas / 3600) + ' h de ferraria, ' + r0(100 * valorLinha * nLinhas / sims.medio.gastoObra) + '% do que o médio gasta em obras na temporada.');
 out('- O nível 1 rende mais que recrutar com o mesmo valor a partir de ' + equilibrio('infantaria') + ' lanceiros, ' + equilibrio('arqueiros') + ' arqueiros ou ' + equilibrio('cavalaria') + ' cavaleiros. Antes disso, recrutar compensa mais: a ferraria é para exércitos grandes.\n');
 
-/* ---------- v2: lendário, elite, veterania, feridos e teto ---------- */
+/* ---------- lendário, elite, veterania, feridos e teto ---------- */
 const lendTropas = P.lendario.bonus * P.lendario.tropas;
 out('## Equipamento lendário e cavaleiro de elite\n');
 out('- **Equipamento lendário**: ' + fmtC(P.lendario.custo) + ' (valor ' + valorDe(P.lendario.custo) + '), ' + fmtT(P.lendario.tempo) + ', ' + P.lendario.req + '. +' + P.lendario.bonus * 100 + '% de ataque ou defesa para um exército de até ' + P.lendario.tropas + ' tropas (num exército maior, o bônus se dilui). Vale no máximo ' + r1(lendTropas) + ' tropas. Um por reino; se o exército for derrotado, fica no campo e o vencedor leva.');

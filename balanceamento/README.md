@@ -1,16 +1,16 @@
-# Balanceamento — v1 (aprovado) e v2 (em validação)
+# Balanceamento (aprovado)
 
 Números de tempos, custos, rendimentos e combate para o Reino de Pedra. Saem de **metas de ritmo** (o que o jogador deve sentir) e de um **modelo** que calcula as tabelas e simula uma temporada inteira, conferindo as metas a cada execução.
 
 - Modelo: [`modelo.js`](modelo.js). Rodar: `node balanceamento/modelo.js > balanceamento/tabelas.md`.
 - Tabelas completas, geradas pelo modelo: [`tabelas.md`](tabelas.md).
-- Estado: **v1 aprovado** (economia, tropas, deslocamento, combate, torres). **v2 em validação**: valiosos, comércio, ferraria, eras, veterania, feridos, equipamento lendário e queda do castelo, na [seção v2](#v2--valiosos-comércio-ferraria-e-guerra-em-validação). As regras ficam no `CLAUDE.md`; os números ficam aqui e mudam com testes.
+- Estado: **aprovado**, incluindo valiosos, comércio, ferraria, eras, veterania, feridos, equipamento lendário e queda do castelo ([seção própria](#valiosos-comércio-ferraria-e-guerra)). As regras ficam no `CLAUDE.md`; os números ficam aqui e mudam com testes.
 
 ---
 
 ## Resumo em 1 minuto
 
-| Tema | Proposta |
+| Tema | Valor |
 |---|---|
 | Temporada | **70 dias** (10 semanas) |
 | Mundo | 30 reinos num mapa de **60 × 48 hexágonos** (≈ 96 por reino) |
@@ -79,13 +79,13 @@ O custo cresce mais rápido que a produção: cada nível rende menos por recurs
 | Lanceiro | 25 | 40 | cavalaria | lenta | 40 | 30 comida, 30 madeira, 30 ferro | 3 min |
 | Arqueiro | 35 | 25 | infantaria | média | 40 | 30 comida, 50 madeira, 10 couro | 3 min 30 s |
 | Cavalaria | 45 | 30 | arqueiros | rápida | 80 | 60 comida, 50 ferro, 30 couro | 6 min |
-| Cavaleiro de elite (v2) | 60 | 40 | arqueiros | rápida | 80 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 8 min |
+| Cavaleiro de elite | 60 | 40 | arqueiros | rápida | 80 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 8 min |
 | Aríete | 10 | 10 | 40 de estrutura por combate | lenta | 0 | 300 madeira, 60 ferro (4 pop.) | 15 min |
 | Trebuchet | 5 | 5 | 90 de estrutura, à distância | lenta | 0 | 600 madeira, 200 pedra, 150 ferro (6 pop.) | 30 min |
 
 As vantagens valem por **família**: a lança vence a cavalaria (inclusive a de elite), o arqueiro vence a infantaria e a cavalaria vence os arqueiros.
 
-Papéis: o lanceiro é a melhor **defesa por recurso** (44 por 100 de valor); o arqueiro, o melhor **ataque por recurso** (35 por 100); a cavalaria é cara, mas rápida e carrega o dobro: a unidade de **saque**. Os custos por 100 usam o valor de referência da v2 (couro vale 2). Veículos: carroça 500 de carga (150 madeira, 20 ferro); carroção 1.500 (400 madeira, 80 ferro, 2 cavalos de raça). Carregador da requisição: 50, a pé.
+Papéis: o lanceiro é a melhor **defesa por recurso** (44 por 100 de valor); o arqueiro, o melhor **ataque por recurso** (35 por 100); a cavalaria é cara, mas rápida e carrega o dobro: a unidade de **saque**. Os custos por 100 usam o valor de referência (couro vale 2). Veículos: carroça 500 de carga (150 madeira, 20 ferro); carroção 1.500 (400 madeira, 80 ferro, 2 cavalos de raça). Carregador da requisição: 50, a pé.
 
 ## Torres e cerco
 
@@ -135,11 +135,11 @@ Os dois enchem a fila até a próxima sessão (ou a noite), escolhem a melhoria 
 | 35 | 3.184 · 12 · 9 · 672 | 3.918 · 15 · 9 · 1.880 |
 | 70 | 3.674 · 14 · 9 · 776 | 6.004 · 18 · 10 · 2.540 |
 
-Limites do modelo: não há guerra (saques, sabotagens e perdas em batalha atrasariam todos), nem caça, relíquias ou o efeito do armazém; a extração de valiosos e a ferraria são calculadas à parte, na v2. Os jogadores simulados são simples. Os números servem para dar a ordem de grandeza e mostrar o efeito de cada parâmetro, não para prever o jogo exato.
+Limites do modelo: não há guerra (saques, sabotagens e perdas em batalha atrasariam todos), nem caça, relíquias ou o efeito do armazém; a extração de valiosos e a ferraria são calculadas à parte. Os jogadores simulados são simples. Os números servem para dar a ordem de grandeza e mostrar o efeito de cada parâmetro, não para prever o jogo exato.
 
 ## O que muda no protótipo
 
-Os valores desta proposta foram aplicados ao protótipo:
+Os valores foram aplicados ao protótipo:
 - custos, tempos e carga das unidades;
 - produção e níveis dos locais de um reino no dia 34;
 - custo e tempo das obras;
@@ -150,13 +150,13 @@ O protótipo continua mostrando ataque e defesa em escala de 1 a 5, só para com
 
 ---
 
-## v2 — valiosos, comércio, ferraria e guerra (em validação)
+## Valiosos, comércio, ferraria e guerra
 
-Itens aprovados: lista de valiosos e usos, troca direta, resgate de explorador, negociação com reinos de IA, pacto de não agressão garantido pelo jogo, limites para o novato, ervas e feridos, armas e armaduras, equipamento lendário. Os números, as eras, a veterania, as regras finas de alianças e o legado são **proposta**, para validar. O modelo confere 12 metas novas (M10 a M21); **todas no alvo**.
+Valiosos e seus usos, comércio, pactos, resgate, limites do novato, eras, ferraria, veterania, feridos, equipamento lendário, alianças, legado e queda do castelo. O modelo confere as metas M10 a M21; **todas no alvo**.
 
 ### Resumo
 
-| Tema | Proposta |
+| Tema | Valor |
 |---|---|
 | Valor de referência | Básicos 1 · couro e peles 2 · sal 6 · ervas 8 · **prata 10** · aço 15 · **ouro 20** · gemas 30 · cavalo de raça 40 · minério raro 60 |
 | Jazidas | Cada valiosa guarda **20 mil em valor** (ex.: 1.000 de ouro, 2.000 de prata); 1 de cada valioso para cada 3 reinos (10 no mundo). Minério raro: 5 no mundo, 200 cada |
@@ -185,7 +185,7 @@ Itens aprovados: lista de valiosos e usos, troca direta, resgate de explorador, 
 - **Novato**: o limite de 2.000 por dia impede que contas secundárias alimentem uma principal, mas deixa um amigo ajudar. O reino sob escudo não pode ser cobrado por pacto.
 - **Queda do castelo**: perder metade do nível do castelo custa ≈ 78 mil de obras. O médio refaz em 2,7 dias e recupera a produção em 1,5 dia: perda pesada, que não faz o jogador desistir.
 
-### Metas novas
+### Metas desta parte
 
 | | Meta | Resultado |
 |---|---|---|
@@ -211,9 +211,9 @@ Itens aprovados: lista de valiosos e usos, troca direta, resgate de explorador, 
 | Os mesmos 40 com todos os bônus (+84%, limitado a +50%) | vence com 24% |
 | A mesma mina com todos os bônus de defesa (limitado a +50%) | o ataque sem bônus ainda vence, mas com 79% de baixas |
 
-Tabelas completas da v2 (valiosos, extração, eras, ferraria, queda do castelo) em [`tabelas.md`](tabelas.md).
+Tabelas completas (valiosos, extração, eras, ferraria, queda do castelo) em [`tabelas.md`](tabelas.md).
 
-O protótipo ainda não mostra a v2: os valores atuais dele (ex.: Era do Aço com 60 de ouro, extração de prata em 34/h) são da v1 ilustrativa e mudam quando a v2 for aprovada.
+Esses valores estão aplicados no protótipo: ferraria e eras, cavaleiro de elite, feridos, veterania, equipamento lendário, extração, comércio, pactos e resgate.
 
 ## Como mudar um número
 
