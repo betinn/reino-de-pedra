@@ -359,7 +359,7 @@
     var alheio = obj.filter(function (o) { return o.tipo === 'local' && o.dono === 'desconhecido' && !o.ruina; })[0];
     if (!meu) html += '<a class="btn btn-p" href="#/exploradores?alvo=' + h + '&ordem=explorar">' + RP.icone('explorador') + 'Explorar área</a>';
     if (alheio && RP.sistema('espionagem')) html += '<a class="btn btn-p" href="#/exploradores?alvo=' + h + '&tipo=batedor&ordem=espionar">' + RP.icone('batedor') + 'Espionar</a>';
-    obj.filter(function (o) { return o.tipo === 'marcha' && o.dono === 'meu' && o.marcha === 'explorador'; }).forEach(function (o) {
+    RP.mapa.marchasEm(h, dados).filter(function (o) { return o.tipo === 'marcha' && o.dono === 'meu' && o.marcha === 'explorador'; }).forEach(function (o) {
       html += '<a class="btn btn-p" href="#/exploradores?ativo=' + o.id + '">' + RP.icone('explorador') + 'Ordens ao explorador</a>';
     });
     return html;

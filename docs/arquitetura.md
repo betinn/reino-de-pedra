@@ -52,7 +52,15 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Marcha.AoPartir` | Rodar a cada partida de marcha (fauna no caminho, encontros, avistamentos). |
 | `Combate.Bonus.Ataque/Defesa/DefesaExercito` | Bônus de combate (armas, veterania, relíquia, lendário, legado); o combate soma e aplica o teto. |
 | `Combate.Permissoes.AntesDeEnviar/AoChegar` | Bloqueios de ataque (aliança, pacto, trégua antes; escudo descoberto ao chegar). |
-| `Combate.Combates.AoCairCastelo` | Cerco vitorioso: (reino que perdeu, exército vencedor, castelo). A queda do castelo (parte 2) registra aqui. |
+| `Combate.Combates.AoCairCastelo` | Cerco vitorioso: (reino que perdeu, exército vencedor, castelo). A queda do castelo (`Combate.Quedas`) registra aqui. |
+| `Combate.Quedas.EscolherExilio`, `Quedas.AoCair` | Ponto do exílio escolhido (linhagem nível 7; null = sorteio longe de quem derrubou); reagir a uma queda (ranking, legado, IA). `Reino.UltimaQueda` tem o resumo. |
+| `Combate.Campo.Lutar(m, exército, marcha, tática, motivo)` | Combate em campo instantâneo contra uma marcha (interceptação, postura agressiva; escolta e caravanas podem usar). Feridos, veterania, `AoTerminar` e relatórios incluídos. |
+| `Combate.Interceptacoes.Calcular/Alvo`, ordem `interceptar` | Ponto de encontro sobre o caminho de uma marcha visível; quem pode ser interceptado (usa `Permissoes`). |
+| `Combate.Revide.Registrar/Atacou` | Quem atacou um reino na última P.guerra.postura.revidaH (postura "atacar apenas quem atacar"). Ataques de outros sistemas registram aqui. |
+| `Combate.Veterania.Aplicar/Normalizar/BonusDe`, `Local.Marcas/MarcasTropas`, `Marcha.Marcas` | Marcas de veterania; quem tira ou põe tropas numa guarnição por fora dos ganchos não precisa avisar (recrutas diluem sozinhos). |
+| `Combate.Feridos.Adicionar/Curar`, fila `cura` | Lotes de feridos no castelo (morrem no prazo) e a cura com ervas. |
+| `Combate.ForcasVistas.Registrar` | Marcar no mapa de um reino "forças vistas há X" (some em P.avistamentoH). |
+| `Combate.ModelosAtaque`, `Reino.UltimoAtaque` | Modelos de ataque salvos e o último ataque (recurso `"auto"` = recurso principal do alvo). |
 | `Combate.Combates.AoTerminar` | Batalha encerrada (`ResultadoCombate`: lados, tropas, perdas, milícia): veterania, ranking, legado. |
 | `Combate.Combates.AoFerir` | Feridos de um lado (reino, unidades, local). Sem ninguém registrado, as baixas são todas mortes. |
 | `Combate.Combates.PopDoLocal`, `Combates.Perdas` | População "do local" (milícia, massacre, espionagem); divisão proporcional de perdas. |
@@ -83,6 +91,8 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `RP.TIPOS_ATAQUE`, `RP.graficoBatalha`, `RP.mapa.tiposObjeto.torre/batalha` (cliente) | Tipos de ataque; gráfico de força dos lados (`serie` com `t, meu, eles, proj`); objetos do mapa. O mapa que desenha `tiposObjeto` sozinho marca `RP.mapa.desenhaTiposObjeto = true` e o combate deixa de desenhar e de pôr linhas na folha. |
 | `RP.mapa.tiposObjeto`, `RP.mapa.camadas` (cliente) | Tipos de objeto do mapa (`{ nome, icone, desenharTatico(ctx, o, p, cam), folha(o) }`) e camadas que ligam e desligam (`perigo`). |
 | `RP.exploracao`, `RP.blocoRisco`, `RP.opcaoCaminhoExp`, `RP.perigoConhecido` (cliente) | Dados de `GET /exploracao`, risco da fauna e opção de caminho com risco (caravana, extração, escolta), perigo conhecido de um hexágono. |
+| `RP.extrasGuarnicao`, `RP.extrasExercito`, `RP.extrasFolhaExercito`, `RP.grupoPadraoEnvio` (cliente) | Linhas nos cartões de guarnição e de exército da tela Tropas e na folha do exército (selo de veterania); tropas padrão do envio pelo mapa (o combate devolve as do último ataque). |
+| `RP.seloVeterania`, `RP.mapa.tiposObjeto.avistamento`, telas `#/exilio` e `#/interceptar?marcha=` (cliente) | Selo de veterania; avistamentos no mapa (se a exploração registrar o mesmo tipo antes, ela desenha); exílio e interceptação. |
 
 ## Regras de visibilidade (o servidor é quem esconde)
 

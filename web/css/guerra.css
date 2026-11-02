@@ -1,0 +1,15 @@
+/* Reino de Pedra — Guerra (combate, parte 2): feridos, veterania, modelos de ataque, interceptação, exílio e avistamentos.
+   Só tokens do design system; o resto vem de base.css e telas.css (feridos-card, repetir-card, chip-sel, modelos, exilio-*). */
+.vet-selo { white-space: nowrap; }
+.exercito-card .vet-selo { align-self: flex-start; margin-top: 4px; }
+.guarnicao-card .vet-selo { margin-top: 2px; }
+.chip-modelo { display: inline-flex; align-items: center; gap: 0; }
+.chip-modelo .btn-mini { margin-left: -4px; }
+.modelos .obj-add-lista { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.env-conteudo .modelos { margin: 0 0 var(--esp-2); }
+.it-encontro .ext-numeros { margin-top: var(--esp-2); }
+.faixa-avist { border-color: color-mix(in srgb, var(--cor-perigo) 45%, transparent); }
+.tela-exilio .exilio-rodape { display: flex; flex-direction: column; gap: var(--esp-2); }
+.tela-exilio .atacante { gap: var(--esp-3); }
+.faixa-guerra { text-decoration: none; margin-bottom: var(--esp-3); }
+.tela-interceptar .rodape-acao[hidden] { display: none; }

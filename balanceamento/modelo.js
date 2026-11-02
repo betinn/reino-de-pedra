@@ -156,7 +156,22 @@ const P = {
     /* rota segura: minutos extras por hexágono conforme o risco que o grupo correria ali (desvio vale a pena até ≈ 4 hexágonos) */
     custoSeguro: { baixo: 4, medio: 12, alto: 40 }
   },
-  cacaMin: 20                                              /* minutos no local da caçada */
+  cacaMin: 20                                              /* minutos no local da caçada */,
+
+  /* ---------- guerra: exílio, interceptação, posturas e modelos de ataque (servidor) ---------- */
+  guerra: {
+    /* exílio (o reino perdeu todos os locais): só um castelo nível 1 num ponto novo, com este kit (o do protótipo), 10 milicianos
+       e população de 150 (metade do teto do castelo: recomeça menor que um reino novo, 220). O ponto sai da metade mais
+       distante (longe) dos pontos livres, medida a partir dos locais de quem derrubou o reino. */
+    exilio: { kit: { madeira: 800, pedra: 500, comida: 1000, ferro: 200 }, tropas: { milicia: 10 }, pop: 150, longe: 0.5 },
+    /* interceptação: as tropas precisam chegar ao ponto de encontro pelo menos 60 s antes de a marcha passar (o protótipo usa o mesmo) */
+    interceptacao: { folgaSeg: 60 },
+    /* posturas automáticas: quem "ataca qualquer ameaça" sai contra forças hostis que passam a até 1 hexágono (a visão de tropa);
+       quem "ataca apenas quem atacar" revida contra o reino que atacou nos seus locais ou exércitos na última 1 h (a volta do ataque) */
+    postura: { alcance: 1, revidaH: 1 },
+    /* modelos de ataque guardados por reino (o mesmo limite da fila) e tamanho do nome */
+    modelosMax: 10, modeloNome: 30
+  }
 };
 
 /* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */

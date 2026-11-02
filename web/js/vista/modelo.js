@@ -32,6 +32,12 @@
   MAPA.tiposObjeto = MAPA.tiposObjeto || {};
   /* este mapa desenha tiposObjeto sozinho (sistemas não precisam desenhar por desenhosExtras) */
   MAPA.desenhaTiposObjeto = true;
+  /* marchas que estão agora no hexágono h (dados.porHex não tem marchas: elas andam) */
+  MAPA.marchasEm = function (h, dados) {
+    var d = dados || (RP.mapaModelo && RP.mapaModelo.dados), t = RP.agora();
+    if (!d || !d.marchas || !RP.mapaModelo) return [];
+    return d.marchas.filter(function (o) { return RP.mapaModelo.posMarcha(o, t).hex === h; });
+  };
   /* RP.mapa.tiposMarcha[o.marcha] = { nome, icone, desenharCena(c, o, info) } — tipos novos de marcha (explorador, caravana...) */
   MAPA.tiposMarcha = MAPA.tiposMarcha || {};
   /* camada Perigo: o sistema de fauna define RP.mapa.perigoHex = function (hex, dados) → 'baixo' | 'medio' | 'alto' | null */

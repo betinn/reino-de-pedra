@@ -28,7 +28,7 @@ public sealed class PlanoAtaque
     {
         var p = new PlanoAtaque();
         if (d == null) return p;
-        p.Tipo = Str(d["tipo"]) ?? p.Tipo;
+        p.Tipo = Str(d["tipo"]) ?? "";   // sem tipo: o Normalizar usa o padrão do alvo (ocupação para ruína)
         p.Tatica = Str(d["tatica"]) ?? "";
         p.Completar = Bool(d["completar"]);
         p.Estandarte = Bool(d["estandarte"]);
@@ -150,8 +150,14 @@ public static class Ataques
         var validos = ObjetivosPorTipo[p.Tipo];
         var lista = new List<Objetivo>();
         var vistos = new HashSet<string>();
-        foreach (var o in p.Objetivos)
+        foreach (var o0 in p.Objetivos)
         {
+            var o = o0;
+            if (o.K == "recurso" && o.R == "auto")   // modelos de ataque: o recurso principal do alvo
+            {
+                if (alvo.Produz == null) continue;
+                o = o with { R = alvo.Produz };
+            }
             if (!validos.Contains(o.K)) throw new RegraException("Objetivo que não cabe neste tipo de ataque.");
             Objetivo n = o.K switch
             {

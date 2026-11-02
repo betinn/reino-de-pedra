@@ -137,6 +137,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Mover uma relíquia: tropas saem, buscam e levam; até ser pega, ela continua fortalecendo a origem.
 - **Saque, ocupação ou cerco** vitorioso levam a relíquia; sabotagem e massacre, não. No saque e no cerco, as tropas a carregam de volta; na ocupação, ela fica no local tomado.
 - Uma marcha que leva relíquia pode ser **interceptada**: as tropas precisam chegar antes a um ponto do caminho.
+- Qualquer marcha alheia à vista (exército, caravana, carregadores) pode ser interceptada. As tropas esperam no ponto de encontro; se a marcha mudar de rota, a interceptação falha e elas voltam.
 - Relíquias lendárias ficam na temporada e são distintas das relíquias da temporada (legado).
 - Objetivo: tornar o PvP mais desejável, com alvos que dão vantagem real além de recursos.
 
@@ -190,6 +191,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Apenas defender.
   - Atacar apenas quem atacar.
 - Postura padrão: guarnições em **apenas defender**; exércitos em campo em **atacar apenas quem atacar**.
+- Quem ataca qualquer ameaça sai contra forças hostis que passam a 1 hexágono; quem ataca apenas quem atacar só revida contra o reino que atacou seus locais ou exércitos na última hora. A guarnição sai sem a milícia e volta com o que tomou.
 
 ### Reino como conjunto de alvos
 
@@ -230,12 +232,14 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - **30% das baixas** de quem vence, ou de quem recua pela tática, voltam como feridos. Quem perde sem recuar não tem feridos.
 - Cada ferido é curado no castelo com **5 ervas raras**. Sem ervas em **24 h**, morre.
+- Os feridos ficam no castelo e ocupam o teto. A cura entra numa fila própria, as ervas vêm pela requisição e cada cura leva 2 h; cancelada, os feridos voltam a esperar com o prazo de antes.
 
 ### Queda do castelo
 
 - Se o reino ainda possui outros locais: o castelo vira ruína e a sede vai para o **local de maior nível**, que vira castelo com **metade do nível** do antigo. O reino perde **metade dos recursos guardados**, **30% da população civil** e as relíquias do castelo, que vão com o atacante, sem extinção. Locais acima do novo nível do castelo ficam como estão, mas só sobem quando o castelo passar deles.
 - Se perder tudo: o jogador recomeça **em exílio** em um novo ponto do mapa, com um kit de recomeço, mantendo linhagem e relíquias, e recebe **escudo temporário** contra ataques.
 - O ponto do exílio é **aleatório e longe de quem derrubou** o reino; escolher a região depende da linhagem.
+- O castelo caído vira ruína sem dono, que pode ser ocupada ou reconstruída como qualquer ruína. No exílio, o reino recomeça só com um castelo nível 1, o kit e a população de recomeço; exércitos em campo e o que carregam seguem com ele.
 
 ### Anonimato e bandeiras
 

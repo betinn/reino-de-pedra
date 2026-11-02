@@ -113,7 +113,7 @@
       '<div class="conteudo-tela conteudo-reino">' +
       '<div class="reino-recursos">' + RP.barraRecursos({ semSino: true }) + '</div>' +
       RP.extrasReino.map(function (f) { return f(r) || ''; }).join('') +
-      (r.escudoAte ? '<div class="card faixa-escudo">' + RP.icone('escudo') + '<div><b>Escudo de novato ativo</b><br><span class="suave">Termina em <span data-fim="' + r.escudoAte + '">' + RP.fmtResta(r.escudoAte - RP.agora()) + '</span>. Quem atacar só descobre ao chegar.</span></div></div>' : '') +
+      (r.escudoAte ? '<div class="card faixa-escudo">' + RP.icone('escudo') + '<div><b>' + (r.escudoExilio ? 'Escudo de exílio ativo' : 'Escudo de novato ativo') + '</b><br><span class="suave">Termina em <span data-fim="' + r.escudoAte + '">' + RP.fmtResta(r.escudoAte - RP.agora()) + '</span>. Quem atacar só descobre ao chegar.</span></div></div>' : '') +
       '<div class="card pop-card"><div class="card-titulo">' + RP.icone('populacao', 'r-populacao') + '<h2>População</h2></div>' +
       '<div class="pop-num num"><b data-pop>' + RP.num(r.pop) + '</b><span>/ ' + RP.num(r.teto) + '</span></div>' +
       '<div class="barra barra-grossa" role="progressbar" aria-label="População em relação ao teto"><i style="width:' + Math.min(100, 100 * (r.pop + r.tropas) / r.teto).toFixed(1) + '%"></i></div>' +

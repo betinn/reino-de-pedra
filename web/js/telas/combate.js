@@ -160,7 +160,7 @@
   });
 
   /* ================================================================ Envio de ataque (#/envio?alvo=<hex>&de=<local>&grupo=k:n) */
-  var env = null, previaTimer = null, seqPrevia = 0;
+  var env = null, previaTimer = null, seqPrevia = 0, modelos = null;
   function disponiveis() {
     var l = RP.tropas && RP.tropas.locais.filter(function (x) { return x.id === env.de; })[0], d = {};
     Object.keys((l && l.guarnicao) || {}).forEach(function (k) { var u = RP.unidade(k); if (!u || u.so !== 'defesa') d[k] = l.guarnicao[k]; });
@@ -259,6 +259,49 @@
     if (o.k === 'recurso') return 'Até a carga e o que houver no local.';
     return '';
   }
+  /* ---------------------------------------------------------------- modelos de ataque e "repetir último" (GET/POST /ataques/modelos) */
+  function carregarModelos(el) {
+    return RP.get('/ataques/modelos').then(function (m) { modelos = m; if (el && env) desenharEnvio(el); return m; }, function () { return null; });
+  }
+  function htmlModelos() {
+    if (!modelos) return '';
+    var u = modelos.ultimo;
+    return '<div class="modelos"><span class="rotulo">Modelos</span><div class="obj-add-lista">' +
+      (u ? '<button type="button" class="btn btn-p chip-sel" data-env-ultimo aria-pressed="' + (env.modelo === 'ultimo') + '">' + RP.icone('voltar', 'ico-p') + 'Repetir último</button>' : '') +
+      modelos.modelos.map(function (md) {
+        return '<span class="chip-modelo"><button type="button" class="btn btn-p chip-sel" data-env-modelo="' + md.id + '" aria-pressed="' + (env.modelo === md.id) + '">' + RP.esc(md.nome) + '</button>' +
+          '<button type="button" class="btn btn-icone btn-fantasma btn-mini" data-env-modelo-apagar="' + md.id + '" aria-label="Apagar o modelo ' + RP.esc(md.nome) + '">' + RP.icone('fechar') + '</button></span>';
+      }).join('') +
+      (modelos.modelos.length < modelos.max ? '<button type="button" class="btn btn-p btn-fantasma" data-env-salvar-modelo>' + RP.icone('mais', 'ico-p') + 'Salvar atual</button>' : '') + '</div>' +
+      '<p class="fraco env-nota">Um toque preenche tipo, tropas, objetivos e tática. Confira e envie.</p></div>';
+  }
+  function aplicarModelo(md, id) {
+    var tipos = (env.previa && env.previa.tipos) || [];
+    env.tipo = !tipos.length || tipos.indexOf(md.tipo) >= 0 ? md.tipo : null;
+    env.tatica = md.tatica; env.estandarte = !!md.estandarte; env.completar = !!md.completar;
+    if (md.deLocalId && origens().some(function (x) { return x.id === md.deLocalId; })) env.de = md.deLocalId;
+    var d = disponiveis(), g = {};
+    Object.keys(md.tropas || {}).forEach(function (k) { var n = Math.min(md.tropas[k], d[k] || 0); if (n > 0) g[k] = n; });
+    if (RP.somaGrupo(g)) env.grupo = g;
+    env.objetivos = env.tipo ? (md.objetivos || []).map(function (o) { return { k: o.k, r: o.r, q: o.q || 0 }; }) : [];
+    env.modelo = id;
+  }
+  function salvarModelo(el) {
+    RP.modal({
+      titulo: 'Salvar modelo',
+      corpo: '<p class="suave">Guarda tipo, tropas, objetivos e tática, sem o alvo. O recurso principal do alvo vale para qualquer local.</p>' +
+        '<div class="campo"><label for="env-modelo-nome">Nome</label><input id="env-modelo-nome" maxlength="' + ((modelos && modelos.nomeMax) || 30) + '" value="' + RP.esc((RP.TIPOS_ATAQUE[env.tipo] || {}).nome || 'Ataque') + ' ' + RP.somaGrupo(env.grupo) + '"></div>',
+      acoes: [{ rotulo: RP.icone('check') + 'Salvar', classe: 'btn-primario', acao: function () {
+        var inp = document.getElementById('env-modelo-nome'), alvoProd = env.previa && env.previa.alvo && env.previa.alvo.produz;
+        RP.tentar(RP.post('/ataques/modelos', { nome: inp ? inp.value : '', tipo: env.tipo, tatica: env.tatica, estandarte: env.estandarte, completar: env.completar, tropas: env.grupo,
+          objetivos: (env.objetivos || []).map(function (o) { return { k: o.k, r: o.k === 'recurso' && alvoProd && o.r === alvoProd ? 'auto' : o.r, q: o.q }; }) })).then(function (md) {
+          RP.aviso({ titulo: 'Modelo salvo', texto: md.nome + ': aparece no topo do envio.', icone: 'check', tipo: 'sucesso' });
+          carregarModelos(el);
+        });
+      } }, { rotulo: 'Voltar' }]
+    });
+  }
+
   function desenharEnvio(el) {
     var cont = RP.$('.env-conteudo', el); if (!cont || !env) return;
     var p = env.previa;
@@ -266,7 +309,8 @@
     var a = p.alvo, tipos = p.tipos, n = RP.somaGrupo(env.grupo), ors = origens();
     var h = (env.erro ? '<p class="nota-antiga nota-perigo">' + RP.icone('alerta', 'ico-p') + '<span>' + RP.esc(env.erro) + '</span></p>' : '') +
       (p.bloqueio ? '<div class="faixa-alerta">' + RP.icone('pacto') + '<span class="txt"><b>Não dá para enviar</b><br>' + RP.esc(p.bloqueio) + '</span></div>' : '') +
-      '<div class="secao-titulo" style="margin-top:0">1. Alvo</div><div class="card pilha"><div class="linha">' +
+      htmlModelos() +
+      '<div class="secao-titulo"' + (modelos ? '' : ' style="margin-top:0"') + '>1. Alvo</div><div class="card pilha"><div class="linha">' +
       '<span class="ico-placa dono-desconhecido">' + RP.icone(RP.iconeLocal({ tipo: a.local }) || 'castelo') + '</span>' +
       '<span style="flex:1;min-width:0"><b>' + RP.esc(a.nome) + '</b><br><small class="fraco">' + (a.dono === 'livre' ? 'Sem dono' : 'Dono desconhecido') + ' · hexágono ' + a.c + ', ' + a.l + '</small></span>' +
       '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + a.hex + '">' + RP.icone('mapa') + 'Mapa</a></div>' +
@@ -362,19 +406,33 @@
           if (c) { var novo = { k: c.k, r: c.r, q: c.q, texto: c.texto }; if (c.k === 'reliquia') lista.splice(lista.length && lista[0].k === 'tomar' ? 1 : 0, 0, novo); else lista.push(novo); }
           pedirPrevia(el); desenharEnvio(el); return;
         }
-        if ((b = e.target.closest('[data-env-tatica]'))) { env.tatica = b.getAttribute('data-env-tatica'); pedirPrevia(el); return; }
+        if ((b = e.target.closest('[data-env-tatica]'))) { env.tatica = b.getAttribute('data-env-tatica'); env.modelo = null; pedirPrevia(el); return; }
         if (e.target.closest('[data-env-completar]')) { env.completar = !env.completar; pedirPrevia(el); return; }
         if (e.target.closest('[data-env-estandarte]')) { env.estandarte = !env.estandarte; pedirPrevia(el); return; }
         if ((b = e.target.closest('[data-env-caminho]'))) { env.seguro = b.getAttribute('data-env-caminho') === 'segura'; desenharEnvio(el); return; }
-        if (e.target.closest('[data-env-enviar]')) { if (env.previa) confirmarEnvio(el); }
+        if (e.target.closest('[data-env-enviar]')) { if (env.previa) confirmarEnvio(el); return; }
+        if (e.target.closest('[data-env-ultimo]') && modelos && modelos.ultimo) {
+          aplicarModelo(modelos.ultimo, 'ultimo'); RP.aviso({ titulo: 'Último ataque', texto: 'Tropas, objetivos e tática preenchidos.', icone: 'voltar', tipo: 'sucesso', ms: 1800 }); pedirPrevia(el); desenharEnvio(el); return;
+        }
+        if ((b = e.target.closest('[data-env-modelo]')) && modelos) {
+          var md = modelos.modelos.filter(function (q) { return q.id === +b.getAttribute('data-env-modelo'); })[0];
+          if (md) { aplicarModelo(md, md.id); RP.aviso({ titulo: 'Modelo: ' + md.nome, texto: 'Tipo, tropas, objetivos e tática preenchidos.', icone: 'check', tipo: 'sucesso', ms: 1800 }); pedirPrevia(el); desenharEnvio(el); }
+          return;
+        }
+        if ((b = e.target.closest('[data-env-modelo-apagar]'))) {
+          RP.tentar(RP.del('/ataques/modelos/' + b.getAttribute('data-env-modelo-apagar'))).then(function () { carregarModelos(el); });
+          return;
+        }
+        if (e.target.closest('[data-env-salvar-modelo]')) salvarModelo(el);
       });
       document.addEventListener('rp:tropas', function () { if (!el.hidden && env) desenharEnvio(el); });
     },
     entrar: function (el, q) {
       var hex = +q.get('alvo');
-      env = { hex: hex, de: q.get('de') ? +q.get('de') : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null };
+      env = { hex: hex, de: q.get('de') ? +q.get('de') : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null, modelo: null };
       desenharEnvio(el);
-      RP.carregarTropas().then(function () {
+      var repetir = q.get('repetir') === '1';
+      Promise.all([RP.carregarTropas(), carregarModelos()]).then(function () {
         if (!env) return;
         var ors = origens();
         if (!env.de || !ors.some(function (x) { return x.id === env.de; })) env.de = (ors.filter(function (x) { return x.tipo === 'castelo'; })[0] || ors[0] || {}).id || RP.reino.casteloId;
@@ -382,6 +440,7 @@
           var d = disponiveis();
           q.get('grupo').split(',').forEach(function (p) { var kv = p.split(':'); if (d[kv[0]]) env.grupo[kv[0]] = Math.min(+kv[1] || 0, d[kv[0]]); });
         } else env.grupo = grupoPadrao();
+        if (repetir && modelos && modelos.ultimo) aplicarModelo(modelos.ultimo, 'ultimo');
         pedirPrevia(el);
       }, function (e) { env.erro = e.message; desenharEnvio(el); });
     },
@@ -714,7 +773,7 @@
       linha('Tropas', RP.selosGrupo(t.enviadas)) +
       linha('Suas perdas', RP.somaGrupo(t.perdas) ? RP.esc(RP.partesGrupo(t.perdas)) : 'nenhuma') +
       (RP.somaGrupo(t.feridos) ? linha('Feridos', RP.esc(RP.partesGrupo(t.feridos))) : '') +
-      (d.defesa ? linha('Defesa vista', RP.esc((RP.partesGrupo(d.defesa.tropas) || 'sem tropas') + ' · milícia ' + RP.num(d.defesa.milicia) + (d.defesa.arqueirosNoAlto ? ' · ' + d.defesa.arqueirosNoAlto + ' arqueiros no alto' : '') + (d.defesa.portoes ? ' · portões ' + d.defesa.portoes : ''))) +
+      (d.defesa ? linha('Defesa vista', RP.esc((RP.partesGrupo(d.defesa.tropas) || 'sem tropas') + (d.defesa.milicia || d.tipo !== 'interceptacao' ? ' · milícia ' + RP.num(d.defesa.milicia) : '') + (d.defesa.arqueirosNoAlto ? ' · ' + d.defesa.arqueirosNoAlto + ' arqueiros no alto' : '') + (d.defesa.portoes ? ' · portões ' + d.defesa.portoes : ''))) +
         linha('Perdas deles', RP.somaGrupo(d.defesa.perdas) ? RP.esc(RP.partesGrupo(d.defesa.perdas)) : 'nenhuma') : '') +
       (d.levaram && Object.keys(d.levaram).length ? linha('Levaram', ganhoHTML(d.levaram, '+')) : '') +
       (d.reliquias && d.reliquias.length ? linha('Relíquia', RP.esc(d.reliquias.join(', '))) : '') +
@@ -726,7 +785,8 @@
     if (d.porQueVoltaram) h += '<p class="nota-regra">' + RP.icone('voltar', 'ico-p') + '<span><b>Por que voltaram:</b> ' + RP.esc(d.porQueVoltaram) + '</span></p>';
     if (d.rendimento != null && d.rendimento < 1) h += '<p class="nota-antiga">' + RP.icone('info', 'ico-p') + '<span>Saque repetido a este alvo: rendimento ' + Math.round(d.rendimento * 100) + '%. Saques repetidos rendem cada vez menos.</span></p>';
     h += graficoRel(d, 'ataque');
-    h += '<div class="linha rel-acoes">' + (d.hex != null ? '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + d.hex + '">' + RP.icone('espada') + 'Atacar de novo</a><a class="btn btn-p" href="#/mapa?foco=' + d.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a>' : '') + '</div>';
+    h += '<div class="linha rel-acoes">' + (d.hex != null && d.tipo !== 'interceptacao' ? '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + d.hex + '">' + RP.icone('espada') + 'Atacar de novo</a>' : '') +
+      (d.hex != null ? '<a class="btn btn-p" href="#/mapa?foco=' + d.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a>' : '') + '</div>';
     return h;
   };
   RP.desenhosRelatorio.defesa = function (rel) {

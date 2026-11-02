@@ -134,6 +134,7 @@
         '<div class="info-linha"><span class="fraco">Carga</span><span>' + (carga.length ? RP.custoHTML(e.carga) : 'vazia') + ' <small class="fraco">até ' + RP.num(e.cargaMax) + '</small></span></div>' +
         '<div class="info-linha"><span class="fraco">Velocidade</span><span>' + RP.esc(e.vel) + (e.seguro ? ' · rota segura' : ' · rota curta') + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Postura</span><span class="selo selo-info">' + RP.esc(RP.POSTURAS[e.postura] || '') + '</span></div>' +
+        (RP.extrasFolhaExercito || []).map(function (f) { return f(e) || ''; }).join('') +
         '</div>';
       RP.abrirFolha({
         titulo: RP.esc(RP.tituloExercito(e)), veu: true,
@@ -178,6 +179,10 @@
   RP.acoesTropas = RP.acoesTropas || [];
   /* e blocos acima da lista (feridos, batalha...): function (tropas) { return html; } */
   RP.extrasTropas = RP.extrasTropas || [];
+  /* e linhas nos cartões de guarnição e de exército e na folha do exército: function (local | exercito) { return html; } */
+  RP.extrasGuarnicao = RP.extrasGuarnicao || [];
+  RP.extrasExercito = RP.extrasExercito || [];
+  RP.extrasFolhaExercito = RP.extrasFolhaExercito || [];
 
   function emCampoHTML(t) {
     if (!t.exercitos.length) return '<p class="fraco">Nenhuma tropa fora dos locais.</p>';
@@ -186,6 +191,7 @@
         '<span class="ico-placa dono-meu">' + RP.icone('tropas') + '</span>' +
         '<span class="emcampo-corpo"><b>' + RP.esc(RP.tituloExercito(e)) + '</b><small class="fraco">' + RP.esc(e.resumo) + '</small>' +
         '<small class="fraco">' + RP.esc(RP.estadoExercito(e)) + '</small>' +
+        (RP.extrasExercito || []).map(function (f) { return f(e) || ''; }).join('') +
         '<span class="exercito-acoes">' +
         (e.estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + e.id + '">' + RP.icone('voltar') + 'Voltar</button>' : '') +
         '<button type="button" class="btn btn-p" data-exercito-mover="' + e.id + '">' + RP.icone('seta') + 'Mover</button></span></span>' +
@@ -198,6 +204,7 @@
       return '<div class="card pilha guarnicao-card"><div class="linha-entre"><span class="linha">' + RP.icone(RP.iconeLocal(l)) + '<b>' + RP.esc(l.nome) + '</b></span>' +
         '<span class="selo selo-info">' + RP.icone('escudo', 'ico-p') + RP.esc(RP.POSTURAS[l.postura] || '') + '</span></div>' +
         RP.selosGrupo(l.guarnicao) +
+        (RP.extrasGuarnicao || []).map(function (f) { return f(l) || ''; }).join('') +
         '<div class="linha"><a class="btn btn-p" href="#/mapa?enviar=' + l.id + '">' + RP.icone('tropas') + 'Enviar tropas</a>' +
         (l.recruta ? '<a class="btn btn-p btn-fantasma" href="#/recrutamento?local=' + l.id + '">' + RP.icone('mais') + 'Recrutar</a>' : '') + '</div></div>';
     }).join('') : '<p class="fraco">Nenhuma tropa nas guarnições. A população defende cada local como milícia.</p>') +
