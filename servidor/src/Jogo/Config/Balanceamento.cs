@@ -135,6 +135,8 @@ public sealed class ParametrosP
     public QuedaP Queda { get; init; } = new();
     public MensageiroP Mensageiro { get; init; } = new();
     public SalgadeiraP Salgadeira { get; init; } = new();
+    /// <summary>Unidades que o castelo recruta (o quartel recruta todas).</summary>
+    public string[] RecrutaCastelo { get; init; } = [];
 }
 
 public sealed class ArmazemP { public double CapN1 { get; init; } public double CapCresc { get; init; } }

@@ -114,7 +114,9 @@ const P = {
   /* mensageiro: leva mensagens a outros reinos; ocupa 1 de população; ninguém o ataca */
   mensageiro: { custo: { comida: 30 }, pop: 1, tempo: 60, vel: 'Rápida', caracteres: 200, recadoProposta: 120 },
   /* salgadeira (sal): o local de comida guarda 20 h em vez de 10 h */
-  salgadeira: { custo: { sal: 200, madeira: 300 }, tempo: 3600, horas: 20 }
+  salgadeira: { custo: { sal: 200, madeira: 300 }, tempo: 3600, horas: 20 },
+  /* recrutamento: o castelo treina as unidades básicas; o quartel treina todas */
+  recrutaCastelo: ['milicia', 'lanceiro', 'arqueiro']
 };
 
 /* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */

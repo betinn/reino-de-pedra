@@ -387,7 +387,12 @@
    },
    "tempo": 3600,
    "horas": 20
-  }
+  },
+  "recrutaCastelo": [
+   "milicia",
+   "lanceiro",
+   "arqueiro"
+  ]
  },
  "U": {
   "milicia": {
