@@ -137,6 +137,32 @@ public sealed class ParametrosP
     public SalgadeiraP Salgadeira { get; init; } = new();
     /// <summary>Unidades que o castelo recruta (o quartel recruta todas).</summary>
     public string[] RecrutaCastelo { get; init; } = [];
+
+    // ---------- combate (servidor) ----------
+    public CombateP Combate { get; init; } = new();
+}
+
+public sealed class CombateP
+{
+    /// <summary>Limite de baixas por tática (null = sem limite).</summary>
+    public Dictionary<string, double?> Taticas { get; init; } = new();
+    public string TaticaPadrao { get; init; } = "";
+    public BatalhaP Batalha { get; init; } = new();
+    public double SaqueJanelaH { get; init; }
+    public double MassacrePorTropa { get; init; }
+    public int SabotagemMaxNiveis { get; init; }
+    public Dictionary<string, int> ObjPadrao { get; init; } = new();
+    public double GuardarBatalhaH { get; init; }
+    public PortaoP Portao { get; init; } = new();
+}
+public sealed class BatalhaP { public double BaseSeg { get; init; } public double PorTropaSeg { get; init; } public double MaxSeg { get; init; } }
+public sealed class PortaoP
+{
+    public double CustoN1 { get; init; }
+    public double CustoCresc { get; init; }
+    public double TempoN1 { get; init; }
+    public int NivelSemEra { get; init; }
+    public Dictionary<string, double> Receita { get; init; } = new();
 }
 
 public sealed class ArmazemP { public double CapN1 { get; init; } public double CapCresc { get; init; } }

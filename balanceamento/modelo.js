@@ -116,7 +116,26 @@ const P = {
   /* salgadeira (sal): o local de comida guarda 20 h em vez de 10 h */
   salgadeira: { custo: { sal: 200, madeira: 300 }, tempo: 3600, horas: 20 },
   /* recrutamento: o castelo treina as unidades básicas; o quartel treina todas */
-  recrutaCastelo: ['milicia', 'lanceiro', 'arqueiro']
+  recrutaCastelo: ['milicia', 'lanceiro', 'arqueiro'],
+
+  /* ---------- combate (servidor) ---------- */
+  combate: {
+    /* tática: limite de baixas para recuar (null = sem limite: lutam até cumprir ou cair) */
+    taticas: { conservadora: 0.25, media: 0.40, agressiva: 0.60, semLimite: null }, taticaPadrao: 'media',
+    /* duração da batalha: tempo para o defensor mandar reforços e para qualquer lado recuar.
+       base + por tropa envolvida no início, até o máximo: 20 contra 15 ≈ 6 min; um cerco de 380 tropas ≈ 15 min (o teto de 20 min). */
+    batalha: { baseSeg: 300, porTropaSeg: 1.5, maxSeg: 1200 },
+    saqueJanelaH: 24,                  /* saques ao mesmo local nesta janela contam para o rendimento decrescente (saqueQueda) */
+    massacrePorTropa: 5,               /* no massacre, cada tropa que sobrevive mata até 5 pessoas do local */
+    sabotagemMaxNiveis: 3,             /* níveis que uma sabotagem pode derrubar de uma vez (o protótipo vai até 3) */
+    /* quantidades padrão dos objetivos (ataque rápido e "Adicionar"); o recurso padrão usa a carga das tropas */
+    objPadrao: { construcao: 1, populacao: 100, portoes: 1, torre: 1 },
+    guardarBatalhaH: 24,               /* a batalha encerrada fica visível por 24 h (tela de batalha, gráfico) */
+    /* portões do castelo: custo do nível n = custoN1 × custoCresc^(n−1), dividido pela receita; tempo = tempoN1 × n.
+       Nível 1 ≈ 1.000 (pouco mais que uma torre nível 1, 600): ×1,15 na defesa do castelo inteiro vale mais que 6 arqueiros no alto.
+       Acima de nivelSemEra (3) exige a Era do Cerco Avançado. */
+    portao: { custoN1: 1000, custoCresc: 2.0, tempoN1: 3600, nivelSemEra: 3, receita: { pedra: 0.5, madeira: 0.3, ferro: 0.2 } }
+  }
 };
 
 /* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */
