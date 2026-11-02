@@ -70,6 +70,7 @@
   });
 
   function linha(r, v) { return '<div class="info-linha"><span class="fraco">' + r + '</span><span>' + v + '</span></div>'; }
+  function feridosHTML(t) { return RP.esc(t) + ' <a href="#/tropas">curar com ervas</a>'; }
   function ganhoHTML(g) { return '<span class="custos">' + Object.keys(g).map(function (k) { return '<span class="custo ganho">' + RP.icone(k, 'ico-p r-' + k) + '+' + RP.num(g[k]) + '</span>'; }).join('') + '</span>'; }
   function perdaHTML(g) { return '<span class="custos">' + Object.keys(g).map(function (k) { return '<span class="custo falta-perda">' + RP.icone(k, 'ico-p r-' + k) + '−' + RP.num(g[k]) + '</span>'; }).join('') + '</span>'; }
   function relatorioHTML(r) {
@@ -81,11 +82,11 @@
           : RP.brasao(null, { tamanho: 40, desconhecido: true }) + '<span><b>Forças desconhecidas</b><br><small class="fraco">Sem estandarte. Batedores podem descobrir quem foi.</small></span>') + '</div>' +
         '<div class="card info" style="margin-top:var(--esp-3)">' + linha('Local', RP.esc(x.nome)) + linha('Tipo de ataque', r.tipoAtaque) + linha('Forças', RP.esc(r.forcas)) + linha('Vindas do', r.origem) +
         linha('Resultado', '<span class="selo ' + (r.resultado === 'Repelido' ? 'selo-visivel' : 'selo-perigo') + '">' + r.resultado + '</span>') +
-        linha('Suas perdas', RP.esc(r.perdas.meu)) + linha('Perdas deles', RP.esc(r.perdas.deles)) + (r.levado ? linha('Levado', perdaHTML(r.levado)) : '') + '</div>';
+        linha('Suas perdas', RP.esc(r.perdas.meu)) + (r.feridos ? linha('Feridos', feridosHTML(r.feridos)) : '') + linha('Perdas deles', RP.esc(r.perdas.deles)) + (r.levado ? linha('Levado', perdaHTML(r.levado)) : '') + '</div>';
       acoes = '<a class="btn btn-p btn-primario" href="#/exploradores?tipo=batedor&alvo=' + x.c + ',' + x.l + '">' + RP.icone('batedor') + 'Enviar batedor</a><a class="btn btn-p" href="#/mapa?modo=cena&centro=' + x.id + '">' + RP.icone('vista') + 'Ver local</a>';
     } else if (r.tipo === 'saque') {
       h += '<div class="card info">' + linha('Alvo', RP.esc(x.nome) + ' · ' + RP.esc(D.reinos[x.reino].nome)) + linha('Tropas', RP.esc(r.tropas)) + linha('Resultado', '<span class="selo selo-visivel">' + r.resultado + '</span>') +
-        linha('Levado', ganhoHTML(r.levado)) + linha('Suas perdas', RP.esc(r.perdas.meu)) + linha('Perdas deles', RP.esc(r.perdas.deles)) + linha('Estandarte', r.estandarte ? 'Levado' : 'Não levado: o alvo não sabe quem foi') + '</div>' +
+        linha('Levado', ganhoHTML(r.levado)) + linha('Suas perdas', RP.esc(r.perdas.meu)) + (r.feridos ? linha('Feridos', feridosHTML(r.feridos)) : '') + linha('Perdas deles', RP.esc(r.perdas.deles)) + linha('Estandarte', r.estandarte ? 'Levado' : 'Não levado: o alvo não sabe quem foi') + '</div>' +
         (r.objetivos ? '<div class="secao-titulo">Objetivos · tática ' + RP.esc(r.tatica.toLowerCase()) + '</div><div class="card lista">' + r.objetivos.map(function (o, i) {
           var ic = o.estado === 'ok' ? 'check' : o.estado === 'parcial' ? 'alerta' : 'fechar', cls = o.estado === 'ok' ? 'selo-visivel' : o.estado === 'parcial' ? 'selo-antigo' : 'selo-perigo';
           return '<div class="lista-item"><span class="obj-n">' + (i + 1) + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(o.txt) + '</b><br><small class="fraco">' + RP.esc(o.nota) + '</small></span><span class="selo ' + cls + '">' + RP.icone(ic) + RP.esc(o.obtido) + '</span></div>';
@@ -346,7 +347,7 @@
     { id: 'baixas', nome: 'Baixas', txt: 'Tropas inimigas abatidas', icone: 'tropas' },
     { id: 'perdas', nome: 'Perdas', txt: 'Tropas próprias perdidas', icone: 'escudo' },
     { id: 'tropas', nome: 'Tropas', txt: 'Tamanho do exército hoje', icone: 'estandarte' },
-    { id: 'familias', nome: 'Famílias', txt: 'População do reino', icone: 'populacao' }
+    { id: 'familias', nome: 'Famílias', txt: 'População civil do reino', icone: 'populacao' }
   ];
   var catRank = 'baixas';
   function nomeRank(r) { return r.reino ? (r.reino === 'meu' ? 'Reino de ' + RP.estado.nome : D.reinos[r.reino].nome) : r.nome; }
@@ -363,7 +364,7 @@
         '<span class="rank-barra" aria-hidden="true"><i style="width:' + Math.max(2, (100 * r[catRank]) / max).toFixed(1) + '%"></i></span><small class="fraco">' + outros + '</small></span></li>';
     }
     RP.$('.rank-conteudo', el).innerHTML =
-      '<div class="nota-regra">' + RP.icone('info', 'ico-p') + '<span>O ranking não mede território: a disputa pelo mapa continua sem placar. Famílias = população do reino.</span></div>' +
+      '<div class="nota-regra">' + RP.icone('info', 'ico-p') + '<span>O ranking não mede território: a disputa pelo mapa continua sem placar. Famílias = população civil, sem as tropas. Os 3 primeiros de baixas, tropas ou famílias ganham uma relíquia da temporada.</span></div>' +
       '<div class="abas" role="tablist" aria-label="Categoria do ranking" style="margin-top:var(--esp-3)">' + CAT_RANK.map(function (c) { return '<button class="aba" role="tab" data-cat-rank="' + c.id + '" aria-selected="' + (c.id === catRank) + '">' + c.nome + '</button>'; }).join('') + '</div>' +
       '<div class="card rank-eu"><span class="ico-placa">' + RP.icone(cat.icone) + '</span><span style="flex:1"><span class="rotulo">' + cat.txt + '</span><b class="rank-eu-pos">Você: ' + pos + 'º</b><small class="fraco">de ' + RP.num(D.temporada.reinos) + ' reinos</small></span><b class="num rank-eu-valor">' + RP.num(eu[catRank]) + '</b></div>' +
       '<div class="secao-titulo">Os 10 primeiros · ' + cat.nome.toLowerCase() + '</div><ol class="card rank-lista">' + top.map(function (r, i) { return linhaRank(r, i + 1, false); }).join('') + '</ol>' +

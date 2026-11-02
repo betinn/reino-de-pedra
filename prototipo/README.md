@@ -1,6 +1,6 @@
 # Reino de Pedra — Protótipo de telas
 
-Protótipo navegável das telas principais, usado como referência visual para a implementação. É **apenas design**: não há regra de jogo real, servidor, persistência nem simulação. Todos os dados são fictícios e fixos (`js/dados.js`); timers, recursos, marchas, pessoas e animais "andam" só para dar vida às telas.
+Protótipo navegável das telas principais, usado como referência visual para a implementação. É **apenas design**: não há regra de jogo real, servidor, persistência nem simulação. Os dados são fictícios e fixos (`js/dados.js`): um reino no dia 34 da temporada. Custos, tempos e rendimentos seguem o balanceamento aprovado; timers, recursos, marchas, pessoas e animais "andam" só para dar vida às telas.
 
 Identidade visual, tokens e componentes: [`design-system.md`](design-system.md).
 
@@ -60,6 +60,8 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 18 | Transportar recursos (caravana) | `#/caravana` (`?para=<local>`, `?de=<local>`, `?leva=madeira:300,pedra:150`) |
 | 19 | Aliança e pedido de recursos | `#/alianca`, `#/pedido?reino=<id>` |
 | 20 | Precisa de você | `#/agora` (resumo no topo de Meu reino) |
+| 21 | Ferraria e eras | `#/ferraria` (em Tropas, Construção, Mais e na folha da ferraria) |
+| 22 | Comércio e diplomacia | `#/comercio`, `#/troca` (`?reino=<id>`), `#/pacto` (`?reino=<id>`) |
 | — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
 
 Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolher no mapa o local de uma construção nova (vila, posto, rota).
@@ -92,7 +94,7 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 18. **Relatórios:** aba Relatórios → filtro → detalhe: ataque anônimo x identificado pelo estandarte, saque com rendimento decrescente, exploração, espionagem (revela o dono e a relíquia guardada), relíquia roubada, fauna, caça, extração.
 19. **Notificações:** sino → avisos de agora, de hoje e antes; como chegam no celular; o que avisar e silêncio noturno.
 20. **Bandeira:** hexágono → Colocar bandeira → tipo, recado (até 60), prévia com seu brasão → aparece na Vista e no Mapa; Mais → Bandeiras para remover as suas (até 20) ou derrubar e denunciar as alheias.
-21. **Temporada e legado:** Mais → dias restantes, o que fica e o que recomeça, ranking da temporada (baixas, perdas, tropas e famílias), linhagem, relíquias (com teto), títulos, brasões, histórico.
+21. **Temporada e legado:** Mais → dias restantes, o que fica e o que recomeça, ranking da temporada (baixas, perdas, tropas e famílias, que é a população civil), linhagem (nível 4 de 10, como sobe e o que libera em cada nível), relíquias da temporada (equipar até 3, teto somado de 5%) e como ganhar nesta temporada, títulos, brasões, histórico.
 22. **Exílio:** Mais → Exílio → o que aconteceu, novo ponto do mapa, kit de recomeço, escudo temporário, legado mantido → Recomeçar.
 23. **Relíquias:** Mais (ou Meu reino) → Relíquias → as suas (onde estão e o efeito), as espionadas, a roubada e as ruínas antigas.
 24. **Escavar:** Relíquias → Escavar (ou a ruína no mapa) → grupo, posto opcional, gráfico de horas por cenário e **para onde levar ao achar** → os trabalhadores aparecem na Vista com "Escavando · tempo" → ao achar, o próprio grupo carrega a relíquia até o local escolhido (marcha com baú, sujeita a roubo).
@@ -107,10 +109,17 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 33. **Construir sem logística manual:** Construção → cada obra diz de onde vem o material ("Parte do material vem de Armazém Real · chega em ≈ 6 min") → Construir → a obra entra na fila com "material chega em 06:23" e carregadores saem a pé com sacos e toras, visíveis na Vista. O recrutamento faz o mesmo para o quartel. Torres também.
 34. **Modelos de ataque:** Envio de ataque → Modelos (Repetir último, Saque rápido, Tomar relíquia, Danificar, Salvar atual) → um toque preenche tipo, tropas, objetivos e tática. Tropas → "Repetir último ataque".
 35. **Faróis:** a Mina do Corvo guarda 3 relíquias e vira farol: aparece no Mapa e na Vista mesmo na névoa ("3 relíquias · farol"), entra em Relíquias → À vista e no envio de ataque. Mover a Pedra do Vale para o castelo avisa que ele passa a brilhar.
-36. **Aliança:** Mais → Aliança (Pacto da Pedra, 3 de 5) → pedido da Casa Lúmen (Enviar sai dos locais mais próximos, visível e roubável) → Pedir a um membro → o aliado aceita e a carroça dele vem pelo mapa. Castelos aliados aparecem em verde, com nome.
+36. **Aliança:** Mais → Aliança (Pacto da Pedra, 3 de 5) → pedido da Casa Lúmen (Enviar sai dos locais mais próximos, visível e roubável) → Pedir a um membro → o aliado aceita e a carroça dele vem pelo mapa. Castelos aliados aparecem em verde, com nome. Como líder, a coroa ao lado de cada membro promove a conselheiro (até 2), rebaixa ou expulsa. "Em trégua" mostra o Clã Ferrugem, que saiu há 6 h; "Sair da aliança" explica a trégua de 24 h.
 37. **Precisa de você:** topo de Meu reino (3 itens mais urgentes) ou Mais → lista em Agora, Oportunidades e No seu reino, cada item com um botão. Nada obrigatório.
 38. **Atacar em 3 toques:** Mapa → tocar no castelo → Enviar tropas (ou Tropas → Enviar tropas) → barra "Toque no destino" com as tropas (Tropas para mudar) → tocar no alvo → folha com o padrão (saque, objetivos automáticos, tática média, sem estandarte, rota curta, chegada) → Atacar. "Ajustar" abre o envio completo com as mesmas tropas. Num local seu vira Reforçar; numa ruína, Ocupar; em qualquer outro hexágono, Mover (as tropas vão e ficam lá). Num local inimigo, "Atacar este local" já pula para a confirmação.
-39. **Jogador novo:** Mais → Sistemas apresentados aos poucos → Ver como jogador novo: somem transporte manual, espionagem, torres, relíquias e alianças. Cada um volta pelo gatilho (ex.: abrir a Ruína antiga no mapa mostra "Novo: Relíquias") ou por Simular.
+39. **Jogador novo:** Mais → Sistemas apresentados aos poucos → Ver como jogador novo: somem transporte manual, espionagem, torres, relíquias, alianças e comércio. Cada um volta pelo gatilho (ex.: abrir a Ruína antiga no mapa mostra "Novo: Relíquias") ou por Simular.
+40. **Ferraria e eras:** Tropas (ou Construção → Militar, ou a folha da ferraria) → Ferraria e eras → fila própria (armaduras de infantaria forjando) → eras (Ferro inicial, Aço feita no dia 22, Cerco Avançado bloqueada pelo quartel nível 8) → armas e armaduras por família, com trilha de níveis, custo, requisito e "Forjar" (o material vem sozinho para a ferraria) → equipamento lendário (requisitos, minério raro 0 de 100, veio conhecido para extrair, o Elmo do Corvo visto em outro reino) → teto de bônus com dois exemplos.
+41. **Feridos:** Tropas → card Feridos (2 lanceiros e 3 cavaleiros, prazo para morrer) → "Curar 4 feridos · 20 ervas": as ervas vão do armazém ao castelo e a cura entra na fila; os curados voltam à guarnição. Só há ervas para 4 de 5: "Extrair ervas" leva à extração. Os relatórios de ataque e de saque mostram os feridos.
+42. **Veterania e bônus:** a guarnição do castelo mostra "Veterana I · +5% · 3 marcas"; a folha da Vila do Moinho, "Veterana II". No envio, a linha de bônus soma armas e veterania e lembra o teto de +50%.
+43. **Cavaleiro de elite:** Recrutamento → cavaleiro de elite liberado pela Era do Aço, com 1 cavalo de raça por unidade e a comparação com a cavalaria. O trebuchet espera a Era do Cerco Avançado.
+44. **Comércio:** Mais → Comércio e diplomacia → ofertas (Casa Mirante vende ouro 13% acima do valor; Casa Lúmen oferece pedra por prata) com o equilíbrio pelo valor de referência → Aceitar: sua parte sai dos locais mais próximos e a deles vem pelo mapa. Propor troca: só reinos conhecidos (e por quê), "você dá / você quer" e o equilíbrio. Com a Baronia da Fenda, sob escudo de novato, aparece o limite de 2.000 de valor por dia.
+45. **Pacto de não agressão:** Comércio → Casa Valdren cobra 600 de ferro por 3 dias → Aceitar e pagar → "começa em…" até a carga chegar → em vigor: atacar a Mina Rubra mostra a faixa do pacto e o envio fica bloqueado. Propor pacto: duração de 1 a 7 dias, quem paga (cobrar de reino sob escudo fica bloqueado), limite de 3 ativos.
+46. **Resgate:** Comércio → seu explorador a pé capturado por Valdren (pagar ou não) e um batedor do Corvo capturado pela sua guarnição (pedir resgate, libertar ou executar).
 
 ---
 
@@ -161,6 +170,8 @@ prototipo/
     logistica.js      estoques por local na prática: caravana, carroças, chegada das cargas
     defesas.js        torres de arqueiros (alcance, locais protegidos), aba Defesas e avistamentos com validade
     alianca.js        aliança (membros com limite), pedidos de recursos entre aliados
+    ferraria.js       eras, armas e armaduras, equipamento lendário, veterania, feridos e teto de bônus
+    comercio.js       troca direta, ofertas, pacto de não agressão, resgate e limite do novato
     agora.js          "Precisa de você": urgências, oportunidades e andamento do reino
 ```
 
@@ -286,12 +297,11 @@ Aprovadas e registradas no `CLAUDE.md` (os números são valores de teste).
 
 ## Pontos em aberto
 
-1. **Famílias no ranking:** o protótipo trata como a população do reino.
-2. **Quem derruba uma bandeira:** o protótipo não revela ao dono quem derrubou (mesma lógica do anonimato).
+Nenhum no protótipo. As duas pendências antigas estão no `CLAUDE.md`: famílias no ranking são a população civil, e o dono de uma bandeira derrubada não sabe quem a derrubou, a não ser que as tropas levassem estandarte.
 
 ## Valores
 
-Custos e tempos de unidades e obras, produção e níveis dos locais, torres e a temporada de 70 dias seguem o **balanceamento v1** aprovado ([`../balanceamento/README.md`](../balanceamento/README.md)). Ataque e defesa aparecem em escala de 1 a 5, só para comparação visual. Rendimento de caça, extração e força × perigo continuam ilustrativos. Seguem as regras: construções básicas em minutos e fortes/tecnologias mais demoradas; deslocamentos curtos (dezenas de minutos); a viagem segue a unidade mais lenta; rio só com ponte ou vau; rotas reduzem o custo e o perigo; grupos médios passam ilesos pela fauna. Não existe atalho pago para encurtar timers.
+Seguem o **balanceamento aprovado** ([`../balanceamento/README.md`](../balanceamento/README.md)): custos e tempos de unidades e obras, produção e níveis dos locais, torres, temporada de 70 dias, eras, armas e armaduras, cavaleiro de elite, equipamento lendário, veterania, feridos, teto de bônus, extração (ritmo em valor), valor de referência, pactos e limite do novato. Ataque e defesa aparecem em escala de 1 a 5, só para comparação visual. Rendimento de caça e força × perigo continuam ilustrativos. Seguem as regras: construções básicas em minutos e fortes/tecnologias mais demoradas; deslocamentos curtos (dezenas de minutos); a viagem segue a unidade mais lenta; rio só com ponte ou vau; rotas reduzem o custo e o perigo; grupos médios passam ilesos pela fauna. Não existe atalho pago para encurtar timers.
 
 ---
 
@@ -300,7 +310,7 @@ Custos e tempos de unidades e obras, produção e níveis dos locais, torres e a
 As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e os fluxos de criação, construção, recrutamento, exploração, caça, extração, ataque, batalha e bandeira.
 
 Revisão final:
-- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 46 rotas (todas as telas, ordem rápida, folha de torre, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
+- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 56 rotas (todas as telas, ordem rápida, folha de torre, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque, ferraria, comércio, troca, pacto, extração de minério raro, jazida de aço): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
 - **Toque:** todos os botões e links com pelo menos 44 × 44 px.
 - **Toques por ação** (medidos no navegador headless, contando a abertura da aba ou do mapa):
 

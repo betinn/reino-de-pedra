@@ -145,11 +145,13 @@
       var disp = D.disponiveis;
       el.innerHTML = '<header class="topo"><h1>Tropas</h1><button type="button" class="btn btn-fantasma btn-icone btn-sino-topo" data-abrir-notificacoes aria-label="Notificações">' + RP.icone('sino') + '<span class="contador">' + D.notificacoesNaoLidas + '</span></button></header>' +
         '<div class="conteudo-tela">' +
-        '<div data-batalha-atalho></div><div data-repetir-atalho></div>' +
+        '<div data-batalha-atalho></div><div data-repetir-atalho></div><div data-feridos></div>' +
         '<div class="secao-titulo" style="margin-top:0">Em campo</div><div class="pilha" data-emcampo></div>' +
         '<div class="secao-titulo">Guarnição do castelo</div><div class="card"><div class="linha" style="flex-wrap:wrap">' +
         Object.keys(disp).filter(function (u) { return disp[u]; }).map(function (u) { return '<span class="selo selo-g">' + RP.icone(unidade(u).icone) + disp[u] + ' ' + unidade(u).nome.toLowerCase() + (disp[u] > 1 ? 's' : '') + '</span>'; }).join('') +
-        '</div><p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Postura: apenas defender. A população também defende como milícia.</p></div>' +
+        '</div><div class="linha" style="margin-top:var(--esp-2)">' + RP.seloVeterania(D.veterania.castelo) + '</div>' +
+        '<p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Postura: apenas defender. A população também defende como milícia. Veterania: 1 marca por vitória com perdas abaixo de 50% contra inimigo com pelo menos 30% da força; recrutas novos diluem as marcas.</p></div>' +
+        '<div data-ferraria-atalho style="margin-top:var(--esp-3)"></div>' +
         '<div class="secao-titulo">Ordens</div><div class="grade-acoes">' +
         [['recrutamento', 'tropas', 'Recrutar', 'Milícia, lanceiro, arqueiro, cavalaria e cerco'],
           ['exploradores', 'explorador', 'Exploradores', 'Revelar o mapa, patrulhar e espionar'],
@@ -162,6 +164,8 @@
     },
     entrar: function (el) {
       RP.$('[data-emcampo]', el).innerHTML = emCampoHTML();
+      RP.$('[data-feridos]', el).innerHTML = RP.feridosHTML();
+      RP.$('[data-ferraria-atalho]', el).innerHTML = RP.ferrariaResumoHTML();
       var ue = D.ultimoEnvio, ux = ue && W.local(ue.alvo);
       RP.$('[data-repetir-atalho]', el).innerHTML = ux ? '<a class="card linha repetir-card" href="#/envio?alvo=' + ux.id + '&repetir=1"><span class="ico-placa">' + RP.icone('voltar') + '</span><span style="flex:1;min-width:0"><b>Repetir último ataque</b><br><small class="fraco">' +
         RP.esc(W.nomeAparente(ux)) + ' · ' + RP.esc(D.tiposAtaque.filter(function (t) { return t.id === ue.tipo; })[0].nome.toLowerCase()) + ' · mesmas tropas, objetivos e tática</small></span>' + RP.icone('avancar', 'ico-p') + '</a>' : '';
@@ -184,7 +188,7 @@
   function nomeLocalObra(o) { var x = W.local(localObra(o)); return x.tipo === 'castelo' ? 'no castelo' : 'em ' + x.nome; }
   function cartaoObra(o) {
     var bloqueado = !!o.requisito, loc = localObra(o), plano = !bloqueado && !o.novo ? RP.planoRequisicao(o.custo, loc) : null, falta = plano && !plano.completo ? Object.keys(plano.faltaReino) : [];
-    var nivel = o.tec ? '<span class="selo selo-destaque">Tecnologia</span>' : o.novo ? '<span class="selo selo-info">Novo</span>' : o.veiculo ? '<span class="selo">' + D.veiculos[o.veiculo].qtd + ' livre' + (D.veiculos[o.veiculo].qtd === 1 ? '' : 's') + '</span>' : '<span class="selo">Nv ' + o.de + ' → ' + o.para + '</span>';
+    var nivel = o.selo ? '<span class="selo selo-destaque">' + RP.esc(o.selo) + '</span>' : o.tec ? '<span class="selo selo-destaque">Tecnologia</span>' : o.novo ? '<span class="selo selo-info">Novo</span>' : o.veiculo ? '<span class="selo">' + D.veiculos[o.veiculo].qtd + ' livre' + (D.veiculos[o.veiculo].qtd === 1 ? '' : 's') + '</span>' : '<span class="selo">Nv ' + o.de + ' → ' + o.para + '</span>';
     var acao = bloqueado ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + RP.esc(o.requisito) + '</span>'
       : o.novo ? '<button type="button" class="btn btn-p" data-escolher-local="' + o.id + '">' + RP.icone('mapa') + 'Escolher no mapa</button>'
       : '<button type="button" class="btn btn-p btn-primario' + (falta.length ? ' btn-inativo' : '') + '" data-construir="' + o.id + '">' + RP.icone(o.veiculo ? 'carroca' : 'martelo') + 'Construir</button>';
@@ -206,6 +210,7 @@
       '<div class="abas abas-rolagem" role="tablist" aria-label="Filtrar construções">' + cats.map(function (c) { return '<button class="aba" role="tab" data-aba-obra="' + c[0] + '" aria-selected="' + (abaObra === c[0]) + '">' + c[1] + '</button>'; }).join('') + '</div>' +
       (abaObra === 'defesas' ? RP.defesas.html()
         : (abaObra === 'transporte' ? '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('carroca', 'ico-p') + '<span>Recursos só servem onde estão. Carroças levam muito mais que tropas; ficam no castelo e saem para buscar e entregar. <a href="#/caravana">Transportar agora</a></span></p>' : '') +
+        (abaObra === 'todos' || abaObra === 'militar' ? '<a class="card linha ferraria-atalho" href="#/ferraria" style="margin-top:var(--esp-3)"><span class="ico-placa ico-placa-g">' + RP.icone('ferraria') + '</span><span style="flex:1;min-width:0"><b>Eras, armas e armaduras</b><br><small class="fraco">Na ferraria, com fila própria · ' + RP.esc(RP.ERAS[RP.eraFeita('cerco') ? 'cerco' : RP.eraFeita('aco') ? 'aco' : 'ferro'].nome) + '</small></span>' + RP.icone('avancar', 'ico-p') + '</a>' : '') +
         '<div class="obras-lista">' + D.construcoes.filter(function (o) {
           if (o.cat === 'transporte' && !RP.sistema('logistica')) return false;
           return abaObra === 'todos' || o.cat === abaObra || (abaObra === 'novos' && o.novo);
@@ -226,7 +231,7 @@
         }
         if ((b = e.target.closest('[data-construir]'))) {
           var o = D.construcoes.filter(function (x) { return x.id === b.getAttribute('data-construir'); })[0];
-          var f = D.filas, loc = localObra(o), rot = o.nome + (o.tec || o.veiculo ? '' : ' → nível ' + o.para);
+          var f = D.filas, loc = localObra(o), rot = o.nome + (o.tec || o.veiculo || o.selo ? '' : ' → nível ' + o.para);
           if (f.obras.length >= f.vagasObras) { RP.aviso({ titulo: 'Fila de obras cheia', texto: 'Espere uma obra terminar.', icone: 'relogio', tipo: 'alerta' }); return; }
           /* requisição: o que falta no local vem sozinho dos locais mais próximos */
           var plano = RP.requisitar(o.custo, loc, rot);
@@ -255,16 +260,19 @@
       (f.recrutamento.length ? f.recrutamento.map(RP.itemFilaHTML).join('') +
         '<p class="fila-termina">' + RP.icone('relogio', 'ico-p') + 'Fila termina ' + RP.fmtHora(RP.fimItem(f.recrutamento[f.recrutamento.length - 1])) + '</p>' : '<p class="fraco">Nada sendo recrutado.</p>') + '</div>';
   }
+  function requisitoDe(u) { return u.requisito || (u.era && !RP.eraFeita(u.era) ? RP.ERAS[u.era].nome : null); }
   function cartaoUnidade(u) {
-    var q = pedido[u.id] || 0, max = maxRecrutavel(u);
-    return '<div class="card unid-card' + (u.requisito ? ' bloqueado' : '') + (q ? ' ativo' : '') + '" data-unidade="' + u.id + '">' +
+    var q = pedido[u.id] || 0, max = maxRecrutavel(u), req = requisitoDe(u);
+    return '<div class="card unid-card' + (req ? ' bloqueado' : '') + (q ? ' ativo' : '') + '" data-unidade="' + u.id + '">' +
       '<div class="unid-topo"><span class="ico-placa ico-placa-g">' + RP.icone(u.icone) + '</span><div class="unid-titulos"><b>' + u.nome + '</b><small class="fraco">' + u.papel + '</small></div>' +
-      (u.requisito ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + RP.esc(u.requisito) + '</span>' : '<span class="selo">' + RP.icone('relogio') + RP.fmtResta(u.tempo * 1000).replace(/^00:/, '0:') + '/un.</span>') + '</div>' +
+      (req ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + RP.esc(req) + '</span>' : '<span class="selo">' + RP.icone('relogio') + RP.fmtResta(u.tempo * 1000).replace(/^00:/, '0:') + '/un.</span>') + '</div>' +
+      (u.nota ? '<p class="fraco" style="font-size:var(--fs-2)">' + RP.esc(u.nota) + '</p>' : '') +
+      (req && u.era ? '<p class="fraco" style="font-size:var(--fs-2)">Pesquise a era na <a href="#/ferraria">ferraria</a>.</p>' : '') +
       '<div class="unid-vantagens">' + u.forte.map(function (x) { return '<span class="selo selo-visivel">Forte contra ' + x.toLowerCase() + '</span>'; }).join('') +
       u.fraco.map(function (x) { return '<span class="selo selo-perigo">Fraco contra ' + x.toLowerCase() + '</span>'; }).join('') + '</div>' +
       '<div class="unid-atrib"><span>Ataque' + pontos(u.atk) + '</span><span>Defesa' + pontos(u.def) + '</span><span>Velocidade' + pontos(u.vel) + '</span><span>Carga' + pontos(u.carga) + '</span></div>' +
       '<div class="linha unid-custo">' + RP.custoHTML(Object.assign({}, u.custo, { populacao: u.pop }), 1, '*') + '<small class="fraco">por unidade</small></div>' +
-      (u.requisito ? '' : '<div class="unid-qtd">' + stepper(u.id, q, max) +
+      (req ? '' : '<div class="unid-qtd">' + stepper(u.id, q, max) +
         '<div class="chips-rapidos"><button type="button" class="btn btn-p" data-somar="5">+5</button><button type="button" class="btn btn-p" data-somar="10">+10</button><button type="button" class="btn btn-p" data-somar="max">Máx. ' + max + '</button></div></div>') +
       '</div>';
   }

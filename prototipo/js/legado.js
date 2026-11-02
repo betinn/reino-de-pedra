@@ -4,9 +4,10 @@
   var RP = window.RP, D = RP.dados, U = RP.util;
 
   /* ================================================================ Temporada e legado */
+  var TIPO_LEG = { producao: 'produção', ataque: 'ataque', defesa: 'defesa', crescimento: 'crescimento' };
   function desenharTemporada(el) {
     var t = D.temporada, L = D.legado, total = 70, passados = total - t.diasRestantes;
-    var lin = L.linhagem;
+    var lin = L.linhagem, eq = L.reliquias.filter(function (r) { return r.equipada; }), somaEq = eq.reduce(function (s, r) { return s + r.bonus; }, 0);
     RP.$('.temp-conteudo', el).innerHTML =
       '<div class="card card-moldura temp-hero"><span class="rotulo">Temporada ' + t.numero + '</span><h2>' + RP.esc(t.nome) + '</h2>' +
       '<div class="temp-dias"><b>' + t.diasRestantes + '</b><span>dias restantes</span></div>' +
@@ -19,16 +20,24 @@
       '<div class="card"><span class="rotulo">Recomeça</span><ul class="regras-lista">' +
       ['Mapa e névoa', 'Reino e locais', 'Recursos e tropas'].map(function (x) { return '<li>' + RP.icone('relogio', 'ico-p') + x + '</li>'; }).join('') + '</ul></div></div>' +
 
-      '<div class="secao-titulo">Linhagem</div><div class="card pilha"><div class="linha"><span class="linhagem-nivel">' + lin.nivel + '</span><span style="flex:1"><b>' + RP.esc(D.jogador.linhagem.titulo) + '</b><br><small class="fraco">' + Math.round(lin.progresso * 100) + '% até o nível ' + (lin.nivel + 1) + '</small></span></div>' +
-      '<div class="barra"><i style="width:' + (lin.progresso * 100) + '%"></i></div>' +
+      '<div class="secao-titulo">Linhagem</div><div class="card pilha"><div class="linha"><span class="linhagem-nivel">' + lin.nivel + '</span><span style="flex:1"><b>' + RP.esc(D.jogador.linhagem.titulo) + '</b><br><small class="fraco">Nível ' + lin.nivel + ' de 10 · ' + RP.esc(lin.como) + '</small></span></div>' +
+      '<p class="suave" style="font-size:var(--fs-2)">Sobe 1 nível por temporada jogada (ativo em pelo menos ' + lin.diasPedidos + ' dos ' + total + ' dias) e 1 por relíquia da temporada ganha.</p>' +
+      '<div class="linha-entre" style="font-size:var(--fs-2)"><span>Nesta temporada: ativo em <b>' + Math.min(lin.diasAtivo, lin.diasPedidos) + ' de ' + lin.diasPedidos + '</b> dias</span>' + (lin.diasAtivo >= lin.diasPedidos ? '<span class="selo selo-visivel">' + RP.icone('check') + 'Nível ' + (lin.nivel + 1) + ' no fim</span>' : '') + '</div>' +
+      '<div class="barra"><i style="width:' + Math.min(100, (100 * lin.diasAtivo) / lin.diasPedidos).toFixed(0) + '%"></i></div>' +
       '<ul class="linhagem-lista">' + lin.desbloqueios.map(function (d) {
         return '<li class="' + (d.feito ? 'feito' : '') + '"><span class="selo' + (d.feito ? ' selo-visivel' : '') + '">Nv ' + d.nivel + '</span><span>' + RP.esc(d.txt) + '</span>' + RP.icone(d.feito ? 'check' : 'cadeado', 'ico-p') + '</li>';
       }).join('') + '</ul><p class="fraco" style="font-size:var(--fs-2)">A linhagem desbloqueia opções e cosméticos, nunca poder.</p></div>' +
 
-      '<div class="secao-titulo">Relíquias da temporada</div><div class="reliquias">' + L.reliquias.map(function (r) {
-        return '<div class="card reliquia' + (r.ganha ? ' ganha' : '') + '"><span class="reliquia-ico">' + RP.icone('lendario', 'r-lendario') + '</span><b>' + RP.esc(r.nome) + '</b><span class="selo' + (r.ganha ? ' selo-destaque' : '') + '">' + RP.esc(r.bonus) + '</span>' +
-          '<small class="fraco">' + (r.ganha ? 'Conquistada: ' : 'Como ganhar: ') + RP.esc(r.como) + '</small>' + (!r.ganha && r.progresso ? '<div class="barra"><i style="width:' + (r.progresso * 100) + '%"></i></div>' : '') + '</div>';
-      }).join('') + '</div><p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Bônus pequenos e com teto: somadas, as relíquias dão no máximo ' + L.tetoBonus + '. Não confundir com as <a href="#/reliquias">relíquias lendárias</a> do mapa, que ficam na temporada.</p>' +
+      '<div class="secao-titulo">Relíquias da temporada</div><div class="card pilha">' +
+      '<div class="linha-entre"><span><b>Equipadas: ' + eq.length + ' de ' + L.equipadasMax + '</b><br><small class="fraco">+' + somaEq + '% somados · teto de ' + L.tetoReliquias + '%' + (somaEq > L.tetoReliquias ? ' (vale ' + L.tetoReliquias + '%)' : '') + '</small></span><b class="num">+' + Math.min(somaEq, L.tetoReliquias) + '%</b></div>' +
+      '<div class="barra"><i style="width:' + Math.min(100, (100 * somaEq) / L.tetoReliquias).toFixed(0) + '%"></i></div>' +
+      '<div class="reliquias">' + L.reliquias.map(function (r) {
+        return '<div class="card reliquia ganha"><span class="reliquia-ico">' + RP.icone('lendario', 'r-lendario') + '</span><b>' + RP.esc(r.nome) + '</b><span class="selo selo-destaque">+' + r.bonus + '% ' + TIPO_LEG[r.tipo] + '</span>' +
+          '<small class="fraco">' + RP.esc(r.como) + '</small><button type="button" class="btn btn-p' + (r.equipada ? '' : ' btn-primario') + '" data-equipar="' + r.id + '">' + (r.equipada ? 'Tirar' : 'Equipar') + '</button></div>';
+      }).join('') + '</div></div>' +
+      '<div class="secao-titulo">Como ganhar nesta temporada</div><div class="card lista">' + L.conquistas.map(function (c) {
+        return '<div class="lista-item"><span class="ico-placa">' + RP.icone(c.ok ? 'check' : 'lendario', c.ok ? 'r-ervas' : 'r-lendario') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(c.nome) + '</b><br><small class="fraco">' + RP.esc(c.como) + ' · ' + RP.esc(c.agora) + '</small></span>' + (c.ok ? '<span class="selo selo-visivel">No caminho</span>' : '') + '</div>';
+      }).join('') + '</div><p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Entregues no fim da temporada. Cada uma dá +1% a +2% (produção, ataque, defesa ou crescimento da população), e o teto também conta no teto de bônus de combate (+50%). Não confundir com as <a href="#/reliquias">relíquias lendárias</a> do mapa, que ficam na temporada.</p>' +
 
       '<div class="secao-titulo">Títulos</div><div class="card lista">' + L.titulos.map(function (ti, i) {
         return '<div class="lista-item"><span class="ico-placa">' + RP.icone(ti.ganho ? 'coroa' : 'cadeado') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(ti.nome) + '</b><br><small class="fraco">' + RP.esc(ti.como) + '</small></span>' +
@@ -48,6 +57,13 @@
     montar: function (el) {
       el.innerHTML = U.topo('Temporada e legado', 'mais') + '<div class="conteudo-tela temp-conteudo"></div>';
       el.addEventListener('click', function (e) {
+        var q = e.target.closest('[data-equipar]');
+        if (q) {
+          var r = D.legado.reliquias.filter(function (x) { return x.id === q.getAttribute('data-equipar'); })[0];
+          var n = D.legado.reliquias.filter(function (x) { return x.equipada; }).length;
+          if (!r.equipada && n >= D.legado.equipadasMax) { RP.aviso({ titulo: 'Até ' + D.legado.equipadasMax + ' equipadas', texto: 'Tire uma para equipar outra.', icone: 'lendario', tipo: 'alerta' }); return; }
+          r.equipada = !r.equipada; desenharTemporada(el); return;
+        }
         var b = e.target.closest('[data-titulo]');
         if (!b) return;
         D.legado.titulos.forEach(function (t, i) { t.ativo = i === +b.getAttribute('data-titulo'); });
@@ -79,11 +95,11 @@
         '<div class="conteudo-tela exilio-conteudo pilha-4">' +
         '<div class="exilio-titulo"><span class="rotulo">Temporada ' + D.temporada.numero + ' · dia 34</span><h1>Seu reino caiu</h1><p class="suave">' + RP.esc(X.motivo) + '</p></div>' +
         '<div class="card card-moldura pilha"><h2>Você recomeça em exílio</h2>' +
-        '<div class="exilio-item">' + RP.icone('bussola') + '<span><b>Um novo ponto do mapa</b><br><small class="fraco">' + (lin.nivel >= 5 ? 'Escolha a região inicial.' : 'Região aleatória, longe de quem derrubou você. A escolha libera no nível 5 da linhagem.') + '</small></span></div>' +
+        '<div class="exilio-item">' + RP.icone('bussola') + '<span><b>Um novo ponto do mapa</b><br><small class="fraco">' + (lin.nivel >= 7 ? 'Escolha a região do exílio.' : 'Região aleatória, longe de quem derrubou você. A escolha libera no nível 7 da linhagem.') + '</small></span></div>' +
         '<div class="exilio-item">' + RP.icone('castelo') + '<span><b>Kit de recomeço</b><br>' + RP.custoHTML(X.kit) + '<br><small class="fraco">' + RP.esc(X.kitTropas) + '</small></span></div>' +
         '<div class="exilio-item">' + RP.icone('escudo') + '<span><b>Escudo temporário · ' + X.escudo + '</b><br><small class="fraco">Ninguém pode atacar seus locais enquanto ele durar.</small></span></div></div>' +
         '<div class="card pilha"><span class="rotulo">Fica com você</span><ul class="regras-lista">' + X.mantido.map(function (m) { return '<li>' + RP.icone('check', 'ico-p r-ervas') + RP.esc(m) + '</li>'; }).join('') + '</ul></div>' +
-        '<p class="fraco" style="font-size:var(--fs-2)">Se ainda houvesse outros locais, o castelo viraria ruína e a sede iria para um deles, com perdas pesadas, sem exílio.</p>' +
+        '<p class="fraco" style="font-size:var(--fs-2)">Se ainda houvesse outros locais, não haveria exílio: o castelo viraria ruína e a sede iria para o local de maior nível, com metade do nível do castelo. O reino perderia metade dos recursos guardados, 30% da população civil e as relíquias do castelo.</p>' +
         '<div style="height:120px"></div></div>' +
         '<div class="rodape-acao rodape-com-resumo"><a class="btn btn-p btn-fantasma" href="#/relatorios" style="color:var(--barra-texto)">' + RP.icone('relatorios') + 'Ver o que aconteceu</a><button type="button" class="btn btn-primario btn-bloco btn-grande" data-recomecar>' + RP.icone('bandeira') + 'Recomeçar em exílio</button></div>';
       el.addEventListener('click', function (e) {

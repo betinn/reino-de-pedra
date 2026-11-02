@@ -136,7 +136,7 @@
     if (e.v === 'desconhecido') return '';
     return '<g class="ent jazida ' + j.classe + (e.v === 'explorado' ? ' antigo' : '') + '" data-ent="jazida:' + j.id + '" transform="translate(' + n1(ce.x) + ' ' + n1(ce.y) + ')">' +
       '<circle class="ponto" r="5"/><g class="ent-k"><circle class="alvo-toque" r="22"/>' +
-      (j.classe === 'lendario' ? '<circle class="brilho-lendario" r="20"/>' : '') +
+      (j.classe === 'lendario' || j.classe === 'raro' ? '<circle class="brilho-lendario" r="20"/>' : '') +
       '<rect class="jz-base" x="-12" y="-12" width="24" height="24" rx="4" transform="rotate(45)"/>' +
       '<use class="r-' + j.tipo + '" href="#i-' + j.tipo + '" x="-9.5" y="-9.5" width="19" height="19"/>' + rotuloSvg(j.nome, 31, '') + '</g></g>';
   }
@@ -394,7 +394,7 @@
       return '<button type="button" class="conteudo" data-abrir="local:' + o.id + '"><span class="ico-placa ' + corDono(W.donoAparente(o)) + '">' + RP.icone(o.tipo) + '</span><span><b>' + RP.esc(W.nomeAparente(o)) + '</b><small>' + RP.TIPOS_LOCAL[o.tipo] + ' · ' + (o.reino === 'meu' ? 'Seu reino' : 'Dono desconhecido') + '</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
     }
     if (it.tipo === 'jazida') {
-      return '<button type="button" class="conteudo" data-abrir="jazida:' + o.id + '"><span class="ico-placa">' + RP.icone(o.tipo, 'r-' + o.tipo) + '</span><span><b>' + RP.esc(o.nome) + '</b><small>' + (o.classe === 'lendario' ? 'Lendário · ' + (D.ruinasComReliquia.indexOf(o.id) >= 0 ? 'guarda 1 relíquia' : 'esgotada') : 'Valioso · ' + Math.round(o.restante * 100) + '% restante') + '</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
+      return '<button type="button" class="conteudo" data-abrir="jazida:' + o.id + '"><span class="ico-placa">' + RP.icone(o.tipo, 'r-' + o.tipo) + '</span><span><b>' + RP.esc(o.nome) + '</b><small>' + (o.classe === 'lendario' ? 'Lendário · ' + (D.ruinasComReliquia.indexOf(o.id) >= 0 ? 'guarda 1 relíquia' : 'esgotada') : (o.classe === 'raro' ? 'Lendário' : 'Valioso') + ' · ' + Math.round(o.restante * 100) + '% restante') + '</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
     }
     if (it.tipo === 'ruina') {
       return '<button type="button" class="conteudo" data-abrir="ruina:' + o.id + '"><span class="ico-placa">' + RP.icone(o.tipo === 'livre' ? 'estaca' : 'escombros') + '</span><span><b>' + RP.esc(o.nome) + '</b><small>Sem dono</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
@@ -465,7 +465,7 @@
   function gatilhos(tipo, id) {
     var x;
     if (tipo === 'jazida' && (x = W.jazida(id)) && x.classe === 'lendario') RP.revelarSistema('reliquias');
-    if (tipo === 'local' && (x = W.local(id))) { if (RP.concentracao(id).visivel) RP.revelarSistema('reliquias'); if (W.aliado(x.reino)) RP.revelarSistema('alianca'); }
+    if (tipo === 'local' && (x = W.local(id))) { if (RP.concentracao(id).visivel) RP.revelarSistema('reliquias'); if (W.aliado(x.reino)) { RP.revelarSistema('alianca'); RP.revelarSistema('comercio'); } }
     if (tipo === 'avist') RP.revelarSistema('espionagem');
     if (tipo === 'marcha' && (x = W.marcha(id)) && x.d.hostil) { RP.revelarSistema('defesas'); RP.revelarSistema('espionagem'); }
   }
@@ -538,8 +538,9 @@
       var reivind = D.bandeiras.filter(function (b) { return H.dist([b.c, b.l], [o.c, o.l]) <= 1 && b.tipo === 'reivindicacao'; })[0];
       var lend = o.classe === 'lendario', guarda = lend && D.ruinasComReliquia.indexOf(o.id) >= 0, escav = lend && D.escavacoes.filter(function (q) { return q.jazida === o.id; })[0];
       corpo = notaAntiga(e) + '<div class="info">' +
-        linhaInfo('Classe', lend ? '<span class="selo selo-destaque">' + RP.icone('lendario') + 'Lendário</span>' : '<span class="selo selo-destaque">Valioso</span>') +
+        linhaInfo('Classe', lend || o.classe === 'raro' ? '<span class="selo selo-destaque">' + RP.icone('lendario') + 'Lendário</span>' : '<span class="selo selo-destaque">Valioso</span>') +
         linhaInfo('Terreno', H.TERRENOS[T[o.l][o.c]].nome) +
+        (lend ? '' : (function () { var v = D.valiosos.filter(function (q) { return q.id === o.tipo; })[0]; return (v ? linhaInfo('Serve para', RP.esc(v.uso)) : '') + linhaInfo('Vale', D.valorRef[o.tipo] + ' básicos cada'); })()) +
         (lend ? linhaInfo('Guarda', guarda ? '1 relíquia · tipo desconhecido' : '<span class="fraco">Esgotada</span>') : '') +
         '</div>' + (lend
           ? (escav ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('picareta', 'ico-p') + '<span>Sua escavação acha a relíquia em <b class="num" data-fim="' + escav.fim + '">' + RP.fmtResta(escav.fim - Date.now()) + '</b>.</span></p>' : '') +

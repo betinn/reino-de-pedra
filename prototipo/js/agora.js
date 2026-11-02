@@ -30,7 +30,7 @@
     });
     /* oportunidades */
     W.marchas.forEach(function (m) {
-      if (m.d.tipo !== 'caravana' || m.d.dono === 'meu' || W.aliado(m.d.dono) || m.d.chegada <= agora) return;
+      if (m.d.tipo !== 'caravana' || m.d.troca || m.d.dono === 'meu' || W.aliado(m.d.dono) || m.d.chegada <= agora) return;
       var p = m.posicao();
       if (W.estado(p.hex[0], p.hex[1]).v === 'visivel')
         L.push({ g: 'oportunidade', ic: 'carroca', t: 'Caravana desconhecida à vista', d: RP.esc(m.d.cargaTxt) + ' · sai de vista em ' + tempo(m.d.chegada), href: '#/interceptar?marcha=' + m.d.id, bt: 'Interceptar' });
@@ -44,7 +44,13 @@
       if (W.estado(j.c, j.l).v !== 'desconhecido' && !D.escavacoes.some(function (q) { return q.jazida === id; }))
         L.push({ g: 'oportunidade', ic: 'ruina', t: 'Ruína antiga com relíquia', d: 'ninguém escavando', href: '#/extracao?jazida=' + id, bt: 'Escavar' });
     });
+    L = L.concat(RP.pendenciasComercio ? RP.pendenciasComercio() : []);
     /* no seu reino */
+    var nf = D.feridos.reduce(function (s, f) { return s + f.qtd; }, 0);
+    if (nf) {
+      var morre = Math.min.apply(null, D.feridos.map(function (f) { return 24 - f.horas; }));
+      L.push({ g: morre < 6 ? 'urgente' : 'reino', ic: 'ferido', t: nf + (nf > 1 ? ' feridos esperando ervas' : ' ferido esperando ervas'), d: 'os primeiros morrem em ' + Math.round(morre) + ' h sem cura · ' + Math.floor(RP.qtdRecurso('ervas', '*')) + ' ervas no reino', href: '#/tropas', bt: 'Curar' });
+    }
     var esperando = D.filas.obras.filter(function (o) { return o.aguarda && o.aguarda > agora; });
     if (esperando.length) L.push({ g: 'reino', ic: 'carroca', t: esperando.length + (esperando.length > 1 ? ' obras esperando material' : ' obra esperando material'), d: 'o último chega em ' + tempo(Math.max.apply(null, esperando.map(function (o) { return o.aguarda; }))), href: '#/construcao', bt: 'Ver' });
     var fo = D.filas.obras, fr = D.filas.recrutamento;

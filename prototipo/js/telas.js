@@ -214,6 +214,7 @@
       (x.info || []).map(function (i) { return '<div class="info-linha"><span class="fraco">Detalhe</span><span>' + RP.esc(i) + '</span></div>'; }).join('') +
       '<div class="info-linha"><span class="fraco">Guarnição</span><span>' + RP.esc(x.guarnicao) + '</span></div>' +
       '<div class="info-linha"><span class="fraco">Postura</span><span class="selo selo-info">' + RP.esc(x.postura) + '</span></div>' +
+      (D.veterania[x.id] ? '<div class="info-linha"><span class="fraco">Veterania</span><span>' + RP.seloVeterania(D.veterania[x.id]) + '</span></div>' : '') +
       (RP.torres.de(x.id).length ? '<div class="info-linha"><span class="fraco">Torres</span><span>' + RP.esc(RP.torres.de(x.id).map(function (t) { return t.nome + ' (' + RP.torres.descricao(t) + ')'; }).join('; ')) + '</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Estoque</span><span>' + RP.estoqueHTML(x.id) + '</span></div>' +
       '</div><p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Obras aqui usam o estoque deste local. Para trazer material, mande uma caravana.</p>' + (RP.reliquiaEm(x.id) ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(RP.reliquiaEm(x.id)) + '</div>' : '') +
@@ -228,6 +229,7 @@
         (RP.sistema('logistica') ? '<a class="btn btn-p" href="#/caravana?para=' + x.id + '">' + RP.icone('carroca') + 'Trazer recursos</a>' : '') +
         '<a class="btn btn-p" href="#/posturas?local=' + x.id + '">' + RP.icone('escudo') + 'Postura</a>' +
         (x.tipo === 'quartel' ? '<a class="btn btn-p" href="#/recrutamento">' + RP.icone('tropas') + 'Recrutar</a>' : '') +
+        (x.tipo === 'ferraria' ? '<a class="btn btn-p" href="#/ferraria">' + RP.icone('ferraria') + 'Eras, armas e armaduras</a>' : '') +
         (RP.reliquiaEm(x.id) ? '<a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquia</a>' : '')
     });
   }
@@ -297,7 +299,7 @@
         '<div><span class="fraco">Guarnição</span><b>35</b></div>' +
         '<div><span class="fraco">Milícia</span><b data-pop>' + RP.num(RP.popAtual()) + '</b></div>' +
         '</div>' +
-        '<div class="linha"><span class="selo selo-info">' + RP.icone('escudo') + RP.esc(castelo.postura) + '</span><span class="fraco" style="font-size:var(--fs-2)">' + RP.esc(castelo.guarnicao) + '</span></div>' +
+        '<div class="linha" style="flex-wrap:wrap"><span class="selo selo-info">' + RP.icone('escudo') + RP.esc(castelo.postura) + '</span><span class="selo selo-destaque">' + RP.icone('ferraria') + RP.esc(RP.ERAS[RP.eraFeita('cerco') ? 'cerco' : RP.eraFeita('aco') ? 'aco' : 'ferro'].nome) + '</span><span class="fraco" style="font-size:var(--fs-2)">' + RP.esc(castelo.guarnicao) + '</span></div>' +
         '<span class="lc-estoque"><span class="fraco">Estoque</span>' + RP.estoqueHTML(castelo.id) + '</span>' +
         linhaRel(castelo) +
         '</div>' +
@@ -313,10 +315,10 @@
 
         (RP.sistema('reliquias') ? cardReliquias() : '') +
         '<div class="secao-titulo">Valiosos</div>' +
-        '<div class="linha" style="flex-wrap:wrap">' + D.valiosos.map(function (v) {
-          return '<span class="selo selo-destaque selo-g">' + RP.icone(v.id, 'r-' + v.id) + v.nome + ' <b class="num">' + RP.num(RP.totalRecurso(v.id)) + '</b></span>';
+        '<div class="card lista valiosos-lista">' + D.valiosos.map(function (v) {
+          return '<div class="lista-item"><span class="ico-placa">' + RP.icone(v.id, 'r-' + v.id) + '</span><span style="flex:1;min-width:0"><b>' + v.nome + '</b>' + (v.lendario ? ' <span class="selo selo-destaque">Lendário</span>' : '') + '<br><small class="fraco">' + RP.esc(v.uso) + ' · vale ' + D.valorRef[v.id] + '</small></span><b class="num">' + RP.num(RP.totalRecurso(v.id)) + '</b></div>';
         }).join('') + '</div>' +
-        '<p class="fraco" style="margin:var(--esp-3) 0 var(--esp-8);font-size:var(--fs-2)">Ficam no Armazém Real. Liberam unidades e tecnologias melhores: leve-os até onde forem usados. Encontre jazidas com prospectores.</p>' +
+        '<p class="fraco" style="margin:var(--esp-3) 0 var(--esp-8);font-size:var(--fs-2)">Ficam no Armazém Real e vão sozinhos até onde forem usados. "Vale" é o valor de referência em recursos básicos, que orienta trocas. Encontre jazidas com prospectores.' + (RP.sistema('comercio') ? ' <a href="#/comercio">Trocar com outros reinos</a>' : '') + '</p>' +
         '</div>';
 
       el.addEventListener('click', function (e) {
@@ -395,7 +397,7 @@
         if (e.target.closest('[data-jogador-novo]')) {
           var novo = Object.keys(RP.SISTEMAS).every(function (k) { return !RP.sistema(k); });
           Object.keys(RP.SISTEMAS).forEach(function (k) { RP.dados.descobertas[k] = novo; });
-          RP.aviso({ titulo: novo ? 'Todos os sistemas à vista' : 'Como jogador novo', texto: novo ? 'Como um jogador no dia 34.' : 'Transporte manual, espionagem, torres, relíquias e alianças somem até o gatilho de cada um.', icone: 'bandeira', ms: 2600 });
+          RP.aviso({ titulo: novo ? 'Todos os sistemas à vista' : 'Como jogador novo', texto: novo ? 'Como um jogador no dia 34.' : 'Transporte manual, espionagem, torres, relíquias, alianças e comércio somem até o gatilho de cada um.', icone: 'bandeira', ms: 2600 });
           ['reino', 'construcao', 'exploradores', 'agora', 'mapa'].forEach(RP.invalidarTela);
           desenharMais(el); return;
         }
@@ -413,7 +415,9 @@
         ['temporada', 'Temporada e legado', 'Tempo restante, linhagem, relíquias, títulos e brasões', '#/temporada'],
         ['alvo', 'Precisa de você', 'O que pede atenção, oportunidades e o andamento do reino', '#/agora'],
         RP.sistema('alianca') ? ['estandarte', 'Aliança', RP.dados.alianca.nome + ' · ' + RP.dados.alianca.membros.length + ' de ' + RP.dados.alianca.limite + ' · pedidos de recursos', '#/alianca'] : null,
+        RP.sistema('comercio') ? ['troca', 'Comércio e diplomacia', 'Trocas diretas, pactos de não agressão e resgates', '#/comercio'] : null,
         RP.sistema('reliquias') ? ['lendario', 'Relíquias', 'Suas, as espionadas, as concentrações à vista e as ruínas', '#/reliquias'] : null,
+        ['ferraria', 'Ferraria e eras', 'Eras, armas, armaduras e equipamento lendário', '#/ferraria'],
         ['coroa', 'Ranking da temporada', 'Baixas, perdas, tropas e famílias', '#/ranking'],
         ['bandeira', 'Bandeiras', 'Sinais que você colocou e os de perto', '#/bandeiras'],
         ['sino', 'Notificações', 'Avisos recentes e o que chega no celular', '#/notificacoes'],

@@ -81,7 +81,7 @@ Locais de outros reinos nunca usam cor de reino: cinza, brasão "?", nome genér
 
 ### 2.5 Recursos e perigo
 
-- Recursos: `--rec-madeira`, `--rec-pedra`, `--rec-comida`, `--rec-ferro`, `--rec-couro`, `--rec-peles`, `--rec-populacao`, `--rec-ouro`, `--rec-prata`, `--rec-sal`, `--rec-cavalo`, `--rec-ervas`, `--rec-gema`, `--rec-lendario`. Classe `r-<recurso>`. A cor sempre acompanha o ícone.
+- Recursos: `--rec-madeira`, `--rec-pedra`, `--rec-comida`, `--rec-ferro`, `--rec-couro`, `--rec-peles`, `--rec-populacao`, `--rec-ouro`, `--rec-prata`, `--rec-sal`, `--rec-cavalo`, `--rec-ervas`, `--rec-gema`, `--rec-lendario`, `--rec-aco`, `--rec-minerio`. Classe `r-<recurso>`. A cor sempre acompanha o ícone.
 - Perigo da fauna: `--perigo-baixo` `#e8b947`, `--perigo-medio` `#ec8a3a`, `--perigo-alto` `#ea4f43`. Classe `nivel-<nivel>` define `--nivel`.
 - Torres: `--torre-cor` `#b9b2a6` (corpo e prévias) e `--torre-borda` `#2c2a27` (contorno do ícone).
 - Relíquias lendárias, por tipo: `--rel-ataque` `#f47b60`, `--rel-producao` `#e8c04a`, `--rel-resistencia` `#57c2c9`. Classe `tipo-<tipo>` define `--relq`. Contraste AA conferido sobre a superfície tingida do card. Sem tipo (ruína antiga, relíquia ainda não achada) usa `--rec-lendario`.
@@ -120,7 +120,7 @@ Locais de outros reinos nunca usam cor de reino: cinza, brasão "?", nome genér
 - SVG próprios (`js/icones.js`), grade 24 × 24. Nenhuma arte de terceiros.
 - Estilo: silhueta preenchida (`ic-s`) com entalhes escuros (`ic-d`) e linhas estruturais (`ic-l`).
 - Uso: `RP.icone('mina', 'ico-p r-ferro')`. Tamanhos 18 (`ico-p`), 24, 32 (`ico-g`).
-- Conjunto: recursos (madeira, pedra, comida, ferro, couro, peles, população, ouro, prata, sal, cavalo, ervas, gema, lendário, ruína); locais (castelo, vila, moradia, mina, serraria, pasto, armazém, ferraria, quartel, muralha, escombros, estaca); fauna (lobo, javali, urso, crocodilo, pata); unidades (tropas, explorador, bota, picareta, batedor, cerco); interface (mapa, vista, hexágonos, relatórios, menu, sino, mais, menos, alvo, camadas, fechar, voltar, avançar, relógio, escudo, alerta, olho, bandeira, estandarte, interrogação, coroa, martelo, cadeado, bússola, info, check, subir, seta, névoa, rota, ponte, temporada).
+- Conjunto: recursos (madeira, pedra, comida, ferro, couro, peles, população, ouro, prata, aço, sal, cavalo, ervas, gema, minério raro, lendário, ruína); locais (castelo, vila, moradia, mina, serraria, pasto, armazém, ferraria, quartel, muralha, escombros, estaca); fauna (lobo, javali, urso, crocodilo, pata); unidades (tropas, explorador, bota, picareta, batedor, cerco); interface (mapa, vista, hexágonos, relatórios, menu, sino, mais, menos, alvo, camadas, fechar, voltar, avançar, relógio, escudo, alerta, olho, bandeira, estandarte, interrogação, coroa, martelo, cadeado, bússola, info, check, subir, seta, névoa, rota, ponte, temporada, troca, pacto, ferido, espada).
 - Ícone sozinho em botão precisa de `aria-label`.
 
 ---
@@ -297,6 +297,15 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Pendência | `.pend-item.pend-<grupo>` | Ícone, o que é, detalhe com tempo e um botão. Agora (borda vermelha), Oportunidades (ícone lilás), No seu reino. |
 | Aliança | `.al-topo`, `.selo-aliado` | Brasão da aliança, membros "3 de 5"; aliado marcado em verde (`--cor-aliado`). |
 | Ponto de encontro | `.mini-rota` + `.ext-numeros` | Caminho até o encontro e três números: vocês chegam, eles passam, folga. Sem encontro possível, nota com o motivo e o botão inativo. |
+| Requisitos | `.req-lista` | Selos verdes (cumprido, com ✓) e cinza (falta, com cadeado), lado a lado; o botão fica inativo enquanto falta algum. |
+| Era | `.era-card` (`.feita`) | Nome, o que libera, custo, requisitos e Pesquisar; feita mostra o dia. |
+| Linha da ferraria | `.fam-card` + `.linha-forja` + `.trilha-niveis` | Por família, armas e armaduras com trilha de 3 níveis (feito em destaque, na fila em azul), bônus atual, custo e tempo do próximo e Forjar. |
+| Feridos | `.feridos-card` | Grupos com prazo ("morrem em 15 h sem ervas"), quantos as ervas do reino curam e Curar; a cura entra como item de fila. |
+| Veterania | `RP.seloVeterania(marcas)` | "Veterana I · +5% · 3 marcas" em destaque; sem veterania, selo neutro. |
+| Bônus de combate | `.bonus-linha` | Soma com as partes (armas, veterania, relíquia, lendário, legado) e o lembrete do teto de +50%. |
+| Troca | `.troca-linhas` + selo de equilíbrio | "Você recebe" e "Você dá" lado a lado com o valor; selo verde (a seu favor), vermelho (contra você) ou neutro (equilibrada). |
+| Valor de referência | `.valor-grade` | Selos com o valor de cada recurso em básicos. |
+| Pacto | `.selo-info` / `.selo-visivel` com contagem | "começa em…" enquanto o pagamento viaja; "termina em…" em vigor. No envio, `.faixa-alerta` com o pacto e o botão inativo. |
 
 ---
 

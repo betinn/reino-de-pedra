@@ -953,3 +953,27 @@ a.guia-item { color: inherit; text-decoration: none; }
 .ordem-txt small { font-size: var(--fs-1); color: var(--cor-texto-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .em-ordem .faixa-alerta, .em-ordem .faixa-mais, .em-ordem .faixas-extra { display: none; }
 @media (prefers-reduced-motion: no-preference) { .ordem-ico .ico { animation: pulso 1.6s ease-in-out infinite; } }
+
+/* ---------------------------------------------------------------- ferraria, eras, feridos e bônus */
+.req-lista { display: flex; flex-wrap: wrap; gap: 6px; }
+.era-card { display: flex; flex-direction: column; gap: var(--esp-2); }
+.era-card.feita { opacity: .9; }
+.era-card > .btn, .linha-forja > .btn { align-self: flex-start; }
+.fam-card .card-titulo small { margin-left: auto; }
+.linha-forja { display: flex; flex-direction: column; gap: 6px; padding-top: var(--esp-3); border-top: 1px solid var(--cor-borda); }
+.trilha-niveis { display: inline-flex; gap: 3px; margin-left: 4px; }
+.trilha-niveis i { width: 14px; height: 6px; border-radius: 3px; background: var(--cor-superficie-3); }
+.trilha-niveis i.on { background: var(--cor-destaque); }
+.trilha-niveis i.fila { background: var(--cor-info, #6aa5d8); }
+.lend-card .selo-destaque, .feridos-card .card-titulo .selo { margin-left: auto; }
+.feridos-card { margin-bottom: var(--esp-3); }
+.feridos-card > .btn { align-self: flex-start; }
+.bonus-linha { display: flex; gap: var(--esp-2); align-items: flex-start; font-size: var(--fs-2); margin-top: var(--esp-2); }
+.bonus-linha .ico { color: var(--cor-destaque); margin-top: 2px; }
+.ferraria-atalho { color: inherit; text-decoration: none; gap: var(--esp-3); }
+
+/* ---------------------------------------------------------------- comércio e diplomacia */
+.troca-linhas { display: grid; grid-template-columns: 1fr 1fr; gap: var(--esp-3); }
+.troca-linhas > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.valor-grade { display: flex; flex-wrap: wrap; gap: 6px; }
+.valiosos-lista .lista-item .num { margin-left: var(--esp-2); }

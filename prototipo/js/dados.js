@@ -1,5 +1,5 @@
-/* Reino de Pedra — dados fictícios e fixos do protótipo (mock).
-   Nenhum valor aqui é balanceamento: números servem só para preencher as telas.
+/* Reino de Pedra — dados fictícios e fixos do protótipo (mock): um reino no dia 34 da temporada.
+   Custos, tempos e rendimentos seguem balanceamento/README.md; o resto é exemplo para preencher as telas.
    Tempos ("seg") são contados a partir da abertura da página. */
 (function () {
   'use strict';
@@ -24,17 +24,24 @@
       peles: { nome: 'Peles', qtd: 45, cap: 2000, taxa: 0, origem: 'Obtidas pela caça' }
     },
     valiosos: [
-      { id: 'ouro', nome: 'Ouro', qtd: 85 },
-      { id: 'sal', nome: 'Sal', qtd: 40 },
-      { id: 'cavalo', nome: 'Cavalos de raça', qtd: 6 }
+      { id: 'ouro', nome: 'Ouro', uso: 'Eras; armas e armaduras do nível 3' },
+      { id: 'prata', nome: 'Prata', uso: 'Moeda de troca padrão' },
+      { id: 'aco', nome: 'Aço de qualidade', uso: 'Armas e armaduras dos níveis 2 e 3; equipamento lendário' },
+      { id: 'cavalo', nome: 'Cavalos de raça', uso: 'Cavaleiro de elite (1 por unidade) e carroção (2)' },
+      { id: 'sal', nome: 'Sal', uso: 'Salgadeira: o local de comida guarda 20 h de comida em vez de 10 h' },
+      { id: 'ervas', nome: 'Ervas raras', uso: 'Curar feridos (5 por ferido)' },
+      { id: 'gema', nome: 'Pedras preciosas', uso: 'Troca de alto valor; brasões e estandartes (só cosméticos)' },
+      { id: 'minerio', nome: 'Minério raro', uso: 'Equipamento lendário', lendario: true }
     ],
+    /* Valor de referência em recursos básicos (balanceamento): orienta trocas e limites; não é preço fixo */
+    valorRef: { madeira: 1, pedra: 1, comida: 1, ferro: 1, couro: 2, peles: 2, sal: 6, ervas: 8, prata: 10, aco: 15, ouro: 20, gema: 30, cavalo: 40, minerio: 60 },
     /* Estoques por local (no início da sessão). Recursos só podem ser usados onde estão;
        cada local acumula a própria produção. Valiosos ficam no Armazém Real. */
     estoques: {
       castelo: { madeira: 820, pedra: 410, comida: 1500, ferro: 210, couro: 80, peles: 30 },
       quartel: { madeira: 900, comida: 900, ferro: 300, couro: 120 },
-      armazem: { madeira: 600, pedra: 300, comida: 1200, ferro: 160, couro: 40, peles: 15, ouro: 85, sal: 40, cavalo: 6 },
-      ferraria: { ferro: 150, madeira: 80 },
+      armazem: { madeira: 600, pedra: 300, comida: 1200, ferro: 160, couro: 40, peles: 15, ouro: 64, prata: 120, aco: 95, cavalo: 6, sal: 40, ervas: 20, gema: 6 },
+      ferraria: { ferro: 1400, madeira: 500, couro: 60 },
       'vila-moinho': { comida: 900 },
       pasto: { comida: 300 },
       'mina-vale': { ferro: 180 },
@@ -73,7 +80,8 @@
       valdren: { nome: 'Casa Valdren', cor: 'rival-1', brasao: { forma: 'classico', divisao: 'partido', cor1: 'vermelho', cor2: 'ouro', simbolo: 'estrela', corSimbolo: 'negro' } },
       corvo: { nome: 'Ordem do Corvo', cor: 'rival-2', brasao: { forma: 'redondo', divisao: 'cortado', cor1: 'negro', cor2: 'purpura', simbolo: 'lua', corSimbolo: 'prata' } },
       lumen: { nome: 'Casa Lúmen', cor: 'aliado', brasao: { forma: 'portugues', divisao: 'cortado', cor1: 'verde', cor2: 'prata', simbolo: 'estrela', corSimbolo: 'ouro' } },
-      fenda: { nome: 'Baronia da Fenda', cor: 'aliado', brasao: { forma: 'classico', divisao: 'banda', cor1: 'castanho', cor2: 'ouro', simbolo: 'chave', corSimbolo: 'negro' } },
+      fenda: { nome: 'Baronia da Fenda', cor: 'aliado', novato: { horas: 30 }, brasao: { forma: 'classico', divisao: 'banda', cor1: 'castanho', cor2: 'ouro', simbolo: 'chave', corSimbolo: 'negro' } },
+      mirante: { nome: 'Casa Mirante', cor: 'rival-1', brasao: { forma: 'portugues', divisao: 'cortado', cor1: 'verde', cor2: 'ouro', simbolo: 'espada', corSimbolo: 'prata' } },
       desconhecido: { nome: 'Dono desconhecido', cor: 'desconhecido', brasao: null }
     },
 
@@ -85,8 +93,8 @@
         info: ['Recrutando 10 arqueiros'], fila: { rotulo: '10 arqueiros', seg: 1200, total: 2100 }, guarnicao: '8 milicianos', postura: 'Apenas defender' },
       { id: 'armazem', reino: 'meu', tipo: 'armazem', nome: 'Armazém Real', c: 15, l: 16, terreno: 'planicie', nivel: 7,
         info: ['Guarda até 12.000 por recurso'], guarnicao: '—', postura: 'Apenas defender' },
-      { id: 'ferraria', reino: 'meu', tipo: 'ferraria', nome: 'Ferraria do Rei', c: 16, l: 20, terreno: 'planicie', nivel: 6,
-        info: ['Era do Ferro', 'Forja lanças e pontas de flecha'], guarnicao: '4 milicianos', postura: 'Apenas defender' },
+      { id: 'ferraria', reino: 'meu', tipo: 'ferraria', nome: 'Ferraria do Rei', c: 16, l: 20, terreno: 'planicie', nivel: 7,
+        info: ['Era do Aço', 'Forjando armaduras de infantaria'], guarnicao: '4 milicianos', postura: 'Apenas defender' },
       { id: 'vila-moinho', reino: 'meu', tipo: 'vila', nome: 'Vila do Moinho', c: 18, l: 18, terreno: 'planicie', nivel: 8,
         info: ['Moradias: 3', '+188 comida/h'], prod: { r: 'comida', v: 188 }, guarnicao: '12 lanceiros', postura: 'Atacar quem atacar' },
       { id: 'pasto', reino: 'meu', tipo: 'pasto', nome: 'Pasto das Éguas', c: 18, l: 14, terreno: 'planicie', nivel: 6,
@@ -116,6 +124,7 @@
 
       { id: 'a-castelo', reino: 'lumen', tipo: 'castelo', nome: 'Castelo de Lúmen', c: 10, l: 30, terreno: 'planicie', nivel: 3 },
       { id: 'f-castelo', reino: 'fenda', tipo: 'castelo', nome: 'Forte da Fenda', c: 3, l: 12, terreno: 'planicie', nivel: 4 },
+      { id: 'mi-castelo', reino: 'mirante', tipo: 'castelo', nome: 'Castelo Mirante', c: 27, l: 22, terreno: 'planicie', nivel: '?' },
       { id: 'x-mina', reino: 'desconhecido', tipo: 'mina', nome: 'Mina', c: 7, l: 5, terreno: 'colina', nivel: '?', escudo: true }
     ],
 
@@ -127,6 +136,8 @@
       { id: 'j-cavalos', tipo: 'cavalo', classe: 'valioso', nome: 'Manada de cavalos de raça', c: 21, l: 10, terreno: 'planicie', restante: 0.6 },
       { id: 'j-ervas', tipo: 'ervas', classe: 'valioso', nome: 'Ervas raras', c: 6, l: 27, terreno: 'pantano', restante: 0.8 },
       { id: 'j-gema', tipo: 'gema', classe: 'valioso', nome: 'Pedras preciosas', c: 24, l: 6, terreno: 'montanha', restante: 0.88 },
+      { id: 'j-aco', tipo: 'aco', classe: 'valioso', nome: 'Veio de ferro puro (aço)', c: 10, l: 14, terreno: 'colina', restante: 0.66 },
+      { id: 'j-minerio', tipo: 'minerio', classe: 'raro', nome: 'Veio de minério raro', c: 21, l: 5, terreno: 'montanha', restante: 1 },
       { id: 'j-ruina', tipo: 'ruina', classe: 'lendario', nome: 'Ruínas antigas', c: 28, l: 20, terreno: 'colina', restante: 1 }
     ],
 
@@ -156,7 +167,8 @@
       { id: 'b-1', reino: 'valdren', tipo: 'reivindicacao', texto: 'Este ouro é de Valdren.', c: 26, l: 11 },
       { id: 'b-2', reino: 'meu', tipo: 'aviso', texto: 'Estrada do Rei: passagem livre.', c: 20, l: 15 },
       { id: 'b-3', reino: 'corvo', tipo: 'ameaca', texto: 'Daqui ninguém passa.', c: 31, l: 24 },
-      { id: 'b-4', reino: 'valdren', tipo: 'alianca', texto: 'Aceitamos tratados.', c: 28, l: 9 }
+      { id: 'b-4', reino: 'valdren', tipo: 'alianca', texto: 'Aceitamos tratados.', c: 28, l: 9 },
+      { id: 'b-5', reino: 'mirante', tipo: 'aviso', texto: 'Compramos e vendemos. Propostas pelo sino.', c: 24, l: 19 }
     ],
 
     /* Fauna hostil: grupos por terreno, com território (raio) e nível de perigo.
@@ -236,8 +248,8 @@
         efeito: 'Guarda 12.000 → 16.000 por recurso', custo: { madeira: 2220, pedra: 1730, ferro: 490, comida: 490 }, tempo: 7680 },
       { id: 'quartel', icone: 'quartel', nome: 'Quartel da Guarda', onde: 'Planície', local: 'quartel', cat: 'militar', de: 6, para: 7,
         efeito: 'Libera o aríete; recruta 5% mais rápido', custo: { madeira: 1030, pedra: 800, ferro: 230, comida: 230 }, tempo: 3840 },
-      { id: 'era-aco', icone: 'ferraria', nome: 'Era do Aço', onde: 'Ferraria do Rei', local: 'ferraria', cat: 'militar', tec: true,
-        efeito: 'Armas de aço para lanceiros e cavalaria', custo: { ferro: 800, ouro: 60 }, tempo: 14400, requisito: 'Ferraria nível 7' },
+      { id: 'salgadeira', icone: 'sal', nome: 'Salgadeira', onde: 'Vila do Moinho', local: 'vila-moinho', cat: 'economia', selo: 'Usa sal',
+        efeito: 'O local guarda 20 h de comida em vez de 10 h (mais estoque também atrai saque)', custo: { sal: 200, madeira: 300 }, tempo: 3600 },
       { id: 'posto', icone: 'picareta', nome: 'Posto de extração', onde: 'Escolher jazida no mapa', cat: 'economia', novo: true,
         efeito: 'Opcional: mais velocidade e rendimento na extração', custo: { madeira: 350, pedra: 200 }, tempo: 1200 },
       { id: 'vila-nova', icone: 'vila', nome: 'Nova vila', onde: 'Escolher local no mapa', cat: 'populacao', novo: true,
@@ -260,12 +272,15 @@
         custo: { comida: 30, madeira: 50, couro: 10 }, pop: 1, tempo: 210, atk: 4, def: 3, vel: 3, carga: 2 },
       { id: 'cavalaria', nome: 'Cavalaria', icone: 'cavalo', papel: 'Rápida, boa para saque', forte: ['Arqueiros'], fraco: ['Lanceiros'],
         custo: { comida: 60, ferro: 50, couro: 30 }, pop: 1, tempo: 360, atk: 5, def: 3, vel: 5, carga: 4 },
+      { id: 'elite', nome: 'Cavaleiro de elite', icone: 'cavalo', papel: 'Mais forte por pessoa; usa 1 cavalo de raça', forte: ['Arqueiros'], fraco: ['Lanceiros'], era: 'aco',
+        nota: 'Ataque 60 e defesa 40 contra 45 e 30 da cavalaria: mais força por pessoa, mais caro por força.',
+        custo: { comida: 70, ferro: 60, couro: 40, cavalo: 1 }, pop: 1, tempo: 480, atk: 5, def: 4, vel: 5, carga: 4 },
       { id: 'ariete', nome: 'Aríete', icone: 'cerco', papel: 'Cerco: derruba portões e torres', forte: ['Portões', 'Torres'], fraco: ['Tropas'],
         custo: { madeira: 300, ferro: 60 }, pop: 4, tempo: 900, atk: 5, def: 1, vel: 1, carga: 0, requisito: 'Quartel nível 7' },
       { id: 'trebuchet', nome: 'Trebuchet', icone: 'cerco', papel: 'Cerco a distância', forte: ['Castelos'], fraco: ['Cavalaria'],
-        custo: { madeira: 600, pedra: 200, ferro: 150 }, pop: 6, tempo: 1800, atk: 5, def: 1, vel: 1, carga: 0, requisito: 'Era do cerco avançado' }
+        custo: { madeira: 600, pedra: 200, ferro: 150 }, pop: 6, tempo: 1800, atk: 5, def: 1, vel: 1, carga: 0, era: 'cerco' }
     ],
-    disponiveis: { milicia: 0, lanceiro: 20, arqueiro: 15, cavalaria: 0 },
+    disponiveis: { milicia: 0, lanceiro: 20, arqueiro: 15, cavalaria: 0, elite: 0 },
 
     /* Exploradores (tabela do CLAUDE.md) */
     exploradores: [
@@ -277,7 +292,7 @@
 
     /* Extração em andamento (exemplo): posto já construído na jazida de prata */
     extracoes: [
-      { id: 'ex-prata', jazida: 'j-prata', grupo: { lanceiro: 6 }, posto: true, ritmo: 34, horas: 6 }
+      { id: 'ex-prata', jazida: 'j-prata', grupo: { lanceiro: 6 }, posto: true, ritmo: 4.8, horas: 6 }
     ],
 
     /* Tipos de ataque (CLAUDE.md) */
@@ -315,12 +330,12 @@
       { id: 'r-batalha', tipo: 'batalha', titulo: 'Vila do Vau sob ataque', horas: 0.07, lido: false, local: 'vila-vau' },
       { id: 'r-ataque-anon', tipo: 'ataque', titulo: 'Ataque repelido na Vila do Moinho', horas: 5, lido: false, local: 'vila-moinho',
         atacante: null, forcas: '≈ 25 tropas · lanceiros e cavalaria', origem: 'nordeste', tipoAtaque: 'Saque', resultado: 'Repelido',
-        perdas: { meu: '3 milicianos · 18 de população', deles: '≈ 9 tropas' }, levado: null },
+        perdas: { meu: '5 lanceiros mortos · 18 de população', deles: '≈ 9 tropas' }, feridos: '2 lanceiros', levado: null },
       { id: 'r-ataque-id', tipo: 'ataque', titulo: 'Pasto das Éguas saqueado', horas: 26, lido: true, local: 'pasto',
         atacante: 'valdren', forcas: '32 cavaleiros', origem: 'leste', tipoAtaque: 'Saque', resultado: 'Saqueado',
         perdas: { meu: '6 milicianos', deles: '4 cavaleiros' }, levado: { comida: 420, couro: 30 } },
       { id: 'r-saque', tipo: 'saque', titulo: 'Seu saque à Mina Rubra', horas: 9, lido: true, local: 'v-mina',
-        tropas: '24 cavaleiros', resultado: 'Vitória', levado: { ferro: 180 }, decrescente: { vezes: 2, reducao: 40 }, perdas: { meu: '2 cavaleiros', deles: '≈ 6 lanceiros' }, estandarte: false,
+        tropas: '24 cavaleiros', resultado: 'Vitória', levado: { ferro: 180 }, decrescente: { vezes: 2, reducao: 40 }, perdas: { meu: '7 cavaleiros mortos', deles: '≈ 6 lanceiros' }, feridos: '3 cavaleiros', estandarte: false,
         tatica: 'Média', retorno: 'O estoque acabou antes de cumprir os objetivos: sem mais o que levar, as tropas voltaram.',
         objetivos: [{ txt: '1.000 de ferro', obtido: '180', estado: 'parcial', nota: 'estoque esgotado por saques repetidos' }, { txt: '500 de pedra', obtido: '0', estado: 'falhou', nota: 'não havia pedra no local' }] },
       { id: 'r-exploracao', tipo: 'exploracao', titulo: 'Exploração ao norte', horas: 2, lido: false,
@@ -333,12 +348,15 @@
         quem: 'Explorador a pé', animal: 'crocodilos', onde: 'Pântano a sudoeste', resultado: 'O explorador foi morto. Tropas mortas não retornam.' },
       { id: 'r-caca', tipo: 'caca', titulo: 'Caçada aos javalis', horas: 14, lido: true,
         grupo: '6 arqueiros', animal: 'javalis', ganho: { comida: 96, couro: 24, peles: 2 }, perdas: 'Nenhuma' },
-      { id: 'r-extracao', tipo: 'extracao', titulo: 'Prata extraída', horas: 1, lido: true, jazida: 'j-prata', ganho: { prata: 34 }, restante: 0.74 },
+      { id: 'r-extracao', tipo: 'extracao', titulo: 'Prata extraída', horas: 1, lido: true, jazida: 'j-prata', ganho: { prata: 29 }, restante: 0.74 },
       { id: 'r-escudo', tipo: 'bloqueio', titulo: 'Ataque sem combate', horas: 20, lido: true, local: 'x-mina', tropas: '12 lanceiros', tipoAtaque: 'Saque' }
     ],
 
     /* Notificações (exemplos). horas: há quanto tempo. ir: rota do protótipo. */
     notificacoes: [
+      { id: 'n16', cat: 'social', titulo: 'Casa Valdren propõe um pacto', texto: 'Cobra 600 de ferro por 3 dias sem ataques entre vocês. O jogo garante o pacto.', horas: 1, lido: false, ir: 'comercio' },
+      { id: 'n15', cat: 'exploracao', titulo: 'Seu explorador a pé foi capturado', texto: 'Casa Valdren pede 25 de prata de resgate. Sem decisão em 24 h, ele é libertado.', horas: 6, lido: false, ir: 'comercio' },
+      { id: 'n14', cat: 'social', titulo: 'Casa Mirante oferece ouro', texto: '40 de ouro por 920 de madeira. A troca viaja e pode ser roubada no caminho.', horas: 2, lido: true, ir: 'comercio' },
       { id: 'n13', cat: 'social', titulo: 'Casa Lúmen pede 400 de pedra', texto: 'Para uma torre de arqueiros. A ajuda viaja e pode ser roubada no caminho.', horas: 1.5, lido: false, ir: 'alianca' },
       { id: 'n12', cat: 'exploracao', titulo: 'Espião visto perto da Vila do Vau', texto: 'A guarnição viu um batedor seguindo para o leste. Avistamentos somem do mapa em 10 h.', horas: 3, lido: false, ir: 'mapa?modo=tatico&abrir=avist:av-espiao' },
       { id: 'n11', cat: 'ataque', titulo: 'Relíquia roubada', texto: 'O Cálice das Colheitas foi levado da Vila do Moinho. As tropas que o levam seguem para o leste: ainda dá para interceptar.', horas: 0.2, lido: false, ir: 'relatorio?id=r-roubo' },
@@ -349,7 +367,7 @@
       { id: 'n5', cat: 'social', titulo: 'Nova bandeira perto do seu reino', texto: 'Casa Valdren: “Este ouro é de Valdren.”', horas: 4, lido: true, ir: 'mapa?modo=tatico&abrir=bandeira:b-1' },
       { id: 'n6', cat: 'recrutamento', titulo: '15 arqueiros prontos', texto: 'Quartel da Guarda.', horas: 7, lido: true, ir: 'tropas' },
       { id: 'n7', cat: 'fauna', titulo: 'Explorador morto por crocodilos', texto: 'Pântano a sudoeste. Prefira a rota segura ou leve escolta.', horas: 30, lido: true, ir: 'relatorio?id=r-fauna' },
-      { id: 'n9', cat: 'social', titulo: 'Sua bandeira foi derrubada', texto: '“Fica longe da Salina.” não está mais no mapa.', horas: 18, lido: true, ir: 'bandeiras' },
+      { id: 'n9', cat: 'social', titulo: 'Sua bandeira foi derrubada', texto: '“Fica longe da Salina.” não está mais no mapa. Quem derrubou não levava estandarte: não se sabe quem foi.', horas: 18, lido: true, ir: 'bandeiras' },
       { id: 'n10', cat: 'ataque', titulo: 'Ataque sem combate', texto: 'O alvo estava protegido por escudo de novato. Suas tropas voltaram.', horas: 20, lido: true, ir: 'relatorio?id=r-escudo' },
       { id: 'n8', cat: 'temporada', titulo: 'Faltam 36 dias para o fim da temporada', texto: 'Relíquias e títulos da temporada ainda podem ser conquistados.', horas: 30, lido: true, ir: 'temporada' }
     ],
@@ -357,20 +375,25 @@
 
     /* Temporada e legado (exemplos) */
     legado: {
-      linhagem: { nivel: 4, progresso: 0.62, desbloqueios: [
-        { nivel: 2, txt: 'Forma de brasão "Rodela"', feito: true },
-        { nivel: 3, txt: 'Nome de linhagem exibido no perfil', feito: true },
+      /* Linhagem 1–10: +1 por temporada jogada (ativo em 30 dos 70 dias) e +1 por relíquia da temporada ganha.
+         Desbloqueia opções, nunca poder. */
+      linhagem: { nivel: 4, diasAtivo: 34, diasPedidos: 30, como: '1 + 2 temporadas jogadas + 1 relíquia da temporada', desbloqueios: [
+        { nivel: 2, txt: 'Cores e formas extras de brasão', feito: true },
+        { nivel: 3, txt: 'Títulos', feito: true },
         { nivel: 5, txt: 'Escolher a região inicial ao fundar o reino' },
-        { nivel: 6, txt: 'Estandarte bordado (cosmético)' },
-        { nivel: 8, txt: 'Castelo de pedra clara (cosmético)' }
+        { nivel: 7, txt: 'Escolher a região do exílio' },
+        { nivel: 10, txt: 'Brasão da casa com moldura de linhagem' }
       ] },
+      /* Relíquias da temporada: +1% a +2% cada, até 3 equipadas, teto somado de 5% (conta no teto de bônus de combate) */
       reliquias: [
-        { id: 'coroa-ferro', nome: 'Coroa de Ferro Frio', bonus: '+2% produção de ferro', como: 'Defender 10 ataques nesta temporada', ganha: true },
-        { id: 'lanterna', nome: 'Lanterna do Explorador', bonus: '+3% visão de exploradores', como: 'Revelar 300 hexágonos', ganha: true },
-        { id: 'chave-ruina', nome: 'Chave das Ruínas', bonus: '+2% rendimento de extração', como: 'Ocupar uma ruína antiga', ganha: false, progresso: 0 },
-        { id: 'presa', nome: 'Presa do Grande Urso', bonus: '+2% rendimento de caça', como: 'Caçar 5 bandos de ursos', ganha: false, progresso: 0.4 }
+        { id: 'coroa-ferro', nome: 'Coroa de Ferro Frio', tipo: 'producao', bonus: 2, como: 'Temporada 2: 3º lugar em famílias', ganha: true, equipada: true }
       ],
-      tetoBonus: '5%',
+      conquistas: [
+        { id: 'ranking', nome: 'Entre os 3 primeiros do ranking', como: 'Em baixas, tropas ou famílias (perdas não contam)', agora: 'Você: 9º em famílias, 14º em baixas', ok: false },
+        { id: 'lendaria', nome: 'Guardião de relíquia', como: 'Terminar a temporada com uma relíquia lendária em seu poder', agora: 'Você tem 2 agora', ok: true },
+        { id: 'cerco', nome: 'Sitiante', como: 'Vencer um cerco a um castelo', agora: 'Ainda não', ok: false }
+      ],
+      equipadasMax: 3, tetoReliquias: 5,
       titulos: [
         { nome: 'Senhor das Pedras', como: 'Linhagem nível 4', ativo: true, ganho: true },
         { nome: 'Guardião do Vau', como: 'Temporada 2: defendeu a Vila do Vau 20 vezes', ganho: true },
@@ -401,7 +424,7 @@
         { nome: 'Marca do Norte', brasao: { forma: 'portugues', divisao: 'chaveirao', cor1: 'negro', cor2: 'prata', simbolo: 'montes', corSimbolo: 'prata' }, baixas: 1720, perdas: 2210, tropas: 760, familias: 1540 },
         { nome: 'Torre Cinzenta', brasao: { forma: 'classico', divisao: 'pleno', cor1: 'negro', cor2: 'negro', simbolo: 'torre', corSimbolo: 'prata' }, baixas: 1380, perdas: 640, tropas: 1120, familias: 2190 },
         { nome: 'Reino de Solar', brasao: { forma: 'redondo', divisao: 'esquartelado', cor1: 'ouro', cor2: 'vermelho', simbolo: 'coroa', corSimbolo: 'negro' }, baixas: 1210, perdas: 1530, tropas: 840, familias: 1760 },
-        { nome: 'Casa Mirante', brasao: { forma: 'portugues', divisao: 'cortado', cor1: 'verde', cor2: 'ouro', simbolo: 'espada', corSimbolo: 'prata' }, baixas: 990, perdas: 410, tropas: 1030, familias: 2020 },
+        { reino: 'mirante', baixas: 990, perdas: 410, tropas: 1030, familias: 2020 },
         { nome: 'Vale do Junco', brasao: { forma: 'classico', divisao: 'partido', cor1: 'verde', cor2: 'prata', simbolo: 'lua', corSimbolo: 'negro' }, baixas: 760, perdas: 1180, tropas: 540, familias: 3010 },
         { reino: 'meu', baixas: 640, perdas: 390, tropas: 420, familias: 1240 }
       ],
@@ -423,13 +446,52 @@
     ruinasComReliquia: ['j-ruina'],
     escavacoes: [],
     /* Sistemas já apresentados ao jogador (no exemplo, um jogador no dia 34: todos). false = ainda não apareceu. */
-    descobertas: { logistica: true, espionagem: true, defesas: true, reliquias: true, alianca: true },
+    descobertas: { logistica: true, espionagem: true, defesas: true, reliquias: true, alianca: true, comercio: true },
     /* Aliança: limite de membros para não desequilibrar um mundo de até 30 reinos */
     alianca: {
       nome: 'Pacto da Pedra', limite: 5, desde: 'dia 12',
       brasao: { forma: 'classico', divisao: 'esquartelado', cor1: 'azul', cor2: 'verde', simbolo: 'torre', corSimbolo: 'prata' },
-      membros: ['meu', 'lumen', 'fenda'], papeis: { meu: 'Líder', lumen: 'Membro', fenda: 'Membro' },
-      castelos: { lumen: 'a-castelo', fenda: 'f-castelo' }
+      membros: ['meu', 'lumen', 'fenda'], papeis: { meu: 'Líder', lumen: 'Conselheiro', fenda: 'Membro' }, conselheirosMax: 2,
+      castelos: { lumen: 'a-castelo', fenda: 'f-castelo' },
+      /* quem sai ou é expulso fica em trégua de 24 h com a aliança, garantida pelo jogo */
+      tregua: [{ nome: 'Clã Ferrugem', brasao: { forma: 'classico', divisao: 'cortado', cor1: 'castanho', cor2: 'negro', simbolo: 'martelo', corSimbolo: 'ouro' }, como: 'saiu', seg: 18 * 3600 }]
+    },
+
+    /* Eras: a do Ferro é a inicial. Era do Aço feita no dia 22. */
+    eras: { aco: { feita: true, dia: 22 }, cerco: { feita: false } },
+    /* Ferraria: nível de armas e armaduras por família; fila própria (até 10, uma por vez) */
+    ferraria: {
+      linhas: { infantaria: { armas: 2, armaduras: 1 }, arqueiros: { armas: 1, armaduras: 1 }, cavalaria: { armas: 0, armaduras: 0 } },
+      fila: [{ fam: 'infantaria', linha: 'armaduras', para: 2, rotulo: 'Armaduras de infantaria → nível 2', seg: 7200, total: 21600 }],
+      vagas: 10
+    },
+    /* Veterania por exército (marcas de vitória) */
+    veterania: { castelo: 3, 'vila-moinho': 6, 'mina-vale': 1 },
+    /* Feridos à espera de ervas (horas: há quanto tempo; morrem 24 h depois sem cura) */
+    feridos: [
+      { id: 'fe-1', origem: 'Defesa da Vila do Moinho', unidade: 'lanceiro', qtd: 2, horas: 5 },
+      { id: 'fe-2', origem: 'Saque à Mina Rubra', unidade: 'cavalaria', qtd: 3, horas: 9 }
+    ],
+    curas: [],
+    /* Equipamento lendário: o seu (ainda não forjado) e os vistos em outros reinos */
+    lendario: { meu: null, vistos: [{ reino: 'corvo', nome: 'Elmo do Corvo', tipo: 'ataque', exercito: '≈ 40 cavaleiros', horas: 6 }] },
+
+    /* Comércio e diplomacia: só com reinos conhecidos; cargas viajam e podem ser roubadas */
+    comercio: {
+      conhecidos: { lumen: 'aliado', fenda: 'aliado', valdren: 'estandarte e espionagem', corvo: 'bandeira', mirante: 'bandeira' },
+      ofertas: [
+        { id: 'tr-1', de: 'mirante', da: { ouro: 40 }, quer: { madeira: 920 }, horas: 2, estado: 'aberta' },
+        { id: 'tr-2', de: 'lumen', da: { pedra: 300 }, quer: { prata: 25 }, horas: 0.8, estado: 'aberta' }
+      ],
+      minhas: [{ id: 'tr-3', para: 'fenda', da: { ferro: 400 }, quer: { ervas: 40 }, horas: 3, estado: 'aguardando' }],
+      pactos: [{ id: 'pc-1', com: 'corvo', dias: 3, pagou: 'meu', carga: { prata: 60 }, seg: 53 * 3600, estado: 'ativo' }],
+      propostasPacto: [{ id: 'pc-2', de: 'valdren', dias: 3, cobra: { ferro: 600 }, horas: 1, estado: 'aberta' }],
+      pactosMax: 3,
+      novatoDia: 2000, novatoUsado: { fenda: 300 },
+      capturados: [
+        { id: 'cap-1', meu: true, quem: 'Explorador a pé', por: 'valdren', resgate: { prata: 25 }, horas: 6 },
+        { id: 'cap-2', meu: false, quem: 'Batedor de elite', de: 'corvo', onde: 'Mina do Vale', horas: 2 }
+      ]
     },
     /* Pedidos de recursos entre aliados. A ajuda viaja: leva tempo e pode ser roubada no caminho. */
     pedidos: [
@@ -450,7 +512,7 @@
       kit: { madeira: 800, pedra: 500, comida: 1000, ferro: 200 },
       kitTropas: '10 milicianos e 1 explorador a pé',
       escudo: '24 h',
-      mantido: ['Linhagem nível 4', '2 relíquias da temporada', '3 títulos', 'Brasões e cosméticos']
+      mantido: ['Linhagem nível 4', '1 relíquia da temporada', '3 títulos', 'Brasões e cosméticos']
     },
 
     /* Rendimento ilustrativo da caça por animal */
@@ -461,7 +523,7 @@
       crocodilos: { comida: '40–60', couro: '50–70', peles: '0' }
     },
 
-    notificacoesNaoLidas: 6
+    notificacoesNaoLidas: 8
   };
 
   RP.TIPOS_LOCAL = {

@@ -125,6 +125,30 @@
     gema:
       '<path class="ic-s" d="M7 4h10l4.5 5.5L12 21 2.5 9.5Z"/>' +
       '<path class="ic-d" d="M2.8 9.5h18.4M9 4.3 7.7 9.5 12 20.5l4.3-11L15 4.3"/>',
+    aco:
+      '<path class="ic-s" d="M1.5 21 3.6 16h6.1l2.1 5Z"/>' +
+      '<path class="ic-s" d="M12.2 21 14.3 16h6.1l2.1 5Z"/>' +
+      '<path class="ic-s" d="M6.8 14.5 8.9 9.5h6.2l2.1 5Z"/>' +
+      '<path class="ic-d" d="M10 11.8h4M4.6 18.3h3.6M15.3 18.3h3.6"/>',
+    minerio:
+      '<path class="ic-s" d="M9 21.5 6.5 9 10 3l3.5 6-2 12.5Z"/>' +
+      '<path class="ic-s" d="M13.8 21.5l1.4-9 3.4-3 2.4 4-2.9 8Z"/>' +
+      '<path class="ic-s" d="M2.8 21.5 2.4 15l2.4-2.4 2 3 .9 5.9Z"/>' +
+      '<path class="ic-d" d="M10 3.5v17.5M18.6 9.8l-1.4 11.4"/>',
+    troca:
+      '<path class="ic-l" d="M4 8h14M14 4l4 4-4 4" style="stroke-width:2.4"/>' +
+      '<path class="ic-l" d="M20 16H6M10 12l-4 4 4 4" style="stroke-width:2.4"/>',
+    pacto:
+      '<path class="ic-s" d="M5 3h11.5A2.5 2.5 0 0 1 19 5.5V14a4.5 4.5 0 0 0-6 4.5c0 .2 0 .3.1.5H7.5A2.5 2.5 0 0 1 5 16.5Z"/>' +
+      '<path class="ic-d" d="M8.5 7.5h7M8.5 10.5h7M8.5 13.5h3"/>' +
+      '<circle class="ic-s" cx="17.5" cy="18.5" r="3.5"/>' +
+      '<circle class="ic-d" cx="17.5" cy="18.5" r="1.5"/>',
+    ferido: '<path class="ic-s" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z"/>',
+    espada:
+      '<path class="ic-s" d="M21 3l-1 4.5-9.6 9.6-3.5-3.5L16.5 4Z"/>' +
+      '<path class="ic-s" d="M3.6 13.2l7.2 7.2-1.6 1.6L2 14.8Z"/>' +
+      '<path class="ic-s" d="M5.2 17.4l1.4 1.4-3 3-1.4-1.4Z"/>' +
+      '<path class="ic-d" d="M19.5 4.5 10 14"/>',
     lendario:
       '<path class="ic-s" d="M11 2.5c.8 4.9 2.8 6.9 7.7 7.7-4.9.8-6.9 2.8-7.7 7.7-.8-4.9-2.8-6.9-7.7-7.7 4.9-.8 6.9-2.8 7.7-7.7Z"/>' +
       '<path class="ic-s" d="M18.5 14.5c.4 2.1 1.3 3 3.4 3.4-2.1.4-3 1.3-3.4 3.4-.4-2.1-1.3-3-3.4-3.4 2.1-.4 3-1.3 3.4-3.4Z"/>',

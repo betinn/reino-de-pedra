@@ -56,16 +56,23 @@
       }).join('') + '</div>' : '') +
       '<div class="secao-titulo">Membros</div><div class="card lista">' + membros.map(function (id) {
         var r = reino(id), eu = id === 'meu', cam = eu ? null : caminhoAte('castelo', A.castelos[id]);
-        return '<div class="lista-item">' + RP.brasao(eu ? RP.estado.brasao : r.brasao, { tamanho: 32 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(eu ? RP.estado.nome + ' (você)' : r.nome) + '</b><br><small class="fraco">' + RP.esc(A.papeis[id]) + (cam ? ' · castelo a ' + RP.fmtDuracao(cam.seg) : '') + '</small></span>' +
-          (eu ? '' : '<a class="btn btn-p" href="#/pedido?reino=' + id + '">' + RP.icone('carroca') + 'Pedir</a>') + '</div>';
+        return '<div class="lista-item">' + RP.brasao(eu ? RP.estado.brasao : r.brasao, { tamanho: 32 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(eu ? RP.estado.nome + ' (você)' : r.nome) + '</b><br><small class="fraco">' + RP.esc(A.papeis[id]) + (cam ? ' · castelo a ' + RP.fmtDuracao(cam.seg) : '') + (r.novato ? ' · sob escudo de novato' : '') + '</small></span>' +
+          (eu ? '' : (A.papeis.meu === 'Líder' ? '<button type="button" class="btn btn-p btn-fantasma btn-icone" data-cargo="' + id + '" aria-label="Cargo de ' + RP.esc(r.nome) + '">' + RP.icone('coroa') + '</button>' : '') + '<a class="btn btn-p" href="#/pedido?reino=' + id + '">' + RP.icone('carroca') + 'Pedir</a>') + '</div>';
       }).join('') + '</div>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Líder convida, expulsa e promove. Até ' + A.conselheirosMax + ' conselheiros convidam e aceitam pedidos de entrada. Se o líder entrar em regência, a liderança passa ao conselheiro mais antigo.</p>' +
       (membros.length < A.limite ? '<button type="button" class="btn btn-p btn-fantasma" data-convidar style="margin-top:var(--esp-2)">' + RP.icone('mais') + 'Convidar reino (' + (A.limite - membros.length) + ' vagas)</button>' : '') +
+      (A.tregua.length ? '<div class="secao-titulo">Em trégua</div><div class="pilha">' + A.tregua.map(function (t) {
+        var fim = RP.fimItem(t);
+        return '<div class="card linha">' + RP.brasao(t.brasao, { tamanho: 28 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(t.nome) + '</b><br><small class="fraco">' + (t.como === 'saiu' ? 'Saiu da aliança' : 'Foi expulso') + ' · nenhum lado ataca até o fim da trégua</small></span><span class="selo selo-info">' + RP.icone('pacto') + '<span data-fim="' + fim + '">' + RP.fmtResta(fim - Date.now()) + '</span></span></div>';
+      }).join('') + '</div>' : '') +
       '<div class="secao-titulo">Seus pedidos</div><div class="pilha">' + (meus.length ? meus.map(function (pd) {
         var m = pd.marcha && W.marcha(pd.marcha), indo = m && m.d.chegada > Date.now();
         return '<div class="card linha">' + RP.brasao(reino(pd.para).brasao, { tamanho: 28 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(RP.cargaTxt(pd.carga)) + '</b><br><small class="fraco">' + RP.esc(reino(pd.para).nome) + ' · para ' + RP.esc(nomeLocal(pd.local)) + ' · ' +
           (pd.estado === 'aberto' ? 'aguardando resposta' : indo ? 'a caminho, chega em <b class="num" data-fim="' + m.d.chegada + '">' + RP.fmtResta(m.d.chegada - Date.now()) + '</b>' : 'entregue') + '</small></span>' +
           (indo ? '<a class="btn btn-p" href="#/mapa?modo=cena&abrir=marcha:' + m.d.id + '">' + RP.icone('vista') + 'Ver</a>' : '') + '</div>';
-      }).join('') : '<p class="fraco">Nenhum pedido feito.</p>') + '</div><div style="height:var(--esp-8)"></div>';
+      }).join('') : '<p class="fraco">Nenhum pedido feito.</p>') + '</div>' +
+      '<div class="secao-titulo">Sair</div><div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Qualquer membro sai quando quiser. Ao sair ou ser expulso, vale uma <b>trégua de 24 h</b> entre o reino e a aliança, garantida pelo jogo, e só se entra em outra aliança depois de 24 h. Não há ataque surpresa entre membros.</p>' +
+      '<button type="button" class="btn btn-p btn-fantasma" data-sair-alianca>' + RP.icone('voltar') + 'Sair da aliança</button></div><div style="height:var(--esp-8)"></div>';
   }
   RP.registrarTela('alianca', {
     secao: 'mais',
@@ -86,6 +93,27 @@
           D.pedidos.filter(function (q) { return q.id === b.getAttribute('data-recusar-pedido'); })[0].estado = 'recusado';
           RP.aviso({ titulo: 'Pedido recusado', texto: 'O aliado é avisado.', icone: 'info', tipo: 'alerta' }); desenhar(el); return;
         }
+        if ((b = e.target.closest('[data-cargo]'))) {
+          var id = b.getAttribute('data-cargo'), r = reino(id), cons = A.papeis[id] === 'Conselheiro';
+          var nCons = Object.keys(A.papeis).filter(function (k) { return A.papeis[k] === 'Conselheiro'; }).length;
+          RP.modal({
+            titulo: RP.esc(r.nome), corpo: '<p class="suave">Cargo atual: <b>' + RP.esc(A.papeis[id]) + '</b>. Conselheiros convidam e aceitam pedidos de entrada (até ' + A.conselheirosMax + ').</p>',
+            acoes: [
+              cons ? { rotulo: 'Rebaixar a membro', acao: function () { A.papeis[id] = 'Membro'; desenhar(el); } }
+                : { rotulo: RP.icone('coroa') + 'Promover a conselheiro', classe: 'btn-primario', acao: function () { if (nCons >= A.conselheirosMax) { RP.aviso({ titulo: 'Limite de conselheiros', texto: 'Até ' + A.conselheirosMax + ' por aliança.', icone: 'coroa', tipo: 'alerta' }); return; } A.papeis[id] = 'Conselheiro'; desenhar(el); } },
+              { rotulo: 'Expulsar', classe: 'btn-perigo', acao: function () { RP.aviso({ titulo: 'Expulsão', texto: r.nome + ' sairia da aliança com trégua de 24 h. No protótipo, este passo é só ilustrado.', icone: 'estandarte', tipo: 'alerta', ms: 3600 }); } },
+              { rotulo: 'Voltar' }]
+          });
+          return;
+        }
+        if (e.target.closest('[data-sair-alianca]')) {
+          RP.modal({
+            titulo: 'Sair do ' + RP.esc(A.nome) + '?',
+            corpo: '<p class="suave">A visão das marchas dos aliados acaba na hora. Por 24 h, nenhum lado pode atacar o outro, e você só entra em outra aliança depois disso.' + (A.papeis.meu === 'Líder' ? ' A liderança passa ao conselheiro mais antigo.' : '') + '</p>',
+            acoes: [{ rotulo: 'Sair', classe: 'btn-perigo', acao: function () { RP.aviso({ titulo: 'Saída', texto: 'No protótipo, você continua na aliança para seguir vendo as telas.', icone: 'estandarte', tipo: 'alerta', ms: 3600 }); } }, { rotulo: 'Ficar' }]
+          });
+          return;
+        }
         if (e.target.closest('[data-convidar]')) RP.aviso({ titulo: 'Convite', texto: 'No jogo, você escolhe um reino conhecido e ele recebe o convite pelo sino. No protótipo, este passo é só ilustrado.', icone: 'estandarte', tipo: 'alerta', ms: 3600 });
       });
     },
@@ -99,6 +127,7 @@
     var locais = D.locais.filter(function (x) { return x.reino === 'meu'; });
     RP.$('.pd-conteudo', el).innerHTML =
       '<div class="card linha">' + RP.brasao(r.brasao, { tamanho: 40 }) + '<span style="flex:1"><b>' + RP.esc(r.nome) + '</b><br><small class="fraco">Aliado · ' + RP.esc(A.papeis[pr.reino]) + '</small></span></div>' +
+      (r.novato ? '<p class="nota-antiga">' + RP.icone('escudo', 'ico-p') + '<span>' + RP.esc(r.nome) + ' está sob escudo de novato: ajudas, trocas e pagamentos somam até ' + RP.num(D.comercio.novatoDia) + ' de valor por dia (restam ' + RP.num(RP.novatoRestante(pr.reino)) + ' hoje).</span></p>' : '') +
       '<div class="secao-titulo">O quê</div><div class="obj-add-lista">' + RP.ORDEM_REC.map(function (k) {
         return '<button type="button" class="btn btn-p chip-sel" data-pr-rec="' + k + '" aria-pressed="' + (pr.rec === k) + '">' + RP.icone(k, 'ico-p r-' + k) + RP.dados.recursos[k].nome + '</button>';
       }).join('') + '</div>' +

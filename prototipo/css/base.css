@@ -72,6 +72,8 @@ a { color: var(--cor-info); }
 .r-ervas { color: var(--rec-ervas); }
 .r-gema { color: var(--rec-gema); }
 .r-lendario, .r-ruina { color: var(--rec-lendario); }
+.r-aco { color: var(--rec-aco); }
+.r-minerio { color: var(--rec-minerio); }
 .r-couro { color: var(--rec-couro); }
 .r-peles { color: var(--rec-peles); }
 .nivel-baixo { --nivel: var(--perigo-baixo); }
