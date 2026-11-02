@@ -145,7 +145,10 @@
     if (j === i && i > 0) { var p = H.centroH(cm[i - 1]); return { x: a.x, y: a.y, ang: Math.atan2(a.y - p.y, a.x - p.x), hex: cm[i], i: i }; }
     return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, ang: Math.atan2(b.y - a.y, b.x - a.x), hex: f < 0.5 ? cm[i] : cm[j], i: i };
   }
+  /* fim dos tempos: chegada das próprias, das de aliados e das que vêm a um local seu (paraMim); de outras marchas alheias o servidor
+     manda só o trecho à vista, e o fim é quando ela sai da vista (some do mapa) */
   M.chegada = function (o) { return o.tempos && o.tempos.length ? o.tempos[o.tempos.length - 1] : 0; };
+  M.chegadaConhecida = function (o) { return o.dono === 'meu' || o.dono === 'aliado' || o.paraMim ? M.chegada(o) : 0; };
   /* marchas alheias só aparecem enquanto estão onde o reino vê agora */
   M.marchaVisivel = function (o, pos) { return o.dono === 'meu' || o.dono === 'aliado' || M.estado(pos.hex).v === 'visivel'; };
 

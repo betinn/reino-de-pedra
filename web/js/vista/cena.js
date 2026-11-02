@@ -589,7 +589,7 @@
     var revelado = propria || !!(m.estandarte && (m.cor || m.brasao));
     var cor = revelado ? A.corDono(m.dono, m) : P.hostil;
     var dir = Math.cos(pos.ang) >= 0 ? 1 : -1, ux = Math.cos(pos.ang), uy = Math.sin(pos.ang);
-    var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegada(m), prefixo = '';
+    var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
     function add(p, fn) { itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
     if (def && def.desenharCena) {

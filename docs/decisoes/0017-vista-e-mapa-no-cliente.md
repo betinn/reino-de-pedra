@@ -36,4 +36,6 @@ Regras do desenho:
 
 Marchas e locais aceitam `estandarte` com `cor` ou `brasao` (identidade revelada) e `reliquia` (`{ tipo }`).
 
+Marchas de outro reino (não aliado) chegam só com o trecho do caminho à vista agora (`VisaoMapa.Trecho`): o pedaço contínuo em volta da posição atual mais o próximo hexágono, com os tempos desse trecho e sem `progresso`. Origem e destino na névoa não vão. Se o destino é um local do próprio reino, vai o resto do caminho e `paraMim: true` (o defensor vê o ataque chegando e a hora). O cliente anima com o trecho; `M.chegadaConhecida` só dá a chegada das próprias, das de aliados e das `paraMim` (nas outras, o fim dos tempos é quando somem da vista). A prévia de interceptação só manda `chegada` para `paraMim`.
+
 **Por quê.** O SVG do protótipo inteiro (terreno + névoa) passaria de 7 mil nós em 60 × 48, pesado para arrastar no celular; o terreno em Canvas com cache custa ~15 ms para refazer e quase nada por quadro, e os marcadores em SVG mantêm o visual, o CSS e os ícones do design system. Um modelo e uma arte compartilhados garantem que Vista, Mapa e Meu reino mostrem o mesmo mundo.

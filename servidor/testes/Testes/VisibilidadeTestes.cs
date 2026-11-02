@@ -201,4 +201,33 @@ public class VisibilidadeTestes
         t.M.Torres.Remover(torre);
         Assert.Equal(1, TorreNoMapa().GetProperty("nivel").GetInt32());
     }
+
+    // ---------------------------------------------------------------- marchas alheias: só o trecho à vista (achado 11)
+
+    [Fact]
+    public void Marcha_alheia_vem_so_com_o_trecho_a_vista_sem_origem_nem_destino_na_nevoa()
+    {
+        var t = ComApi();
+        var a = t.NovoReino(); var b = t.NovoReino();
+        var ca = t.M.Locais[a.CasteloId]; var cb = t.M.Locais[b.CasteloId];
+        var vis = Nevoas.VisiveisAgora(t.M, a.Id);
+        Guarnecer(t, b, cb, "lanceiro", 4);
+        var tropas = new Dictionary<string, int> { ["lanceiro"] = 4 };
+        var vel = ReinoDePedra.Jogo.Reinos.Tropas.Velocidade(t.M, tropas);
+        // um destino na névoa de A cujo caminho a partir de B atravessa a visão de A
+        var destino = t.M.G.Area(ca.Hex, 7).Where(h => !vis.Contains(h) && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null && t.M.G.Distancia(h, ca.Hex) >= 5)
+            .First(h => Caminhos.Calcular(t.M, cb.Hex, h, vel) is var rr && rr.Hexes[^1] == h && rr.Hexes.Any(vis.Contains) && !vis.Contains(rr.Hexes[^2]));
+        var ex = Exercitos.Enviar(t.M, b, cb.Id, tropas, destino, OrdemMover.Id);
+        var k = ex.Caminho.FindIndex(vis.Contains);
+        t.Avancar(TimeSpan.FromMilliseconds(ex.Tempos[k] - t.M.Agora + 1));
+        var o = J(VisaoMapa.Montar(t.M, a)).GetProperty("objetos").EnumerateArray()
+            .Single(x => x.GetProperty("tipo").GetString() == "marcha" && x.GetProperty("id").GetInt64() == ex.Id);
+        var cm = Caminho(o);
+        Assert.DoesNotContain(cb.Hex, cm);       // a origem (o castelo de B) não vai
+        Assert.DoesNotContain(destino, cm);      // nem o destino na névoa
+        Assert.Contains(o.GetProperty("hex").GetInt32(), cm);
+        Assert.Equal(cm.Count, o.GetProperty("tempos").GetArrayLength());
+        Assert.True(cm.Take(cm.Count - 1).All(vis.Contains));   // à vista, mais o próximo hexágono para animar
+        Assert.False(o.TryGetProperty("progresso", out _));
+    }
 }
