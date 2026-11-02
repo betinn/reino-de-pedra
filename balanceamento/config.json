@@ -655,6 +655,9 @@
     "trabalhadores": 1.1,
     "teto": 0.9
    },
+   "armazem": {
+    "folga": 0.8
+   },
    "pesosHabilidade": {
     "fraco": 0.3,
     "medio": 0.5,

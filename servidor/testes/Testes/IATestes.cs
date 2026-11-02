@@ -25,9 +25,9 @@ public static class MundoIA
     }
 
     /// <summary>Reino de IA com perfil e habilidade escolhidos (na vaga livre mais longe dos jogadores).</summary>
-    public static Reino Criar(MundoTeste t, string perfil, string habilidade = "medio")
+    public static Reino Criar(MundoTeste t, string perfil, string habilidade = "medio", int vaga = -1)
     {
-        var r = Ocupacao.CriarUm(t.M) ?? throw new Exception("sem vaga");
+        var r = Ocupacao.CriarUm(t.M, vaga) ?? throw new Exception("sem vaga");
         r.PerfilIA = perfil; r.HabilidadeIA = habilidade;
         Governo.Preparar(t.M, r);
         Sessoes.Agendar(t.M, r);
@@ -35,6 +35,10 @@ public static class MundoIA
     }
 
     public static Conduta Conduta(MundoTeste t, Reino r) => Sessoes.De(t.M, r)!;
+
+    /// <summary>Nome de jogador que o gerador de nomes da IA não produz.</summary>
+    public static string Nome(int i) => "Jogador " + (char)('A' + i / 26 % 26) + (char)('a' + i % 26);
+    public static Reino Jogador(MundoTeste t, int i) => t.NovoReino(Nome(i));
 }
 
 public class IATestes(ITestOutputHelper saida)

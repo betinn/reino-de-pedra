@@ -397,6 +397,7 @@ public sealed class IAP
     public int LocaisBase { get; init; }
     public int ObrasPorSessao { get; init; }
     public MoradiaIAP Moradia { get; init; } = new();
+    public ArmazemIAP Armazem { get; init; } = new();
     public Dictionary<string, double> PesosHabilidade { get; init; } = new();
     public Dictionary<string, PerfilIAP> Perfis { get; init; } = new();
     public AtaqueIAP Ataque { get; init; } = new();
@@ -454,5 +455,6 @@ public sealed class ExploracaoIAP { public int[] Distancia { get; init; } = [1, 
 public sealed class CacaIAP { public double CouroMin { get; init; } public int Alcance { get; init; } public int Tropas { get; init; } }
 public sealed class ExtracaoIAP { public int Castelo { get; init; } public int Alcance { get; init; } public int Tropas { get; init; } }
 public sealed class MoradiaIAP { public double Trabalhadores { get; init; } public double Teto { get; init; } }
+public sealed class ArmazemIAP { public double Folga { get; init; } }
 public sealed class DefesaIAP { public double Reforco { get; init; } public double Recuo { get; init; } }
 public sealed class ComercioIAP { public double MargemOutros { get; init; } public double Reserva { get; init; } }

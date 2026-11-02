@@ -232,6 +232,9 @@ const P = {
     locaisBase: 4, obrasPorSessao: 12,
     /* moradia quando faltam trabalhadores (população < 1,1 × os necessários) e o teto está cheio (população + tropas > 90%), como na simulação */
     moradia: { trabalhadores: 1.1, teto: 0.9 },
+    /* armazém (o modelo não tem limite por recurso; o servidor tem): funda ou melhora um armazém quando a próxima melhoria do
+       castelo pede de algum recurso mais que 80% do que o reino consegue guardar dele */
+    armazem: { folga: 0.8 },
     pesosHabilidade: { fraco: 0.3, medio: 0.5, ativo: 0.2 },
     /* perfis: multiplicam locais e militar da habilidade; ataca (saques a alvos espionados), ocupa (ruínas e terra livre à
        vista), espiona (batedor de elite), torres (quantas perto do castelo), prospecta (prospector e extração), comercia

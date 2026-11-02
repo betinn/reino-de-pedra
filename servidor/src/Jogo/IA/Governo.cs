@@ -89,6 +89,7 @@ public static class Governo
         var horizonte = T.DeHoras(noite ? c.C.HorizonteNoite : c.C.Horizonte);
         var dia = (m.Agora - r.CriadoEm) / (double)T.Dia;
         var pm = m.P.IA.Moradia;
+        bool tentouFundar = false, tentouArmazem = false;   // cada um no máximo uma vez por sessão (procurar lugar custa)
         for (var tent = 0; tent < m.P.IA.ObrasPorSessao && fila.Itens.Count < Fila.Maximo && FimFila(m, r) - m.Agora < horizonte; tent++)
         {
             var teto = Economia.Teto(m, r);
@@ -101,9 +102,16 @@ public static class Governo
                 if (it != null) { Regencia.Acao(m, r, "moradia", "Moradias construídas", 1); continue; }
             }
             // 2) novo local no ritmo do perfil (a regência não expande)
-            if (!c.Regencia && Producao(m, r).Count() < LocaisAte(m, c, dia) && fila.Itens.All(i => i.Tipo != ObraFundar.Id))
+            if (!c.Regencia && !tentouFundar && Producao(m, r).Count() < LocaisAte(m, c, dia) && fila.Itens.All(i => i.Tipo != ObraFundar.Id))
             {
+                tentouFundar = true;
                 if (Fundar(m, r, castelo) != null) continue;
+            }
+            // 2b) armazém, quando a próxima melhoria do castelo não cabe no que o reino guarda
+            if (!tentouArmazem && fila.Itens.All(i => !DeArmazem(m, i)) && PrecisaArmazem(m, r, castelo))
+            {
+                tentouArmazem = true;
+                if (Armazem(m, r, castelo, c) != null) continue;
             }
             // 3) castelo, quando algum local o alcançou
             if (castelo.Nivel < m.P.NivelMax && Producao(m, r).Any(l => l.Nivel >= castelo.Nivel)
@@ -127,6 +135,33 @@ public static class Governo
 
     private static ItemFila? Talvez(Func<ItemFila> f) { try { return f(); } catch (RegraException) { return null; } }
 
+    private static bool DeArmazem(Mundo m, ItemFila i) =>
+        i.Tipo == ObraFundar.Id && i.Param == "armazem"
+        || i.Tipo == ObraNivel.Id && i.LocalId is long id && m.Locais.Obter(id)?.Tipo == TipoLocal.Armazem;
+
+    /// <summary>Algum recurso da próxima melhoria do castelo passa de <c>P.ia.armazem.folga</c> do que o reino consegue guardar.</summary>
+    public static bool PrecisaArmazem(Mundo m, Reino r, Local castelo)
+    {
+        if (castelo.Nivel >= m.P.NivelMax) return false;
+        var custo = m.F.CustoNivel(castelo.Nivel + 1, true);
+        var locais = m.LocaisDe(r.Id).Where(l => !l.Ruina).ToList();
+        return custo.Any(kv => kv.Value > m.P.IA.Armazem.Folga * locais.Sum(l => Economia.Capacidade(m, l, kv.Key)));
+    }
+
+    /// <summary>Melhora o armazém de menor nível (abaixo do castelo) ou funda um novo perto do castelo.</summary>
+    private static ItemFila? Armazem(Mundo m, Reino r, Local castelo, Conduta c)
+    {
+        var a = m.LocaisDe(r.Id).Where(l => l.Tipo == TipoLocal.Armazem && !l.Ruina && l.Nivel < castelo.Nivel).OrderBy(l => l.Nivel).ThenBy(l => l.Id).FirstOrDefault();
+        if (a != null)
+        {
+            var it = Talvez(() => Obras.Melhorar(m, r, a.Id));
+            if (it != null) Regencia.Acao(m, r, "nivel:" + a.Id, a.Nome + " sobe ao nível " + it.NivelAlvo, 0);
+            return it;
+        }
+        if (c.Regencia) return null;   // a regência não funda locais
+        return FundarTipo(m, r, castelo, "armazem");
+    }
+
     /// <summary>Funda um local do recurso com menos locais, no hexágono livre e explorado mais perto do castelo.</summary>
     private static ItemFila? Fundar(Mundo m, Reino r, Local castelo)
     {
@@ -136,13 +171,24 @@ public static class Governo
         foreach (var rec in contagem.OrderBy(kv => kv.Value).ThenBy(kv => Array.IndexOf(Formulas.Basicos, kv.Key)).Select(kv => kv.Key))
         {
             var tipo = FundarPorRecurso[rec];
-            foreach (var h in area)
-            {
-                if (Obras.MotivoNaoFundar(m, r, tipo, h) != null) continue;
-                var it = Talvez(() => Obras.Fundar(m, r, tipo, h));
-                if (it != null) Regencia.Acao(m, r, "fundar:" + h, "Fundou " + Obras.Fundaveis[tipo].tipo.NomeGenerico().ToLowerInvariant(), 0);
-                return it;   // achou o lugar: se faltou material, tenta na próxima sessão
-            }
+            var terrenos = Obras.Fundaveis[tipo].terrenos;
+            var lugar = area.Where(h => terrenos.Contains(m.Mapa.Terrenos[h])).ToList();   // filtro barato antes das regras
+            if (!lugar.Any(h => Obras.MotivoNaoFundar(m, r, tipo, h) == null)) continue;
+            return FundarTipo(m, r, castelo, tipo, lugar);   // achou o lugar: se faltou material, tenta na próxima sessão
+        }
+        return null;
+    }
+
+    private static ItemFila? FundarTipo(Mundo m, Reino r, Local castelo, string tipo, List<int>? area = null)
+    {
+        area ??= m.G.Area(castelo.Hex, m.P.IA.Exploracao.Distancia[1]).Where(h => Nevoas.Explorado(m, r.Id, h))
+            .OrderBy(h => m.G.Distancia(h, castelo.Hex)).ThenBy(h => h).ToList();
+        foreach (var h in area)
+        {
+            if (Obras.MotivoNaoFundar(m, r, tipo, h) != null) continue;
+            var it = Talvez(() => Obras.Fundar(m, r, tipo, h));
+            if (it != null) Regencia.Acao(m, r, "fundar:" + h, "Fundou " + Obras.Fundaveis[tipo].tipo.NomeGenerico().ToLowerInvariant(), 0);
+            return it;
         }
         return null;
     }
