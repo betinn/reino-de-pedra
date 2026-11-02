@@ -165,6 +165,7 @@ namespace ReinoDePedra.Jogo.Combate
             b.Fim = agora + Duracao(m, GT.Total(ex.Tropas) + GT.Total(l.Guarnicao));
             m.Batalhas.Adicionar(b);
             ex.BatalhaId = b.Id; m.Sujar(ex);
+            Revide.Registrar(m, def.Id, ex.ReinoId);
             Recalcular(m, b, "A batalha começou.", null);
             var atk = m.Reinos.Obter(ex.ReinoId)!;
             var quem = ex.Estandarte ? "O exército de " + atk.Nome : "Forças desconhecidas";
@@ -313,6 +314,10 @@ namespace ReinoDePedra.Jogo.Combate
             if (defR != null && feridosD.Count > 0)
                 foreach (var f in Combates.AoFerir) f(m, defR, feridosD, l != null && l.ReinoId == defR.Id ? l : null);
 
+            var rc = new ResultadoCombate(b.Id, b.LocalId, b.AtacanteId, b.DefensorId, plano.Tipo, resultado, full.A, full.D,
+                c.Ataque, c.Defesa, perdasAtk, perdasDef, miliciaMorta);
+            SistemaGuerra.AposBatalha(m, b, c, rc, perdasDef);   // veterania e revide, antes de as tropas saírem
+
             // a defesa que recua sai do local com o que sobrou
             if (modo == ModoRecuoDefesa && l != null && defR != null && l.ReinoId == defR.Id)
             {
@@ -353,8 +358,6 @@ namespace ReinoDePedra.Jogo.Combate
             });
             m.Sujar(b);
 
-            var rc = new ResultadoCombate(b.Id, b.LocalId, b.AtacanteId, b.DefensorId, plano.Tipo, resultado, full.A, full.D,
-                c.Ataque, c.Defesa, perdasAtk, perdasDef, miliciaMorta);
             RelatoriosCombate.Batalha(m, b, c, plano, rc, full, feridosA, feridosD, efeito, modo);
             foreach (var f in Combates.AoTerminar) f(m, rc);
             if (venceu && plano.Tipo == Ataques.Cerco && l != null && defR != null && vivos.FirstOrDefault() is { } vencedor)
