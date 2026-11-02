@@ -16,12 +16,13 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0010](0010-logistica.md) | Requisição: reserva na hora, carregadores por origem |
 | [0011](0011-icone-do-reino.md) | Ícone: brasão sorteado/editável ou imagem própria pequena |
 | [0012](0012-tropas.md) | Tropas: recrutamento na fila, exércitos com ordens, interceptação |
+| [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento; parte 2: feridos em lotes, veterania com média ponderada, queda e exílio, combate em campo, interceptação, posturas, avistamentos e modelos |
+| [0015](0015-exploracao.md) | Exploração: névoa com foto, fauna por região, exploradores, caça, rotas e espionagem |
 | [0016](0016-extracao-e-reliquias.md) | Caravanas em três fases, extração sem tique por jazida, escavação e relíquias com visibilidade por concentração |
 | [0017](0017-vista-e-mapa-no-cliente.md) | Vista 2.5D e Mapa tático (Canvas + marcadores SVG) com um modelo e pontos de extensão |
-| [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento |
-| [0015](0015-exploracao.md) | Exploração: névoa com foto, fauna por região, exploradores, caça, rotas e espionagem |
-| [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento; parte 2: feridos em lotes, veterania com média ponderada, queda e exílio, combate em campo, interceptação, posturas, avistamentos e modelos |
 | [0018](0018-ferraria.md) | Ferraria: fila própria, eras por `ReqCumprido`, bônus por família ponderado pela força, lendário preso a um grupo; sistemas revelados aos poucos |
 | [0019](0019-social.md) | Social: aliança como documento, reforço na guarnição com reserva, cargas entre reinos, propostas, pactos, mensageiros e bandeiras |
 | [0020](0020-temporada.md) | Temporada: fim como evento, reset dentro do motor (limpa coleções, mundo novo, apaga e grava o banco), legado por conta em tabela própria, ranking por ganchos de batalha, "precisa de você" sob demanda |
 | [0021](0021-ia.md) | IA: uma sessão agendada por reino, só os serviços da API e a informação de um jogador; meta de ocupação com abdicação; ids sorteados de uma reserva; regência por evento no último acesso; margens da IA comerciante |
+
+(A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

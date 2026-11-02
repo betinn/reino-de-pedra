@@ -126,6 +126,7 @@ public sealed class Banco : IDisposable
     /// </summary>
     public int SalvarEsquecidos(Mundo m, Action<string>? avisar = null)
     {
+        Salvar(m);   // o que já está marcado como sujo não é esquecido: grava antes de comparar
         var esquecidos = new List<Documento>();
         foreach (var c in m.Colecoes)
             foreach (var d in c.Todos)
