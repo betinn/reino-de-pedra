@@ -43,6 +43,8 @@ public static partial class CriacaoReino
     }
     /// <summary>Gancho do sistema de IA: um reino de IA abdica e devolve a vaga (ou -1).</summary>
     public static Func<Mundo, int>? LiberarVagaDeIA { get; set; }
+    /// <summary>Gancho do sistema de IA: id do reino e dos locais iniciais (sorteado de uma reserva; 0 = o próximo id).</summary>
+    public static Func<Mundo, long>? IdNovo { get; set; }
 
     public static Reino Criar(Mundo m, long? contaId, string nome, Brasao brasao, int vaga = -1)
     {
@@ -63,17 +65,17 @@ public static partial class CriacaoReino
         var agora = m.Agora;
         var r = m.Reinos.Adicionar(new Reino
         {
-            ContaId = contaId, Nome = nome, Brasao = brasao, CriadoEm = agora, UltimoAcesso = agora, Vaga = vaga,
+            Id = IdNovo?.Invoke(m) ?? 0, ContaId = contaId, Nome = nome, Brasao = brasao, CriadoEm = agora, UltimoAcesso = agora, Vaga = vaga,
             EscudoAte = agora + T.DeHoras(m.P.EscudoNovatoH), Pop = m.P.PopInicial, AtualizadoEm = agora,
         });
         var castelo = m.AdicionarLocal(new Local
         {
-            ReinoId = r.Id, Tipo = TipoLocal.Castelo, Hex = V.Castelo, Nivel = 1, Nome = "Castelo de " + nome,
+            Id = IdNovo?.Invoke(m) ?? 0, ReinoId = r.Id, Tipo = TipoLocal.Castelo, Hex = V.Castelo, Nivel = 1, Nome = "Castelo de " + nome,
             Estoque = Recursos.De(m.P.Kit.Concat(m.P.KitExtra).ToDictionary(kv => kv.Key, kv => kv.Value)),
         });
         r.CasteloId = castelo.Id;
         void Inicial(TipoLocal t, string produz, int hex) =>
-            m.AdicionarLocal(new Local { ReinoId = r.Id, Tipo = t, Produz = produz, Hex = hex, Nivel = 1, Nome = Obras.NomeNovo(m, r, t, produz) });
+            m.AdicionarLocal(new Local { Id = IdNovo?.Invoke(m) ?? 0, ReinoId = r.Id, Tipo = t, Produz = produz, Hex = hex, Nivel = 1, Nome = Obras.NomeNovo(m, r, t, produz) });
         Inicial(TipoLocal.Vila, "comida", V.Comida);
         Inicial(TipoLocal.Serraria, "madeira", V.Madeira);
         Inicial(TipoLocal.Mina, "pedra", V.Pedra);

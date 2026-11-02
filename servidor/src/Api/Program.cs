@@ -41,6 +41,7 @@ namespace ReinoDePedra.Api
             var b = Balanceamento.Carregar(Balanceamento.Localizar());
             var banco = new Banco(Path.Combine(cfg.Dados, "reino.db"));
             var mundo = new Mundo(b, relogio ?? new RelogioReal(cfg.Aceleracao));
+            mundo.IA.Ativa = true; mundo.IA.CriarReinos = cfg.IA;   // sessões da IA e regência; REINO_IA=0 não cria reinos de IA
             var canal = new CanalSse();
             mundo.Avisos = canal;
             mundo.Banco = banco;   // legado por conta e reset da temporada
@@ -65,6 +66,7 @@ namespace ReinoDePedra.Api
                 t.GetMethod("AoIniciar", BindingFlags.Public | BindingFlags.Static)?.Invoke(null, [mundo]);
             }
             foreach (var f in AoIniciarMundo) f(mundo);
+            ReinoDePedra.Jogo.IA.Ocupacao.Completar(mundo);   // meta de ocupação, depois de todos os sistemas prontos
             var log = LoggerFactory.Create(l => l.AddSimpleConsole(o => o.SingleLine = true)).CreateLogger("ReinoDePedra");
             Mundo.ErroEvento += (ev, ex) => log.LogError(ex, "erro no evento {Tipo}#{Id}", ev.GetType().Name, ev.Id);
             var motor = new Motor(mundo, banco) { Log = s => log.LogWarning("{Msg}", s) };

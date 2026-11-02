@@ -168,6 +168,8 @@ public sealed class ParametrosP
     // ---------- temporada, legado, ranking e "precisa de você" (servidor) ----------
     public TemporadaServP TemporadaServ { get; init; } = new();
     public AgoraServP AgoraServ { get; init; } = new();
+    // ---------- reinos de IA, meta de ocupação, regência e IA comerciante (servidor) ----------
+    public IAP IA { get; init; } = new();
 }
 
 // ---------- temporada, legado, ranking e "precisa de você" (servidor) ----------
@@ -419,3 +421,82 @@ public sealed class Unidade
 }
 
 public sealed class Veiculo { public double Carga { get; init; } public string Vel { get; init; } = ""; public Dictionary<string, double> Custo { get; init; } = new(); }
+
+// ---------- reinos de IA, meta de ocupação, regência e IA comerciante (servidor) ----------
+public sealed class IAP
+{
+    /// <summary>Reinos de IA no começo da temporada.</summary>
+    public int Inicial { get; init; }
+    /// <summary>Mínimo de reinos ativos (jogadores + IA): abaixo disso, surge um reino de IA.</summary>
+    public int Minimo { get; init; }
+    /// <summary>Reinos cobertos pela reserva de ids sorteados e quantos ids cada um usa (reino + 5 locais).</summary>
+    public int ReservaReinos { get; init; }
+    public int IdsPorReino { get; init; }
+    /// <summary>Fuso (horas de UTC) das horas de sessão e variação sorteada (minutos, para mais ou para menos).</summary>
+    public double FusoH { get; init; }
+    public double VariacaoMin { get; init; }
+    public Dictionary<string, CondutaIAP> Habilidades { get; init; } = new();
+    public int LocaisBase { get; init; }
+    public int ObrasPorSessao { get; init; }
+    public MoradiaIAP Moradia { get; init; } = new();
+    public ArmazemIAP Armazem { get; init; } = new();
+    public Dictionary<string, double> PesosHabilidade { get; init; } = new();
+    public Dictionary<string, PerfilIAP> Perfis { get; init; } = new();
+    public AtaqueIAP Ataque { get; init; } = new();
+    public EspionagemIAP Espionagem { get; init; } = new();
+    public OcupacaoIAP Ocupacao { get; init; } = new();
+    public ExploracaoIAP Exploracao { get; init; } = new();
+    public CacaIAP Caca { get; init; } = new();
+    public ExtracaoIAP Extracao { get; init; } = new();
+    public DefesaIAP Defesa { get; init; } = new();
+    public ComercioIAP Comercio { get; init; } = new();
+    public CondutaIAP Regencia { get; init; } = new();
+}
+/// <summary>Regras de decisão de uma sessão (as da simulação do modelo).</summary>
+public sealed class CondutaIAP
+{
+    public int[] Sessoes { get; init; } = [];
+    public double Militar { get; init; }
+    public double MantemTrab { get; init; }
+    public double FracTropas { get; init; }
+    public double Horizonte { get; init; }
+    public double HorizonteNoite { get; init; }
+    public double LocaisCadaDias { get; init; }
+    public int LocaisMax { get; init; }
+    public double Acerto { get; init; }
+    public double Arqueiros { get; init; }
+    /// <summary>Regência: linhas guardadas no relatório (ações e perdas).</summary>
+    public int Linhas { get; init; }
+}
+public sealed class PerfilIAP
+{
+    public double Peso { get; init; }
+    public double Locais { get; init; }
+    public double Militar { get; init; }
+    public bool Ataca { get; init; }
+    public bool Ocupa { get; init; }
+    public bool Espiona { get; init; }
+    public int Torres { get; init; }
+    public bool Prospecta { get; init; }
+    public bool Comercia { get; init; }
+}
+public sealed class AtaqueIAP
+{
+    public int Castelo { get; init; }
+    public double EspionagemH { get; init; }
+    public int Alcance { get; init; }
+    public double Porte { get; init; }
+    public double Forca { get; init; }
+    public double FracTropas { get; init; }
+    public int Reserva { get; init; }
+    public string Tatica { get; init; } = "";
+}
+public sealed class EspionagemIAP { public int Castelo { get; init; } public int Alcance { get; init; } public double RefazerH { get; init; } }
+public sealed class OcupacaoIAP { public int Alcance { get; init; } public int Tropas { get; init; } }
+public sealed class ExploracaoIAP { public int[] Distancia { get; init; } = [1, 1]; public int Tentativas { get; init; } }
+public sealed class CacaIAP { public double CouroMin { get; init; } public int Alcance { get; init; } public int Tropas { get; init; } }
+public sealed class ExtracaoIAP { public int Castelo { get; init; } public int Alcance { get; init; } public int Tropas { get; init; } }
+public sealed class MoradiaIAP { public double Trabalhadores { get; init; } public double Teto { get; init; } }
+public sealed class ArmazemIAP { public double Folga { get; init; } }
+public sealed class DefesaIAP { public double Reforco { get; init; } public double Recuo { get; init; } }
+public sealed class ComercioIAP { public double MargemOutros { get; init; } public double Reserva { get; init; } }
