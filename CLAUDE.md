@@ -68,6 +68,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - Rotas construídas funcionam como **ruas públicas**: qualquer jogador vê, usa e recebe as mesmas vantagens de deslocamento.
 - Quem constrói paga o custo; a rota pode beneficiar inclusive inimigos.
+- Rotas **não atravessam a névoa**: só aparecem nas áreas que o jogador já explorou.
 
 ---
 
@@ -76,6 +77,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Básicos**: madeira, pedra, comida, ferro. Espalhados pelo mapa, base da economia.
 - **Valiosos**: ex. ouro, prata, sal, cavalos de raça, aço de qualidade. Raros, liberam unidades e tecnologias melhores.
 - **Lendários**: minérios raros, relíquias, ruínas antigas. Pouquíssimos no mapa, bônus únicos, alvo de disputa.
+- **Couro e peles**: recursos do reino, obtidos pela caça.
 - Recursos valiosos e lendários ficam **ocultos** até serem descobertos.
 - Jazidas são **finitas** e se esgotam com o tempo.
 - **O reino base já gera recursos básicos** suficientes para recrutar tropas básicas, sem depender de exploração.
@@ -90,6 +92,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Recursos e construções básicas: **tempos baixos**.
 - Recursos e construções mais fortes ou valiosos: **tempos mais altos**.
 - O equilíbrio entre tempos, custos e rendimento é ponto central de balanceamento e deve ser ajustado com testes.
+- **Deslocamento não deve demorar excessivamente.** Viagens de muitas horas, sem outras ações para o jogador cuidar enquanto espera, afastam o jogador e quebram a imersão.
 
 ---
 
@@ -152,11 +155,14 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Ser atacado **não revela o atacante**. O relatório mostra apenas forças desconhecidas (tropas, tipo, direção de origem).
 - A identidade só é revelada se o atacante escolher levar seu **estandarte**, ou se o defensor descobrir via batedores e espionagem.
 - **Bandeiras** podem ser colocadas em qualquer lugar do mapa, como sinal para outros jogadores (reivindicação, ameaça, aliança). Têm valor social, não mecânico.
+- Bandeiras **mostram quem as colocou**.
+- Explorar um local de outro reino **não revela o dono**.
 
 ### Território
 
 - Controle de território é **presença física**: construções e tropas no local.
 - **Não existe** barra de progresso, placar de domínio ou estado de "mapa conquistado". A disputa é contínua.
+- Ruínas e terra livre (locais sem dono) podem ser **ocupadas ou reconstruídas**.
 
 ### Pontos de atenção no balanceamento
 
