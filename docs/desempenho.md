@@ -1,6 +1,6 @@
 # Desempenho
 
-O servidor precisa caber numa VM de 1/8 de OCPU (≈ 12,5% de um núcleo) com o mundo cheio (30 reinos). O mundo fica na memória, só o motor mexe nele e nada varre o mundo: tudo o que acontece no futuro é um evento ([0002](decisoes/0002-mundo-em-memoria.md)).
+O servidor precisa caber num servidor pequeno: o orçamento de projeto é ≈ 12,5% de um núcleo e 1 GB de memória com o mundo cheio (30 reinos). O mundo fica na memória, só o motor mexe nele e nada varre o mundo: tudo o que acontece no futuro é um evento ([0002](decisoes/0002-mundo-em-memoria.md)).
 
 ## Teste de carga
 
