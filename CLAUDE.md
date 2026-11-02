@@ -96,6 +96,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - O jogador **guarda a relíquia num local** do reino, e ela melhora o desempenho daquele local.
 - Tipos: **ataque**, **produção** e **resistência** (defesa).
 - Relíquias podem ser **roubadas** e são **descobertas por espionagem**.
+- Relíquias **não se movem sozinhas**: são sempre transportadas por tropas, e podem ser **roubadas no meio do caminho**.
 - Objetivo: tornar o PvP mais desejável, com alvos que dão vantagem real além de recursos.
 
 ### Tempos
