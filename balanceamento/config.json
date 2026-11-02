@@ -487,7 +487,26 @@
     "alto": 40
    }
   },
-  "cacaMin": 20
+  "cacaMin": 20,
+  "social": {
+   "conselheiros": 2,
+   "nomeAlianca": {
+    "min": 3,
+    "max": 24
+   },
+   "conversa": {
+    "caracteres": 200,
+    "guardar": 100
+   },
+   "caixa": 100,
+   "propostaH": 24,
+   "novatoJanelaH": 24,
+   "bandeiras": {
+    "ativas": 20,
+    "minimo": 3,
+    "caracteres": 60
+   }
+  }
  },
  "U": {
   "milicia": {

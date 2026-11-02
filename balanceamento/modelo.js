@@ -156,7 +156,18 @@ const P = {
     /* rota segura: minutos extras por hexágono conforme o risco que o grupo correria ali (desvio vale a pena até ≈ 4 hexágonos) */
     custoSeguro: { baixo: 4, medio: 12, alto: 40 }
   },
-  cacaMin: 20                                              /* minutos no local da caçada */
+  cacaMin: 20,                                             /* minutos no local da caçada */
+  /* ---------- social (servidor) ---------- */
+  /* alianças (até P.alianca reinos; P.treguaSaidaH de trégua ao sair), conversa, mensagens, propostas e bandeiras */
+  social: {
+    conselheiros: 2,                                       /* conselheiros por aliança: convidam e aceitam pedidos de entrada */
+    nomeAlianca: { min: 3, max: 24 },                      /* letras do nome da aliança */
+    conversa: { caracteres: 200, guardar: 100 },           /* conversa da aliança: até 200 caracteres por mensagem; guarda as 100 últimas */
+    caixa: 100,                                            /* mensagens por mensageiro guardadas por reino (as mais antigas saem) */
+    propostaH: 24,                                         /* convites, pedidos de entrada e de recursos, trocas e pactos sem resposta expiram em 24 h */
+    novatoJanelaH: 24,                                     /* o "dia" do limite do novato (P.comercio.novatoDia) é uma janela móvel de 24 h */
+    bandeiras: { ativas: 20, minimo: 3, caracteres: 60 }   /* por reino: até 20 ativas; recado de 3 a 60 caracteres */
+  }
 };
 
 /* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */
