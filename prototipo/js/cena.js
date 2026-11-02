@@ -953,6 +953,12 @@
           var sx = pos.x - ux * (12 + e2 * 7) - uy * (e2 - 1) * 7, sy = pos.y - uy * (12 + e2 * 7) + ux * (e2 - 1) * 7;
           itens.push({ y: sy, d: function () { obj(c, V, sx, sy); pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), cinto: '#1e1b18', dir: dir, andando: true, fase: e2, capacete: P.metal, lanca: true, escudo: corReino('meu') }); } });
         })(e2);
+      } else if (m.d.tipo === 'extracao' && m.d.grupo) {
+        var ge = m.d.grupo, nE = Math.min(5, (ge.lanceiro || 0) + (ge.arqueiro || 0) + (ge.cavalaria || 0));
+        for (var qe = 0; qe < nE; qe++) (function (qe) {
+          var sx = pos.x - ux * qe * 9 - uy * ((qe % 2) * 2 - 1) * 4, sy = pos.y - uy * qe * 9 + ux * ((qe % 2) * 2 - 1) * 4;
+          itens.push({ y: sy, d: function () { obj(c, V, sx, sy); pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), cinto: '#1e1b18', dir: dir, andando: true, fase: qe * 1.3, carga: qe % 2 ? 'picareta' : 'saco', capacete: P.metal }); } });
+        })(qe);
       } else if (m.d.tipo === 'caca') {
         var g = m.d.grupo || { arqueiro: 3 }, nC = Math.min(5, (g.arqueiro || 0) + (g.lanceiro || 0) + (g.cavalaria || 0));
         for (var qc = 0; qc < nC; qc++) (function (qc) {
@@ -976,6 +982,44 @@
       self.alvos.push(alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.d.id]));
       rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil ? '? ' : '') + RP.fmtResta(m.d.chegada - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : corReino(m.d.dono) });
     });
+
+    /* extrações em andamento: posto e trabalhadores na jazida */
+    D.extracoes.forEach(function (ex) {
+      if (ex.aCaminho) return;
+      var j = W.jazida(ex.jazida), p = H.centro(j.c, j.l);
+      if (!naTela(p.x, p.y) || W.estado(j.c, j.l).v !== 'visivel') return;
+      if (ex.posto) itens.push({ y: p.y - 14, d: function () { obj(c, V, p.x + 22, p.y - 14); casa(c, 0, 0, 13, 9, 7, 5, P, { telhado: P.telhado2, telhadoS: P.telhado2Sombra, janela: false }); caixa(c, -14, gz(8), 7, 5, 4, P.madeira, P.madeiraEsc, null); } });
+      var nT = Math.min(4, (ex.grupo.lanceiro || 0) + (ex.grupo.arqueiro || 0));
+      for (var q = 0; q < nT; q++) (function (q) {
+        var wx = p.x - 16 + q * 10, wy = p.y + 10 + (q % 2) * 6;
+        itens.push({ y: wy, d: function () { obj(c, V, wx, wy); pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), dir: q % 2 ? -1 : 1, trabalho: 'picareta', fase: q * 0.9, capacete: P.metal }); } });
+      })(q);
+      rotulos.push({ x: p.x, y: p.y, dy: -40, txt: 'Extraindo · ' + ex.ritmo + '/h', cls: 'marcha', cor: corReino('meu') });
+    });
+    /* batalha em andamento */
+    if (RP.batalha && RP.batalha.ativa()) {
+      var bl = W.local(D.batalha.local), bp = H.centro(bl.c, bl.l), fz = RP.batalha.forcas(), recuo = RP.batalha.estado.recuo;
+      if (naTela(bp.x, bp.y)) {
+        var nA = Math.max(2, Math.min(9, Math.round(fz.a / 11))), nD = recuo ? 0 : Math.max(1, Math.min(9, Math.round(fz.d / 11)));
+        for (var qa = 0; qa < nA; qa++) (function (qa) {
+          var ax = bp.x - 30 + (qa % 3) * 7 + (recuo ? Math.sin(t * 0.5 + qa) * 10 : 0), ay = bp.y + 20 + Math.floor(qa / 3) * 7;
+          itens.push({ y: ay, d: function () { obj(c, V, ax, ay); pessoa(c, 0, 0, t, P, { roupa: '#3d4149', cinto: '#1e1b18', dir: 1, capacete: '#2d3036', lanca: qa % 3 !== 2, arco: qa % 3 === 2, atirando: qa % 3 === 2, estocada: !recuo, escudo: '#4b4f57', fase: qa * 0.7, carga: recuo && qa % 2 ? 'saco' : null, andando: !!recuo }); } });
+        })(qa);
+        for (var qd = 0; qd < nD; qd++) (function (qd) {
+          var dx = bp.x - 4 + (qd % 3) * 7, dy = bp.y + 18 + Math.floor(qd / 3) * 7, sold = qd < 2;
+          itens.push({ y: dy, d: function () { obj(c, V, dx, dy); pessoa(c, 0, 0, t, P, sold ? { roupa: corReino('meu'), cinto: '#1e1b18', dir: -1, capacete: P.metal, lanca: true, escudo: corReino('meu'), estocada: true, fase: qd } : { roupa: P.roupa[qd % 5], dir: -1, trabalho: 'picareta', fase: qd * 0.8 }); } });
+        })(qd);
+        itens.push({ y: bp.y + 40, d: function () {
+          obj(c, V, bp.x, bp.y);
+          for (var z = 0; z < 6; z++) { var a = (t * 0.9 + z / 6) % 1; elipse(c, -9 + Math.sin(z * 2 + t * 3) * 3, gz(-6) - 14 - a * 18, 2.5 + a * 2, 3 + a * 3, 'rgba(255,' + Math.round(150 + 80 * (1 - a)) + ',60,' + (0.8 * (1 - a)).toFixed(2) + ')'); }
+          fumaca(c, -9, gz(-6) - 30, t, true, 1.3);
+          for (var f = 0; f < 3; f++) { var k = ((t * 0.7 + f / 3) % 1); linha(c, -24 + k * 26, 20 - Math.sin(k * Math.PI) * 14, -20 + k * 26, 19 - Math.sin(k * Math.PI) * 14, P.madeiraEsc, 0.8); }
+          for (var dd = 0; dd < 3; dd++) { var a2 = (t * 0.6 + dd / 3) % 1; elipse(c, -12 + dd * 6, 22 - a2 * 6, 5 + a2 * 6, 2 + a2 * 3, 'rgba(160,140,110,' + (0.35 * (1 - a2)).toFixed(2) + ')'); }
+        } });
+        self.alvos.push(alvoTela(self, bp.x, bp.y + 24, 80, 60, ['batalha', D.batalha.id]));
+        rotulos.push({ x: bp.x, y: bp.y, dy: -46, txt: 'Batalha · ' + RP.fmtResta(RP.batalha.restante() * 1000), cls: 'perigo', cor: cores().perigo });
+      }
+    }
 
     itens.sort(function (a, b) { return a.y - b.y; });
     itens.forEach(function (it) {

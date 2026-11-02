@@ -188,11 +188,11 @@ a { color: var(--cor-info); }
   background: transparent; color: var(--cor-texto-2);
   font-weight: 700; font-size: var(--fs-2); white-space: nowrap;
 }
-.aba[aria-selected="true"], .aba[aria-pressed="true"] {
+.aba[aria-selected="true"], .aba[aria-pressed="true"], .aba[aria-checked="true"] {
   background: var(--cor-superficie); color: var(--cor-texto);
   box-shadow: var(--sombra-1);
 }
-.aba[aria-selected="true"], .aba[aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--cor-primaria), var(--sombra-1); }
+.aba[aria-selected="true"], .aba[aria-pressed="true"], .aba[aria-checked="true"] { box-shadow: inset 0 -2px 0 var(--cor-primaria), var(--sombra-1); }
 
 /* ---------------------------------------------------------------- Campos */
 .campo { display: flex; flex-direction: column; gap: 6px; }

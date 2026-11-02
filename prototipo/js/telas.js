@@ -215,7 +215,7 @@
       corpo: corpo,
       acoes: '<a class="btn btn-p btn-primario" href="#/mapa?foco=' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>' +
         '<a class="btn btn-p" href="#/construcao">' + RP.icone('martelo') + 'Melhorar</a>' +
-        '<button type="button" class="btn btn-p" data-em-breve="Posturas">' + RP.icone('escudo') + 'Postura</button>' +
+        '<a class="btn btn-p" href="#/posturas?local=' + x.id + '">' + RP.icone('escudo') + 'Postura</a>' +
         (x.tipo === 'quartel' ? '<a class="btn btn-p" href="#/recrutamento">' + RP.icone('tropas') + 'Recrutar</a>' : '')
     });
   }
@@ -360,26 +360,16 @@
         return '<button type="button" class="card guia-item" data-em-breve="' + i[1] + '"><span class="ico-placa">' + RP.icone(i[0]) + '</span><span><b>' + i[1] + '</b><small class="fraco">' + i[2] + '</small></span><span class="selo">Próximo bloco</span></button>';
       }).join('') + '</div>';
   }
-  RP.registrarTela('relatorios', {
-    nav: true,
-    montar: function (el) {
-      el.innerHTML = guia('Relatórios', 'Tudo o que aconteceu enquanto você estava fora.', [
-        ['alerta', 'Ataque sofrido', 'Forças desconhecidas ou identificadas pelo estandarte'],
-        ['ouro', 'Saque', 'O que foi levado e por quem'],
-        ['explorador', 'Exploração', 'O que os exploradores revelaram'],
-        ['batedor', 'Espionagem', 'Exércitos e reinos inimigos']
-      ]);
-    }
-  });
   RP.registrarTela('mais', {
     nav: true,
     montar: function (el) {
-      el.innerHTML = guia('Mais', 'Temporada, legado e ajustes.', [
-        ['temporada', 'Temporada e legado', 'Tempo restante, relíquias, títulos, brasões e linhagem'],
-        ['bandeira', 'Bandeiras', 'Sinais colocados por você no mapa'],
-        ['sino', 'Notificações', 'Construções, chegadas e ataques'],
-        ['bussola', 'Exílio', 'Recomeço após perder todos os locais'],
-        ['coroa', 'Retorno após regência', 'O que o regente fez enquanto você esteve fora (exemplo)', '#/regencia']
+      el.innerHTML = guia('Mais', 'Temporada, legado, bandeiras e avisos.', [
+        ['temporada', 'Temporada e legado', 'Tempo restante, linhagem, relíquias, títulos e brasões', '#/temporada'],
+        ['bandeira', 'Bandeiras', 'Sinais que você colocou e os de perto', '#/bandeiras'],
+        ['sino', 'Notificações', 'Avisos recentes e o que chega no celular', '#/notificacoes'],
+        ['escudo', 'Posturas', 'Como cada guarnição reage sem você', '#/posturas'],
+        ['coroa', 'Retorno após regência', 'O que o regente fez enquanto você esteve fora (exemplo)', '#/regencia'],
+        ['escombros', 'Exílio', 'Recomeço após perder todos os locais (exemplo)', '#/exilio']
       ]) +
         '<div class="conteudo-tela pilha" style="padding-top:0"><div class="secao-titulo">Protótipo</div>' +
         '<div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Dados fictícios. Nada aqui é salvo em servidor.</p>' +
@@ -392,6 +382,7 @@
       });
     }
   });
+
   /* ================================================================ retorno após regência */
   RP.registrarTela('regencia', {
     montar: function (el) {
