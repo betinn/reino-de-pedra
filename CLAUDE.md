@@ -96,6 +96,9 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Novos locais podem ser fundados em qualquer hexágono livre**, sem limite de distância, de vizinhança ou de quantidade. O custo crescente de cada novo local e o transporte do material até lá são os únicos freios.
 - A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição vão a pé e sem escolta.
 - Carroças ficam no castelo: saem, buscam a carga na origem e a levam. Escolta é opcional; caravana pouco protegida recebe aviso.
+- A carga da caravana só sai da origem quando ela chega lá; depois de entregar, carroças e escolta voltam. Sem carroças, as próprias tropas carregam. Roubada no caminho, a carga vai ao vencedor e as carroças se perdem.
+- Pouco protegida: escolta com força abaixo do perigo médio da fauna. É só aviso.
+- Na caravana manual, valiosos só vão para o armazém ou o castelo.
 
 ### Valiosos e lendários
 
@@ -120,6 +123,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Posto de extração, mais tropas, unidades adequadas e rotas são **opcionais** e aumentam velocidade e rendimento da extração.
 - Unidades adequadas são as de **maior capacidade de carga**: rendem mais por viagem.
 - Até **50 tropas por jazida**; juntar tropas demais rende cada vez menos por tropa.
+- O grupo extrai até a carga encher (ou a jazida acabar), leva ao armazém ou castelo mais próximo e, se pedido, volta. Grupos na mesma jazida dividem o que resta. Nova ordem interrompe e leva o que já tirou.
+- O posto vira um local do reino no hexágono da jazida ou ruína; enquanto existir, outro reino não extrai nem escava ali.
 
 ### Relíquias lendárias
 
@@ -135,6 +140,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - 3 ou mais: o local vira **farol**, visível para todos, até na névoa.
 - Cada ruína antiga guarda **1 relíquia**, de tipo desconhecido até ser achada, e se esgota depois. Uma unidade já escava; mais tropas e posto encurtam, com tempo mínimo. O grupo que escava leva a relíquia ao local escolhido antes de partir.
 - Mover uma relíquia: tropas saem, buscam e levam; até ser pega, ela continua fortalecendo a origem.
+- A escavação depende do número de tropas, não da carga; interrompida, recomeça do zero. Se outro grupo acha a relíquia antes, os demais voltam.
+- Uma marcha que leva relíquia aparece com um baú para quem a vê, sem revelar o tipo.
 - **Saque, ocupação ou cerco** vitorioso levam a relíquia; sabotagem e massacre, não. No saque e no cerco, as tropas a carregam de volta; na ocupação, ela fica no local tomado.
 - Uma marcha que leva relíquia pode ser **interceptada**: as tropas precisam chegar antes a um ponto do caminho.
 - Qualquer marcha alheia à vista (exército, caravana, carregadores) pode ser interceptada. As tropas esperam no ponto de encontro; se a marcha mudar de rota, a interceptação falha e elas voltam.
@@ -325,7 +332,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.
 - Opções e sistemas só aparecem **quando fazem sentido** para o jogador; nada é bloqueado. Antes do gatilho, somem os menus e botões do sistema; o mundo continua igual. Ao aparecer, um aviso curto apresenta o sistema. Gatilhos:
-  - Transporte manual de recursos: ao fundar o primeiro local longe do castelo.
+  - Transporte manual de recursos: ao fundar o primeiro local longe do castelo (fora da vista dele).
   - Espionagem: ao ver o primeiro espião ou sofrer o primeiro ataque.
   - Torres de arqueiros: ao ver forças desconhecidas perto do reino.
   - Relíquias: ao avistar a primeira ruína antiga ou um farol.

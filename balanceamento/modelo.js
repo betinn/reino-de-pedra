@@ -171,7 +171,22 @@ const P = {
     postura: { alcance: 1, revidaH: 1 },
     /* modelos de ataque guardados por reino (o mesmo limite da fila) e tamanho do nome */
     modelosMax: 10, modeloNome: 30
-  }
+  },
+  /* ---------- relíquias, extração e caravanas (servidor) ---------- */
+  /* veículos: tempo de construção (s) de cada um, na fila de obras do castelo, onde ficam (os do protótipo: 5 e 15 min) */
+  veiculo: { tempo: { carroca: 300, carrocao: 900 } },
+  /* caravana (e escolta de relíquia) pouco protegida: força da escolta, soma de (ataque + defesa)/2, abaixo do limite do perigo
+     médio da fauna (120). 5 lanceiros (162) já bastam; 2 lanceiros (65), não. É só um aviso: ninguém é impedido de enviar. */
+  caravana: { escoltaMin: 120 },
+  /* posto de extração (ou de escavação): obra opcional no hexágono da jazida ou da ruína (os números do protótipo) */
+  posto: { custo: { madeira: 350, pedra: 200 }, tempo: 1200 },
+  /* "rota no caminho" da extração (×extracao.rota): pelo menos metade dos hexágonos do caminho até o depósito é rota pública */
+  extracaoRotaFrac: 0.5,
+  /* visibilidade das relíquias guardadas no mesmo local: a partir de 2, brilho para quem já explorou a área;
+     a partir de 3, farol para todos, até na névoa (1 relíquia: só a espionagem revela) */
+  reliquiaVis: { brilho: 2, farol: 3 },
+  /* o transporte manual aparece ao fundar o primeiro local a mais de 4 hexágonos do castelo (fora da vista dele, raio 3) */
+  logisticaLongeHex: 4
 };
 
 /* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */

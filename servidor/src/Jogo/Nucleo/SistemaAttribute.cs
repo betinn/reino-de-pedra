@@ -8,7 +8,7 @@ namespace ReinoDePedra.Jogo.Nucleo;
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class SistemaAttribute : Attribute { }
 
-public static class Sistemas
+public static partial class Sistemas
 {
     private static readonly HashSet<string> Feitos = new();
     /// <summary>
