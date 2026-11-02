@@ -132,6 +132,7 @@ public static class ExtrasCombate
         VisaoReino.Extras.Add((mm, r, d) =>
         {
             d["batalhas"] = Batalhas.DoReino(mm, r.Id).Where(b => !b.Encerrada).Select(b => VisaoCombate.Resumo(mm, r, b)).ToList();
+            d["combate"] = new { taticas = mm.P.Combate.Taticas, taticaPadrao = mm.P.Combate.TaticaPadrao };
         });
         VisaoReino.ExtrasLocal.Add((mm, r, l, d) =>
         {

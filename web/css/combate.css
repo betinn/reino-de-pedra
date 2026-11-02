@@ -1,0 +1,18 @@
+/* Reino de Pedra — combate: envio de ataque, batalha, relatórios de combate e defesas (sempre com os tokens de tokens.css). */
+.env-nota { font-size: var(--fs-2); margin: var(--esp-2) 0; }
+.env-alternar { width: 100%; margin-top: var(--esp-3); }
+.tela-envio .conteudo-tela, .tela-batalha .conteudo-tela { padding-bottom: calc(var(--alvo) * 3); }
+.tela-envio .escolha.bloqueado .ico-placa, .tela-envio .escolha.bloqueado b { opacity: .55; }
+.tela-envio .obj-qtd { display: flex; align-items: center; gap: var(--esp-2); padding-left: 40px; }
+.tela-envio .obj-add { margin-top: var(--esp-3); display: flex; flex-direction: column; gap: var(--esp-2); }
+.tela-envio .obj-carga { margin-top: var(--esp-3); }
+.faixa-batalha { text-decoration: none; margin-bottom: var(--esp-3); }
+.bat-estandarte { margin-top: var(--esp-3); gap: var(--esp-2); }
+.rel-acoes { flex-wrap: wrap; gap: var(--esp-2); margin-top: var(--esp-3); }
+.torre-card .ext-numeros { margin: 0; }
+.torre-card .barra { margin-top: var(--esp-1); }
+.combate-faixa { position: absolute; left: var(--esp-4); right: var(--esp-4); top: 64px; z-index: var(--z-barras); display: flex; gap: var(--esp-2); align-items: center; }
+.combate-faixa[hidden] { display: none; }
+.combate-faixa span { flex: 1; font-size: var(--fs-2); }
+.lc-corpo .selo-perigo { align-self: flex-start; }
+.bat-acoes[hidden] { display: none; }

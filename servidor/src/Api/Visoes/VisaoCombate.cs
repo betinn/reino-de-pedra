@@ -213,7 +213,7 @@ public static class VisaoCombate
             castelo = new
             {
                 c.Id, c.Nome, c.Hex, portoes = c.Portoes, estrutura = c.EstruturaPortoes, estruturaMax = c.Portoes * m.P.PortoesEstrutura,
-                max = Defesas.PortoesMax(m), multiplicador = m.P.Portoes[Math.Clamp(c.Portoes, 0, Defesas.PortoesMax(m))],
+                max = Defesas.PortoesMax(m), multiplicador = c.Portoes > 0 ? m.P.Portoes[Math.Min(c.Portoes, Defesas.PortoesMax(m))] : 1,
                 torres = Defesas.NoAlcance(m, c).Count, arqueirosNoAlto = Defesas.ArqueirosNoAlto(m, c),
                 proximo = alvo > Defesas.PortoesMax(m) ? null : new
                 {
