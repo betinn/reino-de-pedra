@@ -65,6 +65,11 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Recrutamento.ReqCumprido`, `Recrutamento.Requisitos` | Quem cumpre um `U.req` (eras); bloqueios extras de unidade. |
 | `Reinos.Tropas` | Ajudantes de grupo de tropas: validar, retirar, devolver, somar, velocidade, carga, força contra fauna, população. Dentro de uma `Marcha`, a propriedade `Tropas` esconde a classe: use um alias (`using GT = ReinoDePedra.Jogo.Reinos.Tropas;`). |
 | `VisaoReino.Extras`, `VisaoReino.ExtrasLocal`, `VisaoMarcha.ExtrasPropria`, `VisaoMapa.Extras` (Api) | Acrescentar dados ao que o cliente recebe. |
+| `Sistemas.Apresentavel`, `Sistemas.Revelar`, `Reino.SistemasVistos` | Sistemas apresentados aos poucos: registre a chave e revele no gatilho ("Novo: …"); o cliente lê `RP.reino.sistemas` com `RP.sistema(chave)`. |
+| `Caravanas.Enviar`/`Planejar`, `Caravana` (marcha) | Transporte manual (base → origem → destino → volta), com veículos de `Reino.Veiculos` e escolta. |
+| `Extracoes` (`Liquidar`, `Reagendar`, `Enviar`), ordens `extrair`/`entregar`/`escavar`/`buscar-reliquia` | Trabalho de exércitos no mapa; `Marcha.ExtraiJazidaId`/`EscavaRuinaId` dizem quem está trabalhando. |
+| `ReliquiasLendarias.NoMapa`, `ReliquiasLendarias.Oculta`, `VisaoValiosos.ReliquiasConhecidas` (Api) | O que o reino vê das relíquias; marchas que outros não veem (furtivas); relíquias reveladas por espionagem na tela Relíquias. |
+| `RP.valiosos` (cliente) | Peças comuns de caravana, extração e relíquias (caminhos, gráfico de cenários, escolta, `V.tentar`). |
 | `RP.ordensEnvio`, `RP.acoesTropas`, `RP.extrasTropas`, `RP.NOMES_MARCHA` (cliente) | Ordens extras no envio pelo mapa (`{ ordem, rotulo, verbo, icone, descricao, dados, quando(hex, dados, envio) }`), cartões e blocos da tela Tropas, nome dos tipos de marcha. |
 
 ## Regras de visibilidade (o servidor é quem esconde)
