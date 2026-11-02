@@ -32,13 +32,20 @@ public static class Permissoes
     /// </summary>
     public static List<Func<Mundo, Reino, Reino, string?>> AntesDeEnviar { get; } = new();
 
+    /// <summary>
+    /// Bloqueios que dependem do local escolhido (atacante, reino alvo, local) — ex.: pacto ou trégua quando o atacante
+    /// já sabe quem é o dono daquele local (espionado). Sem saber o dono, o mesmo bloqueio só é descoberto ao chegar.
+    /// </summary>
+    public static List<Func<Mundo, Reino, Reino, Local, string?>> AntesDeEnviarNoLocal { get; } = new();
+
     /// <summary>Bloqueios descobertos AO CHEGAR (escudo de novato, de exílio, pacto que começou no caminho): as tropas voltam sem combate.</summary>
     public static List<Func<Mundo, Reino, Reino, string?>> AoChegar { get; } = new();
 
-    public static string? MotivoEnvio(Mundo m, Reino atacante, Reino alvo)
+    public static string? MotivoEnvio(Mundo m, Reino atacante, Reino alvo, Local? local = null)
     {
         if (atacante.Id == alvo.Id) return "Esse local é seu.";
         foreach (var f in AntesDeEnviar) { var x = f(m, atacante, alvo); if (x != null) return x; }
+        if (local != null) foreach (var f in AntesDeEnviarNoLocal) { var x = f(m, atacante, alvo, local); if (x != null) return x; }
         return null;
     }
     public static string? MotivoChegada(Mundo m, Reino atacante, Reino alvo)

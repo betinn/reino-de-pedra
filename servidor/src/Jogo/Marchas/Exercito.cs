@@ -239,18 +239,27 @@ public sealed class OrdemMover : IOrdemExercito
     }
 }
 
-/// <summary>Vai a um local seu e entra na guarnição.</summary>
+/// <summary>Vai a um local seu e entra na guarnição. Locais de outros reinos aceitos por <see cref="Aceita"/> (aliados) ficam com <see cref="Chegada"/>.</summary>
 public sealed class OrdemReforcar : IOrdemExercito
 {
     public const string Id = "reforcar";
     public string Ordem => Id;
+
+    /// <summary>Reforço a um local que não é seu: (mundo, reino que envia, local) → true se pode ir (a aliança registra aqui).</summary>
+    public static List<Func<Mundo, Reino, Local, bool>> Aceita { get; } = new();
+    /// <summary>Chegada a um local que não é seu: (mundo, exército, local) → true se algum sistema cuidou (senão, volta).</summary>
+    public static List<Func<Mundo, Exercito, Local, bool>> Chegada { get; } = new();
+
     public void Validar(Mundo m, Reino r, Exercito ex, int destino)
     {
-        if (!Exercitos.LocalProprio(m.LocalNoHex(destino), r.Id)) throw new RegraException("Reforço só vai para um local seu.");
+        var l = m.LocalNoHex(destino);
+        if (Exercitos.LocalProprio(l, r.Id) || (l != null && Aceita.Any(f => f(m, r, l)))) return;
+        throw new RegraException("Reforço só vai para um local seu.");
     }
     public void Chegou(Mundo m, Exercito ex)
     {
         var l = m.LocalNoHex(ex.Destino);
+        if (!Exercitos.LocalProprio(l, ex.ReinoId) && l != null && Chegada.Any(f => f(m, ex, l))) return;
         if (!Exercitos.LocalProprio(l, ex.ReinoId)) { ex.Retornar(m); return; }   // o local caiu no caminho
         var partes = GT.Partes(m, ex.Tropas);
         ex.EntrarNoLocal(m, l!);
