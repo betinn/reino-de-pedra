@@ -194,7 +194,7 @@
       (x.obra ? RP.timerHTML(RP.icone('martelo', 'ico-p') + ' ' + x.obra.rotulo, x.obra.seg, x.obra.total) : '') +
       (x.fila ? RP.timerHTML(RP.icone('tropas', 'ico-p') + ' ' + x.fila.rotulo, x.fila.seg, x.fila.total) : '') +
       ameacas.map(function (m) {
-        return '<div class="lc-ameaca">' + RP.icone('alerta', 'ico-p pulso') + '<span><b>Forças desconhecidas</b> a caminho · <b class="num" data-fim="' + RP.fim(m.seg) + '">' + RP.fmtResta(m.seg * 1000) + '</b></span></div>';
+        return '<div class="lc-ameaca">' + RP.icone('alerta', 'ico-p pulso') + '<span><b>Forças desconhecidas</b> a caminho · <b class="num" data-fim="' + m.chegada + '">' + RP.fmtResta(m.chegada - Date.now()) + '</b></span></div>';
       }).join('') +
       '</div></div>';
   }
@@ -214,9 +214,9 @@
       icone: '<span class="ico-placa folha-ico dono-meu">' + RP.icone(x.tipo) + '</span>',
       corpo: corpo,
       acoes: '<a class="btn btn-p btn-primario" href="#/mapa?foco=' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>' +
-        '<button type="button" class="btn btn-p" data-em-breve="Construção">' + RP.icone('martelo') + 'Melhorar</button>' +
+        '<a class="btn btn-p" href="#/construcao">' + RP.icone('martelo') + 'Melhorar</a>' +
         '<button type="button" class="btn btn-p" data-em-breve="Posturas">' + RP.icone('escudo') + 'Postura</button>' +
-        (x.tipo === 'quartel' ? '<button type="button" class="btn btn-p" data-em-breve="Recrutamento">' + RP.icone('tropas') + 'Recrutar</button>' : '')
+        (x.tipo === 'quartel' ? '<a class="btn btn-p" href="#/recrutamento">' + RP.icone('tropas') + 'Recrutar</a>' : '')
     });
   }
 
@@ -253,18 +253,16 @@
         '<li>' + RP.icone('escudo', 'ico-p') + '<span>Na defesa, a população atua como <b>milícia</b> em cada local.</span></li>' +
         '<li>' + RP.icone('tropas', 'ico-p') + '<span>Recrutar consome população. Tropas mortas não retornam.</span></li>' +
         '</ul>' +
-        '<div class="linha" style="margin-top:var(--esp-3)"><button type="button" class="btn btn-p" data-em-breve="Construção">' + RP.icone('moradia') + 'Construir moradia</button><button type="button" class="btn btn-p" data-em-breve="Recrutamento">' + RP.icone('tropas') + 'Recrutar</button></div>' +
+        '<div class="linha" style="margin-top:var(--esp-3)"><a class="btn btn-p" href="#/construcao?aba=populacao">' + RP.icone('moradia') + 'Construir moradia</a><a class="btn btn-p" href="#/recrutamento">' + RP.icone('tropas') + 'Recrutar</a></div>' +
         '</div>' +
 
         '<div class="secao-titulo">Filas</div>' +
         '<div class="card pilha">' +
-        '<div class="card-titulo" style="margin:0">' + RP.icone('martelo') + '<h3>Obras</h3><span class="selo">' + D.filas.obras.length + ' na fila</span></div>' +
-        D.filas.obras.map(function (o) {
-          return o.espera ? '<div class="fila-espera">' + RP.icone('relogio', 'ico-p') + '<span>' + RP.esc(o.rotulo) + '</span><span class="selo">Aguardando</span></div>' : RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total);
-        }).join('') +
-        '<div class="card-titulo" style="margin:var(--esp-2) 0 0">' + RP.icone('tropas') + '<h3>Recrutamento</h3><span class="selo">' + D.filas.recrutamento.length + ' na fila</span></div>' +
-        D.filas.recrutamento.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total); }).join('') +
-        '<div class="linha" style="margin-top:var(--esp-2)"><button type="button" class="btn btn-p btn-primario" data-em-breve="Construção" style="flex:1">' + RP.icone('martelo') + 'Construir</button><button type="button" class="btn btn-p" data-em-breve="Recrutamento" style="flex:1">' + RP.icone('tropas') + 'Recrutar</button></div>' +
+        '<div class="card-titulo" style="margin:0">' + RP.icone('martelo') + '<h3>Obras</h3><span class="selo">' + D.filas.obras.length + ' de ' + D.filas.vagasObras + '</span></div>' +
+        D.filas.obras.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') +
+        '<div class="card-titulo" style="margin:var(--esp-2) 0 0">' + RP.icone('tropas') + '<h3>Recrutamento</h3><span class="selo">' + D.filas.recrutamento.length + ' de ' + D.filas.vagasRecrutamento + '</span></div>' +
+        D.filas.recrutamento.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') +
+        '<div class="linha" style="margin-top:var(--esp-2)"><a class="btn btn-p btn-primario" href="#/construcao" style="flex:1">' + RP.icone('martelo') + 'Construir</a><a class="btn btn-p" href="#/recrutamento" style="flex:1">' + RP.icone('tropas') + 'Recrutar</a></div>' +
         '</div>' +
 
         '<div class="secao-titulo">Castelo (capital)</div>' +
@@ -362,20 +360,6 @@
         return '<button type="button" class="card guia-item" data-em-breve="' + i[1] + '"><span class="ico-placa">' + RP.icone(i[0]) + '</span><span><b>' + i[1] + '</b><small class="fraco">' + i[2] + '</small></span><span class="selo">Próximo bloco</span></button>';
       }).join('') + '</div>';
   }
-  RP.registrarTela('tropas', {
-    nav: true,
-    montar: function (el) {
-      el.innerHTML = guia('Tropas', 'Exércitos, exploradores e ordens longas. Esta área será prototipada nos próximos blocos.', [
-        ['tropas', 'Recrutamento', 'Milícia, lanceiro, arqueiro, cavalaria e cerco'],
-        ['explorador', 'Exploradores', 'A pé, a cavalo, prospector e batedor de elite'],
-        ['picareta', 'Extração de recurso', 'De uma tropa até um grupo preparado'],
-        ['lobo', 'Caça', 'Comida, couro e peles; risco conforme a fauna'],
-        ['alvo', 'Envio de ataque', 'Alvo, tipo de ataque, tropas e estandarte'],
-        ['escudo', 'Posturas', 'Como cada exército e guarnição reage offline'],
-        ['estandarte', 'Batalha em andamento', 'Força dos lados, reforços e recuo']
-      ]);
-    }
-  });
   RP.registrarTela('relatorios', {
     nav: true,
     montar: function (el) {

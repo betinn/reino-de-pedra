@@ -232,6 +232,14 @@
       poli(c, [lx + dir * (1.5 + inc) - 1, by - 24, lx + dir * (1.5 + inc) + 1, by - 24, lx + dir * (1.7 + inc), by - 27.5], pal.metal);
     }
     if (o.escudo) { elipse(c, x - dir * 2.6, by - 8.5, 2.9, 3.4, o.escudo); c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 0.6; c.stroke(); }
+    if (o.arco) {
+      var ax = x + dir * 3.2, ay = by - 9.5;
+      c.strokeStyle = pal.madeiraEsc; c.lineWidth = 1.1; c.beginPath(); c.arc(ax - dir * 2, ay, 6, dir > 0 ? -1.15 : Math.PI - 1.15, dir > 0 ? 1.15 : Math.PI + 1.15); c.stroke();
+      var puxa = o.atirando ? Math.max(0, Math.sin(t * 3 + (o.fase || 0))) * 2.5 : 0;
+      linha(c, ax - dir * 2 + dir * 6 * Math.cos(1.15), ay - 6 * Math.sin(1.15), ax - dir * puxa, ay, '#e8dfcc', 0.5);
+      linha(c, ax - dir * puxa, ay, ax - dir * 2 + dir * 6 * Math.cos(1.15), ay + 6 * Math.sin(1.15), '#e8dfcc', 0.5);
+    }
+    if (o.capuz) { c.fillStyle = o.capuz; c.beginPath(); c.arc(x, by - 14.2, 3, Math.PI * 0.95, Math.PI * 2.05); c.lineTo(x + 2.4, by - 11.5); c.lineTo(x - 2.4, by - 11.5); c.fill(); }
     if (o.carga === 'tronco') { c.save(); c.translate(x, by - 14.5); c.rotate(-0.15 * dir); c.fillStyle = pal.madeiraLuz; c.fillRect(-6, -1.6, 12, 3.2); elipse(c, 6, 0, 1.1, 1.6, '#c9a676'); c.restore(); }
     else if (o.carga === 'saco') elipse(c, x + dir * 2, by - 15.5, 2.8, 2.4, '#cdb98f');
     else if (o.carga === 'minerio') { elipse(c, x + dir * 2, by - 15.5, 2.9, 2.2, o.corCarga || pal.minerioFerro); }
@@ -593,6 +601,8 @@
         tr.push({ fixo: off(p, 7, 12), roupa: '#5a4636', trabalho: 'martelo', dir: 1, fase: 0 });
       } else if (x.tipo === 'quartel') {
         [-10, -2, 6].forEach(function (dx, j) { tr.push({ fixo: off(p, dx, 22), soldado: true, dono: 'meu', estocada: true, dir: 1, fase: j * 0.6 }); });
+        [0, 1].forEach(function (j) { tr.push({ fixo: off(p, -26 + j * 7, -2 + j * 6), arqueiro: true, alvoTiro: off(p, 26, -14), dir: 1, fase: j * 1.7, soRecrutando: true }); });
+        tr.push({ alvoPalha: off(p, 26, -14), soRecrutando: true });
       } else if (x.tipo === 'castelo') {
         ida(off(p, -16, 26), off(p, 16, 26), { soldado: true, dono: 'meu', vel: 5, fase: 0 });
         ida(off(p, 18, 30), off(p, -14, 30), { soldado: true, dono: 'meu', vel: 5, fase: 1.4 });
@@ -824,12 +834,20 @@
       var e = W.estado(x.c, x.l); if (e.v === 'desconhecido') return;
       var p = H.centro(x.c, x.l); if (!naTela(p.x, p.y)) return;
       var antigo = e.v === 'explorado';
-      itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); desenharLocal(c, x, t, antigo ? PA : P, corReino(W.donoAparente(x.reino)), !antigo); }, alvo: { x: p.x, y: p.y, w: x.tipo === 'castelo' ? 64 : 50, h: x.tipo === 'castelo' ? 66 : 42, ent: ['local', x.id] } });
+      var obra = x.reino === 'meu' ? obraDe(x.id) : null;
+      itens.push({ y: p.y, d: function () {
+        obj(c, V, p.x, p.y); desenharLocal(c, x, t, antigo ? PA : P, corReino(W.donoAparente(x)), !antigo);
+        if (obra) { obj(c, V, p.x, p.y); if (obra.ativa) andaime(c, x.tipo === 'castelo' ? 30 : 20, t, P); else materiais(c, P); }
+      }, alvo: { x: p.x, y: p.y, w: x.tipo === 'castelo' ? 64 : 50, h: x.tipo === 'castelo' ? 66 : 42, ent: ['local', x.id] } });
+      if (obra && obra.ativa) {
+        itens.push({ y: p.y + 14, d: function () { obj(c, V, p.x + 16, p.y + 14); pessoa(c, 0, 0, t, P, { roupa: P.roupa[4], dir: -1, trabalho: 'martelo', fase: 0.5 }); } });
+        rotulos.push({ x: p.x, y: p.y, dy: -52, txt: 'Obra · ' + RP.fmtResta(obra.fim - Date.now()), cls: 'obra', cor: cores().alerta });
+      }
       if (x.tipo === 'pasto' && !antigo) {
         itens.push({ y: p.y - 18, d: function () { obj(c, V, p.x, p.y); cerca(c, P, false); } });
         itens.push({ y: p.y + 18, d: function () { obj(c, V, p.x, p.y); cerca(c, P, true); } });
       }
-      if (x.tipo === 'castelo') rotulos.push({ x: p.x, y: p.y, dy: 26, txt: x.reino === 'meu' ? D.reinos.meu.nome : 'Castelo', cls: 'castelo', cor: corReino(W.donoAparente(x.reino)) });
+      if (x.tipo === 'castelo') rotulos.push({ x: p.x, y: p.y, dy: 26, txt: x.reino === 'meu' ? D.reinos.meu.nome : 'Castelo', cls: 'castelo', cor: corReino(W.donoAparente(x)) });
       if (x.ameaca) rotulos.push({ x: p.x, y: p.y, dy: -46, txt: 'Ameaçado', cls: 'perigo' });
     });
     D.ruinas.forEach(function (rr) {
@@ -859,6 +877,26 @@
         if (!naTela(hx, hy)) return;
         var dir = Math.cos(t * 0.3 + o.fase) >= 0 ? 1 : -1, mov = Math.sin(t * 0.5 + o.fase) > -0.2;
         itens.push({ y: hy, d: function () { obj(c, V, hx, hy); cavalo(c, 0, 0, t, P, { cor: o.cor, dir: dir, andando: mov, pastando: !mov, fase: o.fase }); } });
+        return;
+      }
+      if (o.soRecrutando && !D.filas.recrutamento.some(function (r) { return RP.fimItem(r) - r.total * 1000 <= Date.now() && RP.fimItem(r) > Date.now(); })) return;
+      if (o.alvoPalha) {
+        if (!naTela(o.alvoPalha.x, o.alvoPalha.y)) return;
+        itens.push({ y: o.alvoPalha.y, d: function () { obj(c, V, o.alvoPalha.x, o.alvoPalha.y); linha(c, -2, 0, 0, -8, P.madeiraEsc, 1.2); linha(c, 2, 0, 0, -8, P.madeiraEsc, 1.2); elipse(c, 0, -10, 4.5, 4.5, '#d8c98f'); elipse(c, 0, -10, 3, 3, '#c0392b'); elipse(c, 0, -10, 1.4, 1.4, '#f1e6c2'); } });
+        return;
+      }
+      if (o.arqueiro) {
+        if (!naTela(o.fixo.x, o.fixo.y)) return;
+        var fa = ((t * 0.8 + o.fase) % 1.6) / 1.6;
+        itens.push({ y: o.fixo.y, d: function () {
+          obj(c, V, o.fixo.x, o.fixo.y);
+          pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), cinto: '#2b2520', dir: 1, arco: true, atirando: true, fase: o.fase });
+          if (fa > 0.55) {
+            var k = (fa - 0.55) / 0.45, dx = o.alvoTiro.x - o.fixo.x, dy = (o.alvoTiro.y - o.fixo.y) * K;
+            var fx = dx * k, fy = dy * k - 9.5 - Math.sin(k * Math.PI) * 6;
+            linha(c, fx - 3, fy + 0.4, fx + 3, fy - 0.4, P.madeiraEsc, 0.8);
+          }
+        } });
         return;
       }
       var x, y, dir = o.dir || 1, andando = false;
@@ -907,9 +945,21 @@
       if (m.d.tipo === 'explorador') {
         itens.push({ y: pos.y, d: function () {
           obj(c, V, pos.x, pos.y);
-          if (m.d.sub === 'cavalo') cavalo(c, 0, 0, t, P, { cor: P.cavalo[3], dir: dir, andando: true, galope: true, cavaleiro: corReino('meu') });
+          if (m.d.sub === 'cavalo') cavalo(c, 0, 0, t, P, { cor: P.cavalo[3], dir: dir, andando: true, galope: !m.d.escolta, cavaleiro: corReino('meu') });
+          else if (m.d.sub === 'batedor') pessoa(c, 0, 0, t, P, { roupa: '#2f3a2c', capuz: '#26301f', dir: dir, andando: true, fase: 0.3 });
           else pessoa(c, 0, 0, t, P, { roupa: '#6b5a3a', dir: dir, andando: true, carga: m.d.sub === 'prospector' ? 'picareta' : null });
         } });
+        if (m.d.escolta) for (var e2 = 0; e2 < 3; e2++) (function (e2) {
+          var sx = pos.x - ux * (12 + e2 * 7) - uy * (e2 - 1) * 7, sy = pos.y - uy * (12 + e2 * 7) + ux * (e2 - 1) * 7;
+          itens.push({ y: sy, d: function () { obj(c, V, sx, sy); pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), cinto: '#1e1b18', dir: dir, andando: true, fase: e2, capacete: P.metal, lanca: true, escudo: corReino('meu') }); } });
+        })(e2);
+      } else if (m.d.tipo === 'caca') {
+        var g = m.d.grupo || { arqueiro: 3 }, nC = Math.min(5, (g.arqueiro || 0) + (g.lanceiro || 0) + (g.cavalaria || 0));
+        for (var qc = 0; qc < nC; qc++) (function (qc) {
+          var sx = pos.x - ux * qc * 9 - uy * ((qc % 2) * 2 - 1) * 4, sy = pos.y - uy * qc * 9 + ux * ((qc % 2) * 2 - 1) * 4;
+          var arq = qc < (g.arqueiro || 0);
+          itens.push({ y: sy, d: function () { obj(c, V, sx, sy); pessoa(c, 0, 0, t, P, { roupa: arq ? '#5f6b3a' : corReino('meu'), capuz: arq ? '#4b5530' : null, dir: dir, andando: true, fase: qc * 1.1, arco: arq, lanca: !arq, capacete: arq ? null : P.metal }); } });
+        })(qc);
       } else {
         var n = m.d.hostil ? 9 : m.d.estandarte ? 7 : 6;
         for (var q = 0; q < n; q++) (function (q) {
@@ -924,7 +974,7 @@
         itens.push({ y: pos.y + 6, d: function () { obj(c, V, pos.x - ux * 30, pos.y - uy * 30); for (var z = 0; z < 3; z++) { var a = (t * 0.8 + z / 3) % 1; elipse(c, Math.sin(z * 3) * 6 - dir * a * 6, -a * 6, 4 + a * 6, 2 + a * 3, 'rgba(160,140,110,' + (0.3 * (1 - a)).toFixed(2) + ')'); } } });
       }
       self.alvos.push(alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.d.id]));
-      rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil ? '? ' : '') + RP.fmtResta(RP.fim(m.d.seg) - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : corReino(m.d.dono) });
+      rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil ? '? ' : '') + RP.fmtResta(m.d.chegada - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : corReino(m.d.dono) });
     });
 
     itens.sort(function (a, b) { return a.y - b.y; });
@@ -953,6 +1003,23 @@
     });
   };
 
+  function obraDe(localId) {
+    var agora = Date.now(), o = D.filas.obras.filter(function (x) { return x.local === localId && RP.fimItem(x) > agora; })[0];
+    if (!o) return null;
+    var fim = RP.fimItem(o);
+    return { ativa: fim - o.total * 1000 <= agora, fim: fim };
+  }
+  function andaime(c, r, t, pal) {
+    var h = r * 1.3;
+    [[-r, 6], [r, 6], [-r * 0.7, -8], [r * 0.9, -6]].forEach(function (q) { linha(c, q[0], gz(q[1]), q[0], gz(q[1]) - h, pal.madeiraLuz, 1.4); });
+    [0.35, 0.7].forEach(function (f) { linha(c, -r - 2, gz(6) - h * f, r + 2, gz(6) - h * f, pal.madeira, 1.6); });
+    linha(c, -r, gz(6), -r * 0.7, gz(-8) - h * 0.7, pal.madeira, 0.9);
+    linha(c, r, gz(6) - h * 0.35, r * 0.2, gz(6) - h * 0.7, pal.madeira, 0.9);
+  }
+  function materiais(c, pal) {
+    for (var i = 0; i < 3; i++) { c.fillStyle = pal.madeiraLuz; c.fillRect(18, gz(14) - 3 - i * 2.6, 12, 2.4); }
+    rocha(c, 34, gz(16), 0.7, pal); rocha(c, 38, gz(12), 0.6, pal);
+  }
   function estandarteCor(reino) { var b = D.reinos[reino].brasao; return b ? getComputedStyle(document.documentElement).getPropertyValue('--tin-' + b.cor1).trim() : corReino(reino); }
   function proximoRio(x, y) {
     var melhor = null, md = 1e9;
