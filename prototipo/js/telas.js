@@ -13,11 +13,6 @@
     for (i = 0; i < 14; i++) {
       brasas += '<circle cx="' + (150 + H.hash(i, 4, 2) * 100).toFixed(0) + '" cy="' + (150 + H.hash(i, 5, 2) * 120).toFixed(0) + '" r="' + (0.8 + H.hash(i, 6, 2) * 1.4).toFixed(1) + '"/>';
     }
-    var hach = '';
-    for (i = 0; i < 9; i++) hach += 'M' + (112 + i * 4) + ' ' + (220 + i * 4) + 'l' + (6 + i) + ' ' + (14 + i * 2);
-    for (i = 0; i < 9; i++) hach += 'M' + (277 + i * 4) + ' ' + (210 + i * 4) + 'l' + (6 + i) + ' ' + (14 + i * 2);
-    var rosa = RP.estrelaPath(0, 0, 32, 6, 4) ;
-    var rosa2 = RP.estrelaPath(0, 0, 20, 5, 4);
     return '<svg class="cena" viewBox="0 0 390 420" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' +
       '<defs><linearGradient id="cena-ceu" x1="0" y1="0" x2="0" y2="1">' +
       '<stop offset="0" class="ceu-1"/><stop offset=".62" class="ceu-2"/><stop offset="1" class="ceu-3"/></linearGradient>' +
@@ -25,11 +20,8 @@
       '<rect width="390" height="420" fill="url(#cena-ceu)"/>' +
       '<g class="cena-estrelas">' + estrelas + '</g>' +
       '<circle cx="200" cy="268" r="150" fill="url(#cena-brilho)"/>' +
-      '<g class="cena-bussola" transform="translate(326 74)"><circle r="36" class="b-anel"/><circle r="29" class="b-anel"/>' +
-      '<path d="' + rosa2 + '" transform="rotate(45)" class="b-rosa2"/><path d="' + rosa + '" class="b-rosa"/><text y="-40" class="b-n">N</text></g>' +
       '<path class="cena-monte-3" d="M0 300 40 250 70 270 110 215 150 255 190 228 230 262 275 205 320 250 350 232 390 262V420H0Z"/>' +
       '<path class="cena-neve" d="M110 215 101 226 108 224 113 230 118 225 123 228ZM275 205 265 217 272 215 277 221 282 214 288 219Z"/>' +
-      '<path class="cena-hachura" d="' + hach + '"/>' +
       '<path class="cena-monte-2" d="M0 334 45 292 80 312 120 288 152 304V420H0ZM238 304 280 272 320 298 355 278 390 300V420H238Z"/>' +
       '<path class="cena-monte-1" d="M0 420V338C60 326 120 304 160 300 190 296 230 296 260 304 310 316 350 332 390 338V420Z"/>' +
       '<path class="cena-rota" d="M24 420C64 392 112 378 150 360 176 348 190 330 195 305"/>' +
@@ -54,8 +46,6 @@
         '<a class="btn btn-bloco" href="#/reino" data-continuar><span>Continuar como <span data-nome-reino>' + RP.esc(RP.estado.nome) + '</span></span></a>' +
         '</div>' +
         '<p class="inicio-temporada">' + RP.icone('temporada', 'ico-p') + 'Temporada ' + t.numero + ' · termina em ' + t.diasRestantes + ' dias · ' + RP.num(t.reinos) + ' reinos</p>' +
-        '<div class="avaliacao"><p class="rotulo">Direção visual em avaliação</p>' + RP.seletorDirecao() +
-        '<a class="link-comparar" href="direcoes.html" target="_top">Comparar as duas direções lado a lado</a></div>' +
         '</div>';
     },
     entrar: function (el) {
@@ -193,7 +183,7 @@
     return 'producao';
   }
   function cardLocal(x) {
-    var terr = H.TERRENOS[RP.mapa.terreno[x.l][x.c]].nome;
+    var terr = H.TERRENOS[RP.mundo.T[x.l][x.c]].nome;
     var ameacas = D.marchas.filter(function (m) { return m.alvo === x.id && m.hostil; });
     var linha2 = x.prod ? '<span class="lc-prod">' + RP.icone(x.prod.r, 'ico-p r-' + x.prod.r) + '+' + x.prod.v + ' ' + NOME_PROD[x.prod.r] + '/h' + (x.jazida ? ' · jazida ' + Math.round(x.jazida * 100) + '%' : '') + '</span>'
       : '<span class="lc-prod">' + RP.esc((x.info || [])[0] || '') + '</span>';
@@ -209,7 +199,7 @@
       '</div></div>';
   }
   function folhaLocal(x) {
-    var terr = H.TERRENOS[RP.mapa.terreno[x.l][x.c]];
+    var terr = H.TERRENOS[RP.mundo.T[x.l][x.c]];
     var corpo = '<div class="info">' +
       '<div class="info-linha"><span class="fraco">Tipo</span><span>' + RP.TIPOS_LOCAL[x.tipo] + '</span></div>' +
       '<div class="info-linha"><span class="fraco">Terreno</span><span>' + terr.nome + '</span></div>' +
@@ -244,7 +234,12 @@
         '<div class="topo-titulos"><h1>Reino de ' + RP.esc(RP.estado.nome) + '</h1><small>' + RP.icone('temporada', 'ico-p') + 'Temporada ' + t.numero + ' · ' + t.diasRestantes + ' dias restantes</small></div>' +
         '<button type="button" class="btn btn-fantasma btn-icone btn-sino-topo" data-abrir-notificacoes aria-label="Notificações">' + RP.icone('sino') + '<span class="contador">' + D.notificacoesNaoLidas + '</span></button>' +
         '</header>' +
-        '<div class="conteudo-tela">' +
+        '<div class="reino-vista">' +
+        '<canvas class="reino-cena" aria-label="Vista do reino: castelo, locais e pessoas trabalhando. Arraste para os lados; toque numa construção para ver detalhes."></canvas>' +
+        '<div class="reino-vista-dica">' + RP.icone('vista', 'ico-p') + 'Arraste para os lados · toque nas construções</div>' +
+        '<a class="btn btn-p reino-vista-abrir" href="#/mapa?modo=cena&amp;centro=castelo">' + RP.icone('mapa') + 'Abrir no mundo</a>' +
+        '</div>' +
+        '<div class="conteudo-tela conteudo-reino">' +
         '<div class="reino-recursos">' + RP.barraRecursos({ semSino: true }) + '</div>' +
         (RP.estado.recemFundado ? '<div class="card faixa-escudo">' + RP.icone('escudo') + '<div><b>Escudo de novato ativo</b><br><span class="suave">Ninguém pode atacar seus locais enquanto o escudo durar.</span></div></div>' : '') +
 
@@ -260,9 +255,6 @@
         '</ul>' +
         '<div class="linha" style="margin-top:var(--esp-3)"><button type="button" class="btn btn-p" data-em-breve="Construção">' + RP.icone('moradia') + 'Construir moradia</button><button type="button" class="btn btn-p" data-em-breve="Recrutamento">' + RP.icone('tropas') + 'Recrutar</button></div>' +
         '</div>' +
-
-        '<div class="secao-titulo">Território</div>' +
-        '<div class="card vista-card">' + RP.mapa.vistaReino() + '<p class="vista-legenda fraco">Toque em um local para ver detalhes.</p></div>' +
 
         '<div class="secao-titulo">Filas</div>' +
         '<div class="card pilha">' +
@@ -315,9 +307,21 @@
           return;
         }
         if ((b = e.target.closest('[data-local]'))) abrirLocal(b.getAttribute('data-local'));
-        var ent = e.target.closest('.vista-reino [data-ent]');
-        if (ent) abrirLocal(ent.getAttribute('data-ent').split(':')[1]);
       });
+      /* vista imersiva do reino */
+      var meus = locais.map(function (x) { return H.centro(x.c, x.l); });
+      var xs = meus.map(function (q) { return q.x; }), ys = meus.map(function (q) { return q.y; });
+      var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+      var cc = H.centro(castelo.c, castelo.l);
+      cenaReino = new RP.Cena(RP.$('.reino-cena', el), {
+        tocavel: true, panHorizontal: true,
+        limites: { x0: x0 + 60, x1: x1 - 60, y0: (y0 + y1) / 2 - 20, y1: (y0 + y1) / 2 + 20 },
+        aoTocar: function (alvo) {
+          if (alvo.ent && alvo.ent[0] === 'local') abrirLocal(alvo.ent[1]);
+          else if (alvo.ent) RP.ir('mapa?modo=cena&abrir=' + alvo.ent.join(':'));
+        }
+      });
+      cenaReino.posicaoInicial = { x: cc.x + 20, y: (y0 + y1) / 2 + 10, alturaMundo: y1 - y0 + 120 };
       el.addEventListener('keydown', function (e) {
         var b = e.target.closest('[data-local]');
         if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); abrirLocal(b.getAttribute('data-local')); }
@@ -330,8 +334,20 @@
     entrar: function (el, params) {
       var id = params.get('local');
       if (id) setTimeout(function () { abrirLocal(id); }, 60);
-    }
+      requestAnimationFrame(function () {
+        cenaReino.redimensionar();
+        if (!cenaReino.posicionada) {
+          var pi = cenaReino.posicaoInicial;
+          var s = Math.max(1, Math.min(1.5, cenaReino.h / (pi.alturaMundo * RP.cenaK)));
+          cenaReino.centrar(pi.x, pi.y, s, 0.5, false);
+          cenaReino.posicionada = true;
+        }
+        cenaReino.iniciar();
+      });
+    },
+    sair: function () { if (cenaReino) cenaReino.parar(); }
   });
+  var cenaReino = null;
   function abrirLocal(id) {
     var x = D.locais.filter(function (l) { return l.id === id; })[0];
     if (x) folhaLocal(x);
@@ -342,6 +358,7 @@
     return '<header class="topo"><h1>' + titulo + '</h1><button type="button" class="btn btn-fantasma btn-icone btn-sino-topo" data-abrir-notificacoes aria-label="Notificações">' + RP.icone('sino') + '<span class="contador">' + D.notificacoesNaoLidas + '</span></button></header>' +
       '<div class="conteudo-tela pilha"><p class="suave">' + intro + '</p>' +
       itens.map(function (i) {
+        if (i[3]) return '<a class="card guia-item" href="' + i[3] + '"><span class="ico-placa">' + RP.icone(i[0]) + '</span><span><b>' + i[1] + '</b><small class="fraco">' + i[2] + '</small></span>' + RP.icone('avancar', 'ico-p') + '</a>';
         return '<button type="button" class="card guia-item" data-em-breve="' + i[1] + '"><span class="ico-placa">' + RP.icone(i[0]) + '</span><span><b>' + i[1] + '</b><small class="fraco">' + i[2] + '</small></span><span class="selo">Próximo bloco</span></button>';
       }).join('') + '</div>';
   }
@@ -352,6 +369,7 @@
         ['tropas', 'Recrutamento', 'Milícia, lanceiro, arqueiro, cavalaria e cerco'],
         ['explorador', 'Exploradores', 'A pé, a cavalo, prospector e batedor de elite'],
         ['picareta', 'Extração de recurso', 'De uma tropa até um grupo preparado'],
+        ['lobo', 'Caça', 'Comida, couro e peles; risco conforme a fauna'],
         ['alvo', 'Envio de ataque', 'Alvo, tipo de ataque, tropas e estandarte'],
         ['escudo', 'Posturas', 'Como cada exército e guarnição reage offline'],
         ['estandarte', 'Batalha em andamento', 'Força dos lados, reforços e recuo']
@@ -376,18 +394,45 @@
         ['temporada', 'Temporada e legado', 'Tempo restante, relíquias, títulos, brasões e linhagem'],
         ['bandeira', 'Bandeiras', 'Sinais colocados por você no mapa'],
         ['sino', 'Notificações', 'Construções, chegadas e ataques'],
-        ['bussola', 'Exílio', 'Recomeço após perder todos os locais']
+        ['bussola', 'Exílio', 'Recomeço após perder todos os locais'],
+        ['coroa', 'Retorno após regência', 'O que o regente fez enquanto você esteve fora (exemplo)', '#/regencia']
       ]) +
         '<div class="conteudo-tela pilha" style="padding-top:0"><div class="secao-titulo">Protótipo</div>' +
-        '<div class="card pilha"><span class="rotulo">Direção visual</span>' + RP.seletorDirecao() +
-        '<a class="btn btn-p" href="direcoes.html" target="_top">Comparar direções lado a lado</a>' +
-        '<button type="button" class="btn btn-p btn-fantasma" data-reiniciar>Reiniciar protótipo</button></div></div>';
+        '<div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Dados fictícios. Nada aqui é salvo em servidor.</p>' +
+        '<button type="button" class="btn btn-p" data-reiniciar>Reiniciar protótipo</button></div></div>';
       el.addEventListener('click', function (e) {
         if (!e.target.closest('[data-reiniciar]')) return;
         try { sessionStorage.removeItem('rp-reino'); } catch (er) { /* ignora */ }
         location.hash = '#/inicio';
         location.reload();
       });
+    }
+  });
+  /* ================================================================ retorno após regência */
+  RP.registrarTela('regencia', {
+    montar: function (el) {
+      var r = D.regencia, rec = D.recursos;
+      el.innerHTML =
+        '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/mais" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Retorno ao reino</h1></header>' +
+        '<div class="conteudo-tela pilha-4">' +
+        '<div class="card card-moldura regencia-topo">' + RP.brasao(RP.estado.brasao, { tamanho: 64 }) +
+        '<div><h2>Bem-vindo de volta</h2><p class="suave">Você ficou <b>' + r.diasFora + ' dias</b> fora. Nesse período, um regente governou ' + RP.esc(RP.estado.nome) + ' em seu nome.</p></div></div>' +
+        '<div class="card pilha"><div class="card-titulo" style="margin:0">' + RP.icone('coroa') + '<h3>Como foi a regência</h3></div>' +
+        '<p class="suave" style="font-size:var(--fs-2)">O regente é conservador: defende e produz, sem expandir nem atacar. Abandonar o reino nunca rende mais do que jogar.</p>' +
+        '<div class="regencia-numeros">' +
+        '<div><span class="fraco">Ataques sofridos</span><b>' + r.ataques.total + '</b><small>' + r.ataques.repelidos + ' repelidos</small></div>' +
+        '<div><span class="fraco">Locais</span><b>' + r.restou.locais + '</b><small>' + r.perdas.length + ' perdido</small></div>' +
+        '<div><span class="fraco">População</span><b>' + RP.num(r.restou.populacao) + '</b><small>de ' + RP.num(D.populacao.teto) + '</small></div>' +
+        '</div></div>' +
+        '<div class="card pilha"><div class="card-titulo" style="margin:0">' + RP.icone('martelo') + '<h3>Produzido</h3></div>' +
+        '<div class="regencia-recursos">' + Object.keys(r.producao).map(function (kk) {
+          return '<span class="selo selo-g">' + RP.icone(kk, 'r-' + kk) + rec[kk].nome + ' <b class="num">+' + RP.num(r.producao[kk]) + '</b></span>';
+        }).join('') + '</div></div>' +
+        r.perdas.map(function (pp) { return '<div class="faixa-alerta">' + RP.icone('alerta') + '<span class="txt"><b>' + RP.esc(pp.local) + '</b><br>' + RP.esc(pp.como) + '</span></div>'; }).join('') +
+        '<div class="card"><div class="card-titulo">' + RP.icone('relatorios') + '<h3>Diário do regente</h3></div><ol class="diario">' +
+        r.acoes.map(function (a) { return '<li><span class="selo">Dia ' + a.dia + '</span><span>' + RP.esc(a.txt) + '</span></li>'; }).join('') + '</ol></div>' +
+        '</div>' +
+        '<div class="rodape-acao"><a class="btn btn-primario btn-bloco btn-grande" href="#/reino">' + RP.icone('castelo') + 'Retomar o reino</a></div>';
     }
   });
 })();
