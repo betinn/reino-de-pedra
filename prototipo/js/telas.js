@@ -191,7 +191,7 @@
       '<span class="ico-placa dono-meu">' + RP.icone(x.tipo) + '</span>' +
       '<div class="lc-corpo"><div class="linha-entre"><b class="lc-nome">' + RP.esc(x.nome) + '</b><span class="selo">Nv ' + x.nivel + '</span></div>' +
       '<small class="fraco">' + RP.TIPOS_LOCAL[x.tipo] + ' · ' + terr + ' · ' + RP.icone('escudo', 'ico-p') + RP.esc(x.postura) + '</small>' + linha2 + linhaRel(x) +
-      (RP.muros.de(x.id) ? '<span class="lc-muro">' + RP.icone('muralha', 'ico-p') + RP.esc(RP.muros.de(x.id).nome) + ' · nível ' + RP.muros.de(x.id).nivel + '</span>' : '') +
+      (RP.torres.de(x.id).length ? '<span class="lc-torre">' + RP.icone('torre', 'ico-p') + 'Protegido por ' + RP.esc(RP.torres.de(x.id).map(function (t) { return t.nome; }).join(', ')) + '</span>' : '') +
       '<span class="lc-estoque"><span class="fraco">Estoque</span>' + RP.estoqueHTML(x.id) + '</span>' +
       (x.obra ? RP.timerHTML(RP.icone('martelo', 'ico-p') + ' ' + x.obra.rotulo, x.obra.seg, x.obra.total) : '') +
       (x.fila ? RP.timerHTML(RP.icone('tropas', 'ico-p') + ' ' + x.fila.rotulo, x.fila.seg, x.fila.total) : '') +
@@ -214,10 +214,10 @@
       (x.info || []).map(function (i) { return '<div class="info-linha"><span class="fraco">Detalhe</span><span>' + RP.esc(i) + '</span></div>'; }).join('') +
       '<div class="info-linha"><span class="fraco">Guarnição</span><span>' + RP.esc(x.guarnicao) + '</span></div>' +
       '<div class="info-linha"><span class="fraco">Postura</span><span class="selo selo-info">' + RP.esc(x.postura) + '</span></div>' +
-      (RP.muros.de(x.id) ? '<div class="info-linha"><span class="fraco">Muralha</span><span>' + RP.esc(RP.muros.de(x.id).nome + ' · ' + RP.muros.descricao(RP.muros.de(x.id))) + '</span></div>' : '') +
+      (RP.torres.de(x.id).length ? '<div class="info-linha"><span class="fraco">Torres</span><span>' + RP.esc(RP.torres.de(x.id).map(function (t) { return t.nome + ' (' + RP.torres.descricao(t) + ')'; }).join('; ')) + '</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Estoque</span><span>' + RP.estoqueHTML(x.id) + '</span></div>' +
       '</div><p class="fraco" style="margin-top:var(--esp-2);font-size:var(--fs-2)">Obras aqui usam o estoque deste local. Para trazer material, mande uma caravana.</p>' + (RP.reliquiaEm(x.id) ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(RP.reliquiaEm(x.id)) + '</div>' : '') +
-      '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Cada local é um alvo com defesa própria: guarnição, população como milícia e muralhas.' + (RP.reliquiaEm(x.id) ? ' Quem vencer um saque ou uma ocupação aqui leva a relíquia.' : '') + '</p>';
+      '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Cada local é um alvo com defesa própria: guarnição, população como milícia e torres de arqueiros no alcance.' + (RP.reliquiaEm(x.id) ? ' Quem vencer um saque ou uma ocupação aqui leva a relíquia.' : '') + '</p>';
     RP.abrirFolha({
       titulo: RP.esc(x.nome), veu: true,
       subtitulo: '<span class="fraco">' + RP.TIPOS_LOCAL[x.tipo] + ' · Nível ' + x.nivel + '</span>',
@@ -225,7 +225,7 @@
       corpo: corpo,
       acoes: '<a class="btn btn-p btn-primario" href="#/mapa?foco=' + x.id + '">' + RP.icone('mapa') + 'Ver no mapa</a>' +
         '<a class="btn btn-p" href="#/construcao">' + RP.icone('martelo') + 'Melhorar</a>' +
-        '<a class="btn btn-p" href="#/caravana?para=' + x.id + '">' + RP.icone('carroca') + 'Trazer recursos</a>' +
+        (RP.sistema('logistica') ? '<a class="btn btn-p" href="#/caravana?para=' + x.id + '">' + RP.icone('carroca') + 'Trazer recursos</a>' : '') +
         '<a class="btn btn-p" href="#/posturas?local=' + x.id + '">' + RP.icone('escudo') + 'Postura</a>' +
         (x.tipo === 'quartel' ? '<a class="btn btn-p" href="#/recrutamento">' + RP.icone('tropas') + 'Recrutar</a>' : '') +
         (RP.reliquiaEm(x.id) ? '<a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquia</a>' : '')
@@ -293,7 +293,7 @@
         '<div class="castelo-topo"><span class="ico-placa ico-placa-g dono-meu">' + RP.icone('castelo') + '</span><div><h2>Castelo de ' + RP.esc(RP.estado.nome) + '</h2><span class="fraco">Sede do reino · Planície</span></div></div>' +
         '<div class="castelo-dados">' +
         '<div><span class="fraco">Nível</span><b>' + castelo.nivel + '</b></div>' +
-        '<div><span class="fraco">Muralha</span><b>3</b></div>' +
+        '<div><span class="fraco">Portões</span><b>3</b></div>' +
         '<div><span class="fraco">Guarnição</span><b>35</b></div>' +
         '<div><span class="fraco">Milícia</span><b data-pop>' + RP.num(RP.popAtual()) + '</b></div>' +
         '</div>' +
@@ -311,7 +311,7 @@
         '</div>' +
         '<div class="locais-lista">' + outros.map(cardLocal).join('') + '</div>' +
 
-        cardReliquias() +
+        (RP.sistema('reliquias') ? cardReliquias() : '') +
         '<div class="secao-titulo">Valiosos</div>' +
         '<div class="linha" style="flex-wrap:wrap">' + D.valiosos.map(function (v) {
           return '<span class="selo selo-destaque selo-g">' + RP.icone(v.id, 'r-' + v.id) + v.nome + ' <b class="num">' + RP.num(RP.totalRecurso(v.id)) + '</b></span>';
@@ -381,7 +381,7 @@
   function guia(titulo, intro, itens) {
     return '<header class="topo"><h1>' + titulo + '</h1><button type="button" class="btn btn-fantasma btn-icone btn-sino-topo" data-abrir-notificacoes aria-label="Notificações">' + RP.icone('sino') + '<span class="contador">' + D.notificacoesNaoLidas + '</span></button></header>' +
       '<div class="conteudo-tela pilha"><p class="suave">' + intro + '</p>' +
-      itens.map(function (i) {
+      itens.filter(Boolean).map(function (i) {
         if (i[3]) return '<a class="card guia-item" href="' + i[3] + '"><span class="ico-placa">' + RP.icone(i[0]) + '</span><span><b>' + i[1] + '</b><small class="fraco">' + i[2] + '</small></span>' + RP.icone('avancar', 'ico-p') + '</a>';
         return '<button type="button" class="card guia-item" data-em-breve="' + i[1] + '"><span class="ico-placa">' + RP.icone(i[0]) + '</span><span><b>' + i[1] + '</b><small class="fraco">' + i[2] + '</small></span><span class="selo">Próximo bloco</span></button>';
       }).join('') + '</div>';
@@ -389,11 +389,31 @@
   RP.registrarTela('mais', {
     nav: true,
     montar: function (el) {
+      desenharMais(el);
+      el.addEventListener('click', function (e) {
+        var b;
+        if (e.target.closest('[data-jogador-novo]')) {
+          var novo = Object.keys(RP.SISTEMAS).every(function (k) { return !RP.sistema(k); });
+          Object.keys(RP.SISTEMAS).forEach(function (k) { RP.dados.descobertas[k] = novo; });
+          RP.aviso({ titulo: novo ? 'Todos os sistemas à vista' : 'Como jogador novo', texto: novo ? 'Como um jogador no dia 34.' : 'Transporte manual, espionagem, torres, relíquias e alianças somem até o gatilho de cada um.', icone: 'bandeira', ms: 2600 });
+          ['reino', 'construcao', 'exploradores', 'agora', 'mapa'].forEach(RP.invalidarTela);
+          desenharMais(el); return;
+        }
+        if ((b = e.target.closest('[data-simular]'))) { RP.revelarSistema(b.getAttribute('data-simular')); desenharMais(el); return; }
+        if (!e.target.closest('[data-reiniciar]')) return;
+        try { sessionStorage.removeItem('rp-reino'); } catch (er) { /* ignora */ }
+        location.hash = '#/inicio';
+        location.reload();
+      });
+    },
+    entrar: function (el) { desenharMais(el); }
+  });
+  function desenharMais(el) {
       el.innerHTML = guia('Mais', 'Temporada, legado, bandeiras e avisos.', [
         ['temporada', 'Temporada e legado', 'Tempo restante, linhagem, relíquias, títulos e brasões', '#/temporada'],
         ['alvo', 'Precisa de você', 'O que pede atenção, oportunidades e o andamento do reino', '#/agora'],
-        ['estandarte', 'Aliança', RP.dados.alianca.nome + ' · ' + RP.dados.alianca.membros.length + ' de ' + RP.dados.alianca.limite + ' · pedidos de recursos', '#/alianca'],
-        ['lendario', 'Relíquias', 'Suas, as espionadas, as concentrações à vista e as ruínas', '#/reliquias'],
+        RP.sistema('alianca') ? ['estandarte', 'Aliança', RP.dados.alianca.nome + ' · ' + RP.dados.alianca.membros.length + ' de ' + RP.dados.alianca.limite + ' · pedidos de recursos', '#/alianca'] : null,
+        RP.sistema('reliquias') ? ['lendario', 'Relíquias', 'Suas, as espionadas, as concentrações à vista e as ruínas', '#/reliquias'] : null,
         ['coroa', 'Ranking da temporada', 'Baixas, perdas, tropas e famílias', '#/ranking'],
         ['bandeira', 'Bandeiras', 'Sinais que você colocou e os de perto', '#/bandeiras'],
         ['sino', 'Notificações', 'Avisos recentes e o que chega no celular', '#/notificacoes'],
@@ -403,15 +423,19 @@
       ]) +
         '<div class="conteudo-tela pilha" style="padding-top:0"><div class="secao-titulo">Protótipo</div>' +
         '<div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Dados fictícios. Nada aqui é salvo em servidor.</p>' +
-        '<button type="button" class="btn btn-p" data-reiniciar>Reiniciar protótipo</button></div></div>';
-      el.addEventListener('click', function (e) {
-        if (!e.target.closest('[data-reiniciar]')) return;
-        try { sessionStorage.removeItem('rp-reino'); } catch (er) { /* ignora */ }
-        location.hash = '#/inicio';
-        location.reload();
-      });
-    }
-  });
+        '<button type="button" class="btn btn-p" data-reiniciar>Reiniciar protótipo</button></div>' +
+        '<div class="secao-titulo">Sistemas apresentados aos poucos</div><div class="card pilha" data-sistemas></div></div>';
+      (function () {
+        var novo = Object.keys(RP.SISTEMAS).every(function (k) { return !RP.sistema(k); });
+        RP.$('[data-sistemas]', el).innerHTML = '<p class="fraco" style="font-size:var(--fs-2)">Nada é bloqueado e não há missão: cada sistema aparece quando passa a fazer sentido. Este jogador (dia 34) já viu todos. Veja como seria para quem começa:</p>' +
+          '<button type="button" class="alternar" data-jogador-novo aria-pressed="' + novo + '" style="width:100%">' + RP.icone('bandeira') + '<span>Ver como jogador novo</span><i aria-hidden="true"></i></button>' +
+          '<div class="lista">' + Object.keys(RP.SISTEMAS).map(function (k) {
+            var s = RP.SISTEMAS[k], v = RP.sistema(k);
+            return '<div class="lista-item"><span class="ico-placa">' + RP.icone(s.icone) + '</span><span style="flex:1;min-width:0"><b>' + s.nome + '</b><br><small class="fraco">' + s.gatilho + '</small></span>' +
+              (v ? '<span class="selo selo-visivel">' + RP.icone('check') + 'À vista</span>' : '<button type="button" class="btn btn-p" data-simular="' + k + '">Simular</button>') + '</div>';
+          }).join('') + '</div>';
+      })();
+  }
 
   /* ================================================================ retorno após regência */
   RP.registrarTela('regencia', {

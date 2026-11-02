@@ -83,7 +83,7 @@ Locais de outros reinos nunca usam cor de reino: cinza, brasão "?", nome genér
 
 - Recursos: `--rec-madeira`, `--rec-pedra`, `--rec-comida`, `--rec-ferro`, `--rec-couro`, `--rec-peles`, `--rec-populacao`, `--rec-ouro`, `--rec-prata`, `--rec-sal`, `--rec-cavalo`, `--rec-ervas`, `--rec-gema`, `--rec-lendario`. Classe `r-<recurso>`. A cor sempre acompanha o ícone.
 - Perigo da fauna: `--perigo-baixo` `#e8b947`, `--perigo-medio` `#ec8a3a`, `--perigo-alto` `#ea4f43`. Classe `nivel-<nivel>` define `--nivel`.
-- Muros: `--muro-cor` `#b9b2a6` (topo e prévias) e `--muro-borda` `#2c2a27` (contorno).
+- Torres: `--torre-cor` `#b9b2a6` (corpo e prévias) e `--torre-borda` `#2c2a27` (contorno do ícone).
 - Relíquias lendárias, por tipo: `--rel-ataque` `#f47b60`, `--rel-producao` `#e8c04a`, `--rel-resistencia` `#57c2c9`. Classe `tipo-<tipo>` define `--relq`. Contraste AA conferido sobre a superfície tingida do card. Sem tipo (ruína antiga, relíquia ainda não achada) usa `--rec-lendario`.
 
 ### 2.6 Mapa tático
@@ -182,8 +182,7 @@ Luz natural levemente quente, para conversar com a interface escura:
 | Escavação | Trabalhadores na ruína antiga | Picaretas; rótulo "Escavando · tempo" |
 | Relíquia em marcha | Baú carregado no meio da formação, com gema na cor do tipo | Brilho pulsando; rótulo "Relíquia · tempo" (com "?" se as forças são desconhecidas) |
 | Caravana | Carroças puxadas a boi com sacos, faixa na cor do dono (cinza se desconhecido), escolta atrás | Rodas girando; rótulo "Caravana · tempo" ("?" se desconhecida) |
-| Muro | Blocos de pedra com ameias nas bordas da área murada; altura cresce com o nível | Em obra: semitransparente |
-| Torre de arqueiros | Torre redonda sobre o muro com um arqueiro no alto, na cor do dono | — |
+| Torre de arqueiros | Torre de pedra no próprio hexágono, mais alta a cada nível, com 1 a 3 arqueiros no alto na cor do dono; nas suas, anel tracejado discreto do alcance | Em obra: semitransparente |
 | Carregadores | Pessoas a pé com sacos e toras, sem uniforme | Rótulo "Material · tempo" |
 | Farol de relíquias | Coluna de luz lilás sobre o local, por cima da névoa | Pulsa; rótulo "N relíquias · farol" |
 | Avistamento | Figura parada e esmaecida (espião de capuz ou três soldados) onde foi vista | Rótulo "Espião · visto há X h"; some depois de 10 h |
@@ -217,7 +216,7 @@ Chão, vegetação, relevo e névoa ficam num cache que só é refeito ao sair d
 | Jazida | Losango com ícone do recurso; lendária com brilho |
 | Relíquia no local | Disco pequeno na cor do tipo, no canto superior esquerdo do marcador. Só as suas e as espionadas |
 | Relíquia em marcha | Mesmo disco no canto inferior esquerdo do marcador da marcha |
-| Muro | Traço grosso contornando a área (borda escura + topo claro tracejado, como ameias); torres em círculos com o ícone de torre; em obra, tracejado espaçado |
+| Torre | Círculo claro com o ícone de torre e borda na cor do dono; contorno tracejado do alcance (some de longe); em obra, borda tracejada |
 | Concentração de relíquias | Disco do selo com o número de relíquias; farol na névoa: halo lilás tracejado e rótulo "N relíquias" |
 | Aliado | Locais e marchas em `--cor-aliado` `#5fb98a`, com nome e brasão |
 | Avistamento | Círculo tracejado em `--cor-alerta` com o ícone (batedor ou tropas), relógio e rótulo "há X h" |
@@ -290,7 +289,9 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Estoque | `RP.estoqueHTML(local)` → `.custos` | Só o que o local tem, em números curtos; nos cards de local (`.lc-estoque`), folhas e escolha de origem. |
 | Obra com estoque | `.obra-estoque` (`.falta`) | "Material em X" ou "Faltam … em X" em amarelo; o botão vira "Trazer recursos" e abre a caravana preenchida. |
 | Caravana | tela `#/caravana` | Destino e origem com "Trocar"; carga por recurso (−/+, Tudo); carroças e escolta; barra de carga x capacidade; caminho com buscar + levar. |
-| Muro | `.muro-card`, `.muro-previa`, `.muro-acao`, `.chip-sel[aria-pressed]` | Prévia do perímetro sobre o terreno; números (trechos, torres, arqueiros no alto); ações com custo e "Trazer" quando falta material. |
+| Torre | `.torre-card`, `.torre-previa`, `.torre-acao`, `.chip-sel[aria-pressed]` | Prévia do alcance sobre o terreno com os locais protegidos; números (alcance, arqueiros no alto, locais protegidos); subir nível com custo e de onde vem o material. |
+| Ordem rápida | `.ordem-barra` + folha de destino | Barra "Toque no destino" com as tropas, botão Tropas e cancelar; esconde as faixas de alerta enquanto ativa. A folha mostra o padrão e tem Atacar (ou Reforçar, Ocupar, Mover), Ajustar e Trocar destino. |
+| Sistemas aos poucos | `RP.sistema(k)`, `RP.revelarSistema(k)` | Menus e botões de um sistema só aparecem depois do gatilho; ao aparecer, aviso "Novo: …". |
 | Material a caminho | `.obra-estoque.vem` + `.selo-material` | Na obra: de onde vem e quando chega (azul); na fila: "material chega em mm:ss" até chegar. |
 | Modelos | `.modelos` + `.chip-sel` | Fileira de modelos e "Repetir último" no topo do envio; um toque preenche tudo. |
 | Pendência | `.pend-item.pend-<grupo>` | Ícone, o que é, detalhe com tempo e um botão. Agora (borda vermelha), Oportunidades (ícone lilás), No seu reino. |

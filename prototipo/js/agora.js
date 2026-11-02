@@ -20,11 +20,11 @@
       if (m.d.hostil && x && x.reino === 'meu' && m.d.chegada > agora)
         L.push({ g: 'urgente', ic: 'alerta', t: 'Ataque a caminho: ' + x.nome, d: 'forças desconhecidas · chegam em ' + tempo(m.d.chegada), href: '#/envio?modo=reforco&destino=' + x.id, bt: 'Reforçar' });
     });
-    D.reliquias.forEach(function (r) {
+    if (RP.sistema('reliquias')) D.reliquias.forEach(function (r) {
       var m = RP.ladroesDe && RP.ladroesDe(r);
       if (m) L.push({ g: 'urgente', ic: 'lendario', t: r.nome + ' sendo levada', d: 'some na névoa em ' + tempo(m.d.chegada), href: '#/interceptar?marcha=' + m.d.id, bt: 'Interceptar' });
     });
-    D.pedidos.forEach(function (pd) {
+    if (RP.sistema('alianca')) D.pedidos.forEach(function (pd) {
       if (pd.para === 'meu' && pd.estado === 'aberto')
         L.push({ g: 'urgente', ic: 'estandarte', t: D.reinos[pd.de].nome + ' pede ' + RP.cargaTxt(pd.carga), d: 'aliado · ' + RP.esc(pd.motivo), href: '#/alianca', bt: 'Responder' });
     });
@@ -35,11 +35,11 @@
       if (W.estado(p.hex[0], p.hex[1]).v === 'visivel')
         L.push({ g: 'oportunidade', ic: 'carroca', t: 'Caravana desconhecida à vista', d: RP.esc(m.d.cargaTxt) + ' · sai de vista em ' + tempo(m.d.chegada), href: '#/interceptar?marcha=' + m.d.id, bt: 'Interceptar' });
     });
-    D.locais.forEach(function (x) {
+    if (RP.sistema('reliquias')) D.locais.forEach(function (x) {
       var c = RP.concentracao && RP.concentracao(x.id);
       if (c && c.visivel) L.push({ g: 'oportunidade', ic: 'lendario', t: c.n + ' relíquias juntas à vista', d: (c.nivel === 'farol' ? 'farol' : 'brilho') + ' · ' + RP.esc(nomeLocal(x.id)) + ' · dono desconhecido', href: '#/reliquias', bt: 'Ver' });
     });
-    D.ruinasComReliquia.forEach(function (id) {
+    if (RP.sistema('reliquias')) D.ruinasComReliquia.forEach(function (id) {
       var j = W.jazida(id);
       if (W.estado(j.c, j.l).v !== 'desconhecido' && !D.escavacoes.some(function (q) { return q.jazida === id; }))
         L.push({ g: 'oportunidade', ic: 'ruina', t: 'Ruína antiga com relíquia', d: 'ninguém escavando', href: '#/extracao?jazida=' + id, bt: 'Escavar' });
@@ -53,7 +53,7 @@
     if (!fr.length) L.push({ g: 'reino', ic: 'tropas', t: 'Nada sendo recrutado', d: 'a fila aceita até ' + D.filas.vagasRecrutamento + ' itens', href: '#/recrutamento', bt: 'Recrutar' });
     var paradas = Object.keys(D.disponiveis).reduce(function (s, k) { return s + (D.disponiveis[k] || 0); }, 0);
     if (paradas) L.push({ g: 'reino', ic: 'tropas', t: paradas + ' tropas paradas no castelo', d: 'defendem o castelo; podem receber outra ordem', href: '#/tropas', bt: 'Ordens' });
-    (RP.avist ? RP.avist.ativos() : []).forEach(function (a) {
+    (RP.avist && RP.sistema('espionagem') ? RP.avist.ativos() : []).forEach(function (a) {
       L.push({ g: 'reino', ic: a.tipo === 'espiao' ? 'batedor' : 'tropas', t: (a.tipo === 'espiao' ? 'Espião visto' : 'Exército visto') + ' há ' + Math.max(1, Math.round(RP.avist.idade(a))) + ' h', d: 'por ' + RP.esc(a.por) + ' · rumo ' + RP.esc(a.rumo), href: '#/mapa?modo=tatico&abrir=avist:' + a.id, bt: 'Ver' });
     });
     return L;

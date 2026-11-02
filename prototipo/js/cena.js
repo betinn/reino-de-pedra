@@ -911,31 +911,27 @@
       var p = H.centro(rr.c, rr.l); if (!naTela(p.x, p.y)) return;
       itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); desenharRuina(c, rr, t, e.v === 'explorado' ? PA : P); }, alvo: { x: p.x, y: p.y, w: 50, h: 34, ent: ['ruina', rr.id] } });
     });
-    /* muros: blocos de pedra nas bordas da área murada; torres com arqueiros no alto */
-    if (RP.muros) D.muros.forEach(function (m) {
-      var est = RP.muros.estado(m);
+    /* torres de arqueiros: torre de pedra com arqueiros no alto; anel discreto do alcance nas suas */
+    if (RP.torres) D.torres.forEach(function (tw) {
+      var est = RP.torres.estado(tw);
       if (est === 'desconhecido') return;
-      var pal = est === 'explorado' ? PA : P, vivo = est === 'visivel', hm = 6 + m.nivel * 3, alfa = m.obra ? 0.5 : 1;
-      RP.muros.bordas(m).forEach(function (s) {
-        var len = Math.hypot(s.b.x - s.a.x, s.b.y - s.a.y), n = Math.max(2, Math.round(len / 6));
-        for (var i = 0; i < n; i++) (function (i) {
-          var f = (i + 0.5) / n, bx = s.a.x + (s.b.x - s.a.x) * f, by = s.a.y + (s.b.y - s.a.y) * f;
-          if (!naTela(bx, by)) return;
-          itens.push({ y: by, d: function () { obj(c, V, bx, by); c.globalAlpha = alfa; caixa(c, 0, 0, 6.6, 4, hm, pal.pedra, pal.pedraSombra, pal.pedraTopo); ameias(c, 0, 0, 6.6, 4, hm, pal.pedraLuz); c.globalAlpha = 1; } });
-        })(i);
-      });
-      RP.muros.torres(m).forEach(function (p, ti) {
-        if (!naTela(p.x, p.y)) return;
-        itens.push({ y: p.y + 2, d: function () {
-          obj(c, V, p.x, p.y); c.globalAlpha = alfa;
-          torre(c, 0, 0, 6.5, hm + 12, pal);
-          if (vivo && !m.obra) pessoa(c, 0, -(hm + 12) + 1, t, P, { roupa: corReino(m.dono), cinto: '#2b2520', dir: ti % 2 ? -1 : 1, arco: true, atirando: false, fase: ti * 1.3, capacete: P.metal });
-          c.globalAlpha = 1;
-        } });
-      });
+      var p = H.centro(tw.c, tw.l);
+      if (!naTela(p.x, p.y)) return;
+      var pal = est === 'explorado' ? PA : P, vivo = est === 'visivel', obra = tw.obra && tw.obra > Date.now(), ht = 22 + tw.nivel * 6, nA = Math.min(3, tw.nivel);
+      if (tw.dono === 'meu' && vivo) itens.push({ y: p.y - 999, d: function () {
+        obj(c, V, p.x, p.y); var r = RP.torres.alcance(tw) * H.W;
+        c.strokeStyle = corReino('meu'); c.globalAlpha = 0.28; c.lineWidth = 1.4; c.setLineDash([4, 4]);
+        c.beginPath(); c.ellipse(0, 0, r, r * K, 0, 0, 6.2832); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+      } });
+      itens.push({ y: p.y, d: function () {
+        obj(c, V, p.x, p.y); c.globalAlpha = obra ? 0.5 : 1;
+        torre(c, 0, 0, 8, ht, pal);
+        if (vivo && !obra) for (var q = 0; q < nA; q++) pessoa(c, (q - (nA - 1) / 2) * 4.5, -ht + 1, t, P, { roupa: corReino(W.donoAparente(tw.dono)), cinto: '#2b2520', dir: q % 2 ? -1 : 1, arco: true, atirando: false, fase: q * 1.3, capacete: P.metal });
+        c.globalAlpha = 1;
+      }, alvo: { x: p.x, y: p.y - ht / 2, w: 30, h: ht + 16, ent: ['torre', tw.id] } });
     });
     /* avistamentos: figura parada e esmaecida onde foi vista; some depois de 10 h */
-    if (RP.avist) RP.avist.ativos().forEach(function (a) {
+    if (RP.avist && RP.sistema('espionagem')) RP.avist.ativos().forEach(function (a) {
       var p = H.centro(a.c, a.l);
       if (!naTela(p.x, p.y)) return;
       var hh = Math.max(1, Math.round(RP.avist.idade(a))), esp = a.tipo === 'espiao';

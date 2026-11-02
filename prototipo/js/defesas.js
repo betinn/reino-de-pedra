@@ -1,40 +1,28 @@
-/* Reino de Pedra — Defesas e avistamentos.
-   Muros envolvem um ou vários locais e são caros, porque dão muita vantagem contra invasões.
-   Torres põem arqueiros no alto: atiram protegidos até o invasor entrar ou derrubar o muro.
+/* Reino de Pedra — Torres de arqueiros e avistamentos.
+   Sem muros: a defesa construída são torres de arqueiros, construções próprias com alcance.
+   Arqueiros no alto atiram protegidos em quem entra no alcance e defendem os locais em volta;
+   o invasor precisa derrubar a torre (aríetes) ou passar debaixo dela.
    Avistamentos (espiões e exércitos vistos por suas tropas) somem do mapa depois de 10 h.
    Valores ilustrativos. */
 (function () {
   'use strict';
   var RP = window.RP, D = RP.dados, W = RP.mundo, H = RP.hex;
-  var CUSTO_TRECHO = { pedra: 100, madeira: 40 }, TEMPO_TRECHO = 8 * 60, DIST_MAX = 3;
-  var CUSTO_TORRE = { pedra: 400, madeira: 150 }, TEMPO_TORRE = 1800, ARQ_TORRE = 4;
+  var CUSTO_TORRE = { pedra: 400, madeira: 150 }, TEMPO_TORRE = 1800, ARQ_NIVEL = 4, NIVEL_MAX = 3;
   var VALIDADE_H = 10;
 
   function chave(c, l) { return c + ',' + l; }
   function nomeLocal(id) { var x = W.local(id); return x ? (x.reino === 'meu' && x.tipo === 'castelo' ? 'Castelo de ' + RP.estado.nome : W.nomeAparente(x)) : '—'; }
-  /* cadeia pelos vizinhos mais próximos: o muro passa pelos hexágonos entre os locais */
-  function cadeia(ids) {
-    var pts = ids.map(function (id) { return W.local(id); }).filter(Boolean);
-    if (!pts.length) return [];
-    var ordem = [pts[0]], resto = pts.slice(1);
-    while (resto.length) {
-      var u = ordem[ordem.length - 1];
-      resto.sort(function (a, b) { return H.dist([u.c, u.l], [a.c, a.l]) - H.dist([u.c, u.l], [b.c, b.l]); });
-      ordem.push(resto.shift());
+  function alcance(t) { return Math.min(NIVEL_MAX, t.nivel) + 1; }   /* nível 1: 2 hexágonos; 2: 3; 3: 4 */
+  function arqueiros(t) { return t.nivel * ARQ_NIVEL; }
+  /* hexágonos no alcance */
+  function areaDe(c, l, r) {
+    var set = {};
+    for (var ll = l - r; ll <= l + r; ll++) for (var cc = c - r - 1; cc <= c + r + 1; cc++) {
+      if (W.dentro(cc, ll) && H.dist([c, l], [cc, ll]) <= r) set[chave(cc, ll)] = [cc, ll];
     }
-    return ordem;
-  }
-  function area(ids) {
-    var ordem = cadeia(ids), set = {}, lista = ordem.length > 1 ? H.caminho(ordem.map(function (p) { return [p.c, p.l]; })) : ordem.map(function (p) { return [p.c, p.l]; });
-    lista.forEach(function (h) { set[chave(h[0], h[1])] = h; });
     return set;
   }
-  function valido(ids) {
-    var ordem = cadeia(ids);
-    for (var i = 1; i < ordem.length; i++) if (H.dist([ordem[i - 1].c, ordem[i - 1].l], [ordem[i].c, ordem[i].l]) > DIST_MAX) return false;
-    return ordem.length > 0;
-  }
-  /* trechos do muro: arestas dos hexágonos da área que dão para fora dela */
+  /* contorno da área: arestas que dão para fora dela */
   function bordasDe(set) {
     var out = [];
     Object.keys(set).forEach(function (kk) {
@@ -43,35 +31,22 @@
         var a1 = (Math.PI / 180) * (60 * i - 30), a2 = (Math.PI / 180) * (60 * (i + 1) - 30);
         var a = { x: ce.x + H.R * Math.cos(a1), y: ce.y + H.R * Math.sin(a1) }, b = { x: ce.x + H.R * Math.cos(a2), y: ce.y + H.R * Math.sin(a2) };
         var m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, fora = H.pixelParaHex(2 * m.x - ce.x, 2 * m.y - ce.y);
-        if (!set[chave(fora.c, fora.l)]) out.push({ a: a, b: b, hex: h });
+        if (!set[chave(fora.c, fora.l)]) out.push({ a: a, b: b });
       }
     });
     return out;
   }
   var cache = {};
-  function bordas(m) { var kk = m.locais.join('|'); return cache[kk] || (cache[kk] = bordasDe(area(m.locais))); }
-  function torresDe(m) {
-    var bs = bordas(m), out = [];
-    for (var i = 0; i < (m.torres || 0); i++) out.push(bs[Math.floor(((i + 0.5) * bs.length) / m.torres) % bs.length].a);
-    return out;
-  }
-  function muroDe(localId) { return D.muros.filter(function (m) { return m.locais.indexOf(localId) >= 0; })[0]; }
-  /* o que se sabe do muro: os seus sempre; os dos outros quando a área já foi explorada */
-  function estadoMuro(m) {
-    if (m.dono === 'meu') return 'visivel';
-    var est = m.locais.map(function (id) { var x = W.local(id); return W.estado(x.c, x.l).v; });
-    return est.indexOf('visivel') >= 0 ? 'visivel' : est.indexOf('explorado') >= 0 ? 'explorado' : 'desconhecido';
-  }
-  function descricao(m) {
-    return 'nível ' + m.nivel + (m.torres ? ' · ' + m.torres + (m.torres > 1 ? ' torres' : ' torre') + (m.arqueiros ? ' com ' + m.arqueiros + ' arqueiros' : ' com arqueiros') : ' · sem torres') +
-      (m.locais.length > 1 ? ' · envolve ' + m.locais.length + ' locais' : '');
-  }
-  RP.muros = { area: area, bordas: bordas, torres: torresDe, de: muroDe, estado: estadoMuro, descricao: descricao, valido: valido };
+  function bordas(t) { var kk = t.c + ',' + t.l + ',' + alcance(t); return cache[kk] || (cache[kk] = bordasDe(areaDe(t.c, t.l, alcance(t)))); }
+  /* locais do mesmo dono dentro do alcance */
+  function protege(t) { return D.locais.filter(function (x) { return x.reino === t.dono && H.dist([t.c, t.l], [x.c, x.l]) <= alcance(t); }); }
+  function torresDe(localId) { var x = W.local(localId); return x ? D.torres.filter(function (t) { return t.dono === x.reino && H.dist([t.c, t.l], [x.c, x.l]) <= alcance(t); }) : []; }
+  /* o que se sabe da torre: as suas e de aliados sempre; as dos outros quando o hexágono já foi explorado */
+  function estadoTorre(t) { return t.dono === 'meu' || W.aliado(t.dono) ? 'visivel' : W.estado(t.c, t.l).v; }
+  function descricao(t) { return 'nível ' + t.nivel + ' · alcance ' + alcance(t) + ' hexágonos' + (t.dono === 'meu' || W.aliado(t.dono) ? ' · ' + arqueiros(t) + ' arqueiros' : ''); }
+  RP.torres = { alcance: alcance, arqueiros: arqueiros, bordas: bordas, protege: protege, de: torresDe, estado: estadoTorre, descricao: descricao, area: areaDe };
 
-  function mult(c, n) { var o = {}; Object.keys(c).forEach(function (k) { o[k] = Math.round(c[k] * n); }); return o; }
-  function custoMuro(n) { return mult(CUSTO_TRECHO, n); }
-  function custoNivel(m) { return mult(CUSTO_TRECHO, bordas(m).length * 0.5 * (m.nivel + 1)); }
-  /* obra de defesa: requisita o material (vem sozinho dos locais mais próximos) e entra na fila */
+  /* ---------------------------------------------------------------- obras: requisição automática do material */
   function noFila(local, rotulo, seg, custo) {
     var p = RP.requisitar(custo, local, rotulo);
     if (!p) return 0;
@@ -83,89 +58,87 @@
     var p = RP.planoRequisicao(custo, local);
     return { ok: p.completo, html: '<small class="obra-estoque' + (!p.completo ? ' falta' : p.viagens.length ? ' vem' : '') + '">' + RP.icone(p.viagens.length ? 'carroca' : 'check', 'ico-p') + RP.esc(RP.textoPlano(p, local)) + '</small>' };
   }
+  function custoNivel(t) { return { pedra: 300 * (t.nivel + 1), madeira: 100 * (t.nivel + 1) }; }
+  /* local mais próximo da torre (de onde sai o material) */
+  function localBase(t) { return D.locais.filter(function (x) { return x.reino === 'meu'; }).sort(function (a, b) { return H.dist([t.c, t.l], [a.c, a.l]) - H.dist([t.c, t.l], [b.c, b.l]); })[0]; }
+  /* hexágono livre ao lado de um local para erguer uma torre nova */
+  function vagaAoLado(local) {
+    var oc = {};
+    D.locais.concat(D.jazidas, D.ruinas, D.torres).forEach(function (o) { oc[chave(o.c, o.l)] = 1; });
+    return H.vizinhos(local.c, local.l).filter(function (h) {
+      return W.dentro(h[0], h[1]) && !oc[chave(h[0], h[1])] && !W.rioSet[W.chave(h[0], h[1])] && W.T[h[1]][h[0]] !== 'pantano';
+    })[0];
+  }
 
-  /* ---------------------------------------------------------------- prévia (SVG) */
-  function previa(ids, rotulo) {
-    var set = area(ids), hs = Object.keys(set).map(function (kk) { return set[kk]; });
-    if (!hs.length) return '';
-    var cs = hs.map(function (h) { return h[0]; }), ls = hs.map(function (h) { return h[1]; });
-    var c0 = Math.max(0, Math.min.apply(null, cs) - 1), c1 = Math.min(H.COLS - 1, Math.max.apply(null, cs) + 1);
-    var l0 = Math.max(0, Math.min.apply(null, ls) - 1), l1 = Math.min(H.LINS - 1, Math.max.apply(null, ls) + 1);
+  /* ---------------------------------------------------------------- prévia (SVG): alcance e locais protegidos */
+  function previa(c, l, r, rotulo) {
+    var set = areaDe(c, l, r), c0 = Math.max(0, c - r - 1), c1 = Math.min(H.COLS - 1, c + r + 1), l0 = Math.max(0, l - r - 1), l1 = Math.min(H.LINS - 1, l + r + 1);
     var a = H.centro(c0, l0), b = H.centro(c1, l1), vb = [a.x - H.W, a.y - H.R, b.x - a.x + 2 * H.W, b.y - a.y + 2 * H.R];
-    var h = '', c, l;
-    for (l = l0; l <= l1; l++) for (c = c0; c <= c1; c++) {
-      var ce = H.centro(c, l), e = W.estado(c, l);
-      h += '<polygon class="hx ' + (e.v === 'desconhecido' ? 'mr-nevoa' : W.rioSet[W.chave(c, l)] ? 'mr-rio' : 't-' + W.T[l][c]) + (set[chave(c, l)] ? ' muro-dentro' : '') + '" points="' + H.cantos(ce.x, ce.y, H.R + 0.6) + '"/>';
+    var h = '', cc, ll;
+    for (ll = l0; ll <= l1; ll++) for (cc = c0; cc <= c1; cc++) {
+      var ce = H.centro(cc, ll), e = W.estado(cc, ll);
+      h += '<polygon class="hx ' + (e.v === 'desconhecido' ? 'mr-nevoa' : W.rioSet[W.chave(cc, ll)] ? 'mr-rio' : 't-' + W.T[ll][cc]) + (set[chave(cc, ll)] ? ' alcance-dentro' : '') + '" points="' + H.cantos(ce.x, ce.y, H.R + 0.6) + '"/>';
     }
-    h += '<path class="muro-linha" d="' + bordasDe(set).map(function (s) { return 'M' + s.a.x.toFixed(1) + ' ' + s.a.y.toFixed(1) + 'L' + s.b.x.toFixed(1) + ' ' + s.b.y.toFixed(1); }).join('') + '"/>';
-    ids.forEach(function (id) { var x = W.local(id), p = H.centro(x.c, x.l); h += '<g transform="translate(' + p.x.toFixed(0) + ' ' + p.y.toFixed(0) + ')"><circle class="mr-pino" r="13"/><use href="#i-' + x.tipo + '" x="-9" y="-9" width="18" height="18" class="mr-pino-ico"/></g>'; });
-    return '<svg class="mini-rota mapa-svg muro-previa" viewBox="' + vb.map(function (v) { return v.toFixed(0); }).join(' ') + '" role="img" aria-label="' + RP.esc(rotulo) + '">' + h + '</svg>';
+    h += '<path class="alcance-linha" d="' + bordasDe(set).map(function (s) { return 'M' + s.a.x.toFixed(1) + ' ' + s.a.y.toFixed(1) + 'L' + s.b.x.toFixed(1) + ' ' + s.b.y.toFixed(1); }).join('') + '"/>';
+    D.locais.filter(function (x) { return x.reino === 'meu' && set[chave(x.c, x.l)]; }).forEach(function (x) {
+      var p = H.centro(x.c, x.l);
+      h += '<g transform="translate(' + p.x.toFixed(0) + ' ' + p.y.toFixed(0) + ')"><circle class="mr-pino" r="13"/><use href="#i-' + x.tipo + '" x="-9" y="-9" width="18" height="18" class="mr-pino-ico"/></g>';
+    });
+    var pt = H.centro(c, l);
+    h += '<g transform="translate(' + pt.x.toFixed(0) + ' ' + pt.y.toFixed(0) + ')"><circle class="torre-pino" r="14"/><use href="#i-torre" x="-10" y="-10" width="20" height="20" class="torre-pino-ico"/></g>';
+    return '<svg class="mini-rota mapa-svg torre-previa" viewBox="' + vb.map(function (v) { return v.toFixed(0); }).join(' ') + '" role="img" aria-label="' + RP.esc(rotulo) + '">' + h + '</svg>';
   }
 
   /* ---------------------------------------------------------------- aba Defesas da construção */
-  var sel = [];
-  function cartaoMuro(m) {
-    var bs = bordas(m), cn = custoNivel(m), pn = linhaPlano(cn, m.locais[0]), pt = linhaPlano(CUSTO_TORRE, m.locais[0]);
-    return '<div class="card pilha muro-card"><div class="linha"><span class="ico-placa ico-placa-g">' + RP.icone('muralha') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(m.nome) + '</b><br><small class="fraco">' + m.locais.map(nomeLocal).join(', ') + '</small></span><span class="selo">Nv ' + m.nivel + '</span></div>' +
-      (m.obra ? '<p class="nota-antiga">' + RP.icone('martelo', 'ico-p') + '<span>Em obra · termina em <b class="num" data-fim="' + m.obra + '">' + RP.fmtResta(m.obra - Date.now()) + '</b></span></p>' : '') +
-      '<div class="ext-numeros"><div><span class="fraco">Trechos</span><b class="num">' + bs.length + '</b></div><div><span class="fraco">Torres</span><b class="num">' + (m.torres || 0) + '</b></div><div><span class="fraco">Arqueiros no alto</span><b class="num">' + (m.arqueiros || 0) + '</b></div></div>' +
-      '<div class="card mini-rota-card">' + previa(m.locais, m.nome) + '</div>' +
-      '<div class="muro-acao"><div class="linha-entre"><span><b>Subir para nível ' + (m.nivel + 1) + '</b><br>' + RP.custoHTML(cn, 1, '*') + '</span>' +
-      '<button type="button" class="btn btn-p btn-primario' + (pn.ok ? '' : ' btn-inativo') + '" data-muro-nivel="' + m.id + '">' + RP.icone('martelo') + 'Subir</button></div>' + pn.html + '</div>' +
-      '<div class="muro-acao"><div class="linha-entre"><span><b>Torre de arqueiros</b><small class="fraco"> · +' + ARQ_TORRE + ' no alto</small><br>' + RP.custoHTML(CUSTO_TORRE, 1, '*') + '</span>' +
-      '<button type="button" class="btn btn-p btn-primario' + (pt.ok ? '' : ' btn-inativo') + '" data-muro-torre="' + m.id + '">' + RP.icone('torre') + 'Erguer</button></div>' + pt.html + '</div></div>';
+  var sel = null;
+  function cartaoTorre(t) {
+    var base = localBase(t), cn = custoNivel(t), pn = linhaPlano(cn, base.id), pr = protege(t);
+    return '<div class="card pilha torre-card"><div class="linha"><span class="ico-placa ico-placa-g">' + RP.icone('torre') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(t.nome) + '</b><br><small class="fraco">ao lado de ' + RP.esc(nomeLocal(base.id)) + '</small></span><span class="selo">Nv ' + t.nivel + '</span></div>' +
+      (t.obra && t.obra > Date.now() ? '<p class="nota-antiga">' + RP.icone('martelo', 'ico-p') + '<span>Em obra · termina em <b class="num" data-fim="' + t.obra + '">' + RP.fmtResta(t.obra - Date.now()) + '</b></span></p>' : '') +
+      '<div class="ext-numeros"><div><span class="fraco">Alcance</span><b class="num">' + alcance(t) + ' hex.</b></div><div><span class="fraco">Arqueiros no alto</span><b class="num">' + arqueiros(t) + '</b></div><div><span class="fraco">Protege</span><b class="num">' + pr.length + (pr.length === 1 ? ' local' : ' locais') + '</b></div></div>' +
+      '<div class="card mini-rota-card">' + previa(t.c, t.l, alcance(t), 'Alcance da ' + t.nome) + '</div>' +
+      '<small class="fraco">Protege: ' + RP.esc(pr.map(function (x) { return nomeLocal(x.id); }).join(', ') || 'nenhum local') + '</small>' +
+      (t.nivel < NIVEL_MAX ? '<div class="torre-acao"><div class="linha-entre"><span><b>Subir para nível ' + (t.nivel + 1) + '</b><small class="fraco"> · alcance ' + (alcance(t) + 1) + ', +' + ARQ_NIVEL + ' arqueiros</small><br>' + RP.custoHTML(cn, 1, '*') + '</span>' +
+        '<button type="button" class="btn btn-p btn-primario' + (pn.ok ? '' : ' btn-inativo') + '" data-torre-nivel="' + t.id + '">' + RP.icone('martelo') + 'Subir</button></div>' + pn.html + '</div>' : '<p class="fraco" style="font-size:var(--fs-2)">Nível máximo.</p>') + '</div>';
   }
   function htmlDefesas() {
-    var meus = D.locais.filter(function (x) { return x.reino === 'meu'; }), murados = {};
-    D.muros.forEach(function (m) { if (m.dono === 'meu') m.locais.forEach(function (id) { murados[id] = m; }); });
-    var livres = meus.filter(function (x) { return x.tipo !== 'castelo' && !murados[x.id]; });
-    sel = sel.filter(function (id) { return livres.some(function (x) { return x.id === id; }); });
-    var ok = sel.length && valido(sel), n = sel.length ? bordasDe(area(sel)).length : 0, custo = custoMuro(n), pm = sel.length ? linhaPlano(custo, sel[0]) : null;
-    var castelo = W.local('castelo');
-    return '<div class="nota-regra">' + RP.icone('muralha', 'ico-p') + '<span>Muros envolvem <b>um ou vários locais</b>. São <b>caros</b> porque dão muita vantagem contra invasões. Torres põem <b>arqueiros no alto</b>: atiram protegidos até o invasor entrar ou derrubar o muro.</span></div>' +
-      '<div class="secao-titulo">Seus muros</div><div class="pilha">' +
-      '<div class="card linha"><span class="ico-placa ico-placa-g">' + RP.icone('castelo') + '</span><span style="flex:1"><b>Muralha do castelo</b><br><small class="fraco">Vem com o ' + RP.esc(nomeLocal(castelo.id)) + ' · nível 3 · 4 torres</small></span><span class="selo">Nv 3</span></div>' +
-      D.muros.filter(function (m) { return m.dono === 'meu'; }).map(cartaoMuro).join('') + '</div>' +
-      '<div class="secao-titulo">Nova muralha</div><div class="card pilha">' +
-      '<p class="fraco" style="font-size:var(--fs-2)">Escolha os locais que ela vai envolver. Locais vizinhos (até ' + DIST_MAX + ' hexágonos entre si) cabem no mesmo muro.</p>' +
-      '<div class="obj-add-lista">' + livres.map(function (x) {
-        return '<button type="button" class="btn btn-p chip-sel" data-muro-sel="' + x.id + '" aria-pressed="' + (sel.indexOf(x.id) >= 0) + '">' + RP.icone(x.tipo, 'ico-p') + RP.esc(x.nome) + '</button>';
+    var meus = D.locais.filter(function (x) { return x.reino === 'meu'; }), castelo = W.local('castelo');
+    var minhas = D.torres.filter(function (t) { return t.dono === 'meu'; });
+    if (sel && !W.local(sel)) sel = null;
+    var base = sel && W.local(sel), vaga = base && vagaAoLado(base), pl = base ? linhaPlano(CUSTO_TORRE, base.id) : null;
+    return '<div class="nota-regra">' + RP.icone('torre', 'ico-p') + '<span>Torres põem <b>arqueiros no alto</b>. Eles atiram protegidos em quem entra no alcance e defendem os locais em volta. O invasor precisa <b>derrubar a torre</b> (aríetes) ou passar debaixo dela.</span></div>' +
+      '<div class="secao-titulo">Castelo</div><div class="card linha"><span class="ico-placa ico-placa-g">' + RP.icone('castelo') + '</span><span style="flex:1"><b>' + RP.esc(nomeLocal(castelo.id)) + '</b><br><small class="fraco">Portões nível 3 e 4 torres próprias · aríetes derrubam portões</small></span><span class="selo">Nv 3</span></div>' +
+      '<div class="secao-titulo">Suas torres</div><div class="pilha">' + (minhas.length ? minhas.map(cartaoTorre).join('') : '<p class="fraco">Nenhuma torre fora do castelo.</p>') + '</div>' +
+      '<div class="secao-titulo">Nova torre</div><div class="card pilha">' +
+      '<p class="fraco" style="font-size:var(--fs-2)">Escolha perto de qual local erguer. A torre protege todos os seus locais no alcance.</p>' +
+      '<div class="obj-add-lista">' + meus.filter(function (x) { return x.tipo !== 'castelo'; }).map(function (x) {
+        return '<button type="button" class="btn btn-p chip-sel" data-torre-sel="' + x.id + '" aria-pressed="' + (sel === x.id) + '">' + RP.icone(x.tipo, 'ico-p') + RP.esc(x.nome) + '</button>';
       }).join('') + '</div>' +
-      (sel.length ? (ok ? '<div class="card mini-rota-card">' + previa(sel, 'Prévia da nova muralha') + '</div>' +
-          '<div class="ext-numeros"><div><span class="fraco">Trechos</span><b class="num">' + n + '</b></div><div><span class="fraco">Tempo</span><b class="num">' + RP.fmtDuracao(n * TEMPO_TRECHO) + '</b></div><div><span class="fraco">Locais</span><b class="num">' + sel.length + '</b></div></div>' +
-          '<div class="linha" style="flex-wrap:wrap">' + RP.custoHTML(custo, 1, '*') + '</div>' + pm.html +
-          '<button type="button" class="btn btn-p btn-primario' + (pm.ok ? '' : ' btn-inativo') + '" data-muro-construir>' + RP.icone('muralha') + 'Construir muralha</button>'
-        : '<p class="nota-antiga">' + RP.icone('info', 'ico-p') + '<span>Locais distantes demais para um muro só. Faça muros separados.</span></p>') : '') + '</div>' +
+      (base ? (vaga ? '<div class="card mini-rota-card">' + previa(vaga[0], vaga[1], 2, 'Prévia da nova torre') + '</div>' +
+          '<div class="ext-numeros"><div><span class="fraco">Alcance</span><b class="num">2 hex.</b></div><div><span class="fraco">Arqueiros</span><b class="num">' + ARQ_NIVEL + '</b></div><div><span class="fraco">Tempo</span><b class="num">' + RP.fmtDuracao(TEMPO_TORRE) + '</b></div></div>' +
+          '<div class="linha" style="flex-wrap:wrap">' + RP.custoHTML(CUSTO_TORRE, 1, '*') + '</div>' + pl.html +
+          '<button type="button" class="btn btn-p btn-primario' + (pl.ok ? '' : ' btn-inativo') + '" data-torre-construir>' + RP.icone('torre') + 'Erguer torre</button>'
+        : '<p class="nota-antiga">' + RP.icone('info', 'ico-p') + '<span>Sem espaço livre ao lado deste local.</span></p>') : '') + '</div>' +
       '<div style="height:var(--esp-8)"></div>';
   }
-  /* cliques da aba; devolve true se tratou */
   function clique(e, redesenhar) {
     var b;
-    if ((b = e.target.closest('[data-muro-sel]'))) {
-      var id = b.getAttribute('data-muro-sel'), i = sel.indexOf(id);
-      if (i >= 0) sel.splice(i, 1); else sel.push(id);
-      redesenhar(); return true;
+    if ((b = e.target.closest('[data-torre-sel]'))) { var id = b.getAttribute('data-torre-sel'); sel = sel === id ? null : id; redesenhar(); return true; }
+    if (e.target.closest('[data-torre-construir]')) {
+      var base = W.local(sel), vaga = base && vagaAoLado(base);
+      if (!vaga) return true;
+      var nome = 'Torre de ' + base.nome.replace(/^(Vila|Mina|Serraria|Pasto|Armazém|Ferraria|Quartel)( d[aoe]s?)? /, '');
+      var fim = noFila(base.id, 'Torre de arqueiros · ' + base.nome, TEMPO_TORRE, CUSTO_TORRE);
+      if (!fim) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(CUSTO_TORRE, base.id), base.id), icone: 'alerta', tipo: 'perigo' }); return true; }
+      D.torres.push({ id: 'to-' + Date.now(), nome: nome, dono: 'meu', c: vaga[0], l: vaga[1], nivel: 1, obra: fim });
+      RP.aviso({ titulo: 'Torre na fila de obras', texto: 'Termina em ' + RP.fmtResta(fim - Date.now()) + '. Depois, ' + ARQ_NIVEL + ' arqueiros sobem para o alto.', icone: 'torre', tipo: 'sucesso' });
+      sel = null; RP.invalidarTela('mapa'); RP.invalidarTela('reino'); redesenhar(); return true;
     }
-    if (e.target.closest('[data-muro-construir]')) {
-      var n = bordasDe(area(sel)).length, custo = custoMuro(n);
-      var fim = noFila(sel[0], 'Muralha · ' + sel.map(nomeLocal).join(', '), n * TEMPO_TRECHO, custo);
-      if (!fim) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(custo, sel[0]), sel[0]), icone: 'alerta', tipo: 'perigo' }); return true; }
-      D.muros.push({ id: 'mu-' + Date.now(), nome: sel.length > 1 ? 'Muralha de ' + nomeLocal(sel[0]) + ' e vizinhos' : 'Muralha de ' + nomeLocal(sel[0]), dono: 'meu', locais: sel.slice(), nivel: 1, torres: 0, arqueiros: 0, obra: fim });
-      RP.aviso({ titulo: 'Muralha na fila de obras', texto: n + ' trechos · termina em ' + RP.fmtResta(fim - Date.now()) + '.', icone: 'muralha', tipo: 'sucesso' });
-      sel = []; RP.invalidarTela('mapa'); RP.invalidarTela('reino'); redesenhar(); return true;
-    }
-    if ((b = e.target.closest('[data-muro-nivel]'))) {
-      var m = D.muros.filter(function (q) { return q.id === b.getAttribute('data-muro-nivel'); })[0], cn = custoNivel(m);
-      var f1 = noFila(m.locais[0], m.nome + ' → nível ' + (m.nivel + 1), bordas(m).length * TEMPO_TRECHO * 0.6, cn);
-      if (!f1) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(cn, m.locais[0]), m.locais[0]), icone: 'alerta', tipo: 'perigo' }); return true; }
-      RP.aviso({ titulo: m.nome + ' na fila', texto: 'Nível ' + (m.nivel + 1) + ' termina em ' + RP.fmtResta(f1 - Date.now()) + '.', icone: 'muralha', tipo: 'sucesso' });
-      redesenhar(); return true;
-    }
-    if ((b = e.target.closest('[data-muro-torre]'))) {
-      var mt = D.muros.filter(function (q) { return q.id === b.getAttribute('data-muro-torre'); })[0];
-      var f2 = noFila(mt.locais[0], 'Torre de arqueiros · ' + mt.nome, TEMPO_TORRE, CUSTO_TORRE);
-      if (!f2) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(CUSTO_TORRE, mt.locais[0]), mt.locais[0]), icone: 'alerta', tipo: 'perigo' }); return true; }
-      RP.aviso({ titulo: 'Torre na fila de obras', texto: 'Termina em ' + RP.fmtResta(f2 - Date.now()) + '. Depois, ' + ARQ_TORRE + ' arqueiros sobem para o alto.', icone: 'torre', tipo: 'sucesso' });
+    if ((b = e.target.closest('[data-torre-nivel]'))) {
+      var t = D.torres.filter(function (q) { return q.id === b.getAttribute('data-torre-nivel'); })[0], cn = custoNivel(t), lb = localBase(t);
+      var f1 = noFila(lb.id, t.nome + ' → nível ' + (t.nivel + 1), TEMPO_TORRE * t.nivel, cn);
+      if (!f1) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(cn, lb.id), lb.id), icone: 'alerta', tipo: 'perigo' }); return true; }
+      RP.aviso({ titulo: t.nome + ' na fila', texto: 'Nível ' + (t.nivel + 1) + ' termina em ' + RP.fmtResta(f1 - Date.now()) + '.', icone: 'torre', tipo: 'sucesso' });
       redesenhar(); return true;
     }
     return false;

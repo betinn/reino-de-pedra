@@ -102,13 +102,15 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 28. **Recursos no lugar certo:** a barra mostra o estoque do castelo; tocar nela abre o estoque de cada local e "Transportar recursos". Na Construção, cada obra mostra se o material está no local; se falta, "Trazer recursos" abre a caravana já preenchida (origem com mais estoque, carga e carroças). O recrutamento usa o estoque do quartel.
 29. **Caravana:** destino → origem → carga (−/+, Tudo) → carroças e escolta (capacidade, velocidade, aviso de caravana pouco protegida) → caminho (buscar no castelo + levar; rota curta ou segura; risco de fauna) → a caravana sai na Vista (carroças puxadas a boi, escolta). Ao chegar, a carga entra no estoque do destino. Exemplo em andamento: 500 de madeira da Serraria para o Castelo.
 30. **Caravana alheia:** uma "Caravana desconhecida" com ferro cruza a área visível → folha com carga estimada → Interceptar.
-31. **Muros:** Construção → Defesas → seus muros (prévia, trechos, torres, arqueiros no alto; subir nível; erguer torre) e Nova muralha (escolher um ou vários locais vizinhos, prévia do perímetro, custo alto somando os estoques dos locais envolvidos). No mapa, o muro contorna os locais; na Vista aparecem as ameias e arqueiros nas torres. Atacar a Mina Rubra mostra a muralha e as torres do alvo.
+31. **Torres de arqueiros:** Construção → Defesas → castelo (portões) e suas torres (alcance, arqueiros no alto, locais protegidos, prévia do alcance, subir nível) → Nova torre (escolher perto de qual local; a torre ocupa um hexágono livre ao lado). No mapa: ícone da torre e contorno tracejado do alcance; na Vista: torre de pedra com arqueiros no alto. Atacar a Mina Rubra mostra a torre no alcance; "Derrubar torre" é objetivo de sabotagem.
 32. **Espião visto:** notificação → mapa com "Espião · há 3 h" → folha com quem viu, rumo e "some do mapa em 6 h 59 min". Um avistamento de 11 h já foi limpo ao abrir.
-33. **Construir sem logística manual:** Construção → cada obra diz de onde vem o material ("Parte do material vem de Armazém Real · chega em ≈ 6 min") → Construir → a obra entra na fila com "material chega em 06:23" e carregadores saem a pé com sacos e toras, visíveis na Vista. O recrutamento faz o mesmo para o quartel. Muros e torres também.
+33. **Construir sem logística manual:** Construção → cada obra diz de onde vem o material ("Parte do material vem de Armazém Real · chega em ≈ 6 min") → Construir → a obra entra na fila com "material chega em 06:23" e carregadores saem a pé com sacos e toras, visíveis na Vista. O recrutamento faz o mesmo para o quartel. Torres também.
 34. **Modelos de ataque:** Envio de ataque → Modelos (Repetir último, Saque rápido, Tomar relíquia, Danificar, Salvar atual) → um toque preenche tipo, tropas, objetivos e tática. Tropas → "Repetir último ataque".
 35. **Faróis:** a Mina do Corvo guarda 3 relíquias e vira farol: aparece no Mapa e na Vista mesmo na névoa ("3 relíquias · farol"), entra em Relíquias → À vista e no envio de ataque. Mover a Pedra do Vale para o castelo avisa que ele passa a brilhar.
 36. **Aliança:** Mais → Aliança (Pacto da Pedra, 3 de 5) → pedido da Casa Lúmen (Enviar sai dos locais mais próximos, visível e roubável) → Pedir a um membro → o aliado aceita e a carroça dele vem pelo mapa. Castelos aliados aparecem em verde, com nome.
 37. **Precisa de você:** topo de Meu reino (3 itens mais urgentes) ou Mais → lista em Agora, Oportunidades e No seu reino, cada item com um botão. Nada obrigatório.
+38. **Atacar em 3 toques:** Mapa → tocar no castelo → Enviar tropas (ou Tropas → Enviar tropas) → barra "Toque no destino" com as tropas (Tropas para mudar) → tocar no alvo → folha com o padrão (saque, objetivos automáticos, tática média, sem estandarte, rota curta, chegada) → Atacar. "Ajustar" abre o envio completo com as mesmas tropas. Num local seu vira Reforçar; numa ruína, Ocupar; em qualquer outro hexágono, Mover (as tropas vão e ficam lá). Num local inimigo, "Atacar este local" já pula para a confirmação.
+39. **Jogador novo:** Mais → Sistemas apresentados aos poucos → Ver como jogador novo: somem transporte manual, espionagem, torres, relíquias e alianças. Cada um volta pelo gatilho (ex.: abrir a Ruína antiga no mapa mostra "Novo: Relíquias") ou por Simular.
 
 ---
 
@@ -157,7 +159,7 @@ prototipo/
     legado.js         temporada e legado, exílio
     reliquias.js      relíquias lendárias: tela, mover com escolta, interceptar, chegada e fim da escavação
     logistica.js      estoques por local na prática: caravana, carroças, chegada das cargas
-    defesas.js        muros (área, trechos, torres), aba Defesas e avistamentos com validade
+    defesas.js        torres de arqueiros (alcance, locais protegidos), aba Defesas e avistamentos com validade
     alianca.js        aliança (membros com limite), pedidos de recursos entre aliados
     agora.js          "Precisa de você": urgências, oportunidades e andamento do reino
 ```
@@ -233,7 +235,7 @@ A regra (objetivos em ordem de prioridade + tática; as tropas sabem quando para
 
 | Tema | Aplicado | Alternativas |
 |---|---|---|
-| Objetivos por tipo | Saque: relíquia e recursos (madeira, pedra, comida, ferro, couro, peles) com quantidade. Sabotagem: muralha e a construção do local, em níveis (1 a 3). Massacre: população. Ocupação: "Tomar o local" (fixo) + relíquia. Cerco: muralha, relíquia e recursos. | Objetivos livres para qualquer tipo; incluir animais e armas no saque. |
+| Objetivos por tipo | Saque: relíquia e recursos (madeira, pedra, comida, ferro, couro, peles) com quantidade. Sabotagem: derrubar torre e a construção do local, em níveis (1 a 3). Massacre: população. Ocupação: "Tomar o local" (fixo) + relíquia. Cerco: portões, torres, relíquia e recursos. | Objetivos livres para qualquer tipo; incluir animais e armas no saque. |
 | Ordem | O jogador ordena (subir prioridade); se um objetivo não existe no local, as tropas passam ao próximo. | Objetivos simultâneos, sem ordem. |
 | Padrão | Ao escolher o alvo: relíquia espionada (se houver) + o recurso principal do local, 1.000. Sem objetivo, o envio fica bloqueado. | Começar vazio; permitir enviar sem objetivo ("pegar o que der"). |
 | Tática | Conservadora 25%, Média 40% (padrão), Agressiva 60%, Sem limite: definidas por você e registradas no `CLAUDE.md`. | — |
@@ -242,9 +244,9 @@ A regra (objetivos em ordem de prioridade + tática; as tropas sabem quando para
 | Previsão | Espionagem mostra o estoque do alvo ("≈ 2.400 de ferro, há 10 h") e avisa "pode faltar". Sem espionagem: "desconhecido · espione antes". | Mostrar chance de sucesso estimada. |
 | Relatório | Cada objetivo com resultado (cumprido, parcial, falhou), o obtido e o motivo da volta. | — |
 
-## Logística, muros e avistamentos (sub-decisões aplicadas, para aprovar)
+## Logística, torres e avistamentos (sub-decisões aplicadas, para aprovar)
 
-As regras (recursos transportados até onde são usados, veículos construídos com recursos, muros caros que envolvem um ou vários locais, arqueiros no alto, espiões vistos por 10 h, limpeza do mapa) estão no `CLAUDE.md`.
+As regras (recursos transportados até onde são usados, veículos construídos com recursos, torres de arqueiros no lugar dos muros, espiões vistos por 10 h, limpeza do mapa) estão no `CLAUDE.md`.
 
 | Tema | Aplicado | Alternativas |
 |---|---|---|
@@ -256,10 +258,9 @@ As regras (recursos transportados até onde são usados, veículos construídos 
 | Escolta | Opcional; carrega um pouco (25 por ponto de carga). Abaixo de uma força mínima, aviso "pouco protegida" (fauna e saqueadores). | Escolta obrigatória acima de certa carga. |
 | Reserva | A carga sai do estoque da origem ao enviar e entra no destino ao chegar. | Sai só quando a caravana passa pela origem. |
 | Abastecimento | Sem rota repetida (decisão sua: fica para depois). A requisição automática cobre o caso comum. | — |
-| Muro de vários locais | A área é a cadeia de hexágonos entre os locais escolhidos (até 3 hexágonos entre vizinhos); o muro contorna essa área. | Desenhar o traçado do muro à mão no mapa. |
-| Custo do muro | Por trecho (100 de pedra + 40 de madeira); subir nível custa metade por trecho e nível. O material precisa estar nos locais dentro do muro. | Custo pela área envolvida. |
-| Torres | 400 de pedra + 150 de madeira; +4 arqueiros no alto. | Torres sem limite de arqueiros; arqueiros saem da guarnição. |
-| Muro alheio | Visível quando a área já foi explorada; nível e torres aparecem no envio de ataque. | Só a espionagem mostra o nível. |
+| Torres | Construção própria num hexágono ao lado de um local. Alcance = nível + 1 hexágonos (máx. nível 3, alcance 4); 4 arqueiros por nível. Protege todos os seus locais no alcance. Custo 400 de pedra + 150 de madeira; subir nível custa mais a cada nível. | Alcance fixo; arqueiros tirados da guarnição. |
+| Castelo | Sem muros: o castelo tem portões (nível 3) e 4 torres próprias. Aríetes derrubam portões e torres. | Castelo também só com torres. |
+| Torre alheia | Visível quando o hexágono já foi explorado (nível e alcance); arqueiros só para suas torres e de aliados. | Só a espionagem mostra o nível. |
 | Avistamentos | Espiões e exércitos vistos ficam 10 h e somem; a limpeza roda a cada minuto. Placas de perigo da fauna seguem a névoa e não somem. | Validade diferente por tipo; limpar também as placas de perigo. |
 
 ## Aliança, modelos e "Precisa de você" (sub-decisões aplicadas, para aprovar)
@@ -272,6 +273,16 @@ As regras (recursos transportados até onde são usados, veículos construídos 
 | Aliados e ataque | Locais aliados não aparecem como alvo de ataque. | Permitir traição com aviso (sai da aliança). |
 | Modelos | Três modelos de exemplo + "Salvar atual"; "Repetir último" no envio e em Tropas. O recurso do modelo pode ser "principal do alvo". | Modelos por alvo. |
 | Precisa de você | Três grupos (Agora, Oportunidades, No seu reino); resumo de até 3 itens no topo de Meu reino. Sem missões e sem recompensa. | Pontinho de alerta na aba Reino. |
+
+## Ataque em 3 toques e apresentação aos poucos (sub-decisões aplicadas, para aprovar)
+
+| Tema | Aplicado | Alternativas |
+|---|---|---|
+| Tropas padrão da ordem | As do último ataque (limitadas ao que está no castelo); sem histórico, metade de cada tipo. | Sempre todas; perguntar na primeira vez. |
+| Padrão do ataque | Saque, objetivos automáticos (relíquia à vista + recurso principal do local), tática média, sem estandarte, rota curta. | Padrão por tipo de alvo (castelo → cerco). |
+| Destino livre | Hexágono vazio ou local de aliado vira "Mover": as tropas vão e ficam, com postura "atacar apenas quem atacar". | Patrulhar entre dois pontos. |
+| Gatilhos | Transporte manual: primeiro local longe do castelo. Espionagem: primeiro espião visto ou primeiro ataque. Torres: forças desconhecidas perto do reino. Relíquias: primeira ruína antiga ou farol. Alianças: primeiro reino conhecido. Ao aparecer, um aviso curto "Novo: …". | Mostrar também um ponto "novo" no menu até o primeiro uso. |
+| O que some antes do gatilho | Menus, abas e botões do sistema (Mais, Construção, folhas do mapa, "Precisa de você"). O mundo continua igual: nada é bloqueado. | Mostrar esmaecido com o gatilho. |
 
 ## Pontos em aberto
 
@@ -289,7 +300,7 @@ Custos, tempos, atributos de unidades, rendimento de caça e força x perigo sã
 As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e os fluxos de criação, construção, recrutamento, exploração, caça, extração, ataque, batalha e bandeira.
 
 Revisão final:
-- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 44 rotas (todas as telas, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
+- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 46 rotas (todas as telas, ordem rápida, folha de torre, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
 - **Toque:** todos os botões e links com pelo menos 44 × 44 px.
 - **Larguras:** sem rolagem horizontal em 360, 375, 430 e 1024 px.
 - **Gráficos:** cores do gráfico de batalha validadas contra o fundo (faixa de luminosidade, daltonismo e contraste); legenda, rótulos diretos, leitura por toque e tabela.

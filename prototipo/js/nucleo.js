@@ -247,6 +247,24 @@
     var ult = fila.length ? RP.fimItem(fila[fila.length - 1]) : Date.now();
     return Math.max(ult, Date.now(), aguarda || 0) + seg * 1000;
   };
+  /* ---------------------------------------------------------------- sistemas apresentados aos poucos
+     Nada é bloqueado e não há missão: cada sistema só aparece quando passa a fazer sentido para o jogador. */
+  RP.SISTEMAS = {
+    logistica: { nome: 'Transporte de recursos', icone: 'carroca', gatilho: 'Ao fundar o primeiro local longe do castelo.', txt: 'Caravanas e carroças para levar recursos à mão. As obras continuam recebendo material sozinhas.', href: '#/caravana' },
+    espionagem: { nome: 'Espionagem', icone: 'batedor', gatilho: 'Ao ver o primeiro espião ou sofrer o primeiro ataque.', txt: 'Batedores de elite revelam dono, defesa e relíquias de um local.', href: '#/exploradores?tipo=batedor' },
+    defesas: { nome: 'Torres de arqueiros', icone: 'torre', gatilho: 'Ao ver forças desconhecidas perto do reino.', txt: 'Arqueiros no alto protegem os locais em volta.', href: '#/construcao?aba=defesas' },
+    reliquias: { nome: 'Relíquias', icone: 'lendario', gatilho: 'Ao avistar a primeira ruína antiga ou um farol de relíquias.', txt: 'Uma por reino no mundo; fortalecem um local e atraem confronto.', href: '#/reliquias' },
+    alianca: { nome: 'Alianças', icone: 'estandarte', gatilho: 'Ao conhecer o primeiro reino.', txt: 'Reinos aliados pedem recursos uns aos outros.', href: '#/alianca' }
+  };
+  RP.sistema = function (k) { var d = RP.dados.descobertas; return !d || d[k] !== false; };
+  RP.revelarSistema = function (k) {
+    var d = RP.dados.descobertas, s = RP.SISTEMAS[k];
+    if (!d || d[k] !== false || !s) return;
+    d[k] = true;
+    RP.aviso({ titulo: 'Novo: ' + s.nome, texto: s.txt, icone: s.icone, tipo: 'sucesso', ms: 3600 });
+    ['reino', 'mais', 'construcao', 'exploradores', 'agora', 'mapa'].forEach(function (t) { if (RP.invalidarTela) RP.invalidarTela(t); });
+  };
+
   /* ---------------------------------------------------------------- estoques por local
      Recursos ficam no local onde foram produzidos ou guardados e só podem ser usados ali.
      Para usar em outro lugar, tropas ou carroças precisam levá-los. A população é do reino. */
@@ -351,7 +369,7 @@
     return ks.length ? '<span class="custos">' + ks.map(function (k) { return '<span class="custo">' + RP.icone(k, 'ico-p r-' + k) + '<span data-rec="' + k + '" data-local="' + local + '" data-curto>' + RP.numCurto(RP.qtdRecurso(k, local)) + '</span></span>'; }).join('') + '</span>' : '<span class="fraco">vazio</span>';
   };
   RP.folhaRecursos = function () {
-    var d = RP.dados, sede = RP.SEDE, corpo = '<p class="nota-regra">' + RP.icone('carroca', 'ico-p') + '<span>Recursos ficam <b>onde estão</b>. A barra mostra o estoque do castelo (sede). Para construir ou recrutar em outro local, leve os recursos até lá com tropas ou carroças.</span></p>' +
+    var d = RP.dados, sede = RP.SEDE, corpo = '<p class="nota-regra">' + RP.icone('carroca', 'ico-p') + '<span>Recursos ficam <b>onde estão</b>. A barra mostra o estoque do castelo (sede). Obras e recrutamento buscam sozinhos o que faltar nos locais mais próximos.</span></p>' +
       '<div class="secao-titulo">No castelo</div><div class="lista">';
     ORDEM_REC.forEach(function (k) {
       var r = d.recursos[k], q = RP.qtdRecurso(k, sede), tot = RP.totalRecurso(k), pct = (100 * q) / RP.capLocal(sede);
@@ -363,7 +381,7 @@
     corpo += '</div><div class="secao-titulo">Onde estão</div><div class="lista">' + d.locais.filter(function (x) { return x.reino === 'meu' && x.id !== sede; }).map(function (x) {
       return '<div class="lista-item"><span class="ico-placa dono-meu">' + RP.icone(x.tipo) + '</span><div style="flex:1;min-width:0"><b>' + RP.esc(x.nome) + '</b>' + (x.prod ? '<small class="fraco"> · +' + x.prod.v + ' ' + RP.nomeRecurso(x.prod.r) + '/h</small>' : '') + '<br>' + RP.estoqueHTML(x.id) + '</div></div>';
     }).join('') + '</div>' +
-      '<div class="linha" style="margin-top:var(--esp-3)"><a class="btn btn-p btn-primario" href="#/caravana" style="flex:1">' + RP.icone('carroca') + 'Transportar recursos</a></div>' +
+      (RP.sistema('logistica') ? '<div class="linha" style="margin-top:var(--esp-3)"><a class="btn btn-p" href="#/caravana" style="flex:1">' + RP.icone('carroca') + 'Transportar à mão</a></div>' : '') +
       '<p class="fraco" style="margin-top:var(--esp-4);font-size:var(--fs-2)">Cada local acumula a própria produção. Valiosos e lendários vêm de jazidas descobertas no mapa.</p>';
     RP.abrirFolha({ titulo: 'Recursos', corpo: corpo, veu: true });
   };

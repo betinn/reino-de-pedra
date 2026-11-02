@@ -888,24 +888,28 @@ a.guia-item { color: inherit; text-decoration: none; }
 .obj-confirma li { counter-increment: obj; display: flex; align-items: center; gap: 6px; font-weight: 700; }
 .obj-confirma li::before { content: counter(obj) "."; min-width: 1.2em; color: var(--cor-texto-3); font-weight: 700; }
 
-/* ---------------------------------------------------------------- Logística, muros e avistamentos */
+/* ---------------------------------------------------------------- Logística, torres e avistamentos */
 .lc-estoque { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; font-size: var(--fs-1); }
 .lc-estoque .custos { gap: 8px; }
-.lc-muro { display: flex; align-items: center; gap: 4px; font-size: var(--fs-2); color: var(--cor-texto-2); }
+.lc-torre { display: flex; align-items: center; gap: 4px; font-size: var(--fs-2); color: var(--cor-texto-2); }
 .obra-estoque { display: block; font-size: var(--fs-1); color: var(--cor-texto-3); }
 .obra-estoque.falta { color: var(--cor-alerta); }
 .chip-sel[aria-pressed="true"] { border-color: var(--cor-primaria); box-shadow: 0 0 0 2px var(--cor-primaria), var(--sombra-1); color: var(--cor-texto); }
-.muro-acao { border-top: 1px solid var(--cor-borda); padding-top: var(--esp-2); }
-.muro-acao .linha-entre { gap: var(--esp-2); align-items: center; }
-.muro-previa .hx:not(.muro-dentro) { opacity: .55; }
-.muro-linha { fill: none; stroke: var(--muro-cor); stroke-width: 6; stroke-linecap: round; }
+.torre-acao { border-top: 1px solid var(--cor-borda); padding-top: var(--esp-2); }
+.torre-acao .linha-entre { gap: var(--esp-2); align-items: center; }
+.torre-previa .hx:not(.alcance-dentro) { opacity: .45; }
+.alcance-linha { fill: none; stroke: var(--cor-meu); stroke-width: 3; stroke-dasharray: 6 4; stroke-linecap: round; }
+.torre-pino { fill: var(--torre-cor); stroke: var(--torre-borda); stroke-width: 2.5; }
+.torre-pino-ico { color: var(--torre-borda); --ico-d-stroke: var(--torre-cor); }
 /* mapa tático */
-.muro-mapa .muro-base { fill: none; stroke: var(--muro-borda); stroke-width: 8; stroke-linecap: round; }
-.muro-mapa .muro-topo { fill: none; stroke: var(--muro-cor); stroke-width: 4.5; stroke-linecap: butt; stroke-dasharray: 5 2.5; }
-.muro-mapa.antigo { opacity: .7; }
-.muro-mapa.em-obra .muro-topo { stroke-dasharray: 2 6; }
-.torre-mapa circle { fill: var(--muro-cor); stroke: var(--muro-borda); stroke-width: 2; }
-.torre-mapa use { color: var(--muro-borda); --ico-d-stroke: var(--muro-cor); }
+.torre-alcance path { fill: none; stroke: var(--dono); stroke-width: 2.5; stroke-dasharray: 5 5; opacity: .55; }
+.torre-alcance.antigo path { opacity: .3; }
+.torre-mapa .torre-base { fill: var(--torre-cor); stroke: var(--dono); stroke-width: 2.5; }
+.torre-mapa .ponto { fill: var(--torre-cor); }
+.torre-mapa use { color: var(--torre-borda); --ico-d-stroke: var(--torre-cor); }
+.torre-mapa.antigo { opacity: .78; }
+.torre-mapa.em-obra .torre-base { stroke-dasharray: 3 3; }
+[data-zoom="zoom-mundo"] .torre-alcance, [data-zoom="zoom-mundo"] .torre-mapa .ent-k, [data-zoom="zoom-longe"] .torre-alcance { display: none; }
 .avist .av-base { fill: var(--ent-fundo); stroke: var(--cor-alerta); stroke-width: 2; stroke-dasharray: 4 3; }
 .avist use { color: var(--cor-alerta); --ico-d-stroke: var(--ent-fundo); opacity: .85; }
 .avist .ponto { fill: var(--cor-alerta); }
@@ -936,3 +940,16 @@ a.guia-item { color: inherit; text-decoration: none; }
 .pend-oportunidade .ico-placa { color: var(--rec-lendario); }
 .reino-pendencias { margin-top: var(--esp-3); }
 .ver-tudo { margin-top: var(--esp-2); width: 100%; }
+
+/* ---------------------------------------------------------------- Ordem rápida no mapa */
+.ordem-barra {
+  display: flex; align-items: center; gap: var(--esp-2);
+  padding: 6px 6px 6px var(--esp-3); border-radius: var(--raio-2);
+  background: var(--cor-superficie); border: 2px solid var(--cor-primaria); box-shadow: var(--sombra-2, var(--sombra-1));
+}
+.ordem-barra[hidden] { display: none; }
+.ordem-ico .ico { color: var(--cor-primaria); width: 24px; height: 24px; }
+.ordem-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.ordem-txt small { font-size: var(--fs-1); color: var(--cor-texto-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.em-ordem .faixa-alerta, .em-ordem .faixa-mais, .em-ordem .faixas-extra { display: none; }
+@media (prefers-reduced-motion: no-preference) { .ordem-ico .ico { animation: pulso 1.6s ease-in-out infinite; } }

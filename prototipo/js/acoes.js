@@ -153,7 +153,7 @@
         '<div class="secao-titulo">Ordens</div><div class="grade-acoes">' +
         [['recrutamento', 'tropas', 'Recrutar', 'Milícia, lanceiro, arqueiro, cavalaria e cerco'],
           ['exploradores', 'explorador', 'Exploradores', 'Revelar o mapa, patrulhar e espionar'],
-          ['envio', 'alvo', 'Envio de ataque', 'Saque, sabotagem, massacre, ocupação, cerco'],
+          ['mapa?ordem=1', 'alvo', 'Enviar tropas', 'Toque no destino no mapa: atacar, reforçar, ocupar ou mover'],
           ['extracao', 'picareta', 'Extração', 'Coletar recursos descobertos'],
           ['caca', 'lobo', 'Caça', 'Comida, couro e peles'],
           ['posturas', 'escudo', 'Posturas', 'Como cada tropa reage sem você']].map(function (a) {
@@ -198,13 +198,16 @@
       '<div class="obra-acao">' + acao + '</div></div></div>';
   }
   function desenharConstrucao(el) {
-    var cats = [['todos', 'Todos'], ['economia', 'Economia'], ['populacao', 'População'], ['militar', 'Militar'], ['defesas', 'Defesas'], ['transporte', 'Transporte'], ['novos', 'Novos locais']];
+    var cats = [['todos', 'Todos'], ['economia', 'Economia'], ['populacao', 'População'], ['militar', 'Militar'], ['defesas', 'Defesas'], ['transporte', 'Transporte'], ['novos', 'Novos locais']]
+      .filter(function (c) { return (c[0] !== 'defesas' || RP.sistema('defesas')) && (c[0] !== 'transporte' || RP.sistema('logistica')); });
+    if (!cats.some(function (c) { return c[0] === abaObra; })) abaObra = 'todos';
     RP.$('.obras-conteudo', el).innerHTML = filaObrasHTML() +
       '<div class="secao-titulo">Construir</div>' +
       '<div class="abas abas-rolagem" role="tablist" aria-label="Filtrar construções">' + cats.map(function (c) { return '<button class="aba" role="tab" data-aba-obra="' + c[0] + '" aria-selected="' + (abaObra === c[0]) + '">' + c[1] + '</button>'; }).join('') + '</div>' +
       (abaObra === 'defesas' ? RP.defesas.html()
         : (abaObra === 'transporte' ? '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('carroca', 'ico-p') + '<span>Recursos só servem onde estão. Carroças levam muito mais que tropas; ficam no castelo e saem para buscar e entregar. <a href="#/caravana">Transportar agora</a></span></p>' : '') +
         '<div class="obras-lista">' + D.construcoes.filter(function (o) {
+          if (o.cat === 'transporte' && !RP.sistema('logistica')) return false;
           return abaObra === 'todos' || o.cat === abaObra || (abaObra === 'novos' && o.novo);
         }).map(cartaoObra).join('') + '</div>') +
       '<p class="fraco" style="margin:var(--esp-4) 0 var(--esp-8);font-size:var(--fs-2)">Construções básicas levam minutos; as fortes e as tecnologias levam mais tempo. Não há atalho pago para encurtar timers.</p>';
@@ -355,6 +358,7 @@
   }
   function desenharExploradores(el, params) {
     var ativo = params && params.get('ativo') && W.marcha(params.get('ativo'));
+    if (ex.tipo === 'batedor' && !RP.sistema('espionagem')) ex.tipo = 'pe';
     var tipoInfo = D.exploradores.filter(function (x) { return x.id === ex.tipo; })[0];
     var op = opcoesCaminho(castelo(), ex.alvo, perfilExplorador(ex.tipo, ex.escolta));
     if (ex.caminho === 'segura' && !op.segura) ex.caminho = 'curta';
@@ -368,7 +372,7 @@
         '<span class="rotulo">Nova ordem</span><div class="abas" role="group">' + Object.keys(ORDENS).map(function (k) { return '<button type="button" class="aba" data-ordem-ativo="' + k + '" aria-pressed="' + ((params.get('ordem') || 'explorar') === k) + '">' + ORDENS[k].nome + '</button>'; }).join('') + '</div>' +
         '<button type="button" class="btn btn-primario" data-confirmar-ordem="' + ativo.d.id + '">' + RP.icone('check') + 'Confirmar ordem</button></div><div class="secao-titulo">Enviar outro explorador</div>';
     }
-    h += '<div class="secao-titulo"' + (ativo ? ' hidden' : ' style="margin-top:0"') + '>1. Tipo</div><div class="escolhas">' + D.exploradores.map(function (x) {
+    h += '<div class="secao-titulo"' + (ativo ? ' hidden' : ' style="margin-top:0"') + '>1. Tipo</div><div class="escolhas">' + D.exploradores.filter(function (x) { return x.id !== 'batedor' || RP.sistema('espionagem'); }).map(function (x) {
       return '<button type="button" class="escolha" data-tipo-exp="' + x.id + '" aria-pressed="' + (ex.tipo === x.id) + '">' +
         '<span class="linha"><span class="ico-placa">' + RP.icone(x.icone) + '</span><b>' + x.nome + '</b></span>' +
         '<span class="escolha-atrib"><span>Velocidade <b>' + x.velocidade + '</b></span><span>Visão <b>' + x.visao + '</b></span><span>Custo <b>' + x.custo + '</b></span></span>' +

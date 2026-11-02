@@ -49,11 +49,12 @@
     },
     /* Caravanas em andamento (exemplo): carga reservada na origem, entregue ao chegar */
     caravanas: [],
-    /* Muros: envolvem um ou vários locais. Torres põem arqueiros no alto, protegidos até o muro cair. */
-    muros: [
-      { id: 'mu-vale', nome: 'Muralha do Vale', dono: 'meu', locais: ['quartel', 'armazem'], nivel: 2, torres: 2, arqueiros: 8 },
-      { id: 'mu-moinho', nome: 'Paliçada do Moinho', dono: 'meu', locais: ['vila-moinho'], nivel: 1, torres: 0, arqueiros: 0 },
-      { id: 'mu-vmina', nome: 'Muralha', dono: 'valdren', locais: ['v-mina'], nivel: 1, torres: 1, arqueiros: null }
+    /* Torres de arqueiros: construções próprias com alcance; protegem os locais do mesmo dono em volta.
+       Alcance = nível + 1 hexágonos; 4 arqueiros por nível. Podem ser derrubadas (aríetes). */
+    torres: [
+      { id: 'to-vale', nome: 'Torre do Vale', dono: 'meu', c: 13, l: 17, nivel: 2 },
+      { id: 'to-moinho', nome: 'Torre do Moinho', dono: 'meu', c: 17, l: 18, nivel: 1 },
+      { id: 'to-vmina', nome: 'Torre', dono: 'valdren', c: 33, l: 11, nivel: 1 }
     ],
     /* Avistamentos: o que suas tropas viram passar (espiões, exércitos). Somem do mapa depois de 10 h. */
     avistamentos: [
@@ -79,7 +80,7 @@
     /* Locais: c,l = coluna/linha no mapa. terreno força o tipo do hex. */
     locais: [
       { id: 'castelo', reino: 'meu', tipo: 'castelo', nome: 'Castelo de Pedralva', c: 14, l: 19, terreno: 'planicie', nivel: 4,
-        info: ['Muralha nível 3', 'Moradias: 2'], guarnicao: '20 lanceiros · 15 arqueiros', postura: 'Apenas defender' },
+        info: ['Portões nível 3', 'Moradias: 2'], guarnicao: '20 lanceiros · 15 arqueiros', postura: 'Apenas defender' },
       { id: 'quartel', reino: 'meu', tipo: 'quartel', nome: 'Quartel da Guarda', c: 12, l: 17, terreno: 'planicie', nivel: 2,
         info: ['Recrutando 10 arqueiros'], fila: { rotulo: '10 arqueiros', seg: 492, total: 900 }, guarnicao: '8 milicianos', postura: 'Apenas defender' },
       { id: 'armazem', reino: 'meu', tipo: 'armazem', nome: 'Armazém Real', c: 15, l: 16, terreno: 'planicie', nivel: 3,
@@ -99,9 +100,9 @@
       { id: 'vila-vau', reino: 'meu', tipo: 'vila', nome: 'Vila do Vau', c: 13, l: 27, terreno: 'planicie', nivel: 1,
         info: ['Moradias: 1'], guarnicao: '4 milicianos', postura: 'Apenas defender' },
 
-      { id: 'v-castelo', reino: 'valdren', tipo: 'castelo', nome: 'Castelo Valdren', c: 32, l: 8, terreno: 'planicie', nivel: '?', info: ['Muralhas altas'] },
+      { id: 'v-castelo', reino: 'valdren', tipo: 'castelo', nome: 'Castelo Valdren', c: 32, l: 8, terreno: 'planicie', nivel: '?', info: ['Portões altos'] },
       { id: 'v-mina', reino: 'valdren', tipo: 'mina', nome: 'Mina Rubra', c: 33, l: 12, terreno: 'colina', nivel: '?', info: ['Ferro'],
-        espionado: { horas: 10, defesa: '≈ 15 lanceiros e muralha baixa', estoque: { ferro: 2400, pedra: 600, comida: 300 } } },
+        espionado: { horas: 10, defesa: '≈ 15 lanceiros e uma torre de arqueiros', estoque: { ferro: 2400, pedra: 600, comida: 300 } } },
       { id: 'v-vila', reino: 'valdren', tipo: 'vila', nome: 'Vila Alta', c: 30, l: 6, terreno: 'planicie', nivel: '?' },
       { id: 'v-pasto', reino: 'valdren', tipo: 'pasto', nome: 'Pasto Leste', c: 35, l: 9, terreno: 'planicie', nivel: '?' },
       { id: 'v-serraria', reino: 'valdren', tipo: 'serraria', nome: 'Serraria Velha', c: 29, l: 14, terreno: 'floresta', nivel: '?' },
@@ -189,7 +190,7 @@
         { dia: 6, txt: 'Construiu uma moradia na Vila do Vau.' },
         { dia: 8, txt: 'Perdeu a Mina de Pedra Alta para uma ocupação.' },
         { dia: 9, txt: 'Repeliu um ataque à Serraria do Bosque.' },
-        { dia: 11, txt: 'Melhorou a muralha do castelo para o nível 4.' }
+        { dia: 11, txt: 'Reforçou os portões do castelo para o nível 4.' }
       ],
       restou: { locais: '9 de 10', populacao: 1020 }
     },
@@ -216,7 +217,7 @@
     filas: {
       obras: [
         { local: 'serraria', rotulo: 'Serraria do Bosque → nível 4', seg: 760, total: 1800 },
-        { local: 'castelo', rotulo: 'Muralha do castelo → nível 4', seg: 760 + 2700, total: 2700 }
+        { local: 'castelo', rotulo: 'Portões do castelo → nível 4', seg: 760 + 2700, total: 2700 }
       ],
       vagasObras: 10,
       recrutamento: [{ unidade: 'arqueiro', qtd: 10, rotulo: '10 arqueiros · Quartel da Guarda', seg: 492, total: 900 }],
@@ -259,7 +260,7 @@
         custo: { comida: 30, madeira: 50, couro: 10 }, pop: 1, tempo: 50, atk: 4, def: 2, vel: 3, carga: 2 },
       { id: 'cavalaria', nome: 'Cavalaria', icone: 'cavalo', papel: 'Rápida, boa para saque', forte: ['Arqueiros'], fraco: ['Lanceiros'],
         custo: { comida: 60, ferro: 40, couro: 30 }, pop: 1, tempo: 90, atk: 4, def: 3, vel: 5, carga: 4 },
-      { id: 'ariete', nome: 'Aríete', icone: 'cerco', papel: 'Cerco: derruba portões', forte: ['Muralhas'], fraco: ['Tropas'],
+      { id: 'ariete', nome: 'Aríete', icone: 'cerco', papel: 'Cerco: derruba portões e torres', forte: ['Portões', 'Torres'], fraco: ['Tropas'],
         custo: { madeira: 300, ferro: 60 }, pop: 4, tempo: 240, atk: 5, def: 1, vel: 1, carga: 0, requisito: 'Quartel nível 3' },
       { id: 'trebuchet', nome: 'Trebuchet', icone: 'cerco', papel: 'Cerco a distância', forte: ['Castelos'], fraco: ['Cavalaria'],
         custo: { madeira: 600, pedra: 200, ferro: 150 }, pop: 6, tempo: 480, atk: 5, def: 1, vel: 1, carga: 0, requisito: 'Era do cerco avançado' }
@@ -285,7 +286,7 @@
       { id: 'sabotagem', nome: 'Sabotagem', icone: 'martelo', txt: 'Destrói ou danifica construções do local.' },
       { id: 'massacre', nome: 'Massacre', icone: 'populacao', txt: 'Mata população do local. Enfraquece o reino a longo prazo, sem ganho de recurso.' },
       { id: 'ocupacao', nome: 'Ocupação', icone: 'bandeira', txt: 'Toma o local e passa a explorá-lo até alguém retomar.' },
-      { id: 'cerco', nome: 'Cerco ao castelo', icone: 'cerco', txt: 'O ataque mais difícil do jogo. Só contra castelos; máquinas de cerco derrubam muralhas.', soCastelo: true }
+      { id: 'cerco', nome: 'Cerco ao castelo', icone: 'cerco', txt: 'O ataque mais difícil do jogo. Só contra castelos; aríetes derrubam portões e torres.', soCastelo: true }
     ],
     /* Saques recentes por alvo: rendimento decrescente em saques repetidos */
     saquesRecentes: { 'v-mina': 2 },
@@ -325,7 +326,7 @@
       { id: 'r-exploracao', tipo: 'exploracao', titulo: 'Exploração ao norte', horas: 2, lido: false,
         quem: 'Explorador a cavalo', revelados: 14, achados: ['Manada de cavalos de raça (valioso)', 'Lobos (perigo alto)', 'Rota pública: Estrada do Rei continua para o leste'] },
       { id: 'r-espionagem', tipo: 'espionagem', titulo: 'Espionagem da Mina Rubra', horas: 10, lido: true, local: 'v-mina',
-        quem: 'Batedor de elite', dono: 'valdren', defesa: '≈ 15 lanceiros e muralha baixa', producao: 'Ferro, ≈ 40/h', estoque: 'Ferro ≈ 2.400 · pedra ≈ 600 · comida ≈ 300', tropasVistas: '≈ 35 lanceiros saindo para o oeste', descoberto: false, reliquia: 'rl-lamina' },
+        quem: 'Batedor de elite', dono: 'valdren', defesa: '≈ 15 lanceiros e uma torre de arqueiros', producao: 'Ferro, ≈ 40/h', estoque: 'Ferro ≈ 2.400 · pedra ≈ 600 · comida ≈ 300', tropasVistas: '≈ 35 lanceiros saindo para o oeste', descoberto: false, reliquia: 'rl-lamina' },
       { id: 'r-roubo', tipo: 'roubo', titulo: 'Relíquia roubada da Vila do Moinho', horas: 0.2, lido: false, local: 'vila-moinho', reliquia: 'rl-calice',
         forcas: '≈ 30 tropas · infantaria e cavalaria', origem: 'leste', tipoAtaque: 'Saque', perdas: { meu: '5 milicianos · 22 de população', deles: '≈ 4 cavaleiros' }, levado: { comida: 260 } },
       { id: 'r-fauna', tipo: 'fauna', titulo: 'Explorador morto no pântano', horas: 30, lido: true,
@@ -412,7 +413,7 @@
        bonus em % (ilustrativo). */
     reliquias: [
       { id: 'rl-pedra-vale', nome: 'Pedra do Vale', tipo: 'producao', bonus: 15, dono: 'meu', local: 'mina-vale', origem: 'Escavada numa ruína antiga no dia 9' },
-      { id: 'rl-muralha-viva', nome: 'Muralha Viva', tipo: 'resistencia', bonus: 20, dono: 'meu', local: 'castelo', origem: 'Tomada num saque no dia 21' },
+      { id: 'rl-muralha-viva', nome: 'Escudo Vivo', tipo: 'resistencia', bonus: 20, dono: 'meu', local: 'castelo', origem: 'Tomada num saque no dia 21' },
       { id: 'rl-lamina', nome: 'Lâmina do Rei Antigo', tipo: 'ataque', bonus: 15, dono: 'valdren', local: 'v-mina', espionada: 10 },
       { id: 'rl-corvo-1', nome: 'Coroa de Espinhos', tipo: 'resistencia', bonus: 20, dono: 'corvo', local: 'c-mina' },
       { id: 'rl-corvo-2', nome: 'Olho do Corvo', tipo: 'ataque', bonus: 15, dono: 'corvo', local: 'c-mina' },
@@ -421,6 +422,8 @@
     ],
     ruinasComReliquia: ['j-ruina'],
     escavacoes: [],
+    /* Sistemas já apresentados ao jogador (no exemplo, um jogador no dia 34: todos). false = ainda não apareceu. */
+    descobertas: { logistica: true, espionagem: true, defesas: true, reliquias: true, alianca: true },
     /* Aliança: limite de membros para não desequilibrar um mundo de até 30 reinos */
     alianca: {
       nome: 'Pacto da Pedra', limite: 5, desde: 'dia 12',

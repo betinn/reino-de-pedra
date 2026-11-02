@@ -170,14 +170,16 @@
     if (m.d.tipo === 'caravana') return m.d.carregadores ? 'madeira' : 'carroca';
     return 'tropas';
   }
-  /* muros: trechos nas bordas da área murada e torres com arqueiros */
-  function svgMuros() {
-    return D.muros.map(function (m) {
-      var est = RP.muros.estado(m);
+  /* torres de arqueiros: marcador e contorno do alcance */
+  function svgTorres() {
+    return D.torres.map(function (t) {
+      var est = RP.torres.estado(t);
       if (est === 'desconhecido') return '';
-      var d = RP.muros.bordas(m).map(function (s) { return 'M' + n1(s.a.x) + ' ' + n1(s.a.y) + 'L' + n1(s.b.x) + ' ' + n1(s.b.y); }).join('');
-      return '<g class="muro-mapa' + (est === 'explorado' ? ' antigo' : '') + (m.obra ? ' em-obra' : '') + '"><path class="muro-base" d="' + d + '"/><path class="muro-topo" d="' + d + '"/>' +
-        RP.muros.torres(m).map(function (p) { return '<g class="torre-mapa" transform="translate(' + n1(p.x) + ' ' + n1(p.y) + ')"><circle r="7.5"/><use href="#i-torre" x="-5.5" y="-5.5" width="11" height="11"/></g>'; }).join('') + '</g>';
+      var ce = H.centro(t.c, t.l), cls = corDono(W.donoAparente(t.dono));
+      var d = RP.torres.bordas(t).map(function (s) { return 'M' + n1(s.a.x) + ' ' + n1(s.a.y) + 'L' + n1(s.b.x) + ' ' + n1(s.b.y); }).join('');
+      return '<g class="torre-alcance ' + cls + (est === 'explorado' ? ' antigo' : '') + '"><path d="' + d + '"/></g>' +
+        '<g class="ent torre-mapa ' + cls + (est === 'explorado' ? ' antigo' : '') + (t.obra && t.obra > Date.now() ? ' em-obra' : '') + '" data-ent="torre:' + t.id + '" transform="translate(' + n1(ce.x) + ' ' + n1(ce.y) + ')"><circle class="ponto" r="5"/>' +
+        '<g class="ent-k"><circle class="alvo-toque" r="22"/><circle class="torre-base" r="13"/><use href="#i-torre" x="-9" y="-9" width="18" height="18"/></g></g>';
     }).join('');
   }
   /* faróis: 3 ou mais relíquias no mesmo local ficam visíveis para todos, até na névoa */
@@ -190,6 +192,7 @@
   }
   /* avistamentos: o que suas tropas viram passar; somem depois de 10 h */
   function svgAvist() {
+    if (!RP.sistema('espionagem')) return '';
     return RP.avist.ativos().map(function (a) {
       var ce = H.centro(a.c, a.l), hh = Math.max(1, Math.round(RP.avist.idade(a)));
       return '<g class="ent avist" data-ent="avist:' + a.id + '" transform="translate(' + n1(ce.x) + ' ' + n1(ce.y) + ')"><circle class="ponto" r="5"/><g class="ent-k"><circle class="alvo-toque" r="22"/><circle class="av-base" r="13"/>' +
@@ -306,10 +309,55 @@
   function tocarTatico(x, y, cx, cy) {
     var alvo = document.elementFromPoint(cx, cy);
     var ent = alvo && alvo.closest && alvo.closest('[data-ent]');
-    if (ent) { var p = ent.getAttribute('data-ent').split(':'); abrirEntidade(p[0], p[1]); return; }
     var h = H.pixelParaHex((x - vista.x) / vista.s, (y - vista.y) / vista.s);
+    if (ordem) { destinoDoToque(ent ? ent.getAttribute('data-ent').split(':') : null, [h.c, h.l]); return; }
+    if (ent) { var p = ent.getAttribute('data-ent').split(':'); abrirEntidade(p[0], p[1]); return; }
     if (dentro(h.c, h.l)) abrirHex(h.c, h.l);
   }
+
+  /* ---------------------------------------------------------------- ordem rápida: tropa → destino → confirmar */
+  var ordem = null;
+  function barraOrdem() {
+    var b = tela && RP.$('.ordem-barra', tela);
+    if (!b) return;
+    b.hidden = !ordem;
+    tela.classList.toggle('em-ordem', !!ordem);
+    if (!ordem) return;
+    var n = Object.keys(ordem.grupo).reduce(function (s, k) { return s + (ordem.grupo[k] || 0); }, 0);
+    b.innerHTML = '<span class="ordem-ico">' + RP.icone('alvo') + '</span><span class="ordem-txt"><b>Toque no destino</b><small>' + (n ? RP.esc(RP.ordem.partes(ordem.grupo)) : 'nenhuma tropa escolhida') + '</small></span>' +
+      '<button type="button" class="btn btn-p" data-ordem-tropas>' + RP.icone('tropas') + 'Tropas</button><button type="button" class="btn btn-p btn-fantasma btn-icone" data-ordem-cancelar aria-label="Cancelar ordem">' + RP.icone('fechar') + '</button>';
+  }
+  function iniciarOrdem(alvo) {
+    ordem = { grupo: RP.ordem.grupoPadrao(), alvo: null };
+    RP.fecharFolha(); barraOrdem();
+    if (alvo) abrirDestino(alvo);
+  }
+  function cancelarOrdem() { ordem = null; barraOrdem(); }
+  function destinoDoToque(ent, hex) {
+    if (ent && (ent[0] === 'local' || ent[0] === 'ruina')) { abrirDestino({ id: ent[1] }); return; }
+    var o = ent && ({ jazida: W.jazida, torre: function (id) { return D.torres.filter(function (q) { return q.id === id; })[0]; }, bandeira: W.bandeira, avist: RP.avist.porId }[ent[0]] || function () { return null; })(ent[1]);
+    if (ent && ent[0] === 'marcha') { var mm = W.marcha(ent[1]); if (mm) hex = mm.posicao().hex; }
+    if (o) hex = [o.c, o.l];
+    if (hex && dentro(hex[0], hex[1])) abrirDestino({ hex: hex });
+  }
+  function abrirDestino(alvo) {
+    ordem.alvo = alvo;
+    var r = RP.ordem.resumo(alvo, ordem.grupo), x = alvo.id && (W.local(alvo.id) || W.ruina(alvo.id)), c = x ? x.c : alvo.hex[0], l = x ? x.l : alvo.hex[1];
+    abrirFolhaMapa({
+      titulo: r.titulo, subtitulo: '<div class="linha">' + seloEstado(estado(c, l)) + coordTxt(c, l) + '</div>',
+      icone: '<span class="ico-placa folha-ico">' + RP.icone(r.icone) + '</span>',
+      corpo: r.html + (r.modo === 'ataque' ? '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Padrão: saque, tática média, sem estandarte, rota curta. Em "Ajustar" você muda tipo, objetivos, tática e estandarte.</p>' : ''),
+      acoes: '<button type="button" class="btn btn-p btn-primario' + (r.ok ? '' : ' btn-inativo') + '" data-ordem-confirmar>' + RP.icone(r.icone) + r.verbo + '</button>' +
+        (r.ajustar ? botao('Ajustar', 'menu', '', 'data-ordem-ajustar="' + r.ajustar + '"') : '') + botao('Trocar destino', 'alvo', 'btn-fantasma', 'data-ordem-trocar')
+    }, c, l);
+  }
+  function folhaTropasOrdem() {
+    var G = RP.util.grupo;
+    RP.abrirFolha({ titulo: 'Tropas da ordem', sobreNav: true, subtitulo: '<span class="fraco">Saem do castelo. O resto fica defendendo.</span>',
+      corpo: '<div class="card pilha" data-ordem-grupo>' + G.linhas(ordem.grupo, ['lanceiro', 'arqueiro', 'cavalaria', 'ariete'], G.disp) + '</div>',
+      acoes: botao('Pronto', 'check', 'btn-primario', 'data-ordem-pronto') });
+  }
+  RP.mapaOrdem = { iniciar: function (alvo) { iniciarOrdem(alvo); } };
 
   /* ---------------------------------------------------------------- seleção e folhas */
   function selecionar(c, l) {
@@ -412,8 +460,18 @@
     return j ? RP.esc(j.nome) : '';
   }
 
+  function torresVistas(localId) { return RP.torres.de(localId).filter(function (t) { return RP.torres.estado(t) !== 'desconhecido'; }); }
+  /* gatilhos: ver algo pela primeira vez apresenta o sistema ligado a ele (sem missão, sem bloqueio) */
+  function gatilhos(tipo, id) {
+    var x;
+    if (tipo === 'jazida' && (x = W.jazida(id)) && x.classe === 'lendario') RP.revelarSistema('reliquias');
+    if (tipo === 'local' && (x = W.local(id))) { if (RP.concentracao(id).visivel) RP.revelarSistema('reliquias'); if (W.aliado(x.reino)) RP.revelarSistema('alianca'); }
+    if (tipo === 'avist') RP.revelarSistema('espionagem');
+    if (tipo === 'marcha' && (x = W.marcha(id)) && x.d.hostil) { RP.revelarSistema('defesas'); RP.revelarSistema('espionagem'); }
+  }
   function abrirEntidade(tipo, id) {
     var o, e, corpo = '', acoes = '', reino;
+    gatilhos(tipo, id);
     if (tipo === 'batalha') { RP.ir('batalha'); return; }
     if (tipo === 'local') {
       o = W.local(id); e = estado(o.c, o.l); reino = D.reinos[o.reino];
@@ -424,7 +482,7 @@
           : esp ? '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + RP.esc(reino.nome) + (alia ? ' <span class="selo selo-aliado">Aliado</span>' : '') + '</span>'
           : '<span class="selo selo-desconhecido">' + RP.icone('interrogacao') + 'Desconhecido</span>') +
         linhaInfo('Terreno', H.TERRENOS[T[o.l][o.c]].nome) +
-        (RP.muros.de(o.id) && RP.muros.estado(RP.muros.de(o.id)) !== 'desconhecido' ? linhaInfo('Muralha', RP.esc(RP.muros.descricao(RP.muros.de(o.id)))) : '') +
+        (torresVistas(o.id).length ? linhaInfo('Torres', RP.esc(torresVistas(o.id).map(function (t) { return t.nome + ' (' + RP.torres.descricao(t) + ')'; }).join('; '))) : '') +
         (meu ? linhaInfo('Estoque', RP.estoqueHTML(o.id)) : '') +
         (meu ? linhaInfo('Nível', o.nivel) + linhaInfo('Guarnição', o.guarnicao) + linhaInfo('Postura', '<span class="selo selo-info">' + o.postura + '</span>')
           : linhaInfo('Defesa', esp ? RP.esc(esp.defesa) : '<span class="fraco">Desconhecida</span>')) +
@@ -438,15 +496,29 @@
         if (mh) corpo = '<button type="button" class="faixa-alerta" data-abrir="marcha:' + mh.d.id + '">' + RP.icone('alerta') + '<span class="txt"><b>Forças desconhecidas a caminho</b><br>Chegada em <span data-fim="' + mh.d.chegada + '">' + RP.fmtResta(mh.d.chegada - Date.now()) + '</span></span>' + RP.icone('avancar', 'ico-p') + '</button>' + corpo;
       }
       acoes = meu
-        ? botao('Abrir no reino', 'castelo', 'btn-primario', 'data-ir="reino?local=' + o.id + '"') + botao('Postura', 'escudo', '', 'data-ir="posturas?local=' + o.id + '"') + botao('Levar recursos', 'carroca', '', 'data-ir="caravana?para=' + o.id + '"')
+        ? (o.tipo === 'castelo' ? botao('Enviar tropas', 'tropas', 'btn-primario', 'data-ordem-iniciar') + botao('Abrir no reino', 'castelo', '', 'data-ir="reino?local=' + o.id + '"')
+          : botao('Abrir no reino', 'castelo', 'btn-primario', 'data-ir="reino?local=' + o.id + '"') + botao('Postura', 'escudo', '', 'data-ir="posturas?local=' + o.id + '"')) +
+          (RP.sistema('logistica') ? botao('Levar recursos', 'carroca', '', 'data-ir="caravana?para=' + o.id + '"') : '')
         : alia ? botao('Aliança', 'estandarte', 'btn-primario', 'data-ir="alianca"') + botao('Pedir recursos', 'carroca', '', 'data-ir="pedido?reino=' + o.reino + '"')
-        : botao(RP.reliquiaEm(o.id, true) || con.visivel ? 'Roubar a relíquia' : 'Atacar este local', 'tropas', 'btn-primario', 'data-ir="envio?alvo=' + o.id + '"') + botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"');
+        : botao(RP.reliquiaEm(o.id, true) || con.visivel ? 'Roubar a relíquia' : 'Atacar este local', 'tropas', 'btn-primario', 'data-ordem-alvo="' + o.id + '"') +
+          (RP.sistema('espionagem') ? botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"') : '');
       abrirFolhaMapa({
         titulo: RP.esc(o.reino === 'meu' && o.tipo === 'castelo' ? 'Castelo de ' + D.reinos.meu.nome : W.nomeAparente(o)),
         subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
         icone: '<span class="ico-placa folha-ico ' + corDono(W.donoAparente(o)) + '">' + RP.icone(o.tipo) + '</span>',
         corpo: corpo, acoes: acoes
       }, o.c, o.l);
+    } else if (tipo === 'torre') {
+      o = D.torres.filter(function (q) { return q.id === id; })[0];
+      var minha = o.dono === 'meu', conhece = minha || W.aliado(o.dono), pr = RP.torres.protege(o);
+      e = estado(o.c, o.l);
+      corpo = (minha ? '' : notaAntiga(e)) + '<div class="info">' + linhaInfo('Dono', conhece ? RP.esc(minha ? 'Seu reino' : D.reinos[o.dono].nome) : '<span class="selo selo-desconhecido">' + RP.icone('interrogacao') + 'Desconhecido</span>') +
+        linhaInfo('Nível', o.nivel) + linhaInfo('Alcance', RP.torres.alcance(o) + ' hexágonos') + (conhece ? linhaInfo('Arqueiros no alto', RP.torres.arqueiros(o)) : '') +
+        (conhece ? linhaInfo('Protege', RP.esc(pr.map(function (x) { return x.nome; }).join(', ') || '—')) : '') + '</div>' +
+        '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Arqueiros no alto atiram protegidos em quem entra no alcance. Aríetes derrubam a torre.</p>';
+      acoes = minha ? botao('Defesas', 'torre', 'btn-primario', 'data-ir="construcao?aba=defesas"') : botao('Derrubar a torre', 'cerco', 'btn-primario', 'data-ir="envio?alvo=' + (pr[0] ? pr[0].id : '') + '"');
+      abrirFolhaMapa({ titulo: RP.esc(conhece ? o.nome : 'Torre de arqueiros'), subtitulo: '<div class="linha">' + seloEstado(minha ? { v: 'visivel' } : e) + coordTxt(o.c, o.l) + '</div>',
+        icone: '<span class="ico-placa folha-ico">' + RP.icone('torre') + '</span>', corpo: corpo, acoes: acoes }, o.c, o.l);
     } else if (tipo === 'avist') {
       o = RP.avist.porId(id);
       if (!o) return;
@@ -738,7 +810,7 @@
       '<g class="camada-terreno">' + svgTerreno() + '</g>' +
       '<g class="camada-rios">' + svgRios() + '</g>' +
       '<g class="camada-rotas">' + svgRotas() + '</g>' +
-      '<g class="camada-muros">' + svgMuros() + '</g>' +
+      '<g class="camada-torres">' + svgTorres() + '</g>' +
       svgNevoa() +
       '<g class="camada-farois">' + svgFarois() + '</g>' +
       '<g class="camada-marcha-rotas">' + mh.rotas + '</g>' +
@@ -752,7 +824,7 @@
       '<g class="camada-marchas">' + mh.tokens + '</g>' +
       (RP.batalha && RP.batalha.ativa() ? (function () { var cb = H.centro(bx.c, bx.l); return '<g class="ent batalha-marca" data-ent="batalha:b" transform="translate(' + n1(cb.x) + ' ' + n1(cb.y - 26) + ')"><g class="ent-k"><circle class="alvo-toque" r="22"/><circle class="anel-ameaca" r="18"/><circle class="bt-base" r="14"/><use href="#i-tropas" x="-9" y="-9" width="18" height="18"/></g></g>'; })() : '') +
       '</g></svg></div>' +
-      '<div class="mapa-topo">' + RP.barraRecursos() + faixa + '</div>' +
+      '<div class="mapa-topo">' + RP.barraRecursos() + faixa + '<div class="ordem-barra" role="status" hidden></div></div>' +
       '<div class="mapa-controles" role="toolbar" aria-label="Controles do mapa">' +
       '<button type="button" class="btn btn-icone" data-zoom="1.5" aria-label="Aproximar">' + RP.icone('mais') + '</button>' +
       '<button type="button" class="btn btn-icone" data-zoom="0.6667" aria-label="Afastar">' + RP.icone('menos') + '</button>' +
@@ -791,6 +863,7 @@
       camadas: camadas,
       selecao: function () { return selecao; },
       aoTocar: function (alvo) {
+        if (ordem) { destinoDoToque(alvo.ent || null, alvo.hex || null); return; }
         if (alvo.ent) abrirEntidade(alvo.ent[0], alvo.ent[1]);
         else if (alvo.hex && dentro(alvo.hex[0], alvo.hex[1])) abrirHex(alvo.hex[0], alvo.hex[1]);
       },
@@ -824,6 +897,28 @@
   /* cliques dentro da folha (conteúdo do hex, alertas, camadas) */
   document.addEventListener('click', function (e) {
     var b;
+    if (e.target.closest('[data-ordem-iniciar]')) { iniciarOrdem(null); return; }
+    if ((b = e.target.closest('[data-ordem-alvo]'))) { iniciarOrdem({ id: b.getAttribute('data-ordem-alvo') }); return; }
+    if (ordem) {
+      if (e.target.closest('[data-ordem-cancelar]')) { RP.fecharFolha(); cancelarOrdem(); return; }
+      if (e.target.closest('[data-ordem-tropas]')) { folhaTropasOrdem(); return; }
+      if (e.target.closest('[data-ordem-trocar]')) { RP.fecharFolha(); ordem.alvo = null; RP.aviso({ titulo: 'Toque no novo destino', texto: 'Local, ruína ou qualquer hexágono.', icone: 'alvo', ms: 1600 }); return; }
+      if (e.target.closest('[data-ordem-pronto]')) { RP.fecharFolha(); barraOrdem(); if (ordem.alvo) abrirDestino(ordem.alvo); return; }
+      if (e.target.closest('[data-ordem-grupo]') && RP.util.grupo.passo(e, ordem.grupo, RP.util.grupo.disp)) {
+        var box = e.target.closest('[data-ordem-grupo]'), G = RP.util.grupo;
+        box.innerHTML = G.linhas(ordem.grupo, ['lanceiro', 'arqueiro', 'cavalaria', 'ariete'], G.disp); barraOrdem(); return;
+      }
+      if ((b = e.target.closest('[data-ordem-ajustar]'))) { var dest = b.getAttribute('data-ordem-ajustar'); cancelarOrdem(); RP.ir(dest); return; }
+      if (e.target.closest('[data-ordem-confirmar]')) {
+        var r = RP.ordem.resumo(ordem.alvo, ordem.grupo);
+        if (!r.ok) { RP.aviso({ titulo: 'Escolha as tropas', texto: 'Toque em Tropas para escolher quem vai.', icone: 'tropas', tipo: 'alerta' }); return; }
+        var m = RP.ordem.enviar(ordem.alvo, ordem.grupo);
+        cancelarOrdem();
+        RP.aviso({ titulo: r.verbo === 'Atacar' ? 'Ataque a caminho' : 'Tropas a caminho', texto: 'Chegam em ' + RP.fmtDuracao(m.d.seg) + '.', icone: r.icone, tipo: 'sucesso' });
+        RP.util.irParaMarcha(m);
+        return;
+      }
+    }
     if ((b = e.target.closest('[data-camada]'))) {
       var c = b.getAttribute('data-camada');
       camadas[c] = !camadas[c];
@@ -873,6 +968,8 @@
           abrirEntidade(pa2[0], pa2[1]);
           var sl = selecao; if (sl) { var cs2 = H.centro(sl.c, sl.l); centrar(cs2.x, cs2.y, modo === 'cena' ? 2 : 0.95, false); }
         }
+        if (params.get('ordem')) iniciarOrdem(params.get('destino') ? { id: params.get('destino') } : null);
+        else if (ordem && !params.get('abrir')) cancelarOrdem();
         var foco = params.get('foco');
         var x = foco && W.local(foco);
         if (x) {

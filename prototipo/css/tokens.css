@@ -170,9 +170,9 @@
   --rel-producao: #e8c04a;
   --rel-resistencia: #57c2c9;
 
-  /* Muros (mapa tático e prévias) */
-  --muro-cor: #b9b2a6;
-  --muro-borda: #2c2a27;
+  /* Torres de arqueiros (mapa tático e prévias) */
+  --torre-cor: #b9b2a6;
+  --torre-borda: #2c2a27;
 
   /* Gráficos (validados contra a superfície #22262c: faixa de luminosidade, daltonismo e contraste) */
   --grafico-meu: #4f97da;
