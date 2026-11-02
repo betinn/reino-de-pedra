@@ -13,3 +13,5 @@
 - **API**: `GET /ferraria`; `POST /ferraria/eras {era}`, `/ferraria/forjar {familia, linha}`, `/ferraria/lendario {tipo}`, `/ferraria/lendario/{id}/levar {levar}`. Cancelar é o `DELETE /filas/ferraria/{id}` de sempre. GET /reino ganha `ferraria` (era, níveis, lendários) e cada local, `lendarios`.
 
 **Por quê.** A fila e a requisição já existiam: as eras e a forja herdam espera de material, transporte visível e cancelamento. Ponderar pela força faz o bônus de família caber na fórmula aprovada sem mudar o modelo. Um documento por equipamento, preso a um grupo, deixa o "fica no campo e o vencedor leva" seguir os ganchos de batalha e interceptação sem tique; o conferidor cobre os caminhos que não passam por eles. Levar "com o próximo envio" mantém o equipamento físico sem mexer no envio de tropas.
+
+**Revisão.** A saída de uma guarnição em postura luta com um `Exercito` provisório (fora do mapa, id 0). `Lendarios.AoPerderNoCaminho` reconhece um vencedor que não está em `m.Marchas` e põe o equipamento direto na guarnição do local de origem dele; antes, ele ficava preso à marcha 0 e `Lendarios.Conferir` o apagava no checkpoint seguinte.

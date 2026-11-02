@@ -73,6 +73,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `CheckpointReinoEvento.AoCheckpoint` | Rodar de hora em hora por reino (IA, regência). |
 | `CriacaoReino.AoCriar`, `ObraFundar.AoFundar`, `Filas.AoConcluir`, `Mundo.AoCriarMundo` | Reagir a acontecimentos. |
 | `ITipoItemFila.Cancelado` | Desfazer o que o item reservou além do material (população do recrutamento...). |
+| `Reino.FilaSe`, `Filas.DevolverMaterial` | Ler uma fila pelo nome sem criá-la (nomes vindos do cliente; `Reino.Fila` cria); devolver o material de um item a um local do próprio reino (ou ao castelo). |
 | `IOrdemExercito` | Nova ordem de exército (`Ordem`, `Validar`, `Chegou`; `NoEnvio = false` se não vale ao enviar de um local). Classe com construtor vazio; achada por reflexão. O combate acrescenta "atacar". |
 | `Exercitos.BloqueiosOrdem`, `Exercitos.AoEntrarNoLocal` | Impedir nova ordem (ex.: em batalha); reagir a tropas que entram num local (relíquias carregadas). |
 | `Marcha.Interceptavel`, `Marcha.Reliquias`, `Marcha.AoSerVencida(m, vencedor)` | Contrato de interceptação: o combate decide quem vence; quem perde entrega a carga (até a capacidade livre do vencedor) e as relíquias, e sai do mapa. Exploradores e mensageiros devolvem `Interceptavel = false`; caravanas e carregadores sobrescrevem `AoSerVencida` se precisarem reagir. |
@@ -92,6 +93,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Sistemas.Registrar/Revelar`, `Reino.SistemasVistos` | Sistemas apresentados aos poucos: registre a chave em AoIniciar e revele no gatilho ("Novo: ..."); GET /reino manda `sistemas`. |
 | `Permissoes.AntesDeEnviarNoLocal` | Bloqueio que depende do local (pacto/trégua quando o atacante já sabe de quem é o local). |
 | `OrdemReforcar.Aceita/Chegada`, `Tropas.Reservadas`, `Tropas.GuarnicaoLivre` | Reforço em local que não é seu (aliança); tropas da guarnição que o dono não pode usar. |
+| `Reforcos.PartesDasPerdas` | Parte de cada reforço aliado nas perdas da defesa de um local (perdas e feridos de cada reino). |
 | `Aliancas.SaoAliados/EmTregua/AoEntrarEmRegencia`, `Aliancas.EmRegencia` | Aliança para outros sistemas (IA, regência, interceptação). |
 | `Remessa`, `Remessas.Enviar`, `Remessas.AoTerminar[motivo]` | Carga de um reino para outro (troca, ajuda, pagamentos): sai dos locais mais próximos, roubável; reação quando a última chega ou uma é roubada. |
 | `Comercio.AceitarTroca/Abertas/PactoAtivo/ConferirNovato` | Comércio para a IA comerciante e para quem precisa do pacto ou do limite do novato. |
@@ -122,6 +124,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `m.IA` (`Ativa`, `CriarReinos`), `MundoIA.Novo` (testes) | Liga a IA no processo (não é gravado): sessões e regência; meta de ocupação (`REINO_IA=0` desliga só esta). `MundoTeste` sobe com a IA desligada. |
 | `Ocupacao.Completar/CriarUm/Abdicar/LiberarVaga/VagaLonge` | Meta de ocupação (leva inicial, mínimo de ativos), reino de IA novo, abdicação (castelo em ruína, locais como terra livre) e vaga para jogador. |
 | `CriacaoReino.IdNovo` | Id do reino e dos locais iniciais (a IA sorteia de uma reserva para a ordem dos ids não revelar quem é IA). |
+| `CriacaoReino.VagaUtilizavel/LocalSubstituivel` | Vaga que pode receber reino novo (sem local de outro reino nem relíquia/lendário nos 5 hexágonos); local sem dono que pode dar lugar. |
 | `Sessoes.Agendar/De`, `SessaoIAEvento`, `Conduta` | Próxima sessão de um reino de IA ou em regência e a conduta (habilidade × perfil, ou regência). |
 | `Governo.Sessao` e partes (`Construir`, `Recrutar`, `Defender`, `Explorar`, `Cacar`, `Extrair`, `Torres`, `Ocupar`, `Espionar`, `Atacar`) | Decisões da IA, sempre pelos serviços da API e com a informação de um jogador. Um sistema novo que a IA deva usar ganha uma parte aqui. |
 | `Regencia.Agendar/Comecar/AoEntrar/Acao/Perda`, `Reino.Regencia`, `Reino.EmRegencia` | Regência (último acesso + `P.regenciaH`), relatório do que a regência fez e perdeu; GET /reino leva `regencia: { ativaDesde, terminouEm, acoes, perdas }`. Sistemas que agem pelo reino em regência anotam com `Acao`/`Perda`. |

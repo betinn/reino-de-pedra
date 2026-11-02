@@ -30,3 +30,5 @@
 - **Modelos e último ataque**: `Reino.ModelosAtaque` (até P.guerra.modelosMax) e `Reino.UltimoAtaque` (gravado na partida de cada ataque). O recurso `"auto"` vira o recurso principal do alvo em `Ataques.Normalizar`. O plano sem tipo usa o padrão do alvo. A ordem rápida usa as tropas do último ataque (`RP.grupoPadraoEnvio`).
 
 **Por quê.** Tudo continua sem tique: cada coisa futura é um evento ligado à partida de uma marcha ou a um lote, conferido no instante (mesma `Partida`) para descartar o que mudou. Combate em campo instantâneo evita uma segunda máquina de batalha para encontros rápidos no caminho. Marcas com contagem de tropas diluem recrutas sem exigir que todo sistema que mexe em guarnição avise a veterania. A ruína do castelo vira vila para não criar dois castelos.
+
+**Revisão (exílio).** No exílio, `ArrumarFilas` zera o `Entregue` de cada item antes de cancelar e soma esse material aos recursos perdidos do relatório; `Exilar` zera `Reino.Veiculos`, `ExploradoresLivres` e `MensageirosLivres` (ficavam no castelo caído). Antes, o cancelamento depositava no castelo de exílio todo o material das obras pendentes, além do kit.

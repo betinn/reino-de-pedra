@@ -27,6 +27,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - O mundo continua funcionando com o jogador offline: construções terminam, tropas marcham e defesas reagem.
 - **Multiplayer desde o início**: todos os jogadores no mesmo mapa.
 - **Um único mundo**, por enquanto. Novos jogadores entram enquanto houver vaga ou reino de IA para dar lugar; com o mundo cheio e sem IA, ninguém mais entra até a próxima temporada. Não há ajuda especial para quem entra tarde.
+- Uma vaga com local de outro reino em algum dos seus hexágonos não recebe reino novo; ruína ou terra livre sem dono dá lugar, salvo se guarda relíquia ou equipamento lendário.
 - Sessões curtas no celular: o jogador dá ordens longas, sai e recebe notificações.
 - Notificações são **configuráveis por categoria** (inclusive ataques), liga e desliga, sem horário de silêncio.
 
@@ -95,6 +96,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Nenhum local passa do nível do castelo.** Melhorar o castelo custa e demora mais que um local do mesmo nível.
 - **Novos locais podem ser fundados em qualquer hexágono livre**, sem limite de distância, de vizinhança ou de quantidade. O custo crescente de cada novo local e o transporte do material até lá são os únicos freios.
 - A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição vão a pé e sem escolta.
+- Se o local de uma obra deixa de ser seu (ocupado ou destruído), o material dela volta ao castelo ao cancelar ou ao terminar; nunca fica com o novo dono.
 - Carroças ficam no castelo: saem, buscam a carga na origem e a levam. Escolta é opcional; caravana pouco protegida recebe aviso.
 - A carga da caravana só sai da origem quando ela chega lá; depois de entregar, carroças e escolta voltam. Sem carroças, as próprias tropas carregam. Roubada no caminho, a carga vai ao vencedor e as carroças se perdem.
 - Pouco protegida: escolta com força abaixo do perigo médio da fauna. É só aviso.
@@ -164,7 +166,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Teto** definido por moradias (e pelo castelo). Cresce construindo moradias, cada uma mais cara que a anterior.
 - **Tropas ocupam o teto**: soldados também moram no reino. População civil + tropas ≤ teto.
 - Cada nível de local precisa de **trabalhadores** (10 por nível). Sem população civil suficiente, o local produz menos. Cada soldado é um trabalhador a menos.
-- **Crescimento** por tempo, mais rápido com excedente de comida.
+- **Crescimento** por tempo, mais rápido com excedente de comida. Abaixo de um mínimo (20), cresce devagar e em linha até ele: recrutar todos não trava o reino.
 - **Recrutar consome população**; tropas mortas não retornam. Feridos curados com ervas voltam (ver Combate).
 - A população sustenta a produção de recursos e atua como **milícia** na defesa.
 - Objetivo: criar a decisão central entre **tropas e economia**.
@@ -217,7 +219,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Objetivos por tipo: saque (relíquia e recursos), sabotagem (construção do local e torres), massacre (população), ocupação (tomar o local e a relíquia), cerco (portões, torres, relíquia e recursos).
 - A batalha dura alguns minutos (mais com mais tropas), tempo para reforços e recuo; reforços que entram antes do fim lutam. Um segundo ataque do mesmo reino se junta; de outro reino, espera ela acabar.
 - A milícia e o massacre usam a população "do local": a do reino dividida entre onde se mora (castelo, moradias) e onde se trabalha.
-- Sabotagem tira níveis; um local (que não seja o castelo) que chega ao nível 0 vira ruína sem dono. Aríetes batem só na vitória; trebuchets, de longe, mesmo na derrota.
+- Sabotagem tira níveis; um local (que não seja o castelo) que chega ao nível 0 vira ruína sem dono. Uma melhoria na fila sobe só um nível e não passa do castelo (parada, o material fica no local): não desfaz a sabotagem. Aríetes batem só na vitória; trebuchets, de longe, mesmo na derrota.
 - Ruína e terra livre sem defesa são ocupadas na chegada, sem batalha.
 - Torres ficam a até 2 hexágonos de um local próprio.
 - Se um objetivo não existe no local, as tropas passam ao próximo. Recursos ocupam carga e as tropas voltam quando a carga enche; a relíquia não ocupa carga. Há a opção de completar a carga com o que houver no local.
@@ -246,7 +248,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Se o reino ainda possui outros locais: o castelo vira ruína e a sede vai para o **local de maior nível**, que vira castelo com **metade do nível** do antigo. O reino perde **metade dos recursos guardados**, **30% da população civil** e as relíquias do castelo, que vão com o atacante, sem extinção. Locais acima do novo nível do castelo ficam como estão, mas só sobem quando o castelo passar deles.
 - Se perder tudo: o jogador recomeça **em exílio** em um novo ponto do mapa, com um kit de recomeço, mantendo linhagem e relíquias, e recebe **escudo temporário** contra ataques.
 - O ponto do exílio é **aleatório e longe de quem derrubou** o reino; escolher a região depende da linhagem.
-- O castelo caído vira ruína sem dono, que pode ser ocupada ou reconstruída como qualquer ruína. No exílio, o reino recomeça só com um castelo nível 1, o kit e a população de recomeço; exércitos em campo e o que carregam seguem com ele.
+- O castelo caído vira ruína sem dono, que pode ser ocupada ou reconstruída como qualquer ruína. No exílio, o reino recomeça só com um castelo nível 1, o kit e a população de recomeço; exércitos em campo e o que carregam seguem com ele. O material das obras na fila e as carroças, exploradores e mensageiros parados no castelo se perdem.
 
 ### Anonimato e bandeiras
 
@@ -303,6 +305,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Alianças têm **limite de membros**, por balanceamento: alianças muito grandes geram problemas. Valor inicial: **5 reinos** por aliança.
 - Aliados se reconhecem (nome e brasão) e veem as marchas uns dos outros. Locais de aliados não são alvo de ataque.
 - **Reforço entre aliados**: um aliado pode mandar tropas para defender um local seu. As tropas continuam ocupando o teto de população de quem mandou. Não há ataque conjunto.
+- O reforço não leva carga (tropas carregadas voltam para casa com ela), não sai pela postura do local e seus feridos vão para o castelo de quem mandou.
 - **Conversa da aliança**: os membros conversam entre si; é o único chat do jogo.
 - Um pedido de recursos é aceito ou recusado pelo aliado. A ajuda sai dos locais mais próximos dele e viaja visível no mapa, podendo ser roubada.
 - **Cargos**: líder (convida, expulsa e promove), até 2 conselheiros (convidam e aceitam pedidos de entrada) e membros.

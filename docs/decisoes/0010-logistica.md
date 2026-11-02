@@ -6,3 +6,5 @@
 - Carregadores não ocupam o teto de população (são trabalho da população, não gente a menos).
 
 **Por quê.** Reservar na hora evita duas obras disputando o mesmo recurso e deixa o jogador ver o custo saindo. Um grupo por origem mantém poucas marchas no mapa.
+
+**Revisão.** O material devolvido (`Filas.DevolverMaterial`: cancelamento, obra de nível que termina num local perdido) só vai para um local do próprio reino que não esteja em ruínas; senão, para o castelo. O cancelamento olhava só se o local existia e entregava o material a quem tinha tomado o local. Leituras de fila por nome (`Cancelar`, `MaterialChegou`, `Concluir`, `TentarIniciar`, `Logistica.Repor`, carregadores) usam `Reino.FilaSe`, que não cria a fila: o nome vem do cliente no `DELETE /filas/{fila}/{item}`, e `Reino.Fila` criava uma entrada (gravada no reino) para qualquer nome. `Reino.Fila` continua criando, só para os nomes dos sistemas.

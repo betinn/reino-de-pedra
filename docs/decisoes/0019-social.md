@@ -15,3 +15,8 @@
 - **Mapa**: `VisaoMapa.Aliados` marca locais (em área explorada) e marchas (sempre) de aliados com `dono: "aliado"` e `reino`; marchas com estandarte levam `reino` e `brasao`.
 
 **Por quê.** Pôr o reforço na guarnição usa o combate como ele é (composição, recálculo, perdas) e só exige contabilidade nas bordas (teto, uso, reconciliação depois da batalha). Uma marcha de carga com motivo resolve todas as entregas entre reinos da mesma forma, sem tique e com o roubo vindo do contrato de interceptação. Bloquear no envio só o que o atacante já sabe mantém o anonimato dos locais.
+
+**Revisão (reforço).**
+- Reforço a local de aliado não leva carga: a ordem `reforcar` é recusada para exército carregado (`OrdemReforcar.Validar`), e um reforço que chega com carga (tomada no caminho) volta para casa com ela (`Reforcos.Chegou`). Descarregar no aliado passava por fora do aceite e do limite do novato; carga entre reinos só vai por `Remessa`.
+- Feridos: `Reforcos.PartesDasPerdas` dá a parte de cada reforço nas perdas da defesa (a mesma conta que tira as perdas do reforço em `AoTerminar`). A batalha entrega por `Combates.AoFerir` os feridos de cada parte ao próprio reino (o local passado é o do aliado; o lote fica no castelo de quem mandou). Antes, todos os feridos iam para o dono do local, que os curava como tropas dele.
+- Postura: a saída automática da guarnição (`Vigias`) usa `Tropas.GuarnicaoLivre`, sem as tropas reservadas do reforço; o reforço defende, mas não sai em nome do dono.
