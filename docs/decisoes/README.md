@@ -21,3 +21,4 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento |
 | [0015](0015-exploracao.md) | Exploração: névoa com foto, fauna por região, exploradores, caça, rotas e espionagem |
 | [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento; parte 2: feridos em lotes, veterania com média ponderada, queda e exílio, combate em campo, interceptação, posturas, avistamentos e modelos |
+| [0018](0018-ferraria.md) | Ferraria: fila própria, eras por `ReqCumprido`, bônus por família ponderado pela força, lendário preso a um grupo; sistemas revelados aos poucos |

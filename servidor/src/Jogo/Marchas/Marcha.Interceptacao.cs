@@ -14,6 +14,9 @@ public abstract partial class Marcha
     /// <summary>Relíquias lendárias levadas pela marcha (ids). Não ocupam carga.</summary>
     public List<long> Reliquias { get; set; } = new();
 
+    /// <summary>Ganchos de quem perde no caminho, antes de ser esvaziada (perdedor, vencedor): o equipamento lendário vai ao vencedor.</summary>
+    public static List<Action<Mundo, Marcha, Exercito>> AoPerderNoCaminho { get; } = new();
+
     /// <summary>
     /// Chamado pelo combate quando a marcha perde para <paramref name="vencedor"/> no caminho: a carga passa ao
     /// vencedor até a capacidade livre dele (o resto se perde), as relíquias vão todas, e a marcha sai do mapa.
@@ -21,6 +24,7 @@ public abstract partial class Marcha
     /// </summary>
     public virtual void AoSerVencida(Mundo m, Exercito vencedor)
     {
+        foreach (var f in AoPerderNoCaminho) f(m, this, vencedor);
         var livre = Math.Max(0, vencedor.CargaMax(m) - vencedor.Carga.Total);
         var total = Carga.Total;
         if (total > 0 && livre > 0)

@@ -186,7 +186,20 @@ const P = {
      a partir de 3, farol para todos, até na névoa (1 relíquia: só a espionagem revela) */
   reliquiaVis: { brilho: 2, farol: 3 },
   /* o transporte manual aparece ao fundar o primeiro local a mais de 4 hexágonos do castelo (fora da vista dele, raio 3) */
-  logisticaLongeHex: 4
+  logisticaLongeHex: 4,
+  cacaMin: 20,                                             /* minutos no local da caçada */
+  /* ---------- ferraria, eras e equipamento lendário (servidor) ---------- */
+  /* Os requisitos de eras.req, ferraria.niveis[].req e lendario.req, na forma que o servidor confere:
+     era = era já pesquisada; ferraria / quartel = nível mínimo do maior local desse tipo no reino.
+     Famílias com armas e armaduras (o cerco não tem); a milícia é infantaria (U.milicia.fam).
+     lendarioPorReino: quantos cada reino forja na temporada (capturar o de outro não conta). */
+  ferrariaServ: {
+    eras: { aco: { ferraria: 7 }, cerco: { era: 'aco', quartel: 8 } },
+    niveis: [{ ferraria: 3 }, { era: 'aco' }, { era: 'aco', ferraria: 9 }],
+    lendario: { era: 'aco', ferraria: 8 },
+    familias: ['infantaria', 'arqueiros', 'cavalaria'],
+    lendarioPorReino: 1
+  }
 };
 
 /* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */

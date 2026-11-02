@@ -2,65 +2,6 @@ using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 
-namespace ReinoDePedra.Jogo.Reinos
-{
-    public sealed partial class Reino
-    {
-        /// <summary>Sistemas já apresentados ao jogador ("logistica", "reliquias"...). Os outros ficam escondidos no cliente.</summary>
-        public HashSet<string> SistemasVistos { get; set; } = new();
-    }
-}
-
-namespace ReinoDePedra.Jogo.Nucleo
-{
-    /// <summary>Sistema que o jogo apresenta aos poucos: nome e texto do aviso "Novo: ...", categoria da notificação e rota do cliente.</summary>
-    public sealed record SistemaApresentado(string Chave, string Nome, string Texto, string Categoria, string? Link);
-
-    /// <summary>
-    /// Sistemas apresentados aos poucos (CLAUDE.md, Experiência do jogador): nada é bloqueado, mas menus e botões de um
-    /// sistema só aparecem no cliente depois do gatilho. Cada sistema registra a chave em <see cref="Apresentavel"/>
-    /// (no AoIniciar) e chama <see cref="Revelar"/> quando o gatilho acontece. O cliente lê <c>GET /reino → sistemas</c>.
-    /// </summary>
-    public static partial class Sistemas
-    {
-        private static readonly Dictionary<string, SistemaApresentado> _apresentaveis = new();
-
-        /// <summary>Sistemas registrados (chave → apresentação). Só eles aparecem em <c>sistemas</c> do reino.</summary>
-        public static IReadOnlyDictionary<string, SistemaApresentado> Apresentaveis
-        {
-            get { lock (_apresentaveis) return new Dictionary<string, SistemaApresentado>(_apresentaveis); }
-        }
-
-        /// <summary>Registra um sistema apresentado aos poucos. Chame dentro de <see cref="UmaVez"/>.</summary>
-        public static void Apresentavel(string chave, string nome, string texto, string categoria = "reino", string? link = null)
-        {
-            lock (_apresentaveis) _apresentaveis[chave] = new SistemaApresentado(chave, nome, texto, categoria, link);
-        }
-
-        public static bool Visto(Reino r, string chave) => r.SistemasVistos.Contains(chave);
-
-        /// <summary>
-        /// Apresenta o sistema ao reino (uma vez): marca como visto e manda a notificação "Novo: nome". Devolve true se era novo.
-        /// </summary>
-        public static bool Revelar(Mundo m, Reino r, string chave)
-        {
-            if (!r.SistemasVistos.Add(chave)) return false;
-            m.Sujar(r);
-            SistemaApresentado? a;
-            lock (_apresentaveis) a = _apresentaveis.GetValueOrDefault(chave);
-            Registros.Notificar(m, r.Id, a?.Categoria ?? "reino", "Novo: " + (a?.Nome ?? chave), a?.Texto, a?.Link);
-            m.Avisar(r.Id, "reino");
-            return true;
-        }
-
-        /// <summary>Estado de cada sistema registrado para o reino (true = já apareceu).</summary>
-        public static Dictionary<string, bool> Estado(Reino r)
-        {
-            lock (_apresentaveis) return _apresentaveis.Keys.ToDictionary(k => k, r.SistemasVistos.Contains);
-        }
-    }
-}
-
 namespace ReinoDePedra.Jogo.Valiosos
 {
     using ReinoDePedra.Jogo.Nucleo;
@@ -82,6 +23,7 @@ namespace ReinoDePedra.Jogo.Valiosos
             Sistemas.Apresentavel(ReliquiasChave, "Relíquias",
                 "Uma por reino no mundo, escavadas nas ruínas antigas. Fortalecem o local onde ficam e atraem confronto.", "reliquias", "reliquias");
             ObraFundar.AoFundar += (mm, r, l) => { if (Longe(mm, r, l)) Sistemas.Revelar(mm, r, Logistica); };
+            Sistemas.Gatilhos.Add(Conferir);
         });
 
         /// <summary>O local está longe do castelo (fora da vista dele)?</summary>

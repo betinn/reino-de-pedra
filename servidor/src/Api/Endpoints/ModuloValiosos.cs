@@ -149,7 +149,7 @@ public static class ExtrasValiosos
         VisaoReino.Extras.Add((mm, r, d) =>
         {
             Apresentacao.Conferir(mm, r);
-            d["sistemas"] = Sistemas.Estado(r);
+            // "sistemas" vem de VisaoSistemas (com os gatilhos de todos os sistemas)
             var naFila = r.Fila(Obras.Fila).Itens.Where(i => i.Tipo == ObraVeiculo.Id).ToList();
             d["veiculos"] = mm.B.VEICULOS.ToDictionary(kv => kv.Key, kv => new
             {
