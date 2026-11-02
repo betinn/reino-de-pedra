@@ -144,6 +144,12 @@
       '<circle class="ic-s" cx="17.5" cy="18.5" r="3.5"/>' +
       '<circle class="ic-d" cx="17.5" cy="18.5" r="1.5"/>',
     ferido: '<path class="ic-s" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z"/>',
+    mensagem:
+      '<path class="ic-s" d="M2.5 6h19v12.5h-19Z"/>' +
+      '<path class="ic-d" d="M3 6.6l9 6.9 9-6.9"/>',
+    conversa:
+      '<path class="ic-s" d="M3 4.5h13v9H8l-5 4Z"/>' +
+      '<path class="ic-s" d="M18 8h3v11l-4-3h-7v-1.2h7.6V8Z"/>',
     espada:
       '<path class="ic-s" d="M21 3l-1 4.5-9.6 9.6-3.5-3.5L16.5 4Z"/>' +
       '<path class="ic-s" d="M3.6 13.2l7.2 7.2-1.6 1.6L2 14.8Z"/>' +

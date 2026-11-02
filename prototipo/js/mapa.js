@@ -167,6 +167,7 @@
   function iconeMarcha(m) {
     if (m.d.tipo === 'explorador') return { cavalo: 'cavalo', pe: 'bota', prospector: 'picareta', batedor: 'batedor' }[m.d.sub];
     if (m.d.tipo === 'caca') return 'lobo';
+    if (m.d.tipo === 'mensageiro') return 'mensagem';
     if (m.d.tipo === 'caravana') return m.d.carregadores ? 'madeira' : 'carroca';
     return 'tropas';
   }
@@ -501,7 +502,8 @@
           (RP.sistema('logistica') ? botao('Levar recursos', 'carroca', '', 'data-ir="caravana?para=' + o.id + '"') : '')
         : alia ? botao('Aliança', 'estandarte', 'btn-primario', 'data-ir="alianca"') + botao('Pedir recursos', 'carroca', '', 'data-ir="pedido?reino=' + o.reino + '"')
         : botao(RP.reliquiaEm(o.id, true) || con.visivel ? 'Roubar a relíquia' : 'Atacar este local', 'tropas', 'btn-primario', 'data-ordem-alvo="' + o.id + '"') +
-          (RP.sistema('espionagem') ? botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"') : '');
+          (RP.sistema('espionagem') ? botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"') : '') +
+          (RP.sistema('comercio') ? botao('Mensageiro', 'mensagem', '', 'data-ir="mensagem?' + (esp ? 'para=' + o.reino : 'local=' + o.id) + '"') : '');
       abrirFolhaMapa({
         titulo: RP.esc(o.reino === 'meu' && o.tipo === 'castelo' ? 'Castelo de ' + D.reinos.meu.nome : W.nomeAparente(o)),
         subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
@@ -604,7 +606,21 @@
       var risco = W.riscoMarcha(m);
       var avisoRisco = risco && risco.nivel !== 'baixo' ? '<div class="perigo-linha nivel-' + risco.nivel + '">' + RP.icone(W.ANIMAL[risco.fauna.tipo].icone) + '<span><b>Rota com ' + W.ANIMAL[risco.fauna.tipo].nome.toLowerCase() + ' (perigo ' + W.NOME_NIVEL[risco.nivel].toLowerCase() + ')</b><br><small>' + (o.tipo === 'explorador' ? 'Explorador sozinho' : 'Grupo pequeno') + ' corre risco. Considere escolta ou uma rota mais longa e segura.</small></span></div>' : '';
       var rlm = RP.reliquiaNaMarcha(o.id);
-      if (o.hostil && rlm) {
+      if (o.tipo === 'mensageiro') {
+        corpo = '<div class="info">' +
+          linhaInfo('De', '<span class="linha">' + RP.brasao(o.dono === 'meu' ? RP.estado.brasao : reino.brasao, { tamanho: 18 }) + RP.esc(o.dono === 'meu' ? RP.estado.nome : reino.nome) + '</span>') +
+          linhaInfo('Para', RP.esc(o.paraTxt || alvoNome || '—')) +
+          linhaInfo(o.voltando ? 'Volta em' : 'Entrega em', '<b class="num" data-fim="' + o.chegada + '">' + RP.fmtResta(o.chegada - Date.now()) + '</b>') + '</div>' +
+          '<p class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('mensagem', 'ico-p') + '<span>Bandeira branca: o mensageiro não é uma ameaça. Tropas e fauna não o atacam. A mensagem revela quem a mandou.</span></p>';
+        acoes = botao('Seguir', 'alvo', 'btn-primario', 'data-centrar-marcha="' + o.id + '"') + botao('Mensagens', 'mensagem', '', 'data-ir="mensagens"');
+      } else if (o.troca) {
+        corpo = '<div class="info">' +
+          linhaInfo('De', '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + RP.esc(reino.nome) + '</span>') +
+          linhaInfo('Carga', RP.esc(o.cargaTxt)) + linhaInfo('Destino', alvoNome || '—') +
+          linhaInfo('Chegada', '<b class="num" data-fim="' + o.chegada + '">' + RP.fmtResta(o.chegada - Date.now()) + '</b>') + '</div>' +
+          '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">A sua parte de uma troca: entra no estoque do castelo ao chegar. Até lá, outros podem roubá-la no caminho.</p>';
+        acoes = botao('Seguir', 'alvo', 'btn-primario', 'data-centrar-marcha="' + o.id + '"') + botao('Comércio', 'troca', '', 'data-ir="comercio"');
+      } else if (o.hostil && rlm) {
         corpo = '<div class="info">' +
           linhaInfo('Identidade', '<span class="selo selo-perigo">' + RP.icone('interrogacao') + 'Desconhecida</span>') +
           linhaInfo('Forças', o.resumo) + linhaInfo('Rumo', o.rumo || '?') +

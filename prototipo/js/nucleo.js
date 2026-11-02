@@ -255,7 +255,7 @@
     defesas: { nome: 'Torres de arqueiros', icone: 'torre', gatilho: 'Ao ver forças desconhecidas perto do reino.', txt: 'Arqueiros no alto protegem os locais em volta.', href: '#/construcao?aba=defesas' },
     reliquias: { nome: 'Relíquias', icone: 'lendario', gatilho: 'Ao avistar a primeira ruína antiga ou um farol de relíquias.', txt: 'Uma por reino no mundo; fortalecem um local e atraem confronto.', href: '#/reliquias' },
     alianca: { nome: 'Alianças', icone: 'estandarte', gatilho: 'Ao conhecer o primeiro reino.', txt: 'Reinos aliados pedem recursos uns aos outros.', href: '#/alianca' },
-    comercio: { nome: 'Comércio e diplomacia', icone: 'troca', gatilho: 'Ao conhecer o primeiro reino.', txt: 'Trocas diretas, pactos de não agressão e resgate de exploradores.', href: '#/comercio' }
+    comercio: { nome: 'Comércio e diplomacia', icone: 'troca', gatilho: 'Ao conhecer o primeiro reino.', txt: 'Trocas diretas, pactos, resgates e mensageiros para outros reinos.', href: '#/comercio' }
   };
   RP.sistema = function (k) { var d = RP.dados.descobertas; return !d || d[k] !== false; };
   RP.revelarSistema = function (k) {

@@ -226,7 +226,7 @@
         if ((b = e.target.closest('[data-aba-obra]'))) { abaObra = b.getAttribute('data-aba-obra'); desenharConstrucao(el); return; }
         if (RP.defesas.clique(e, function () { desenharConstrucao(el); })) return;
         if ((b = e.target.closest('[data-escolher-local]'))) {
-          RP.aviso({ titulo: 'Escolha o local no mapa', texto: 'No jogo, você toca num hexágono livre ou numa jazida e confirma. No protótipo, este passo é só ilustrado.', icone: 'mapa', tipo: 'alerta', ms: 3600 });
+          RP.aviso({ titulo: 'Escolha o local no mapa', texto: 'Qualquer hexágono livre, a qualquer distância e sem limite de locais: quanto mais longe, mais o material demora a chegar. No protótipo, este passo é só ilustrado.', icone: 'mapa', tipo: 'alerta', ms: 4200 });
           return;
         }
         if ((b = e.target.closest('[data-construir]'))) {

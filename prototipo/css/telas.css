@@ -977,3 +977,23 @@ a.guia-item { color: inherit; text-decoration: none; }
 .troca-linhas > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .valor-grade { display: flex; flex-wrap: wrap; gap: 6px; }
 .valiosos-lista .lista-item .num { margin-left: var(--esp-2); }
+
+/* ---------------------------------------------------------------- mensagens e conversa da aliança */
+.campo textarea {
+  min-height: 96px; padding: var(--esp-3) var(--esp-4); resize: vertical;
+  border-radius: var(--raio-2); border: var(--borda-larg) solid var(--cor-borda-forte);
+  background: var(--campo-fundo); box-shadow: var(--campo-sombra);
+  font: inherit; font-size: var(--fs-3); color: inherit;
+}
+.msg-texto { font-size: var(--fs-3); color: var(--cor-texto-2); font-style: italic; border-left: 3px solid var(--cor-borda-forte); padding-left: var(--esp-3); }
+.msg-card.nova { border-color: var(--cor-info); }
+.msg-card > .btn { align-self: flex-start; }
+.conversa-lista { list-style: none; display: flex; flex-direction: column; gap: var(--esp-2); }
+.conversa-lista li { display: flex; gap: var(--esp-2); align-items: flex-start; font-size: var(--fs-2); }
+.conversa-lista li.minha { flex-direction: row-reverse; text-align: right; }
+.conversa-envio { display: flex; gap: var(--esp-2); }
+.conversa-envio input {
+  flex: 1; min-width: 0; min-height: var(--alvo); padding: 0 var(--esp-3);
+  border-radius: var(--raio-2); border: var(--borda-larg) solid var(--cor-borda-forte);
+  background: var(--campo-fundo); font: inherit; font-size: var(--fs-3); color: inherit;
+}

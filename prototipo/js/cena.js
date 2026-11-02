@@ -1041,6 +1041,13 @@
           var sx = pos.x - ux * (12 + e2 * 7) - uy * (e2 - 1) * 7, sy = pos.y - uy * (12 + e2 * 7) + ux * (e2 - 1) * 7;
           itens.push({ y: sy, d: function () { obj(c, V, sx, sy); pessoa(c, 0, 0, t, P, { roupa: corReino('meu'), cinto: '#1e1b18', dir: dir, andando: true, fase: e2, capacete: P.metal, lanca: true, escudo: corReino('meu') }); } });
         })(e2);
+      } else if (m.d.tipo === 'mensageiro') {
+        /* mensageiro a cavalo com bandeira branca: evidente que não é ataque */
+        itens.push({ y: pos.y, d: function () {
+          obj(c, V, pos.x, pos.y);
+          cavalo(c, 0, 0, t, P, { cor: P.cavalo[1], dir: dir, andando: true, galope: true, cavaleiro: m.d.dono === 'meu' || W.aliado(m.d.dono) ? corReino(m.d.dono) : '#6b6458' });
+          bandeira(c, -dir * 4, -20, 20, '#f3efe4', t, 11, 8);
+        } });
       } else if (m.d.tipo === 'extracao' && m.d.grupo) {
         var ge = m.d.grupo, nE = Math.min(5, (ge.lanceiro || 0) + (ge.arqueiro || 0) + (ge.cavalaria || 0));
         for (var qe = 0; qe < nE; qe++) (function (qe) {
@@ -1091,7 +1098,7 @@
         itens.push({ y: by, d: function () { obj(c, V, bx, by); bauReliquia(c, t, P, relM.tipo); } });
       }
       self.alvos.push(alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.d.id]));
-      rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil || (m.d.dono !== 'meu' && !m.d.estandarte && !W.aliado(m.d.dono)) ? '? ' : '') + (relM ? 'Relíquia · ' : m.d.carregadores ? 'Material · ' : m.d.tipo === 'caravana' ? 'Caravana · ' : '') + RP.fmtResta(m.d.chegada - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : m.d.dono === 'meu' || m.d.estandarte || W.aliado(m.d.dono) ? corReino(m.d.dono) : cores().desconhecido });
+      rotulos.push({ x: pos.x, y: pos.y, dy: -40, txt: (m.d.hostil || (m.d.dono !== 'meu' && !m.d.estandarte && !m.d.troca && m.d.tipo !== 'mensageiro' && !W.aliado(m.d.dono)) ? '? ' : '') + (relM ? 'Relíquia · ' : m.d.tipo === 'mensageiro' ? 'Mensageiro · ' : m.d.carregadores ? 'Material · ' : m.d.tipo === 'caravana' ? 'Caravana · ' : '') + RP.fmtResta(m.d.chegada - Date.now()), cls: m.d.hostil ? 'perigo' : 'marcha', cor: m.d.hostil ? cores().perigo : m.d.dono === 'meu' || m.d.estandarte || W.aliado(m.d.dono) ? corReino(m.d.dono) : cores().desconhecido });
     });
 
     /* extrações em andamento: posto e trabalhadores na jazida */

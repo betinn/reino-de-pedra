@@ -253,7 +253,7 @@
       { id: 'posto', icone: 'picareta', nome: 'Posto de extração', onde: 'Escolher jazida no mapa', cat: 'economia', novo: true,
         efeito: 'Opcional: mais velocidade e rendimento na extração', custo: { madeira: 350, pedra: 200 }, tempo: 1200 },
       { id: 'vila-nova', icone: 'vila', nome: 'Nova vila', onde: 'Escolher local no mapa', cat: 'populacao', novo: true,
-        efeito: '3 moradias e produção de comida', custo: { madeira: 3310, pedra: 2570, ferro: 740, comida: 740 }, tempo: 5400 },
+        efeito: '3 moradias e produção de comida · em qualquer hexágono livre, sem limite de distância', custo: { madeira: 3310, pedra: 2570, ferro: 740, comida: 740 }, tempo: 5400 },
       { id: 'rota', icone: 'rota', nome: 'Rota', onde: 'Traçar no mapa', cat: 'rotas', novo: true,
         efeito: 'Rua pública: qualquer jogador usa; reduz animais', custo: { madeira: 120, pedra: 80 }, porHex: true, tempo: 300 },
       { id: 'carroca', icone: 'carroca', nome: 'Carroça', onde: 'Castelo de Pedralva', local: 'castelo', cat: 'transporte', veiculo: 'carroca',
@@ -300,7 +300,7 @@
       { id: 'saque', nome: 'Saque', icone: 'ouro', txt: 'Leva recursos do local, até a capacidade de carga das tropas.' },
       { id: 'sabotagem', nome: 'Sabotagem', icone: 'martelo', txt: 'Destrói ou danifica construções do local.' },
       { id: 'massacre', nome: 'Massacre', icone: 'populacao', txt: 'Mata população do local. Enfraquece o reino a longo prazo, sem ganho de recurso.' },
-      { id: 'ocupacao', nome: 'Ocupação', icone: 'bandeira', txt: 'Toma o local e passa a explorá-lo até alguém retomar.' },
+      { id: 'ocupacao', nome: 'Ocupação', icone: 'bandeira', txt: 'Toma o local e passa a explorá-lo até alguém retomar. Ele vira seu e mantém o nível; acima do seu castelo, só sobe quando o castelo passar dele.' },
       { id: 'cerco', nome: 'Cerco ao castelo', icone: 'cerco', txt: 'O ataque mais difícil do jogo. Só contra castelos; aríetes derrubam portões e torres.', soCastelo: true }
     ],
     /* Saques recentes por alvo: rendimento decrescente em saques repetidos */
@@ -454,6 +454,11 @@
       membros: ['meu', 'lumen', 'fenda'], papeis: { meu: 'Líder', lumen: 'Conselheiro', fenda: 'Membro' }, conselheirosMax: 2,
       castelos: { lumen: 'a-castelo', fenda: 'f-castelo' },
       /* quem sai ou é expulso fica em trégua de 24 h com a aliança, garantida pelo jogo */
+      conversa: [
+        { de: 'lumen', texto: 'Valdren está juntando lanceiros perto da Mina Rubra.', horas: 3 },
+        { de: 'fenda', texto: 'O ferro chegou inteiro. Obrigado!', horas: 2 },
+        { de: 'meu', texto: 'Deixei 12 lanceiros na Vila do Moinho. Se precisarem, mando reforço.', horas: 1.5 }
+      ],
       tregua: [{ nome: 'Clã Ferrugem', brasao: { forma: 'classico', divisao: 'cortado', cor1: 'castanho', cor2: 'negro', simbolo: 'martelo', corSimbolo: 'ouro' }, como: 'saiu', seg: 18 * 3600 }]
     },
 
@@ -473,6 +478,13 @@
       { id: 'fe-2', origem: 'Saque à Mina Rubra', unidade: 'cavalaria', qtd: 3, horas: 9 }
     ],
     curas: [],
+    /* Mensageiros: levam mensagens a outros reinos, com bandeira branca; ocupam 1 de população cada */
+    mensageiros: { total: 2, custo: { comida: 30 }, tempo: 60, max: 200 },
+    mensagens: [
+      { id: 'ms-1', de: 'valdren', texto: 'A Mina do Vale fica no caminho do nosso ouro. Antes que alguém se machuque, aceite o nosso pacto.', horas: 1.2, lida: false },
+      { id: 'ms-2', de: 'mirante', texto: 'Temos ouro e prata. Mande dizer do que precisa e fazemos preço.', horas: 26, lida: true },
+      { id: 'ms-3', de: 'meu', local: 'x-mina', texto: 'A estrada do norte é livre para quem não atacar. Podemos conversar?', horas: 30, estado: 'entregue' }
+    ],
     /* Equipamento lendário: o seu (ainda não forjado) e os vistos em outros reinos */
     lendario: { meu: null, vistos: [{ reino: 'corvo', nome: 'Elmo do Corvo', tipo: 'ataque', exercito: '≈ 40 cavaleiros', horas: 6 }] },
 
@@ -480,12 +492,12 @@
     comercio: {
       conhecidos: { lumen: 'aliado', fenda: 'aliado', valdren: 'estandarte e espionagem', corvo: 'bandeira', mirante: 'bandeira' },
       ofertas: [
-        { id: 'tr-1', de: 'mirante', da: { ouro: 40 }, quer: { madeira: 920 }, horas: 2, estado: 'aberta' },
-        { id: 'tr-2', de: 'lumen', da: { pedra: 300 }, quer: { prata: 25 }, horas: 0.8, estado: 'aberta' }
+        { id: 'tr-1', de: 'mirante', da: { ouro: 40 }, quer: { madeira: 920 }, horas: 2, estado: 'aberta', recado: 'Ouro limpo do leste. Entregamos em carroça própria.' },
+        { id: 'tr-2', de: 'lumen', da: { pedra: 300 }, quer: { prata: 25 }, horas: 0.8, estado: 'aberta', recado: 'Sobrou pedra da torre. Precisamos de prata para o resgate de um batedor.' }
       ],
       minhas: [{ id: 'tr-3', para: 'fenda', da: { ferro: 400 }, quer: { ervas: 40 }, horas: 3, estado: 'aguardando' }],
       pactos: [{ id: 'pc-1', com: 'corvo', dias: 3, pagou: 'meu', carga: { prata: 60 }, seg: 53 * 3600, estado: 'ativo' }],
-      propostasPacto: [{ id: 'pc-2', de: 'valdren', dias: 3, cobra: { ferro: 600 }, horas: 1, estado: 'aberta' }],
+      propostasPacto: [{ id: 'pc-2', de: 'valdren', dias: 3, cobra: { ferro: 600 }, horas: 1, estado: 'aberta', recado: 'Três dias de paz. Depois, conversamos de novo.' }],
       pactosMax: 3,
       novatoDia: 2000, novatoUsado: { fenda: 300 },
       capturados: [

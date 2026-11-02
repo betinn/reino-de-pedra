@@ -181,7 +181,8 @@
     return c.visivel ? { nome: c.n + ' relíquias (tipos desconhecidos)', tipo: 'desconhecido', bonus: 0, generica: true } : null;
   }
   function alvosAtaque() { return D.locais.filter(function (x) { return x.reino !== 'meu' && !W.aliado(x.reino) && (W.estado(x.c, x.l).v !== 'desconhecido' || RP.concentracao(x.id).visivel); }); }
-  function destinosReforco() { return D.locais.filter(function (x) { return x.reino === 'meu' && x.tipo !== 'castelo'; }); }
+  /* reforço: seus locais e os de aliados (as tropas enviadas a um aliado continuam ocupando o seu teto) */
+  function destinosReforco() { return D.locais.filter(function (x) { return (x.reino === 'meu' && x.tipo !== 'castelo') || W.aliado(x.reino); }); }
   function ruinasConhecidas() { return D.ruinas.filter(function (r) { return W.estado(r.c, r.l).v !== 'desconhecido'; }); }
   function nomeAlvo(x) { return x.reino ? W.nomeAparente(x) : x.nome; }
   /* pacto em vigor com o dono conhecido do alvo: o jogo impede o ataque (com dono desconhecido, as tropas descobrem ao chegar) */
@@ -302,7 +303,7 @@
     if (!somaGrupo(g)) ['lanceiro', 'arqueiro', 'cavalaria'].forEach(function (k) { g[k] = Math.floor(dispDe(k) / 2); });
     return g;
   }
-  function modoPara(x) { return !x ? 'mover' : x.reino === 'meu' ? 'reforco' : !x.reino ? 'ocupar' : W.aliado(x.reino) ? 'mover' : 'ataque'; }
+  function modoPara(x) { return !x ? 'mover' : x.reino === 'meu' || W.aliado(x.reino) ? 'reforco' : !x.reino ? 'ocupar' : 'ataque'; }
   function grupoParam(g) { return Object.keys(g).filter(function (k) { return g[k]; }).map(function (k) { return k + ':' + g[k]; }).join(','); }
   function alvoOrdem(alvo) {
     var x = alvo.id ? acharAlvo(alvo.id) : null;
@@ -324,9 +325,10 @@
         r.ajustar = 'envio?alvo=' + x.id + '&grupo=' + grupoParam(grupo);
         r.objs = objs; r.rel = rel;
       } else if (a.modo === 'reforco') {
-        r.titulo = 'Reforçar ' + RP.esc(x.tipo === 'castelo' ? 'o castelo' : x.nome); r.verbo = 'Reforçar'; r.icone = 'escudo';
-        h = linhaO('Ordem', 'Entram na defesa do local ao chegar');
-        r.ajustar = x.tipo === 'castelo' ? null : 'envio?modo=reforco&destino=' + x.id + '&grupo=' + grupoParam(grupo);
+        var deAliado = x.reino !== 'meu';
+        r.titulo = 'Reforçar ' + RP.esc(x.tipo === 'castelo' && !deAliado ? 'o castelo' : x.nome); r.verbo = 'Reforçar'; r.icone = 'escudo';
+        h = linhaO('Ordem', 'Entram na defesa do local ao chegar') + (deAliado ? linhaO('Aliado', RP.esc(D.reinos[x.reino].nome) + ' · as tropas continuam ocupando o seu teto de população') : '');
+        r.ajustar = x.tipo === 'castelo' && !deAliado ? null : 'envio?modo=reforco&destino=' + x.id + '&grupo=' + grupoParam(grupo);
       } else if (a.modo === 'ocupar') {
         r.titulo = 'Ocupar ' + RP.esc(x.nome); r.verbo = 'Ocupar'; r.icone = 'bandeira';
         h = linhaO('Objetivo', 'Tomar o local: depois você pode reconstruí-lo');
@@ -413,10 +415,11 @@
     var torresX = ataque ? torresAlvo(x) : [];
     var pacto = pactoBloqueia(x);
     var h = (ocupar ? '<div class="nota-regra">' + RP.icone('bandeira', 'ico-p') + '<span>Ruínas e terra livre não têm dono. Ocupar toma o local; depois você pode reconstruí-lo.</span></div>' : '') +
+      (!ataque && !ocupar && W.aliado(x.reino) ? '<div class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Reforço a um aliado: suas tropas entram na defesa do local dele e <b>continuam ocupando o seu teto</b> de população. Não há ataque conjunto.</span></div>' : '') +
       '<div class="secao-titulo"' + (ocupar ? '' : ' style="margin-top:0"') + '>' + (ataque ? '1. Alvo' : '1. Destino') + '</div><div class="escolhas escolhas-lista">' + lista.filter(function (q) { return env.listaAberta || q.id === env.alvo; }).map(function (q) {
       var ee = W.estado(q.c, q.l), ru = !q.reino;
       return '<button type="button" class="escolha escolha-linha" data-alvo="' + q.id + '" aria-pressed="' + (q.id === env.alvo) + '"><span class="ico-placa dono-' + (ru ? 'desconhecido' : D.reinos[W.donoAparente(q)].cor) + '">' + RP.icone(ru ? (q.tipo === 'livre' ? 'estaca' : 'escombros') : q.tipo) + '</span>' +
-        '<span class="escolha-txt"><b>' + RP.esc(nomeAlvo(q)) + '</b><small class="fraco">' + (ru ? 'Sem dono · ' + (ee.v === 'visivel' ? 'visível' : 'visto ' + RP.fmtHa(ee.horas)) : ataque ? (q.espionado ? D.reinos[q.reino].nome + ' · espionado' : 'Dono desconhecido') + ' · ' + (ee.v === 'visivel' ? 'visível' : 'visto ' + RP.fmtHa(ee.horas)) : RP.esc(q.guarnicao)) + '</small></span>' +
+        '<span class="escolha-txt"><b>' + RP.esc(nomeAlvo(q)) + '</b><small class="fraco">' + (ru ? 'Sem dono · ' + (ee.v === 'visivel' ? 'visível' : 'visto ' + RP.fmtHa(ee.horas)) : ataque ? (q.espionado ? D.reinos[q.reino].nome + ' · espionado' : 'Dono desconhecido') + ' · ' + (ee.v === 'visivel' ? 'visível' : 'visto ' + RP.fmtHa(ee.horas)) : W.aliado(q.reino) ? 'Aliado · ' + RP.esc(D.reinos[q.reino].nome) : RP.esc(q.guarnicao)) + '</small></span>' +
         (reliquiaAlvo(q) ? '<span class="selo selo-relq tipo-' + reliquiaAlvo(q).tipo + '" title="Relíquia espionada">' + RP.icone('lendario') + 'Relíquia</span>' : '') +
         (q.ameaca ? '<span class="selo selo-perigo">Ameaçado</span>' : '') + '</button>';
     }).join('') + '</div>' + (!env.listaAberta && lista.length > 1 ? '<button type="button" class="btn btn-p btn-fantasma trocar-alvo" data-trocar-alvo>' + RP.icone('menu') + 'Trocar ' + (ataque ? 'alvo' : 'destino') + ' (' + lista.length + ' opções)</button>' : '');

@@ -45,7 +45,7 @@
         '<a class="btn btn-primario btn-bloco btn-grande" href="#/criar">' + RP.icone('castelo') + 'Fundar meu reino</a>' +
         '<a class="btn btn-bloco" href="#/reino" data-continuar><span>Continuar como <span data-nome-reino>' + RP.esc(RP.estado.nome) + '</span></span></a>' +
         '</div>' +
-        '<p class="inicio-temporada">' + RP.icone('temporada', 'ico-p') + 'Temporada ' + t.numero + ' · termina em ' + t.diasRestantes + ' dias · ' + RP.num(t.reinos) + ' reinos</p>' +
+        '<p class="inicio-temporada">' + RP.icone('temporada', 'ico-p') + 'Temporada ' + t.numero + ' · termina em ' + t.diasRestantes + ' dias · há vaga para novos reinos</p>' +
         '</div>';
     },
     entrar: function (el) {
@@ -127,8 +127,9 @@
         '<p class="nota-antiga" data-dica-contraste>' + RP.icone('info', 'ico-p') + 'Dica: símbolo de metal (ouro ou prata) sobre cor, ou cor sobre metal, é lido de longe no mapa.</p></div>' +
         '<div class="secao-titulo">Início</div>' +
         '<div class="card pilha">' +
-        '<div class="linha">' + RP.icone('bussola') + '<div style="flex:1"><b>Região inicial: aleatória</b><div class="fraco" style="font-size:var(--fs-2)">A escolha de região é desbloqueada pela Linhagem.</div></div>' + RP.icone('cadeado', 'fraco') + '</div>' +
-        '<div class="linha">' + RP.icone('escudo') + '<div style="flex:1"><b>Escudo de novato</b><div class="fraco" style="font-size:var(--fs-2)">Seus locais ficam protegidos contra ataques no começo.</div></div></div>' +
+        '<div class="linha">' + RP.icone('bussola') + '<div style="flex:1"><b>Região inicial: aleatória</b><div class="fraco" style="font-size:var(--fs-2)">A escolha de região libera no nível 5 da linhagem.</div></div>' + RP.icone('cadeado', 'fraco') + '</div>' +
+        '<div class="linha">' + RP.icone('escudo') + '<div style="flex:1"><b>Escudo de novato · 72 h</b><div class="fraco" style="font-size:var(--fs-2)">Seus locais ficam protegidos contra ataques no começo.</div></div></div>' +
+        '<div class="linha">' + RP.icone('mapa') + '<div style="flex:1"><b>Um único mundo</b><div class="fraco" style="font-size:var(--fs-2)">Todos jogam no mesmo mapa, com até ' + D.temporada.limiteReinos + ' reinos. Há vaga nesta temporada; com o mundo cheio, novos reinos só na próxima.</div></div></div>' +
         '<div class="linha">' + RP.icone('castelo') + '<div style="flex:1"><b>Castelo e recursos básicos</b><div class="fraco" style="font-size:var(--fs-2)">O reino já produz o suficiente para tropas básicas, sem depender de exploração.</div></div></div>' +
         '</div>' +
         '</div>' +
@@ -416,6 +417,7 @@
         ['alvo', 'Precisa de você', 'O que pede atenção, oportunidades e o andamento do reino', '#/agora'],
         RP.sistema('alianca') ? ['estandarte', 'Aliança', RP.dados.alianca.nome + ' · ' + RP.dados.alianca.membros.length + ' de ' + RP.dados.alianca.limite + ' · pedidos de recursos', '#/alianca'] : null,
         RP.sistema('comercio') ? ['troca', 'Comércio e diplomacia', 'Trocas diretas, pactos de não agressão e resgates', '#/comercio'] : null,
+        RP.sistema('comercio') ? ['mensagem', 'Mensagens', 'Mensageiros para outros reinos e conversa da aliança', '#/mensagens'] : null,
         RP.sistema('reliquias') ? ['lendario', 'Relíquias', 'Suas, as espionadas, as concentrações à vista e as ruínas', '#/reliquias'] : null,
         ['ferraria', 'Ferraria e eras', 'Eras, armas, armaduras e equipamento lendário', '#/ferraria'],
         ['coroa', 'Ranking da temporada', 'Baixas, perdas, tropas e famílias', '#/ranking'],

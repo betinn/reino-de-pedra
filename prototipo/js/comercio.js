@@ -11,6 +11,12 @@
   function reino(id) { return D.reinos[id]; }
   function brasao(id, t) { return RP.brasao(reino(id).brasao, { tamanho: t || 32 }); }
   function txt(c) { return RP.cargaTxt(c); }
+  var RECADO = 120;
+  function recadoHTML(t) { return t ? '<p class="msg-texto">“' + RP.esc(t) + '”</p>' : ''; }
+  function campoRecado(id, valor) {
+    return '<div class="campo" style="margin-top:var(--esp-3)"><label for="' + id + '">Recado (opcional)</label><input id="' + id + '" type="text" maxlength="' + RECADO + '" value="' + RP.esc(valor || '') + '" placeholder="Ex.: Entrega pela Estrada do Rei." autocomplete="off">' +
+      '<span class="campo-ajuda">Até ' + RECADO + ' caracteres. Vai junto com a proposta.</span></div>';
+  }
   function cargaHTML(c) { return '<span class="custos">' + Object.keys(c).map(function (k) { return '<span class="custo">' + RP.icone(k, 'ico-p r-' + k) + RP.num(c[k]) + '</span>'; }).join('') + '</span>'; }
   function valor(c) { return RP.valorDe(c); }
   function porId(lista, id) { return lista.filter(function (q) { return q.id === id; })[0]; }
@@ -85,6 +91,7 @@
     return '<div class="card pilha"><div class="linha">' + brasao(o.de) + '<span style="flex:1;min-width:0"><b>' + RP.esc(reino(o.de).nome) + '</b><br><small class="fraco">' + RP.esc(C.conhecidos[o.de] ? 'conhecido por ' + C.conhecidos[o.de] : '') + ' · ' + RP.fmtHa(o.horas) + '</small></span>' + seloValor(o.da, o.quer) + '</div>' +
       '<div class="troca-linhas"><div><span class="rotulo">Você recebe</span>' + cargaHTML(o.da) + '<small class="fraco">valor ' + RP.num(valor(o.da)) + '</small></div>' +
       '<div><span class="rotulo">Você dá</span>' + RP.custoHTML(o.quer, 1, '*') + '<small class="fraco">valor ' + RP.num(valor(o.quer)) + '</small></div></div>' +
+      recadoHTML(o.recado) +
       '<small class="obra-estoque' + (pl.completo ? ' vem' : ' falta') + '">' + RP.icone('carroca', 'ico-p') + RP.esc(pl.completo ? 'Sua parte sai dos locais mais próximos e leva ≈ ' + RP.fmtDuracao(pl.seg) + '. As duas cargas podem ser roubadas no caminho.' : 'Faltam ' + txt(pl.faltaReino) + ' no reino todo.') + '</small>' +
       (aviso ? '<p class="nota-antiga">' + RP.icone('escudo', 'ico-p') + RP.esc(aviso) + '</p>' : '') +
       '<div class="linha relq-acoes"><button type="button" class="btn btn-p btn-primario' + (pl.completo && !aviso ? '' : ' btn-inativo') + '" data-aceitar-troca="' + o.id + '">' + RP.icone('troca') + 'Aceitar</button><button type="button" class="btn btn-p btn-fantasma" data-recusar-troca="' + o.id + '">Recusar</button></div></div>';
@@ -99,6 +106,7 @@
   function cardPropostaPacto(pp) {
     var cobra = pp.cobra && Object.keys(pp.cobra).length, pl = cobra ? RP.planoRequisicao(pp.cobra, CASTELO[pp.de]) : { completo: true };
     return '<div class="card pilha"><div class="linha">' + brasao(pp.de) + '<span style="flex:1;min-width:0"><b>' + RP.esc(reino(pp.de).nome) + ' propõe ' + pp.dias + ' dias sem ataques</b><br><small class="fraco">' + (cobra ? 'Cobra ' + RP.esc(txt(pp.cobra)) + ' (valor ' + RP.num(valor(pp.cobra)) + ')' : 'Sem pagamento') + ' · ' + RP.fmtHa(pp.horas) + '</small></span></div>' +
+      recadoHTML(pp.recado) +
       '<p class="fraco" style="font-size:var(--fs-2)">Se aceitar, o pacto começa quando o pagamento chegar. Enquanto durar, o jogo impede ataques, saques e interceptações entre vocês: não dá para quebrar.</p>' +
       '<div class="linha relq-acoes"><button type="button" class="btn btn-p btn-primario' + (pl.completo ? '' : ' btn-inativo') + '" data-aceitar-pacto="' + pp.id + '">' + RP.icone('pacto') + (cobra ? 'Aceitar e pagar' : 'Aceitar') + '</button><button type="button" class="btn btn-p btn-fantasma" data-recusar-pacto="' + pp.id + '">Recusar</button></div></div>';
   }
@@ -123,7 +131,7 @@
       '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">De 1 a 7 dias, até ' + C.pactosMax + ' ativos. Qualquer lado propõe e o pagamento pode ir em qualquer direção. Tropas enviadas a um local do outro descobrem o pacto ao chegar e voltam sem combate.</p>' +
       (capt.length ? '<div class="secao-titulo">Exploradores capturados</div><div class="pilha">' + capt.map(cardCaptura).join('') + '</div>' : '') +
       '<div class="secao-titulo">Suas propostas</div><div class="pilha">' + (C.minhas.length ? C.minhas.map(function (o) {
-        return '<div class="card linha">' + brasao(o.para, 28) + '<span style="flex:1;min-width:0"><b>' + RP.esc(txt(o.da)) + ' por ' + RP.esc(txt(o.quer)) + '</b><br><small class="fraco">' + RP.esc(reino(o.para).nome) + ' · ' + (o.estado === 'aguardando' ? 'aguardando resposta' : o.estado === 'aceita' ? 'aceita · cargas a caminho' : o.estado) + '</small></span></div>';
+        return '<div class="card linha">' + brasao(o.para, 28) + '<span style="flex:1;min-width:0"><b>' + RP.esc(txt(o.da)) + ' por ' + RP.esc(txt(o.quer)) + '</b><br><small class="fraco">' + RP.esc(reino(o.para).nome) + ' · ' + (o.estado === 'aguardando' ? 'aguardando resposta' : o.estado === 'aceita' ? 'aceita · cargas a caminho' : o.estado) + '</small>' + (o.recado ? '<small class="fraco">“' + RP.esc(o.recado) + '”</small>' : '') + '</span></div>';
       }).join('') : '<p class="fraco">Nenhuma proposta enviada.</p>') + '</div>' +
       '<div class="secao-titulo">Valor de referência</div><div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Em recursos básicos. Orienta as trocas, sem obrigar: vale o que os dois combinarem.</p>' +
       '<div class="valor-grade">' + TODOS.filter(function (k) { return D.valorRef[k] > 1 || k === 'madeira'; }).map(function (k) {
@@ -199,7 +207,8 @@
       '<div class="linha-entre"><span class="fraco">Equilíbrio</span>' + seloValor(cg.quer, cg.da) + '</div>' +
       '<small class="obra-estoque' + (pl.completo ? ' vem' : ' falta') + '">' + RP.icone('carroca', 'ico-p') + RP.esc(pl.completo ? 'Se aceitarem, sua parte sai dos locais mais próximos (≈ ' + RP.fmtDuracao(pl.seg) + ').' : 'Faltam ' + txt(pl.faltaReino) + ' no reino todo.') + '</small>' +
       (av ? '<p class="nota-antiga">' + RP.icone('escudo', 'ico-p') + RP.esc(av) + '</p>' : '') +
-      '<p class="fraco" style="font-size:var(--fs-2)">A proposta revela que foi você. As duas cargas viajam visíveis no mapa e podem ser roubadas.</p></div><div style="height:var(--esp-8)"></div>';
+      '<p class="fraco" style="font-size:var(--fs-2)">A proposta revela que foi você. As duas cargas viajam visíveis no mapa e podem ser roubadas.</p></div>' +
+      campoRecado('recado-troca', tr.recado) + '<div style="height:var(--esp-8)"></div>';
     RP.$('.rodape-resumo', el).innerHTML = '<div class="resumo-linha"><b>' + RP.esc(txt(cg.da)) + ' por ' + RP.esc(txt(cg.quer)) + '</b></div><div class="resumo-linha fraco">para ' + RP.esc(reino(tr.reino).nome) + '</div>';
     RP.$('[data-tr-enviar]', el).classList.toggle('btn-inativo', !pl.completo || !!av || tr.da === tr.quer);
   }
@@ -208,6 +217,7 @@
     montar: function (el) {
       el.innerHTML = U.topo('Propor troca', 'comercio', 'Troca direta') + '<div class="conteudo-tela tr-conteudo"></div>' +
         '<div class="rodape-acao rodape-com-resumo"><div class="rodape-resumo"></div><button type="button" class="btn btn-primario btn-bloco btn-grande" data-tr-enviar>' + RP.icone('troca') + 'Enviar proposta</button></div>';
+      el.addEventListener('input', function (e) { if (e.target.id === 'recado-troca') tr.recado = e.target.value; });
       el.addEventListener('click', function (e) {
         var b, p;
         if ((b = e.target.closest('[data-tr-reino]'))) { tr.reino = b.getAttribute('data-tr-reino'); desenharTroca(el); return; }
@@ -226,7 +236,8 @@
           if (tr.da === tr.quer) { RP.aviso({ titulo: 'Recursos iguais', texto: 'Escolha recursos diferentes.', icone: 'info', tipo: 'alerta' }); return; }
           if (av) { RP.aviso({ titulo: 'Limite do novato', texto: av, icone: 'escudo', tipo: 'alerta', ms: 4200 }); return; }
           if (!RP.planoRequisicao(cg.da, CASTELO[tr.reino]).completo) { RP.aviso({ titulo: 'Recursos insuficientes', texto: 'Você não tem ' + txt(cg.da) + ' no reino.', icone: 'alerta', tipo: 'perigo' }); return; }
-          var o = { id: 'tr-' + Date.now(), para: tr.reino, da: cg.da, quer: cg.quer, horas: 0, estado: 'aguardando' }, quem = reino(tr.reino).nome;
+          var o = { id: 'tr-' + Date.now(), para: tr.reino, da: cg.da, quer: cg.quer, horas: 0, estado: 'aguardando', recado: (tr.recado || '').trim() }, quem = reino(tr.reino).nome;
+          tr.recado = '';
           C.minhas.unshift(o);
           RP.aviso({ titulo: 'Proposta enviada', texto: quem + ' recebe pelo sino e vê que foi você.', icone: 'troca', tipo: 'sucesso' });
           /* no protótipo, o outro reino aceita depois de alguns segundos */
@@ -269,6 +280,7 @@
         '<span class="stepper"><button type="button" class="btn btn-icone" data-pc-q="-1" aria-label="Menos"' + (pc.q <= 10 ? ' disabled' : '') + '>' + RP.icone('menos') + '</button><output class="num">' + RP.num(pc.q) + '</output><button type="button" class="btn btn-icone" data-pc-q="1" aria-label="Mais">' + RP.icone('mais') + '</button></span></div>' +
         '<div class="obj-add-lista" style="margin-top:var(--esp-2)">' + ['prata', 'ouro', 'ferro', 'comida'].map(function (k) { return '<button type="button" class="btn btn-p chip-sel" data-pc-rec="' + k + '" aria-pressed="' + (pc.rec === k) + '">' + RP.icone(k, 'ico-p r-' + k) + RP.esc(RP.nomeRecurso(k)) + '</button>'; }).join('') + '</div>' : '') +
       (ja ? '<p class="nota-antiga">' + RP.icone('pacto', 'ico-p') + 'Já há um pacto com este reino.</p>' : cheio ? '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + 'Você já tem ' + C.pactosMax + ' pactos ativos, o máximo.</p>' : '') +
+      campoRecado('recado-pacto', pc.recado) +
       '<p class="fraco" style="font-size:var(--fs-2);margin:var(--esp-3) 0 var(--esp-8)">Até ' + C.pactosMax + ' pactos ativos por reino. Tropas enviadas a um local do outro descobrem o pacto ao chegar e voltam sem combate.</p>';
     RP.$('.rodape-resumo', el).innerHTML = '<div class="resumo-linha"><b>' + pc.dias + (pc.dias > 1 ? ' dias' : ' dia') + ' sem ataques com ' + RP.esc(reino(pc.reino).nome) + '</b></div><div class="resumo-linha fraco">' + (pc.direcao === 'sem' ? 'sem pagamento' : (pc.direcao === 'eu pago' ? 'você paga ' : 'eles pagam ') + RP.esc(txt(carga))) + '</div>';
     RP.$('[data-pc-enviar]', el).classList.toggle('btn-inativo', !!ja || cheio);
@@ -278,6 +290,7 @@
     montar: function (el) {
       el.innerHTML = U.topo('Propor pacto', 'comercio', 'Não agressão') + '<div class="conteudo-tela pc-conteudo"></div>' +
         '<div class="rodape-acao rodape-com-resumo"><div class="rodape-resumo"></div><button type="button" class="btn btn-primario btn-bloco btn-grande" data-pc-enviar>' + RP.icone('pacto') + 'Enviar proposta</button></div>';
+      el.addEventListener('input', function (e) { if (e.target.id === 'recado-pacto') pc.recado = e.target.value; });
       el.addEventListener('click', function (e) {
         var b;
         if ((b = e.target.closest('[data-pc-reino]'))) { pc.reino = b.getAttribute('data-pc-reino'); desenharPacto(el); return; }
@@ -291,7 +304,8 @@
           var carga = {}; if (pc.direcao !== 'sem') carga[pc.rec] = pc.q;
           var quem = reino(pc.reino).nome, dados = { com: pc.reino, dias: pc.dias, carga: carga }, dir = pc.direcao === 'eu pago' ? 'eu pago' : pc.direcao === 'eu cobro' ? 'eles pagam' : null;
           if (dir === 'eu pago' && !RP.planoRequisicao(carga, CASTELO[pc.reino]).completo) { RP.aviso({ titulo: 'Recursos insuficientes', texto: 'Você não tem ' + txt(carga) + ' no reino.', icone: 'alerta', tipo: 'perigo' }); return; }
-          RP.aviso({ titulo: 'Proposta enviada', texto: quem + ' recebe pelo sino.', icone: 'pacto', tipo: 'sucesso' });
+          RP.aviso({ titulo: 'Proposta enviada', texto: quem + ' recebe pelo sino' + ((pc.recado || '').trim() ? ', com o seu recado.' : '.'), icone: 'pacto', tipo: 'sucesso' });
+          pc.recado = '';
           setTimeout(function () {
             RP.aviso({ titulo: quem + ' aceitou o pacto', texto: dir ? 'Começa quando o pagamento chegar.' : 'Começa agora.', icone: 'pacto', tipo: 'sucesso' });
             aceitarPacto(dados, dir);

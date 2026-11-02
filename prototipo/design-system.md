@@ -120,7 +120,7 @@ Locais de outros reinos nunca usam cor de reino: cinza, brasão "?", nome genér
 - SVG próprios (`js/icones.js`), grade 24 × 24. Nenhuma arte de terceiros.
 - Estilo: silhueta preenchida (`ic-s`) com entalhes escuros (`ic-d`) e linhas estruturais (`ic-l`).
 - Uso: `RP.icone('mina', 'ico-p r-ferro')`. Tamanhos 18 (`ico-p`), 24, 32 (`ico-g`).
-- Conjunto: recursos (madeira, pedra, comida, ferro, couro, peles, população, ouro, prata, aço, sal, cavalo, ervas, gema, minério raro, lendário, ruína); locais (castelo, vila, moradia, mina, serraria, pasto, armazém, ferraria, quartel, muralha, escombros, estaca); fauna (lobo, javali, urso, crocodilo, pata); unidades (tropas, explorador, bota, picareta, batedor, cerco); interface (mapa, vista, hexágonos, relatórios, menu, sino, mais, menos, alvo, camadas, fechar, voltar, avançar, relógio, escudo, alerta, olho, bandeira, estandarte, interrogação, coroa, martelo, cadeado, bússola, info, check, subir, seta, névoa, rota, ponte, temporada, troca, pacto, ferido, espada).
+- Conjunto: recursos (madeira, pedra, comida, ferro, couro, peles, população, ouro, prata, aço, sal, cavalo, ervas, gema, minério raro, lendário, ruína); locais (castelo, vila, moradia, mina, serraria, pasto, armazém, ferraria, quartel, muralha, escombros, estaca); fauna (lobo, javali, urso, crocodilo, pata); unidades (tropas, explorador, bota, picareta, batedor, cerco); interface (mapa, vista, hexágonos, relatórios, menu, sino, mais, menos, alvo, camadas, fechar, voltar, avançar, relógio, escudo, alerta, olho, bandeira, estandarte, interrogação, coroa, martelo, cadeado, bússola, info, check, subir, seta, névoa, rota, ponte, temporada, troca, pacto, ferido, espada, mensagem, conversa).
 - Ícone sozinho em botão precisa de `aria-label`.
 
 ---
@@ -305,6 +305,9 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Bônus de combate | `.bonus-linha` | Soma com as partes (armas, veterania, relíquia, lendário, legado) e o lembrete do teto de +50%. |
 | Troca | `.troca-linhas` + selo de equilíbrio | "Você recebe" e "Você dá" lado a lado com o valor; selo verde (a seu favor), vermelho (contra você) ou neutro (equilibrada). |
 | Valor de referência | `.valor-grade` | Selos com o valor de cada recurso em básicos. |
+| Mensagem | `.msg-card` (`.nova`) + `.msg-texto` | Brasão de quem mandou, quando, o texto em itálico com filete à esquerda e Responder. Enviada a dono desconhecido: brasão "?". |
+| Conversa da aliança | `.conversa` + `.conversa-lista` + `.conversa-envio` | Últimas mensagens com brasão (as suas à direita) e campo com Enviar (Enter também envia). |
+| Mensageiro no mundo | marcha `mensageiro` | Na Vista, cavaleiro com bandeira branca e rótulo "Mensageiro · tempo", sem "?"; no Mapa, ícone de carta. A folha diz de quem é, para quem vai e que ninguém o ataca. |
 | Pacto | `.selo-info` / `.selo-visivel` com contagem | "começa em…" enquanto o pagamento viaja; "termina em…" em vigor. No envio, `.faixa-alerta` com o pacto e o botão inativo. |
 
 ---

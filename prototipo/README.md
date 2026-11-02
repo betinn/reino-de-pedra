@@ -62,6 +62,7 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 20 | Precisa de você | `#/agora` (resumo no topo de Meu reino) |
 | 21 | Ferraria e eras | `#/ferraria` (em Tropas, Construção, Mais e na folha da ferraria) |
 | 22 | Comércio e diplomacia | `#/comercio`, `#/troca` (`?reino=<id>`), `#/pacto` (`?reino=<id>`) |
+| 23 | Mensagens | `#/mensagens`, `#/mensagem` (`?para=<reino>`, `?local=<id>`) |
 | — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
 
 Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolher no mapa o local de uma construção nova (vila, posto, rota).
@@ -120,6 +121,10 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 44. **Comércio:** Mais → Comércio e diplomacia → ofertas (Casa Mirante vende ouro 13% acima do valor; Casa Lúmen oferece pedra por prata) com o equilíbrio pelo valor de referência → Aceitar: sua parte sai dos locais mais próximos e a deles vem pelo mapa. Propor troca: só reinos conhecidos (e por quê), "você dá / você quer" e o equilíbrio. Com a Baronia da Fenda, sob escudo de novato, aparece o limite de 2.000 de valor por dia.
 45. **Pacto de não agressão:** Comércio → Casa Valdren cobra 600 de ferro por 3 dias → Aceitar e pagar → "começa em…" até a carga chegar → em vigor: atacar a Mina Rubra mostra a faixa do pacto e o envio fica bloqueado. Propor pacto: duração de 1 a 7 dias, quem paga (cobrar de reino sob escudo fica bloqueado), limite de 3 ativos.
 46. **Resgate:** Comércio → seu explorador a pé capturado por Valdren (pagar ou não) e um batedor do Corvo capturado pela sua guarnição (pedir resgate, libertar ou executar).
+47. **Mensageiro:** Mais → Mensagens (ou "Mensageiro" na folha de um local de outro reino) → recebidas (Valdren, Mirante) e enviadas (uma a caminho do Corvo; outra entregue ao dono desconhecido de uma mina, sem resposta) → Escrever: para um reino conhecido ou para o dono de um local desconhecido, até 200 caracteres → o mensageiro sai a cavalo com bandeira branca, visível na Vista e no Mapa; ao entregar, volta. Um mensageiro da Casa Mirante chega durante a sessão. Cada mensageiro ocupa 1 de população; "Treinar" faz outro.
+48. **Conversa da aliança:** Aliança → Conversa: as últimas mensagens dos membros e um campo para escrever. É o único chat do jogo.
+49. **Reforço a aliado:** Mapa → Enviar tropas → tocar no Castelo de Lúmen → Reforçar (as tropas continuam ocupando o seu teto). No envio completo, os locais aliados aparecem como destinos de reforço.
+50. **Recados:** ofertas e propostas de pacto mostram o recado de quem propôs; Propor troca e Propor pacto têm um campo de recado de até 120 caracteres.
 
 ---
 
@@ -172,6 +177,7 @@ prototipo/
     alianca.js        aliança (membros com limite), pedidos de recursos entre aliados
     ferraria.js       eras, armas e armaduras, equipamento lendário, veterania, feridos e teto de bônus
     comercio.js       troca direta, ofertas, pacto de não agressão, resgate e limite do novato
+    mensagens.js      mensageiros (bandeira branca), caixa de mensagens e conversa da aliança
     agora.js          "Precisa de você": urgências, oportunidades e andamento do reino
 ```
 
@@ -310,7 +316,7 @@ Seguem o **balanceamento aprovado** ([`../balanceamento/README.md`](../balanceam
 As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e os fluxos de criação, construção, recrutamento, exploração, caça, extração, ataque, batalha e bandeira.
 
 Revisão final:
-- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 56 rotas (todas as telas, ordem rápida, folha de torre, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque, ferraria, comércio, troca, pacto, extração de minério raro, jazida de aço): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
+- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 60 rotas (todas as telas, ordem rápida, folha de torre, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque, ferraria, comércio, troca, pacto, extração de minério raro, jazida de aço, mensagens, escrever mensagem, criação do reino, reforço a aliado): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
 - **Toque:** todos os botões e links com pelo menos 44 × 44 px.
 - **Toques por ação** (medidos no navegador headless, contando a abertura da aba ou do mapa):
 

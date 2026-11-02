@@ -44,7 +44,7 @@
       if (W.estado(j.c, j.l).v !== 'desconhecido' && !D.escavacoes.some(function (q) { return q.jazida === id; }))
         L.push({ g: 'oportunidade', ic: 'ruina', t: 'Ruína antiga com relíquia', d: 'ninguém escavando', href: '#/extracao?jazida=' + id, bt: 'Escavar' });
     });
-    L = L.concat(RP.pendenciasComercio ? RP.pendenciasComercio() : []);
+    L = L.concat(RP.pendenciasComercio ? RP.pendenciasComercio() : [], RP.sistema('comercio') && RP.pendenciasMensagens ? RP.pendenciasMensagens() : []);
     /* no seu reino */
     var nf = D.feridos.reduce(function (s, f) { return s + f.qtd; }, 0);
     if (nf) {

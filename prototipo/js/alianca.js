@@ -61,6 +61,7 @@
       }).join('') + '</div>' +
       '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Líder convida, expulsa e promove. Até ' + A.conselheirosMax + ' conselheiros convidam e aceitam pedidos de entrada. Se o líder entrar em regência, a liderança passa ao conselheiro mais antigo.</p>' +
       (membros.length < A.limite ? '<button type="button" class="btn btn-p btn-fantasma" data-convidar style="margin-top:var(--esp-2)">' + RP.icone('mais') + 'Convidar reino (' + (A.limite - membros.length) + ' vagas)</button>' : '') +
+      '<div class="secao-titulo">Conversa</div>' + RP.conversaHTML() +
       (A.tregua.length ? '<div class="secao-titulo">Em trégua</div><div class="pilha">' + A.tregua.map(function (t) {
         var fim = RP.fimItem(t);
         return '<div class="card linha">' + RP.brasao(t.brasao, { tamanho: 28 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(t.nome) + '</b><br><small class="fraco">' + (t.como === 'saiu' ? 'Saiu da aliança' : 'Foi expulso') + ' · nenhum lado ataca até o fim da trégua</small></span><span class="selo selo-info">' + RP.icone('pacto') + '<span data-fim="' + fim + '">' + RP.fmtResta(fim - Date.now()) + '</span></span></div>';
