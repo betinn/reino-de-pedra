@@ -237,6 +237,16 @@
       pct.toFixed(1) + '%"></i></div></div>';
   };
   RP.fimItem = function (it) { return it.fim || RP.fim(it.seg); };
+  /* item de fila (obra ou recrutamento): enquanto o material não chega, mostra a espera */
+  RP.itemFilaHTML = function (o) {
+    var esp = o.aguarda && o.aguarda > Date.now();
+    return RP.timerHTML(RP.esc(o.rotulo) + (esp ? ' <span class="selo selo-antigo selo-material">' + RP.icone('carroca') + 'material chega em <span data-fim="' + o.aguarda + '">' + RP.fmtResta(o.aguarda - Date.now()) + '</span></span>' : ''), o.seg, o.total, '', o.fim);
+  };
+  /* próxima posição livre na fila, respeitando a chegada do material */
+  RP.fimNaFila = function (fila, seg, aguarda) {
+    var ult = fila.length ? RP.fimItem(fila[fila.length - 1]) : Date.now();
+    return Math.max(ult, Date.now(), aguarda || 0) + seg * 1000;
+  };
   /* ---------------------------------------------------------------- estoques por local
      Recursos ficam no local onde foram produzidos ou guardados e só podem ser usados ali.
      Para usar em outro lugar, tropas ou carroças precisam levá-los. A população é do reino. */
@@ -250,6 +260,7 @@
   RP.prodLocal = prodLocal;
   RP.qtdRecurso = function (k, local) {
     if (k === 'populacao') return RP.popAtual();
+    if (local === '*') return RP.totalRecurso(k);   /* no reino todo */
     local = local || RP.SEDE;
     var e = RP.dados.estoques[local] || {}, base = e[k] || 0, t = prodLocal(local, k);
     if (!t) return base;

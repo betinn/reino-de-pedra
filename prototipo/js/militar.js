@@ -37,10 +37,7 @@
   var ext = { jazida: null, grupo: { lanceiro: 1, arqueiro: 0, cavalaria: 0 }, posto: false, caminho: 'curta', destinoRel: null };
   /* locais seus que podem receber uma relíquia (um por local, contando as que já estão a caminho) */
   function locaisLivres() {
-    return D.locais.filter(function (x) {
-      return x.reino === 'meu' && !RP.reliquiaEm(x.id) && !D.reliquias.some(function (r) { return r.transito && r.transito.para === x.id; }) &&
-        !D.escavacoes.some(function (q) { return q.destino === x.id; });
-    });
+    return D.locais.filter(function (x) { return x.reino === 'meu'; });
   }
   /* ruínas antigas entram como escavação: lenta, finita, rende 1 relíquia e esgota a ruína */
   function jazidasExtraiveis() { return D.jazidas.filter(function (j) { return (j.classe !== 'lendario' || D.ruinasComReliquia.indexOf(j.id) >= 0) && W.estado(j.c, j.l).v !== 'desconhecido'; }); }
@@ -63,7 +60,7 @@
   }
   function destinoRelHTML(j) {
     var livres = locaisLivres(), perfil = perfilGrupo(ext.grupo);
-    if (!livres.length) return '<div class="secao-titulo">Ao achar, levar para</div><p class="nota-antiga">' + RP.icone('info', 'ico-p') + '<span>Todos os seus locais já guardam uma relíquia. Mova uma antes de escavar.</span></p>';
+    if (!livres.length) return '<div class="secao-titulo">Ao achar, levar para</div><p class="nota-antiga">' + RP.icone('info', 'ico-p') + '<span>Nenhum local seu disponível.</span></p>';
     var ops = livres.map(function (x) { var c = RP.caminho([j.c, j.l], [x.c, x.l], perfil); return { x: x, seg: c ? c.seg : Infinity }; }).sort(function (a, b) { return a.seg - b.seg; });
     if (!ext.destinoRel || !livres.some(function (x) { return x.id === ext.destinoRel; })) ext.destinoRel = ops[0].x.id;
     return '<div class="secao-titulo">Ao achar, levar para</div><div class="escolhas escolhas-lista">' + ops.slice(0, 4).map(function (o) {
@@ -170,8 +167,14 @@
   var env = { modo: 'ataque', alvo: null, listaAberta: true, tipo: 'saque', grupo: { lanceiro: 0, arqueiro: 0, cavalaria: 0, ariete: 0 }, estandarte: false, caminho: 'curta',
     obj: {}, objAlvo: null, tatica: 'media', encher: false };
   var LEVA_RELIQUIA = { saque: true, ocupacao: true, cerco: true };   /* sabotagem e massacre não levam a relíquia */
-  function reliquiaAlvo(x) { var r = x && x.reino && x.reino !== 'meu' ? RP.reliquiaEm(x.id, true) : null; return r && r.dono !== 'meu' ? r : null; }
-  function alvosAtaque() { return D.locais.filter(function (x) { return x.reino !== 'meu' && W.estado(x.c, x.l).v !== 'desconhecido'; }); }
+  function reliquiaAlvo(x) {
+    if (!x || !x.reino || x.reino === 'meu' || W.aliado(x.reino)) return null;
+    var r = RP.reliquiaEm(x.id, true);
+    if (r && r.dono !== 'meu') return r;
+    var c = RP.concentracao(x.id);   /* brilho ou farol: sabe-se que há relíquias, não quais */
+    return c.visivel ? { nome: c.n + ' relíquias (tipos desconhecidos)', tipo: 'desconhecido', bonus: 0, generica: true } : null;
+  }
+  function alvosAtaque() { return D.locais.filter(function (x) { return x.reino !== 'meu' && !W.aliado(x.reino) && (W.estado(x.c, x.l).v !== 'desconhecido' || RP.concentracao(x.id).visivel); }); }
   function destinosReforco() { return D.locais.filter(function (x) { return x.reino === 'meu' && x.tipo !== 'castelo'; }); }
   function ruinasConhecidas() { return D.ruinas.filter(function (r) { return W.estado(r.c, r.l).v !== 'desconhecido'; }); }
   function nomeAlvo(x) { return x.reino ? W.nomeAparente(x) : x.nome; }
@@ -258,6 +261,29 @@
     itens.push(t.perdas ? 'Se tiverem ' + t.perdas + '% de baixas, recuam com o que já pegaram.' : 'Não recuam por baixas: lutam até cumprir ou cair.');
     return itens;
   }
+  /* ---------------------------------------------------------------- modelos e "repetir último" */
+  function copia(o) { return JSON.parse(JSON.stringify(o)); }
+  function aplicarModelo(md, alvoId) {
+    if (alvoId && acharAlvo(alvoId)) { env.alvo = alvoId; env.listaAberta = false; }
+    var x = acharAlvo(env.alvo), rel = reliquiaAlvo(x);
+    env.tipo = md.tipo === 'cerco' && x.tipo !== 'castelo' ? 'saque' : md.tipo;
+    env.tatica = md.tatica; env.estandarte = !!md.estandarte;
+    env.grupo = { lanceiro: 0, arqueiro: 0, cavalaria: 0, ariete: 0 };
+    Object.keys(md.grupo).forEach(function (k) { env.grupo[k] = Math.min(md.grupo[k], dispDe(k)); });
+    if (env.objAlvo !== env.alvo) { env.obj = {}; env.objAlvo = env.alvo; }
+    env.obj[env.tipo] = md.objetivos.filter(function (o) { return o.k !== 'reliquia' || rel; }).map(function (o) {
+      return o.k === 'recurso' && o.r === 'auto' ? { k: 'recurso', r: recursoDoAlvo(x), q: o.q } : copia(o);
+    });
+    if (!env.obj[env.tipo].length) env.obj[env.tipo] = objPadrao(env.tipo, x, rel);
+    env.modelo = md.id || 'ultimo';
+  }
+  function htmlModelos() {
+    return '<div class="modelos"><span class="rotulo">Modelos</span><div class="obj-add-lista">' +
+      (D.ultimoEnvio ? '<button type="button" class="btn btn-p chip-sel" data-repetir-ultimo aria-pressed="' + (env.modelo === 'ultimo') + '">' + RP.icone('voltar', 'ico-p') + 'Repetir último</button>' : '') +
+      D.modelos.map(function (md) { return '<button type="button" class="btn btn-p chip-sel" data-modelo="' + md.id + '" aria-pressed="' + (env.modelo === md.id) + '">' + RP.esc(md.nome) + '</button>'; }).join('') +
+      '<button type="button" class="btn btn-p btn-fantasma" data-salvar-modelo>' + RP.icone('mais', 'ico-p') + 'Salvar atual</button></div>' +
+      '<p class="fraco" style="font-size:var(--fs-2)">Um toque preenche tipo, tropas, objetivos e tática. Confira e envie.</p></div>';
+  }
   function htmlObjetivos(x, rel, esp, cap) {
     var lista = objetivos(), cat = catalogo(env.tipo, rel).filter(function (c) { return !lista.some(function (o) { return chaveObj(o) === chaveObj(c); }); });
     var levaCarga = env.tipo === 'saque' || env.tipo === 'cerco', soma = cargaObjs(lista), t = tatica();
@@ -315,10 +341,10 @@
         (q.ameaca ? '<span class="selo selo-perigo">Ameaçado</span>' : '') + '</button>';
     }).join('') + '</div>' + (!env.listaAberta && lista.length > 1 ? '<button type="button" class="btn btn-p btn-fantasma trocar-alvo" data-trocar-alvo>' + RP.icone('menu') + 'Trocar ' + (ataque ? 'alvo' : 'destino') + ' (' + lista.length + ' opções)</button>' : '');
     if (ataque) {
-      h += '<div class="card pilha" style="margin-top:var(--esp-3)"><div class="info">' +
+      h += htmlModelos() + '<div class="card pilha" style="margin-top:var(--esp-3)"><div class="info">' +
         '<div class="info-linha"><span class="fraco">Dono</span><span>' + (esp ? RP.esc(D.reinos[x.reino].nome) : 'Desconhecido') + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Defesa</span><span>' + (esp ? RP.esc(esp.defesa) : '<a href="#/exploradores?tipo=batedor&alvo=' + x.c + ',' + x.l + '">Desconhecida · espionar</a>') + '</span></div>' +
-        (rel ? '<div class="info-linha"><span class="fraco">Relíquia</span><span>' + RP.esc(rel.nome) + ' · ' + RP.RELIQUIA[rel.tipo].nome.toLowerCase() + ' +' + rel.bonus + '%</span></div>' : '') +
+        (rel ? '<div class="info-linha"><span class="fraco">Relíquia</span><span>' + RP.esc(rel.nome) + (rel.generica ? '' : ' · ' + RP.RELIQUIA[rel.tipo].nome.toLowerCase() + ' +' + rel.bonus + '%') + '</span></div>' : '') +
         (muroAlvo ? '<div class="info-linha"><span class="fraco">Muralha</span><span>' + RP.esc(RP.muros.descricao(muroAlvo).replace(' com null arqueiros', '')) + '</span></div>' : '') + '</div>' +
         (muroAlvo && muroAlvo.torres ? '<p class="nota-antiga">' + RP.icone('torre', 'ico-p') + '<span>Arqueiros nas torres atiram do alto e ficam protegidos até vocês entrarem ou derrubarem o muro. Aríetes derrubam muros.</span></p>' : '') +
         (rel && rel.tipo === 'resistencia' ? '<p class="nota-antiga">' + RP.icone('escudo', 'ico-p') + '<span>A relíquia de resistência dá +' + rel.bonus + '% de defesa a este local. Leve mais tropas.</span></p>' : '') +
@@ -378,7 +404,17 @@
           if (c) { var lo = objetivos(); if (c.k === 'reliquia') lo.splice(lo.length && lo[0].fixo ? 1 : 0, 0, c); else lo.push(c); }
           desenharEnvio(el); return;
         }
-        if ((b = e.target.closest('[data-tatica]'))) { env.tatica = b.getAttribute('data-tatica'); desenharEnvio(el); return; }
+        if ((b = e.target.closest('[data-tatica]'))) { env.tatica = b.getAttribute('data-tatica'); env.modelo = null; desenharEnvio(el); return; }
+        if ((b = e.target.closest('[data-modelo]'))) {
+          var md = D.modelos.filter(function (q) { return q.id === b.getAttribute('data-modelo'); })[0];
+          aplicarModelo(md); RP.aviso({ titulo: 'Modelo: ' + md.nome, texto: 'Tipo, tropas, objetivos e tática preenchidos.', icone: 'check', tipo: 'sucesso', ms: 1800 }); desenharEnvio(el); return;
+        }
+        if (e.target.closest('[data-repetir-ultimo]')) { aplicarModelo(D.ultimoEnvio, D.ultimoEnvio.alvo); RP.aviso({ titulo: 'Último ataque', texto: 'Mesmo alvo, tropas, objetivos e tática.', icone: 'voltar', tipo: 'sucesso', ms: 1800 }); desenharEnvio(el); return; }
+        if (e.target.closest('[data-salvar-modelo]')) {
+          var nm = 'Meu modelo ' + (D.modelos.filter(function (q) { return /^md-u/.test(q.id); }).length + 1);
+          D.modelos.push({ id: 'md-u' + Date.now(), nome: nm, tipo: env.tipo, tatica: env.tatica, estandarte: env.estandarte, grupo: copia(env.grupo), objetivos: copia(objetivos()) });
+          RP.aviso({ titulo: 'Modelo salvo', texto: nm + ': aparece no topo do envio.', icone: 'check', tipo: 'sucesso' }); desenharEnvio(el); return;
+        }
         if (e.target.closest('[data-encher]')) { env.encher = !env.encher; desenharEnvio(el); return; }
         if (passoGrupo(e, env.grupo, dispDe)) { desenharEnvio(el); return; }
         if (e.target.closest('[data-enviar-tropas]')) {
@@ -393,7 +429,8 @@
               objetivos: ataque ? textoObjs(objs, x, relX) : undefined, tatica: ataque ? tat.nome : undefined,
               voltam: ataque ? quandoVoltam(objs, x, relX, env._carga) : undefined,
               nome: ataque ? tipo.nome + ': ' + nomeAlvo(x) : ocupar ? 'Ocupação: ' + x.nome : 'Reforço: ' + x.nome, resumo: partesGrupo(env.grupo) + (ataque ? (env.estandarte ? ' · com estandarte' : ' · sem estandarte') : ''), seg: esc.seg }, esc.hexes);
-            env.grupo = { lanceiro: 0, arqueiro: 0, cavalaria: 0, ariete: 0 };
+            if (ataque) D.ultimoEnvio = { alvo: x.id, tipo: env.tipo, tatica: env.tatica, estandarte: env.estandarte, grupo: copia(env.grupo), objetivos: copia(objs), horas: 0 };
+            env.grupo = { lanceiro: 0, arqueiro: 0, cavalaria: 0, ariete: 0 }; env.modelo = null;
             RP.aviso({ titulo: ataque ? 'Ataque a caminho' : ocupar ? 'Tropas a caminho da ruína' : 'Reforços a caminho', texto: 'Chegam em ' + RP.fmtDuracao(esc.seg) + '.', icone: ataque ? 'tropas' : 'escudo', tipo: 'sucesso' });
             U.irParaMarcha(m);
           };
@@ -414,6 +451,7 @@
       env.listaAberta = !(params.get('alvo') || params.get('destino'));
       if (params.get('alvo')) env.alvo = params.get('alvo');
       if (params.get('destino')) env.alvo = params.get('destino');
+      if (env.modo === 'ataque' && params.get('repetir') && D.ultimoEnvio) aplicarModelo(D.ultimoEnvio, params.get('alvo') || D.ultimoEnvio.alvo);
       RP.$('.envio-topo', el).innerHTML = U.topo(env.modo === 'ataque' ? 'Envio de ataque' : env.modo === 'ocupar' ? 'Ocupar ruína' : 'Enviar reforços', 'tropas');
       desenharEnvio(el);
     }

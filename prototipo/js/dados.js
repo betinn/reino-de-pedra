@@ -6,7 +6,7 @@
   var RP = (window.RP = window.RP || {});
 
   RP.dados = {
-    temporada: { numero: 3, nome: 'Temporada do Ferro Frio', diasRestantes: 41, reinos: 240 },
+    temporada: { numero: 3, nome: 'Temporada do Ferro Frio', diasRestantes: 41, reinos: 30, limiteReinos: 30 },
 
     jogador: {
       reino: 'meu',
@@ -71,6 +71,8 @@
       meu: { nome: 'Pedralva', cor: 'meu', brasao: null },
       valdren: { nome: 'Casa Valdren', cor: 'rival-1', brasao: { forma: 'classico', divisao: 'partido', cor1: 'vermelho', cor2: 'ouro', simbolo: 'estrela', corSimbolo: 'negro' } },
       corvo: { nome: 'Ordem do Corvo', cor: 'rival-2', brasao: { forma: 'redondo', divisao: 'cortado', cor1: 'negro', cor2: 'purpura', simbolo: 'lua', corSimbolo: 'prata' } },
+      lumen: { nome: 'Casa Lúmen', cor: 'aliado', brasao: { forma: 'portugues', divisao: 'cortado', cor1: 'verde', cor2: 'prata', simbolo: 'estrela', corSimbolo: 'ouro' } },
+      fenda: { nome: 'Baronia da Fenda', cor: 'aliado', brasao: { forma: 'classico', divisao: 'banda', cor1: 'castanho', cor2: 'ouro', simbolo: 'chave', corSimbolo: 'negro' } },
       desconhecido: { nome: 'Dono desconhecido', cor: 'desconhecido', brasao: null }
     },
 
@@ -111,6 +113,8 @@
       { id: 'c-serraria', reino: 'corvo', tipo: 'serraria', nome: 'Serraria', c: 36, l: 23, terreno: 'floresta', nivel: '?' },
       { id: 'c-armazem', reino: 'corvo', tipo: 'armazem', nome: 'Armazém', c: 33, l: 25, terreno: 'planicie', nivel: '?' },
 
+      { id: 'a-castelo', reino: 'lumen', tipo: 'castelo', nome: 'Castelo de Lúmen', c: 10, l: 30, terreno: 'planicie', nivel: 3 },
+      { id: 'f-castelo', reino: 'fenda', tipo: 'castelo', nome: 'Forte da Fenda', c: 3, l: 12, terreno: 'planicie', nivel: 4 },
       { id: 'x-mina', reino: 'desconhecido', tipo: 'mina', nome: 'Mina', c: 7, l: 5, terreno: 'colina', nivel: '?', escudo: true }
     ],
 
@@ -334,6 +338,7 @@
 
     /* Notificações (exemplos). horas: há quanto tempo. ir: rota do protótipo. */
     notificacoes: [
+      { id: 'n13', cat: 'social', titulo: 'Casa Lúmen pede 400 de pedra', texto: 'Para uma torre de arqueiros. A ajuda viaja e pode ser roubada no caminho.', horas: 1.5, lido: false, ir: 'alianca' },
       { id: 'n12', cat: 'exploracao', titulo: 'Espião visto perto da Vila do Vau', texto: 'A guarnição viu um batedor seguindo para o leste. Avistamentos somem do mapa em 10 h.', horas: 3, lido: false, ir: 'mapa?modo=tatico&abrir=avist:av-espiao' },
       { id: 'n11', cat: 'ataque', titulo: 'Relíquia roubada', texto: 'O Cálice das Colheitas foi levado da Vila do Moinho. As tropas que o levam seguem para o leste: ainda dá para interceptar.', horas: 0.2, lido: false, ir: 'relatorio?id=r-roubo' },
       { id: 'n1', cat: 'ataque', titulo: 'Vila do Vau está sendo atacada', texto: 'Forças desconhecidas. Envie reforços ou recue.', horas: 0.07, lido: false, ir: 'batalha' },
@@ -399,7 +404,7 @@
         { nome: 'Vale do Junco', brasao: { forma: 'classico', divisao: 'partido', cor1: 'verde', cor2: 'prata', simbolo: 'lua', corSimbolo: 'negro' }, baixas: 760, perdas: 1180, tropas: 540, familias: 3010 },
         { reino: 'meu', baixas: 640, perdas: 390, tropas: 420, familias: 1240 }
       ],
-      minhaPosicao: { baixas: 41, perdas: 77, tropas: 58, familias: 33 }
+      minhaPosicao: { baixas: 14, perdas: 22, tropas: 17, familias: 9 }
     },
 
     /* Relíquias lendárias: uma por reino no mundo; escavadas em ruínas antigas, guardadas num local
@@ -409,10 +414,32 @@
       { id: 'rl-pedra-vale', nome: 'Pedra do Vale', tipo: 'producao', bonus: 15, dono: 'meu', local: 'mina-vale', origem: 'Escavada numa ruína antiga no dia 9' },
       { id: 'rl-muralha-viva', nome: 'Muralha Viva', tipo: 'resistencia', bonus: 20, dono: 'meu', local: 'castelo', origem: 'Tomada num saque no dia 21' },
       { id: 'rl-lamina', nome: 'Lâmina do Rei Antigo', tipo: 'ataque', bonus: 15, dono: 'valdren', local: 'v-mina', espionada: 10 },
+      { id: 'rl-corvo-1', nome: 'Coroa de Espinhos', tipo: 'resistencia', bonus: 20, dono: 'corvo', local: 'c-mina' },
+      { id: 'rl-corvo-2', nome: 'Olho do Corvo', tipo: 'ataque', bonus: 15, dono: 'corvo', local: 'c-mina' },
+      { id: 'rl-corvo-3', nome: 'Sino de Bronze', tipo: 'producao', bonus: 15, dono: 'corvo', local: 'c-mina' },
       { id: 'rl-calice', nome: 'Cálice das Colheitas', tipo: 'producao', bonus: 15, dono: null, local: null, roubada: { horas: 0.2, de: 'vila-moinho', origem: 'leste', marcha: 'm-roubo' } }
     ],
     ruinasComReliquia: ['j-ruina'],
     escavacoes: [],
+    /* Aliança: limite de membros para não desequilibrar um mundo de até 30 reinos */
+    alianca: {
+      nome: 'Pacto da Pedra', limite: 5, desde: 'dia 12',
+      brasao: { forma: 'classico', divisao: 'esquartelado', cor1: 'azul', cor2: 'verde', simbolo: 'torre', corSimbolo: 'prata' },
+      membros: ['meu', 'lumen', 'fenda'], papeis: { meu: 'Líder', lumen: 'Membro', fenda: 'Membro' },
+      castelos: { lumen: 'a-castelo', fenda: 'f-castelo' }
+    },
+    /* Pedidos de recursos entre aliados. A ajuda viaja: leva tempo e pode ser roubada no caminho. */
+    pedidos: [
+      { id: 'pd-1', de: 'lumen', para: 'meu', carga: { pedra: 400 }, motivo: 'Torre de arqueiros no Castelo de Lúmen', horas: 1.5, estado: 'aberto' },
+      { id: 'pd-2', de: 'meu', para: 'fenda', carga: { ferro: 300 }, local: 'quartel', motivo: 'Lanceiros', horas: 0.6, estado: 'aceito' }
+    ],
+    /* Modelos de ataque: alvo à parte, o resto vem pronto. recurso 'auto' = recurso principal do alvo. */
+    modelos: [
+      { id: 'md-saque', nome: 'Saque rápido', tipo: 'saque', tatica: 'conservadora', estandarte: false, grupo: { lanceiro: 10 }, objetivos: [{ k: 'recurso', r: 'auto', q: 1000 }] },
+      { id: 'md-reliquia', nome: 'Tomar relíquia', tipo: 'saque', tatica: 'agressiva', estandarte: false, grupo: { lanceiro: 15, arqueiro: 10 }, objetivos: [{ k: 'reliquia' }, { k: 'recurso', r: 'auto', q: 500 }] },
+      { id: 'md-sabotar', nome: 'Danificar', tipo: 'sabotagem', tatica: 'media', estandarte: false, grupo: { lanceiro: 12 }, objetivos: [{ k: 'construcao', q: 1 }] }
+    ],
+    ultimoEnvio: { alvo: 'v-mina', tipo: 'saque', tatica: 'media', estandarte: false, grupo: { lanceiro: 12 }, objetivos: [{ k: 'recurso', r: 'ferro', q: 1000 }, { k: 'recurso', r: 'pedra', q: 500 }], horas: 9 },
 
     /* Exílio (exemplo) */
     exilio: {
@@ -431,7 +458,7 @@
       crocodilos: { comida: '40–60', couro: '50–70', peles: '0' }
     },
 
-    notificacoesNaoLidas: 5
+    notificacoesNaoLidas: 6
   };
 
   RP.TIPOS_LOCAL = {

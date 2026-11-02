@@ -23,6 +23,15 @@
       return r.local === localId && (!soVisivel || r.dono === 'meu' || r.espionada !== undefined);
     })[0];
   };
+  /* concentração: relíquias juntas somam bônus, mas chamam atenção.
+     2 no mesmo local brilham para quem já explorou a área; 3 ou mais viram farol, visível para todos, até na névoa. */
+  RP.concentracao = function (localId) {
+    var rs = D.reliquias.filter(function (r) { return r.local === localId; }), n = rs.length, x = W.local(localId);
+    var nivel = n >= 3 ? 'farol' : n === 2 ? 'brilho' : n === 1 ? 'oculta' : 'nenhuma';
+    var visivel = !!x && x.reino !== 'meu' && (nivel === 'farol' || (nivel === 'brilho' && W.estado(x.c, x.l).v !== 'desconhecido'));
+    return { n: n, nivel: nivel, visivel: visivel, reliquias: rs };
+  };
+  RP.TEXTO_CONC = { brilho: 'Brilha: quem já explorou a área vê que há relíquias aqui.', farol: 'Farol: visível para todos os reinos, até na névoa.' };
   /* relíquia que uma marcha está carregando agora (as suas e a sua que foi roubada: você sabe que ela vai ali) */
   RP.reliquiaNaMarcha = function (marchaId) {
     var agora = Date.now();
@@ -127,10 +136,17 @@
         : '<p class="fraco" style="font-size:var(--fs-2)">Levada da ' + RP.esc(nomeLocal(r.roubada.de)) + ' por forças desconhecidas vindas do ' + RP.esc(r.roubada.origem) + '. Paradeiro desconhecido.</p>' +
           '<div class="linha relq-acoes"><a class="btn btn-p btn-primario" href="#/exploradores?tipo=batedor">' + RP.icone('batedor') + 'Espionar para achar</a><a class="btn btn-p btn-fantasma" href="#/relatorio?id=r-roubo">' + RP.icone('relatorios') + 'Relatório</a></div>') + '</div>';
   }
+  function cartaoConcentracao(x) {
+    var c = RP.concentracao(x.id);
+    return '<div class="card relq-card"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + c.n + ' relíquias juntas</b><br><small class="fraco">' + RP.esc(W.nomeAparente(x)) + ' · dono desconhecido · tipos desconhecidos</small></span><span class="selo selo-destaque">' + (c.nivel === 'farol' ? 'Farol' : 'Brilho') + '</span></div>' +
+      '<p class="fraco" style="font-size:var(--fs-2)">' + RP.TEXTO_CONC[c.nivel] + ' Espione para saber de quem são e o que fazem.</p>' +
+      '<div class="linha relq-acoes"><a class="btn btn-p btn-primario" href="#/exploradores?tipo=batedor&alvo=' + x.c + ',' + x.l + '">' + RP.icone('batedor') + 'Espionar</a><a class="btn btn-p btn-fantasma" href="#/envio?alvo=' + x.id + '">' + RP.icone('tropas') + 'Planejar ataque</a></div></div>';
+  }
   var tela = null;
   function desenhar(el) {
     var meu = minhas(), conhecidas = D.reliquias.filter(function (r) { return r.dono && r.dono !== 'meu' && r.espionada !== undefined; });
     var roubadas = D.reliquias.filter(function (r) { return r.roubada; });
+    var avista = D.locais.filter(function (x) { var c = RP.concentracao(x.id); return c.visivel && !c.reliquias.every(function (r) { return r.espionada !== undefined; }); });
     var ruinas = D.ruinasComReliquia.map(function (id) { return W.jazida(id); }).filter(function (j) { return W.estado(j.c, j.l).v !== 'desconhecido'; });
     RP.$('.relq-conteudo', el).innerHTML =
       '<div class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>Há <b>uma relíquia para cada reino</b> do mundo. Guarde-a num local para fortalecê-lo. Relíquias <b>não andam sozinhas</b>: tropas as carregam, e no caminho podem ser <b>roubadas</b>. Só a <b>espionagem</b> revela onde estão as dos outros.</span></div>' +
@@ -138,7 +154,8 @@
       '<div class="relq-tipos">' + Object.keys(TIPOS).map(function (k) { return '<div class="relq-tipo tipo-' + k + '">' + RP.icone(TIPOS[k].icone) + '<b>' + TIPOS[k].nome + '</b><small class="fraco">' + TIPOS[k].txt + '</small></div>'; }).join('') + '</div>' +
       (roubadas.length ? '<div class="secao-titulo">Roubadas de você</div><div class="pilha">' + roubadas.map(cartaoRoubada).join('') + '</div>' : '') +
       '<div class="secao-titulo">Suas relíquias</div><div class="pilha">' + (meu.length ? meu.map(cartaoMinha).join('') : '<p class="fraco">Nenhuma relíquia com você.</p>') + '</div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Uma relíquia por local. Quem vencer um saque, uma ocupação ou um cerco no local leva a relíquia.</p>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Relíquias no mesmo local somam bônus, mas chamam atenção: 2 brilham para quem já explorou a área; 3 ou mais viram farol, visível para todos. Quem vencer um saque, uma ocupação ou um cerco no local leva as relíquias.</p>' +
+      (avista.length ? '<div class="secao-titulo">À vista no mapa</div><div class="pilha">' + avista.map(cartaoConcentracao).join('') + '</div>' : '') +
       '<div class="secao-titulo">Conhecidas por espionagem</div><div class="pilha">' + (conhecidas.length ? conhecidas.map(cartaoConhecida).join('') : '<p class="fraco">Espione locais de outros reinos para descobrir relíquias.</p>') + '</div>' +
       '<div class="secao-titulo">Ruínas antigas</div><div class="pilha">' + (ruinas.length ? ruinas.map(function (j) {
         var esc = D.escavacoes.filter(function (q) { return q.jazida === j.id; })[0], e = W.estado(j.c, j.l);
@@ -164,7 +181,8 @@
       ? '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + '<span><b>Escolta pequena.</b> Quem a vir no caminho pode roubar a relíquia com poucas tropas.</span></p>'
       : '<div class="risco-linha ok">' + RP.icone('escudo') + '<span><b>Escolta forte</b><br><small>Roubar no caminho exige um exército. Ainda assim, ela fica visível no mapa.</small></span></div>';
   }
-  function livre(x) { return !RP.reliquiaEm(x.id) && !D.reliquias.some(function (q) { return q.transito && q.transito.para === x.id; }); }
+  function livre() { return true; }   /* sem limite por local: juntar relíquias soma bônus e chama atenção */
+  function depois(x) { return D.reliquias.filter(function (q) { return q.local === x.id || (q.transito && q.transito.para === x.id); }).length + 1; }
   function desenharTransporte(el) {
     var r = relq(tr.rel), de = W.local(r.local), cast = W.local('castelo');
     var destinos = D.locais.filter(function (x) { return x.reino === 'meu' && x.id !== r.local; });
@@ -177,10 +195,12 @@
     var h = '<div class="card relq-card tipo-' + r.tipo + '">' + cabRel(r) + '<p class="fraco" style="font-size:var(--fs-2)">Hoje em <b style="color:var(--cor-texto)">' + RP.esc(nomeLocal(r.local)) + '</b></p></div>' +
       '<div class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('tropas', 'ico-p') + '<span>A relíquia <b>não anda sozinha</b>. Suas tropas ' + (ida && ida.seg ? 'saem do castelo, buscam a relíquia e a levam' : 'levam a relíquia') + ' até o destino. No caminho, ela fica visível e <b>pode ser roubada</b>.</span></div>' +
       '<div class="secao-titulo">1. Destino</div><div class="escolhas escolhas-lista">' + destinos.map(function (x) {
-        var ok = livre(x), oc = RP.reliquiaEm(x.id);
-        return '<button type="button" class="escolha escolha-linha' + (ok ? '' : ' bloqueado') + '" data-destino-tr="' + x.id + '" aria-pressed="' + (x.id === tr.destino) + '"' + (ok ? '' : ' aria-disabled="true"') + '><span class="ico-placa dono-meu">' + RP.icone(x.tipo) + '</span>' +
-          '<span class="escolha-txt"><b>' + RP.esc(nomeLocal(x.id)) + '</b><small class="fraco">' + (ok ? RP.TIPOS_LOCAL[x.tipo] : oc ? 'Já guarda ' + RP.esc(oc.nome) : 'Outra relíquia a caminho') + '</small></span></button>';
+        var n = depois(x), nv = n >= 3 ? 'farol' : n === 2 ? 'brilho' : null;
+        return '<button type="button" class="escolha escolha-linha" data-destino-tr="' + x.id + '" aria-pressed="' + (x.id === tr.destino) + '"><span class="ico-placa dono-meu">' + RP.icone(x.tipo) + '</span>' +
+          '<span class="escolha-txt"><b>' + RP.esc(nomeLocal(x.id)) + '</b><small class="fraco">' + RP.TIPOS_LOCAL[x.tipo] + (n > 1 ? ' · ficaria com ' + n + ' relíquias' : '') + '</small></span>' +
+          (nv ? '<span class="selo selo-antigo">' + (nv === 'farol' ? 'Farol' : 'Brilho') + '</span>' : '') + '</button>';
       }).join('') + '</div>' +
+      (para && depois(para) >= 2 ? '<p class="nota-antiga">' + RP.icone('lendario', 'ico-p') + '<span>Com ' + depois(para) + ' relíquias em ' + RP.esc(nomeLocal(para.id)) + ', os bônus somam, mas o local ' + (depois(para) >= 3 ? 'vira farol: visível para todos os reinos, até na névoa.' : 'passa a brilhar para quem já explorou a área.') + '</span></p>' : '') +
       '<div class="secao-titulo">2. Escolta</div><div class="card pilha">' + G.linhas(tr.grupo, ['lanceiro', 'arqueiro', 'cavalaria'], G.disp) +
       '<div class="ext-numeros"><div><span class="fraco">Tropas</span><b class="num">' + n + '</b></div><div><span class="fraco">Força</span><b class="num">' + Math.round(G.forca(tr.grupo)) + '</b></div><div><span class="fraco">Velocidade</span><b>' + perfil.vel + '</b></div></div>' +
       notaEscolta(tr.grupo) + '</div>' +
@@ -190,7 +210,7 @@
         '<div class="pilha" style="margin-top:var(--esp-3)">' + U.opcaoCaminho('curta', op.curta, tr.caminho) + U.opcaoCaminho('segura', op.segura, tr.caminho) + '</div>' +
         U.blocoRisco(volta.perigo ? (G.forca(tr.grupo) >= 12 ? 'nenhum' : volta.perigo.nivel) : null, volta.perigo, false) +
         '<div style="height:var(--esp-6)"></div>'
-        : '<p class="fraco">' + (para ? 'Sem caminho possível.' : 'Todos os seus locais já guardam uma relíquia.') + '</p>');
+        : '<p class="fraco">Sem caminho possível.</p>');
     RP.$('.tr-conteudo', el).innerHTML = h;
     var total = volta && ida ? ida.seg + volta.seg : 0;
     RP.$('.rodape-resumo', el).innerHTML = n && total ? '<div class="resumo-linha"><b>' + RP.esc(r.nome) + ' → ' + RP.esc(nomeLocal(para.id)) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(total) + '</span></div><div class="resumo-linha fraco">escolta: ' + G.partes(tr.grupo) + (ida.seg ? ' · busca em ' + RP.fmtDuracao(ida.seg) : '') + '</div>'

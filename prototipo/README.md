@@ -58,6 +58,8 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 16 | Retorno após regência | `#/regencia` (exemplo, em Mais) |
 | 17 | Relíquias lendárias | `#/reliquias` (em Mais, em Meu reino e nas folhas). Escavação: `#/extracao?jazida=j-ruina`. Mover com escolta: `#/transporte?rel=<id>`. Interceptar: `#/interceptar?marcha=<id>` |
 | 18 | Transportar recursos (caravana) | `#/caravana` (`?para=<local>`, `?de=<local>`, `?leva=madeira:300,pedra:150`) |
+| 19 | Aliança e pedido de recursos | `#/alianca`, `#/pedido?reino=<id>` |
+| 20 | Precisa de você | `#/agora` (resumo no topo de Meu reino) |
 | — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
 
 Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolher no mapa o local de uma construção nova (vila, posto, rota).
@@ -102,6 +104,11 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 30. **Caravana alheia:** uma "Caravana desconhecida" com ferro cruza a área visível → folha com carga estimada → Interceptar.
 31. **Muros:** Construção → Defesas → seus muros (prévia, trechos, torres, arqueiros no alto; subir nível; erguer torre) e Nova muralha (escolher um ou vários locais vizinhos, prévia do perímetro, custo alto somando os estoques dos locais envolvidos). No mapa, o muro contorna os locais; na Vista aparecem as ameias e arqueiros nas torres. Atacar a Mina Rubra mostra a muralha e as torres do alvo.
 32. **Espião visto:** notificação → mapa com "Espião · há 3 h" → folha com quem viu, rumo e "some do mapa em 6 h 59 min". Um avistamento de 11 h já foi limpo ao abrir.
+33. **Construir sem logística manual:** Construção → cada obra diz de onde vem o material ("Parte do material vem de Armazém Real · chega em ≈ 6 min") → Construir → a obra entra na fila com "material chega em 06:23" e carregadores saem a pé com sacos e toras, visíveis na Vista. O recrutamento faz o mesmo para o quartel. Muros e torres também.
+34. **Modelos de ataque:** Envio de ataque → Modelos (Repetir último, Saque rápido, Tomar relíquia, Danificar, Salvar atual) → um toque preenche tipo, tropas, objetivos e tática. Tropas → "Repetir último ataque".
+35. **Faróis:** a Mina do Corvo guarda 3 relíquias e vira farol: aparece no Mapa e na Vista mesmo na névoa ("3 relíquias · farol"), entra em Relíquias → À vista e no envio de ataque. Mover a Pedra do Vale para o castelo avisa que ele passa a brilhar.
+36. **Aliança:** Mais → Aliança (Pacto da Pedra, 3 de 5) → pedido da Casa Lúmen (Enviar sai dos locais mais próximos, visível e roubável) → Pedir a um membro → o aliado aceita e a carroça dele vem pelo mapa. Castelos aliados aparecem em verde, com nome.
+37. **Precisa de você:** topo de Meu reino (3 itens mais urgentes) ou Mais → lista em Agora, Oportunidades e No seu reino, cada item com um botão. Nada obrigatório.
 
 ---
 
@@ -151,6 +158,8 @@ prototipo/
     reliquias.js      relíquias lendárias: tela, mover com escolta, interceptar, chegada e fim da escavação
     logistica.js      estoques por local na prática: caravana, carroças, chegada das cargas
     defesas.js        muros (área, trechos, torres), aba Defesas e avistamentos com validade
+    alianca.js        aliança (membros com limite), pedidos de recursos entre aliados
+    agora.js          "Precisa de você": urgências, oportunidades e andamento do reino
 ```
 
 ---
@@ -204,7 +213,7 @@ As regras definidas estão no `CLAUDE.md`. Detalhes que o protótipo precisou as
 
 | Tema | Aplicado | Alternativas |
 |---|---|---|
-| Quantas por local | Uma relíquia por local. | Sem limite (empilhar no castelo); ou bônus decrescente quando há mais de uma. |
+| Quantas por local | Sem limite: relíquias juntas somam bônus. Regra sua: quanto mais juntas, mais visíveis. Aplicado: 1 só aparece com espionagem; 2 brilham para quem já explorou a área; 3 ou mais viram farol, visível para todos, até na névoa. | Visibilidade por raio crescente em vez de degraus. |
 | Roubo | Saque, ocupação ou cerco vitorioso levam a relíquia. No saque, "Priorizar a relíquia" a traz antes dos recursos. Sabotagem e massacre não levam. | Só ocupação leva; ou a relíquia ocupa carga como recurso. |
 | Escolta ao mover | As tropas saem do castelo, buscam a relíquia e a levam (duas pernas). A relíquia fortalece a origem até ser pega. Escolta escolhida pelo jogador; abaixo de uma força mínima, aviso de escolta pequena. | Usar a guarnição do próprio local; escolta mínima obrigatória. |
 | Depois de escavar | O grupo de escavação carrega a relíquia até um local escolhido antes de enviar. | Escolher o destino só ao achar (a relíquia espera na ruína, exposta). |
@@ -216,7 +225,7 @@ As regras definidas estão no `CLAUDE.md`. Detalhes que o protótipo precisou as
 | Escavação | Uma unidade já escava (≈ 12 h); mais tropas e posto encurtam, mínimo de 4 h. Tropas ficam paradas na ruína. | Tempo fixo; ou exigir prospector. |
 | Bônus (mock) | Ataque +15% nas tropas que saem do local; produção +15% do local; resistência +20% na defesa do local. | Bônus que cresce com o tempo guardado; bônus menor fora do castelo. |
 | Fim da temporada | Relíquias lendárias ficam na temporada (recomeçam com o mapa). São distintas das relíquias da temporada do legado. | Quem termina com relíquias ganha um título ou uma relíquia de legado. |
-| Mundo mock | 240 reinos → 240 relíquias (antes o mock tinha 12.408 reinos). | — |
+| Mundo | Até 30 reinos por mundo (regra sua) → até 30 relíquias. | — |
 
 ## Objetivos e tática do ataque (sub-decisões aplicadas, para aprovar)
 
@@ -241,16 +250,28 @@ As regras (recursos transportados até onde são usados, veículos construídos 
 |---|---|---|
 | Barra de recursos | Mostra o estoque do castelo (sede); a folha mostra cada local e o total do reino. | Mostrar o total do reino com aviso; seletor de local na barra. |
 | Produção | Cada local acumula a própria produção (serraria: madeira; minas: ferro e pedra; vilas e pasto: comida). Valiosos ficam no Armazém Real. | Toda produção vai direto ao armazém mais próximo. |
-| Onde se usa | Obra usa o estoque do local da obra; obra nova e carroças, o do castelo; recrutamento, o do quartel; posto de extração sai do castelo com o grupo. | Recrutar com o estoque do castelo. |
+| Onde se usa | Obra usa o estoque do local da obra; o que falta vem por requisição automática dos locais mais próximos (regra sua). Recrutamento: quartel, idem. | — |
+| Requisição | Origens em ordem de distância; a obra entra na fila e só começa quando o material chega. A carga sai da origem na hora e é consumida pela obra ao chegar. Carregadores: 1 a cada 50 de carga, a pé, sem escolta. | Usar carroças livres quando houver; escolta automática para cargas grandes. |
 | Veículos | Carroça (500, lenta, madeira + ferro) e Carroção (1.500, média, usa 2 cavalos de raça). Ficam no castelo: saem, buscam na origem e levam. | Veículos parados em qualquer local; animais de carga separados. |
 | Escolta | Opcional; carrega um pouco (25 por ponto de carga). Abaixo de uma força mínima, aviso "pouco protegida" (fauna e saqueadores). | Escolta obrigatória acima de certa carga. |
 | Reserva | A carga sai do estoque da origem ao enviar e entra no destino ao chegar. | Sai só quando a caravana passa pela origem. |
-| Abastecimento | Não há caravana automática repetida no protótipo. | Rota de abastecimento: repetir a viagem a cada X horas, para quem fica offline. |
+| Abastecimento | Sem rota repetida (decisão sua: fica para depois). A requisição automática cobre o caso comum. | — |
 | Muro de vários locais | A área é a cadeia de hexágonos entre os locais escolhidos (até 3 hexágonos entre vizinhos); o muro contorna essa área. | Desenhar o traçado do muro à mão no mapa. |
 | Custo do muro | Por trecho (100 de pedra + 40 de madeira); subir nível custa metade por trecho e nível. O material precisa estar nos locais dentro do muro. | Custo pela área envolvida. |
 | Torres | 400 de pedra + 150 de madeira; +4 arqueiros no alto. | Torres sem limite de arqueiros; arqueiros saem da guarnição. |
 | Muro alheio | Visível quando a área já foi explorada; nível e torres aparecem no envio de ataque. | Só a espionagem mostra o nível. |
 | Avistamentos | Espiões e exércitos vistos ficam 10 h e somem; a limpeza roda a cada minuto. Placas de perigo da fauna seguem a névoa e não somem. | Validade diferente por tipo; limpar também as placas de perigo. |
+
+## Aliança, modelos e "Precisa de você" (sub-decisões aplicadas, para aprovar)
+
+| Tema | Aplicado | Alternativas |
+|---|---|---|
+| Limite de membros | 5 reinos por aliança (num mundo de até 30). | 4 ou 6; limite proporcional ao tamanho do mundo. |
+| O que aliados veem | Nome, brasão e cor verde dos locais aliados (sem espionar) e as marchas uns dos outros. | Ver também a névoa explorada dos aliados. |
+| Pedido de recursos | Pede um recurso, quantidade e local de entrega; o aliado aceita ou recusa. Ao aceitar, a carga sai dos locais mais próximos do aliado e viaja visível e roubável. | Pedidos abertos a toda a aliança; limite de pedidos por dia. |
+| Aliados e ataque | Locais aliados não aparecem como alvo de ataque. | Permitir traição com aviso (sai da aliança). |
+| Modelos | Três modelos de exemplo + "Salvar atual"; "Repetir último" no envio e em Tropas. O recurso do modelo pode ser "principal do alvo". | Modelos por alvo. |
+| Precisa de você | Três grupos (Agora, Oportunidades, No seu reino); resumo de até 3 itens no topo de Meu reino. Sem missões e sem recompensa. | Pontinho de alerta na aba Reino. |
 
 ## Pontos em aberto
 
@@ -268,7 +289,7 @@ Custos, tempos, atributos de unidades, rendimento de caça e força x perigo sã
 As telas são conferidas em navegador headless com viewport de celular (390 × 844): capturas de cada tela e de cada tipo de entidade na Vista, gestos de arrastar, pinça, toque e minimapa, alternância Vista/Mapa e os fluxos de criação, construção, recrutamento, exploração, caça, extração, ataque, batalha e bandeira.
 
 Revisão final:
-- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 38 rotas (todas as telas, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, relatórios de roubo, espionagem e saque): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
+- **Acessibilidade:** auditoria automática (axe-core, regras WCAG 2.1 A/AA) em 44 rotas (todas as telas, mais relíquias, escavação, caravana, defesas, transporte, interceptar, avistamento, aliança, pedido, "Precisa de você", farol, relatórios de roubo, espionagem e saque): nenhuma violação. Para chegar lá, o texto fraco (`--cor-texto-3`) foi clareado e itens bloqueados esmaecem só a imagem, nunca o texto.
 - **Toque:** todos os botões e links com pelo menos 44 × 44 px.
 - **Larguras:** sem rolagem horizontal em 360, 375, 430 e 1024 px.
 - **Gráficos:** cores do gráfico de batalha validadas contra o fundo (faixa de luminosidade, daltonismo e contraste); legenda, rótulos diretos, leitura por toque e tabela.

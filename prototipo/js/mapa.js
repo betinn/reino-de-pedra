@@ -119,8 +119,9 @@
       h += '<circle class="lc-base" r="15"/><use href="#i-' + x.tipo + '" x="-10" y="-10.5" width="20" height="20"/>' + rotuloSvg(W.nomeAparente(x), 30, '');
     }
     if (antigo) h += '<g class="selo-antigo-mapa" transform="translate(' + (castelo ? 16 : 11) + ' ' + (castelo ? 14 : 10) + ')"><circle r="7.5"/><use href="#i-relogio" x="-6" y="-6" width="12" height="12"/></g>';
-    var rel = RP.reliquiaEm && RP.reliquiaEm(x.id, true);   /* só as suas e as já espionadas */
-    if (rel) h += '<g class="relq-badge tipo-' + rel.tipo + '" transform="translate(' + (castelo ? -17 : -12) + ' ' + (castelo ? -15 : -11) + ')"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>';
+    var rel = RP.reliquiaEm && RP.reliquiaEm(x.id, true), con = RP.concentracao ? RP.concentracao(x.id) : { n: 0 };   /* suas, espionadas, ou concentração à vista */
+    if (rel || con.visivel) h += '<g class="relq-badge tipo-' + (rel ? rel.tipo : 'desconhecido') + '" transform="translate(' + (castelo ? -17 : -12) + ' ' + (castelo ? -15 : -11) + ')"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/>' +
+      (con.n > 1 ? '<g class="relq-n" transform="translate(-8 -8)"><circle r="6.5"/><text y="3.5">' + con.n + '</text></g>' : '') + '</g>';
     return h + '</g></g>';
   }
   function svgRuina(r) {
@@ -166,7 +167,7 @@
   function iconeMarcha(m) {
     if (m.d.tipo === 'explorador') return { cavalo: 'cavalo', pe: 'bota', prospector: 'picareta', batedor: 'batedor' }[m.d.sub];
     if (m.d.tipo === 'caca') return 'lobo';
-    if (m.d.tipo === 'caravana') return 'carroca';
+    if (m.d.tipo === 'caravana') return m.d.carregadores ? 'madeira' : 'carroca';
     return 'tropas';
   }
   /* muros: trechos nas bordas da área murada e torres com arqueiros */
@@ -177,6 +178,14 @@
       var d = RP.muros.bordas(m).map(function (s) { return 'M' + n1(s.a.x) + ' ' + n1(s.a.y) + 'L' + n1(s.b.x) + ' ' + n1(s.b.y); }).join('');
       return '<g class="muro-mapa' + (est === 'explorado' ? ' antigo' : '') + (m.obra ? ' em-obra' : '') + '"><path class="muro-base" d="' + d + '"/><path class="muro-topo" d="' + d + '"/>' +
         RP.muros.torres(m).map(function (p) { return '<g class="torre-mapa" transform="translate(' + n1(p.x) + ' ' + n1(p.y) + ')"><circle r="7.5"/><use href="#i-torre" x="-5.5" y="-5.5" width="11" height="11"/></g>'; }).join('') + '</g>';
+    }).join('');
+  }
+  /* faróis: 3 ou mais relíquias no mesmo local ficam visíveis para todos, até na névoa */
+  function svgFarois() {
+    return D.locais.filter(function (x) { return x.reino !== 'meu' && RP.concentracao(x.id).nivel === 'farol' && estado(x.c, x.l).v === 'desconhecido'; }).map(function (x) {
+      var ce = H.centro(x.c, x.l), n = RP.concentracao(x.id).n;
+      return '<g class="ent farol" data-ent="local:' + x.id + '" transform="translate(' + n1(ce.x) + ' ' + n1(ce.y) + ')"><g class="ent-k"><circle class="alvo-toque" r="24"/><circle class="farol-halo" r="20"/><circle class="farol-base" r="13"/>' +
+        '<use href="#i-lendario" x="-9" y="-9" width="18" height="18"/>' + rotuloSvg(n + ' relíquias', 30, 'rotulo-farol') + '</g></g>';
     }).join('');
   }
   /* avistamentos: o que suas tropas viram passar; somem depois de 10 h */
@@ -192,7 +201,7 @@
   function svgMarchas() {
     var rotasH = '', tokens = '';
     marchas.forEach(function (m) {
-      var meu = m.d.dono === 'meu';
+      var meu = m.d.dono === 'meu' || W.aliado(m.d.dono);   /* marchas de aliados são vistas como as suas */
       if (!meu && estado(m.hex[0], m.hex[1]).v !== 'visivel') return;
       var resto = [m.atual].concat(m.p.slice(m.atual.i));
       var fimP = m.p[m.p.length - 1];
@@ -408,18 +417,20 @@
     if (tipo === 'batalha') { RP.ir('batalha'); return; }
     if (tipo === 'local') {
       o = W.local(id); e = estado(o.c, o.l); reino = D.reinos[o.reino];
-      var meu = o.reino === 'meu', esp = o.espionado;
+      var meu = o.reino === 'meu', esp = o.espionado || W.aliado(o.reino), alia = W.aliado(o.reino), con = RP.concentracao(o.id);
       corpo = notaAntiga(e) + '<div class="info">' +
         linhaInfo('Tipo', RP.TIPOS_LOCAL[o.tipo]) +
         linhaInfo('Dono', meu ? '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + 'Seu reino</span>'
-          : esp ? '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + RP.esc(reino.nome) + '</span>'
+          : esp ? '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + RP.esc(reino.nome) + (alia ? ' <span class="selo selo-aliado">Aliado</span>' : '') + '</span>'
           : '<span class="selo selo-desconhecido">' + RP.icone('interrogacao') + 'Desconhecido</span>') +
         linhaInfo('Terreno', H.TERRENOS[T[o.l][o.c]].nome) +
         (RP.muros.de(o.id) && RP.muros.estado(RP.muros.de(o.id)) !== 'desconhecido' ? linhaInfo('Muralha', RP.esc(RP.muros.descricao(RP.muros.de(o.id)))) : '') +
         (meu ? linhaInfo('Estoque', RP.estoqueHTML(o.id)) : '') +
         (meu ? linhaInfo('Nível', o.nivel) + linhaInfo('Guarnição', o.guarnicao) + linhaInfo('Postura', '<span class="selo selo-info">' + o.postura + '</span>')
           : linhaInfo('Defesa', esp ? RP.esc(esp.defesa) : '<span class="fraco">Desconhecida</span>')) +
-        '</div>' + (RP.reliquiaEm(o.id, true) ? '<div style="margin-top:var(--esp-3)">' + RP.seloReliquia(RP.reliquiaEm(o.id, true)) + '</div>' : '') + (meu ? '' : esp
+        '</div>' + (RP.reliquiaEm(o.id, true) ? '<div style="margin-top:var(--esp-3)">' + con.reliquias.filter(function (r) { return r.dono === 'meu' || r.espionada !== undefined; }).map(RP.seloReliquia).join(' ') + '</div>'
+          : con.visivel ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('lendario', 'ico-p') + '<span><b>' + con.n + ' relíquias juntas.</b> ' + RP.TEXTO_CONC[con.nivel] + ' Espione para saber quais.</span></p>' : '') +
+        (meu && con.n > 1 ? '<p class="nota-antiga" style="margin-top:var(--esp-2)">' + RP.icone('lendario', 'ico-p') + '<span>' + con.n + ' relíquias aqui. ' + RP.TEXTO_CONC[con.nivel] + '</span></p>' : '') + (meu || alia ? '' : esp
           ? '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('batedor', 'ico-p') + 'Dono e defesa revelados por espionagem ' + RP.fmtHa(esp.horas) + '.</p>'
           : '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Explorar não revela a quem pertence um local. Espionar com batedor de elite revela o dono e a defesa.</p>');
       if (o.ameaca) {
@@ -428,7 +439,8 @@
       }
       acoes = meu
         ? botao('Abrir no reino', 'castelo', 'btn-primario', 'data-ir="reino?local=' + o.id + '"') + botao('Postura', 'escudo', '', 'data-ir="posturas?local=' + o.id + '"') + botao('Levar recursos', 'carroca', '', 'data-ir="caravana?para=' + o.id + '"')
-        : botao(RP.reliquiaEm(o.id, true) ? 'Roubar a relíquia' : 'Atacar este local', 'tropas', 'btn-primario', 'data-ir="envio?alvo=' + o.id + '"') + botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"');
+        : alia ? botao('Aliança', 'estandarte', 'btn-primario', 'data-ir="alianca"') + botao('Pedir recursos', 'carroca', '', 'data-ir="pedido?reino=' + o.reino + '"')
+        : botao(RP.reliquiaEm(o.id, true) || con.visivel ? 'Roubar a relíquia' : 'Atacar este local', 'tropas', 'btn-primario', 'data-ir="envio?alvo=' + o.id + '"') + botao(esp ? 'Espionar de novo' : 'Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + o.c + ',' + o.l + '"');
       abrirFolhaMapa({
         titulo: RP.esc(o.reino === 'meu' && o.tipo === 'castelo' ? 'Castelo de ' + D.reinos.meu.nome : W.nomeAparente(o)),
         subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
@@ -527,6 +539,13 @@
           '</div><div style="margin-top:var(--esp-3)">' + RP.seloReliquia(rlm) + '</div>' +
           '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Levam a sua relíquia. Alcance-os no caminho antes que sumam na névoa.</p>';
         acoes = botao('Interceptar', 'alvo', 'btn-primario', 'data-ir="interceptar?marcha=' + o.id + '"') + botao('Espionar', 'batedor', '', 'data-ir="exploradores?tipo=batedor&alvo=' + pos.hex[0] + ',' + pos.hex[1] + '"');
+      } else if (W.aliado(o.dono)) {
+        corpo = '<div class="info">' +
+          linhaInfo('Dono', '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + RP.esc(reino.nome) + ' <span class="selo selo-aliado">Aliado</span></span>') +
+          (o.cargaTxt ? linhaInfo('Carga', RP.esc(o.cargaTxt)) : '') + linhaInfo('Destino', alvoNome || '—') +
+          linhaInfo('Chegada', '<b class="num" data-fim="' + o.chegada + '">' + RP.fmtResta(o.chegada - Date.now()) + '</b>') + '</div>' +
+          '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Ajuda de aliado: entra no seu estoque ao chegar. Até lá, pode ser roubada no caminho.</p>';
+        acoes = botao('Seguir', 'alvo', 'btn-primario', 'data-centrar-marcha="' + o.id + '"') + botao('Aliança', 'estandarte', '', 'data-ir="alianca"');
       } else if (o.tipo === 'caravana' && o.dono !== 'meu') {
         corpo = '<div class="info">' +
           linhaInfo('Dono', '<span class="selo selo-desconhecido">' + RP.icone('interrogacao') + 'Desconhecido</span>') +
@@ -647,7 +666,7 @@
         if (e.v === 'explorado') { ctx.fillStyle = veu; ctx.fillRect(ce.x - H.W / 2 - 1, ce.y - H.R * 0.8, H.W + 2, H.R * 1.6); }
       }
     }
-    var corD = { meu: cor('--cor-meu'), 'rival-1': cor('--cor-rival-1'), 'rival-2': cor('--cor-rival-2'), desconhecido: cor('--cor-desconhecido') };
+    var corD = { meu: cor('--cor-meu'), 'rival-1': cor('--cor-rival-1'), 'rival-2': cor('--cor-rival-2'), aliado: cor('--cor-aliado'), desconhecido: cor('--cor-desconhecido') };
     D.locais.forEach(function (x) {
       if (estado(x.c, x.l).v === 'desconhecido') return;
       var p = H.centro(x.c, x.l);
@@ -721,6 +740,7 @@
       '<g class="camada-rotas">' + svgRotas() + '</g>' +
       '<g class="camada-muros">' + svgMuros() + '</g>' +
       svgNevoa() +
+      '<g class="camada-farois">' + svgFarois() + '</g>' +
       '<g class="camada-marcha-rotas">' + mh.rotas + '</g>' +
       '<polygon class="selecao" hidden points="0,0"/>' +
       '<g class="camada-ruinas">' + D.ruinas.map(svgRuina).join('') + '</g>' +

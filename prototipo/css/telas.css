@@ -157,6 +157,7 @@ html.tela-fixa, html.tela-fixa body { overflow: hidden; height: 100%; overscroll
 .dono-meu { --dono: var(--cor-meu); }
 .dono-rival-1 { --dono: var(--cor-rival-1); }
 .dono-rival-2 { --dono: var(--cor-rival-2); }
+.dono-aliado { --dono: var(--cor-aliado); }
 .dono-desconhecido { --dono: var(--cor-desconhecido); }
 .ent { cursor: pointer; }
 .ent-k { transform: scale(var(--k)); }
@@ -263,7 +264,7 @@ html.tela-fixa, html.tela-fixa body { overflow: hidden; height: 100%; overscroll
 /* Folha do mapa */
 .folha-ico { width: 48px; height: 48px; flex: none; margin-top: 2px; }
 .folha-ico .ico { width: 28px; height: 28px; }
-.ico-placa.dono-meu, .ico-placa.dono-rival-1, .ico-placa.dono-rival-2, .ico-placa.dono-desconhecido { color: var(--dono); border-color: var(--dono); }
+.ico-placa.dono-meu, .ico-placa.dono-rival-1, .ico-placa.dono-rival-2, .ico-placa.dono-aliado, .ico-placa.dono-desconhecido { color: var(--dono); border-color: var(--dono); }
 .ico-placa.marcha-ico { background: var(--dono); color: var(--ent-fundo); --ico-d-stroke: var(--dono); }
 .ico-placa.marcha-ico.hostil { background: var(--cor-perigo); border-color: var(--cor-perigo); }
 .terreno-ico { position: relative; overflow: hidden; }
@@ -910,3 +911,28 @@ a.guia-item { color: inherit; text-decoration: none; }
 .avist .ponto { fill: var(--cor-alerta); }
 .rotulo-avist { fill: var(--cor-alerta); }
 [data-zoom="zoom-mundo"] .avist .ent-k { display: none; }
+
+/* ---------------------------------------------------------------- Requisição, faróis, aliança, modelos, pendências */
+.obra-estoque.vem { color: var(--cor-info); }
+.obra-estoque .ico { vertical-align: -2px; margin-right: 4px; }
+.selo-material { white-space: normal; }
+.selo-aliado { color: var(--cor-aliado); border-color: color-mix(in srgb, var(--cor-aliado) 50%, transparent); background: color-mix(in srgb, var(--cor-aliado) 12%, transparent); }
+.tipo-desconhecido { --relq: var(--rec-lendario); }
+.relq-n circle { fill: var(--ent-fundo); stroke: var(--rec-lendario); stroke-width: 1.5; }
+.relq-n text { fill: var(--ent-texto); font: 700 9px var(--fonte-texto); text-anchor: middle; }
+.farol .farol-halo { fill: color-mix(in srgb, var(--rec-lendario) 25%, transparent); stroke: var(--rec-lendario); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.farol .farol-base { fill: var(--ent-fundo); stroke: var(--rec-lendario); stroke-width: 2.5; }
+.farol use { color: var(--rec-lendario); --ico-d-stroke: var(--ent-fundo); }
+.rotulo-farol { fill: var(--rec-lendario); }
+@media (prefers-reduced-motion: no-preference) { .farol .farol-halo { animation: pulso 1.8s ease-in-out infinite; } }
+.modelos { display: flex; flex-direction: column; gap: 6px; margin-top: var(--esp-3); }
+.repetir-card { margin-bottom: var(--esp-2); color: inherit; text-decoration: none; gap: var(--esp-3); }
+.al-topo { gap: var(--esp-3); }
+.al-topo h2 { font-size: var(--fs-4); }
+.pend-item { gap: var(--esp-3); }
+.pend-item .btn { flex: none; }
+.pend-urgente { border-color: color-mix(in srgb, var(--cor-perigo) 55%, var(--cor-borda)); }
+.pend-urgente .ico-placa { color: var(--cor-perigo); }
+.pend-oportunidade .ico-placa { color: var(--rec-lendario); }
+.reino-pendencias { margin-top: var(--esp-3); }
+.ver-tudo { margin-top: var(--esp-2); width: 100%; }

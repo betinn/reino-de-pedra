@@ -68,28 +68,20 @@
   }
   RP.muros = { area: area, bordas: bordas, torres: torresDe, de: muroDe, estado: estadoMuro, descricao: descricao, valido: valido };
 
-  /* ---------------------------------------------------------------- estoque somado da área do muro */
-  function faltaArea(custo, ids) {
-    var f = {};
-    Object.keys(custo).forEach(function (k) {
-      var tem = ids.reduce(function (s, id) { return s + RP.qtdRecurso(k, id); }, 0);
-      if (tem < custo[k]) f[k] = Math.ceil(custo[k] - tem);
-    });
-    return f;
-  }
-  function gastarArea(custo, ids) {
-    Object.keys(custo).forEach(function (k) {
-      var resta = custo[k];
-      ids.forEach(function (id) { var t = Math.min(resta, RP.qtdRecurso(k, id)); if (t > 0) { RP.mudarEstoque(id, k, -t); resta -= t; } });
-    });
-  }
   function mult(c, n) { var o = {}; Object.keys(c).forEach(function (k) { o[k] = Math.round(c[k] * n); }); return o; }
   function custoMuro(n) { return mult(CUSTO_TRECHO, n); }
   function custoNivel(m) { return mult(CUSTO_TRECHO, bordas(m).length * 0.5 * (m.nivel + 1)); }
-  function noFila(local, rotulo, seg) {
-    var f = D.filas, ult = f.obras.length ? RP.fimItem(f.obras[f.obras.length - 1]) : Date.now(), fim = Math.max(ult, Date.now()) + seg * 1000;
-    f.obras.push({ local: local, rotulo: rotulo, fim: fim, total: seg });
+  /* obra de defesa: requisita o material (vem sozinho dos locais mais próximos) e entra na fila */
+  function noFila(local, rotulo, seg, custo) {
+    var p = RP.requisitar(custo, local, rotulo);
+    if (!p) return 0;
+    var aguarda = p.viagens.length ? p.chegada : 0, fim = RP.fimNaFila(D.filas.obras, seg, aguarda);
+    D.filas.obras.push({ local: local, rotulo: rotulo, fim: fim, total: seg, aguarda: aguarda });
     return fim;
+  }
+  function linhaPlano(custo, local) {
+    var p = RP.planoRequisicao(custo, local);
+    return { ok: p.completo, html: '<small class="obra-estoque' + (!p.completo ? ' falta' : p.viagens.length ? ' vem' : '') + '">' + RP.icone(p.viagens.length ? 'carroca' : 'check', 'ico-p') + RP.esc(RP.textoPlano(p, local)) + '</small>' };
   }
 
   /* ---------------------------------------------------------------- prévia (SVG) */
@@ -113,23 +105,22 @@
   /* ---------------------------------------------------------------- aba Defesas da construção */
   var sel = [];
   function cartaoMuro(m) {
-    var bs = bordas(m), cn = custoNivel(m), fn = faltaArea(cn, m.locais), ft = faltaArea(CUSTO_TORRE, m.locais);
+    var bs = bordas(m), cn = custoNivel(m), pn = linhaPlano(cn, m.locais[0]), pt = linhaPlano(CUSTO_TORRE, m.locais[0]);
     return '<div class="card pilha muro-card"><div class="linha"><span class="ico-placa ico-placa-g">' + RP.icone('muralha') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(m.nome) + '</b><br><small class="fraco">' + m.locais.map(nomeLocal).join(', ') + '</small></span><span class="selo">Nv ' + m.nivel + '</span></div>' +
       (m.obra ? '<p class="nota-antiga">' + RP.icone('martelo', 'ico-p') + '<span>Em obra · termina em <b class="num" data-fim="' + m.obra + '">' + RP.fmtResta(m.obra - Date.now()) + '</b></span></p>' : '') +
       '<div class="ext-numeros"><div><span class="fraco">Trechos</span><b class="num">' + bs.length + '</b></div><div><span class="fraco">Torres</span><b class="num">' + (m.torres || 0) + '</b></div><div><span class="fraco">Arqueiros no alto</span><b class="num">' + (m.arqueiros || 0) + '</b></div></div>' +
       '<div class="card mini-rota-card">' + previa(m.locais, m.nome) + '</div>' +
-      '<div class="muro-acao"><div class="linha-entre"><span><b>Subir para nível ' + (m.nivel + 1) + '</b><br>' + RP.custoHTML(cn) + '</span>' +
-      (Object.keys(fn).length ? '<a class="btn btn-p" href="' + RP.linkTrazer(m.locais[0], fn) + '">' + RP.icone('carroca') + 'Trazer</a>' : '<button type="button" class="btn btn-p btn-primario" data-muro-nivel="' + m.id + '">' + RP.icone('martelo') + 'Subir</button>') + '</div></div>' +
-      '<div class="muro-acao"><div class="linha-entre"><span><b>Torre de arqueiros</b><small class="fraco"> · +' + ARQ_TORRE + ' no alto</small><br>' + RP.custoHTML(CUSTO_TORRE) + '</span>' +
-      (Object.keys(ft).length ? '<a class="btn btn-p" href="' + RP.linkTrazer(m.locais[0], ft) + '">' + RP.icone('carroca') + 'Trazer</a>' : '<button type="button" class="btn btn-p btn-primario" data-muro-torre="' + m.id + '">' + RP.icone('torre') + 'Erguer</button>') + '</div></div>' +
-      '<p class="fraco" style="font-size:var(--fs-2)">O material precisa estar nos locais dentro do muro.</p></div>';
+      '<div class="muro-acao"><div class="linha-entre"><span><b>Subir para nível ' + (m.nivel + 1) + '</b><br>' + RP.custoHTML(cn, 1, '*') + '</span>' +
+      '<button type="button" class="btn btn-p btn-primario' + (pn.ok ? '' : ' btn-inativo') + '" data-muro-nivel="' + m.id + '">' + RP.icone('martelo') + 'Subir</button></div>' + pn.html + '</div>' +
+      '<div class="muro-acao"><div class="linha-entre"><span><b>Torre de arqueiros</b><small class="fraco"> · +' + ARQ_TORRE + ' no alto</small><br>' + RP.custoHTML(CUSTO_TORRE, 1, '*') + '</span>' +
+      '<button type="button" class="btn btn-p btn-primario' + (pt.ok ? '' : ' btn-inativo') + '" data-muro-torre="' + m.id + '">' + RP.icone('torre') + 'Erguer</button></div>' + pt.html + '</div></div>';
   }
   function htmlDefesas() {
     var meus = D.locais.filter(function (x) { return x.reino === 'meu'; }), murados = {};
     D.muros.forEach(function (m) { if (m.dono === 'meu') m.locais.forEach(function (id) { murados[id] = m; }); });
     var livres = meus.filter(function (x) { return x.tipo !== 'castelo' && !murados[x.id]; });
     sel = sel.filter(function (id) { return livres.some(function (x) { return x.id === id; }); });
-    var ok = sel.length && valido(sel), n = sel.length ? bordasDe(area(sel)).length : 0, custo = custoMuro(n), falta = sel.length ? faltaArea(custo, sel) : {};
+    var ok = sel.length && valido(sel), n = sel.length ? bordasDe(area(sel)).length : 0, custo = custoMuro(n), pm = sel.length ? linhaPlano(custo, sel[0]) : null;
     var castelo = W.local('castelo');
     return '<div class="nota-regra">' + RP.icone('muralha', 'ico-p') + '<span>Muros envolvem <b>um ou vários locais</b>. São <b>caros</b> porque dão muita vantagem contra invasões. Torres põem <b>arqueiros no alto</b>: atiram protegidos até o invasor entrar ou derrubar o muro.</span></div>' +
       '<div class="secao-titulo">Seus muros</div><div class="pilha">' +
@@ -142,10 +133,8 @@
       }).join('') + '</div>' +
       (sel.length ? (ok ? '<div class="card mini-rota-card">' + previa(sel, 'Prévia da nova muralha') + '</div>' +
           '<div class="ext-numeros"><div><span class="fraco">Trechos</span><b class="num">' + n + '</b></div><div><span class="fraco">Tempo</span><b class="num">' + RP.fmtDuracao(n * TEMPO_TRECHO) + '</b></div><div><span class="fraco">Locais</span><b class="num">' + sel.length + '</b></div></div>' +
-          '<div class="linha" style="flex-wrap:wrap">' + RP.custoHTML(custo) + '<small class="fraco">somando os estoques dos locais envolvidos</small></div>' +
-          (Object.keys(falta).length ? '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + '<span>Faltam ' + Object.keys(falta).map(function (k) { return RP.num(falta[k]) + ' de ' + RP.nomeRecurso(k); }).join(', ') + ' nesses locais.</span></p>' +
-            '<a class="btn btn-p btn-primario" href="' + RP.linkTrazer(sel[0], falta) + '">' + RP.icone('carroca') + 'Trazer recursos</a>'
-            : '<button type="button" class="btn btn-p btn-primario" data-muro-construir>' + RP.icone('muralha') + 'Construir muralha</button>')
+          '<div class="linha" style="flex-wrap:wrap">' + RP.custoHTML(custo, 1, '*') + '</div>' + pm.html +
+          '<button type="button" class="btn btn-p btn-primario' + (pm.ok ? '' : ' btn-inativo') + '" data-muro-construir>' + RP.icone('muralha') + 'Construir muralha</button>'
         : '<p class="nota-antiga">' + RP.icone('info', 'ico-p') + '<span>Locais distantes demais para um muro só. Faça muros separados.</span></p>') : '') + '</div>' +
       '<div style="height:var(--esp-8)"></div>';
   }
@@ -159,24 +148,23 @@
     }
     if (e.target.closest('[data-muro-construir]')) {
       var n = bordasDe(area(sel)).length, custo = custoMuro(n);
-      if (Object.keys(faltaArea(custo, sel)).length) return true;
-      gastarArea(custo, sel);
-      var fim = noFila(sel[0], 'Muralha · ' + sel.map(nomeLocal).join(', '), n * TEMPO_TRECHO);
+      var fim = noFila(sel[0], 'Muralha · ' + sel.map(nomeLocal).join(', '), n * TEMPO_TRECHO, custo);
+      if (!fim) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(custo, sel[0]), sel[0]), icone: 'alerta', tipo: 'perigo' }); return true; }
       D.muros.push({ id: 'mu-' + Date.now(), nome: sel.length > 1 ? 'Muralha de ' + nomeLocal(sel[0]) + ' e vizinhos' : 'Muralha de ' + nomeLocal(sel[0]), dono: 'meu', locais: sel.slice(), nivel: 1, torres: 0, arqueiros: 0, obra: fim });
       RP.aviso({ titulo: 'Muralha na fila de obras', texto: n + ' trechos · termina em ' + RP.fmtResta(fim - Date.now()) + '.', icone: 'muralha', tipo: 'sucesso' });
       sel = []; RP.invalidarTela('mapa'); RP.invalidarTela('reino'); redesenhar(); return true;
     }
     if ((b = e.target.closest('[data-muro-nivel]'))) {
       var m = D.muros.filter(function (q) { return q.id === b.getAttribute('data-muro-nivel'); })[0], cn = custoNivel(m);
-      gastarArea(cn, m.locais);
-      var f1 = noFila(m.locais[0], m.nome + ' → nível ' + (m.nivel + 1), bordas(m).length * TEMPO_TRECHO * 0.6);
+      var f1 = noFila(m.locais[0], m.nome + ' → nível ' + (m.nivel + 1), bordas(m).length * TEMPO_TRECHO * 0.6, cn);
+      if (!f1) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(cn, m.locais[0]), m.locais[0]), icone: 'alerta', tipo: 'perigo' }); return true; }
       RP.aviso({ titulo: m.nome + ' na fila', texto: 'Nível ' + (m.nivel + 1) + ' termina em ' + RP.fmtResta(f1 - Date.now()) + '.', icone: 'muralha', tipo: 'sucesso' });
       redesenhar(); return true;
     }
     if ((b = e.target.closest('[data-muro-torre]'))) {
       var mt = D.muros.filter(function (q) { return q.id === b.getAttribute('data-muro-torre'); })[0];
-      gastarArea(CUSTO_TORRE, mt.locais);
-      var f2 = noFila(mt.locais[0], 'Torre de arqueiros · ' + mt.nome, TEMPO_TORRE);
+      var f2 = noFila(mt.locais[0], 'Torre de arqueiros · ' + mt.nome, TEMPO_TORRE, CUSTO_TORRE);
+      if (!f2) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(CUSTO_TORRE, mt.locais[0]), mt.locais[0]), icone: 'alerta', tipo: 'perigo' }); return true; }
       RP.aviso({ titulo: 'Torre na fila de obras', texto: 'Termina em ' + RP.fmtResta(f2 - Date.now()) + '. Depois, ' + ARQ_TORRE + ' arqueiros sobem para o alto.', icone: 'torre', tipo: 'sucesso' });
       redesenhar(); return true;
     }

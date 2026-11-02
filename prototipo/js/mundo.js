@@ -150,17 +150,19 @@
   /* Explorar não revela o dono de locais de outros reinos (só o seu é conhecido) */
   var NOME_TIPO = { castelo: 'Castelo', vila: 'Vila', mina: 'Mina', serraria: 'Serraria', pasto: 'Pasto', armazem: 'Armazém', ferraria: 'Ferraria', quartel: 'Quartel' };
   /* x: local (ou nome do reino). Espionagem com batedores de elite revela o dono. */
+  /* aliados se reconhecem: a aliança revela quem é quem entre os membros */
+  function aliado(reino) { return !!(D.alianca && reino !== 'meu' && D.alianca.membros.indexOf(reino) >= 0); }
   function donoAparente(x) {
-    if (typeof x === 'string') return x === 'meu' ? 'meu' : 'desconhecido';
-    return x.reino === 'meu' || x.espionado ? x.reino : 'desconhecido';
+    if (typeof x === 'string') return x === 'meu' || aliado(x) ? x : 'desconhecido';
+    return x.reino === 'meu' || x.espionado || aliado(x.reino) ? x.reino : 'desconhecido';
   }
-  function nomeAparente(x) { return x.reino === 'meu' || x.espionado ? x.nome : NOME_TIPO[x.tipo]; }
+  function nomeAparente(x) { return x.reino === 'meu' || x.espionado || aliado(x.reino) ? x.nome : NOME_TIPO[x.tipo]; }
 
   function achar(lista, id) { return lista.filter(function (x) { return x.id === id; })[0]; }
 
   RP.mundo = {
     T: T, rios: rios, rioSet: rioSet, rotas: rotas, rotaSet: rotaSet, marchas: marchas, porHex: porHex,
-    chave: k, dentro: dentro, noRaio: noRaio, estado: estado, donoAparente: donoAparente, nomeAparente: nomeAparente,
+    aliado: aliado, chave: k, dentro: dentro, noRaio: noRaio, estado: estado, donoAparente: donoAparente, nomeAparente: nomeAparente,
     pontoEm: pontoEm, comprimento: comprimento,
     NIVEIS: NIVEIS, NOME_NIVEL: NOME_NIVEL, ANIMAL: ANIMAL,
     posFauna: posFauna, faunaVisivel: faunaVisivel, perigoHex: perigoHex, riscoMarcha: riscoMarcha,

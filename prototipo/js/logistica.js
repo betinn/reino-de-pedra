@@ -24,6 +24,59 @@
   }
   RP.cargaTxt = cargaTxt;
 
+  /* ---------------------------------------------------------------- requisição automática
+     Construir (ou recrutar) gera uma requisição: o que falta no local vem dos locais mais próximos,
+     levado por carregadores (população) sem ação do jogador. A carga é visível e pode ser roubada. */
+  var CARGA_CARREGADOR = 50, camCache = {};
+  function camLocais(a, b) {
+    var kk = a + '>' + b;
+    if (!(kk in camCache)) { var x = W.local(a), y = W.local(b); camCache[kk] = RP.caminho([x.c, x.l], [y.c, y.l], { vel: 'Média' }); }
+    return camCache[kk];
+  }
+  RP.planoRequisicao = function (custo, destino) {
+    var falta = {}, fontes = {}, ordem = [];
+    Object.keys(custo).forEach(function (k) { if (k === 'populacao') return; var d = custo[k] - RP.qtdRecurso(k, destino); if (d > 0) falta[k] = Math.ceil(d); });
+    var resta = Object.assign({}, falta);
+    if (Object.keys(falta).length) {
+      meus().filter(function (x) { return x.id !== destino; }).map(function (x) { return { id: x.id, cam: camLocais(x.id, destino) }; })
+        .filter(function (o) { return o.cam; }).sort(function (a, b) { return a.cam.seg - b.cam.seg; })
+        .forEach(function (o) {
+          Object.keys(resta).forEach(function (k) {
+            var t = Math.min(resta[k], Math.floor(RP.qtdRecurso(k, o.id)));
+            if (t <= 0) return;
+            if (!fontes[o.id]) { fontes[o.id] = { local: o.id, seg: o.cam.seg, hexes: o.cam.hexes, carga: {} }; ordem.push(fontes[o.id]); }
+            fontes[o.id].carga[k] = t; resta[k] -= t;
+          });
+        });
+    }
+    var faltaReino = {};
+    Object.keys(resta).forEach(function (k) { if (resta[k] > 0) faltaReino[k] = resta[k]; });
+    var seg = ordem.reduce(function (s, v) { return Math.max(s, v.seg); }, 0);
+    return { falta: falta, viagens: ordem, faltaReino: faltaReino, seg: seg, chegada: Date.now() + seg * 1000, completo: !Object.keys(faltaReino).length };
+  };
+  /* texto curto do plano: "o resto vem do Castelo e do Armazém Real (≈ 9 min)" */
+  RP.textoPlano = function (p, destino) {
+    if (!p.completo) return 'Faltam ' + cargaTxt(p.faltaReino) + ' no reino todo.';
+    if (!p.viagens.length) return 'Material em ' + nomeLocal(destino) + '.';
+    var nomes = p.viagens.map(function (v) { return nomeLocal(v.local); });
+    return 'Parte do material vem ' + (nomes.length > 1 ? 'de ' + nomes.slice(0, -1).join(', ') + ' e ' + nomes[nomes.length - 1] : 'de ' + nomes[0]) + ' · chega em ≈ ' + RP.fmtDuracao(p.seg) + '.';
+  };
+  RP.requisitar = function (custo, destino, para) {
+    var p = RP.planoRequisicao(custo, destino), agora = Date.now();
+    if (!p.completo) return null;
+    var noLocal = {};
+    Object.keys(custo).forEach(function (k) { if (k !== 'populacao') { var v = Math.min(custo[k], RP.qtdRecurso(k, destino)); if (v > 0) noLocal[k] = v; } });
+    RP.gastar(noLocal, 1, destino);
+    p.viagens.forEach(function (v, i) {
+      Object.keys(v.carga).forEach(function (k) { RP.mudarEstoque(v.local, k, -v.carga[k]); });
+      var n = Math.max(1, Math.ceil(somaCarga(v.carga) / CARGA_CARREGADOR));
+      var m = W.adicionarMarcha({ id: 'm-abast-' + agora + '-' + i, dono: 'meu', tipo: 'caravana', carregadores: n, veiculos: {}, grupo: {}, alvo: destino, nome: 'Material a caminho',
+        cargaTxt: cargaTxt(v.carga), resumo: n + ' carregador' + (n > 1 ? 'es' : '') + ' · ' + nomeLocal(v.local) + ' → ' + nomeLocal(destino) + (para ? ' · para ' + para : ''), seg: v.seg }, v.hexes);
+      D.caravanas.push({ marcha: m.d.id, de: v.local, para: destino, carga: v.carga, veiculos: {}, escolta: {}, chegada: m.d.chegada, consumo: true, obra: para });
+    });
+    return p;
+  };
+
   /* ---------------------------------------------------------------- exemplos em andamento */
   (function () {
     /* sua caravana: Serraria → Castelo, com 500 de madeira já reservada na serraria */
@@ -51,10 +104,12 @@
     var agora = Date.now(), mudou = false;
     D.caravanas = D.caravanas.filter(function (cv) {
       if (cv.chegada > agora) return true;
-      Object.keys(cv.carga).forEach(function (k) { RP.mudarEstoque(cv.para, k, cv.carga[k]); });
+      /* requisição: a carga é consumida pela obra; caravana manual: entra no estoque do destino */
+      if (!cv.consumo) Object.keys(cv.carga).forEach(function (k) { RP.mudarEstoque(cv.para, k, cv.carga[k]); });
       Object.keys(cv.veiculos).forEach(function (k) { D.veiculos[k].qtd += cv.veiculos[k] || 0; });
       Object.keys(cv.escolta).forEach(function (k) { D.disponiveis[k] = (D.disponiveis[k] || 0) + (cv.escolta[k] || 0); });
-      RP.aviso({ titulo: 'Caravana chegou', texto: nomeLocal(cv.para) + ' recebeu ' + cargaTxt(cv.carga) + '.', icone: 'carroca', tipo: 'sucesso' });
+      RP.aviso(cv.consumo ? { titulo: 'Material chegou', texto: nomeLocal(cv.para) + (cv.obra ? ': ' + cv.obra : '') + '.', icone: 'martelo', tipo: 'sucesso' }
+        : { titulo: 'Caravana chegou', texto: nomeLocal(cv.para) + ' recebeu ' + cargaTxt(cv.carga) + '.', icone: 'carroca', tipo: 'sucesso' });
       mudou = true;
       return false;
     });

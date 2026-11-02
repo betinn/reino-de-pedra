@@ -145,7 +145,7 @@
       var disp = D.disponiveis;
       el.innerHTML = '<header class="topo"><h1>Tropas</h1><button type="button" class="btn btn-fantasma btn-icone btn-sino-topo" data-abrir-notificacoes aria-label="Notificações">' + RP.icone('sino') + '<span class="contador">' + D.notificacoesNaoLidas + '</span></button></header>' +
         '<div class="conteudo-tela">' +
-        '<div data-batalha-atalho></div>' +
+        '<div data-batalha-atalho></div><div data-repetir-atalho></div>' +
         '<div class="secao-titulo" style="margin-top:0">Em campo</div><div class="pilha" data-emcampo></div>' +
         '<div class="secao-titulo">Guarnição do castelo</div><div class="card"><div class="linha" style="flex-wrap:wrap">' +
         Object.keys(disp).filter(function (u) { return disp[u]; }).map(function (u) { return '<span class="selo selo-g">' + RP.icone(unidade(u).icone) + disp[u] + ' ' + unidade(u).nome.toLowerCase() + (disp[u] > 1 ? 's' : '') + '</span>'; }).join('') +
@@ -162,6 +162,9 @@
     },
     entrar: function (el) {
       RP.$('[data-emcampo]', el).innerHTML = emCampoHTML();
+      var ue = D.ultimoEnvio, ux = ue && W.local(ue.alvo);
+      RP.$('[data-repetir-atalho]', el).innerHTML = ux ? '<a class="card linha repetir-card" href="#/envio?alvo=' + ux.id + '&repetir=1"><span class="ico-placa">' + RP.icone('voltar') + '</span><span style="flex:1;min-width:0"><b>Repetir último ataque</b><br><small class="fraco">' +
+        RP.esc(W.nomeAparente(ux)) + ' · ' + RP.esc(D.tiposAtaque.filter(function (t) { return t.id === ue.tipo; })[0].nome.toLowerCase()) + ' · mesmas tropas, objetivos e tática</small></span>' + RP.icone('avancar', 'ico-p') + '</a>' : '';
       var bt = RP.batalha && RP.batalha.ativa(), x = W.local(D.batalha.local);
       RP.$('[data-batalha-atalho]', el).innerHTML = bt ? '<a class="faixa-alerta faixa-batalha" href="#/batalha" style="margin-bottom:var(--esp-2)">' + RP.icone('tropas', 'pulso') + '<span class="txt"><b>Batalha em andamento</b> · ' + RP.esc(x.nome) + '<br>termina em <b class="num" data-fim="' + (Date.now() + RP.batalha.restante() * 1000) + '">' + RP.fmtResta(RP.batalha.restante() * 1000) + '</b></span>' + RP.icone('avancar', 'ico-p') + '</a>' : '';
     }
@@ -172,7 +175,7 @@
   function filaObrasHTML() {
     var f = D.filas;
     return '<div class="card pilha fila-card"><div class="card-titulo" style="margin:0">' + RP.icone('martelo') + '<h3>Obras</h3><span class="selo">' + f.obras.length + ' de ' + f.vagasObras + ' vagas</span></div>' +
-      (f.obras.length ? f.obras.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') : '<p class="fraco">Nenhuma obra em andamento.</p>') +
+      (f.obras.length ? f.obras.map(RP.itemFilaHTML).join('') : '<p class="fraco">Nenhuma obra em andamento.</p>') +
       (f.obras.length ? '<p class="fila-termina">' + RP.icone('relogio', 'ico-p') + 'Fila termina ' + RP.fmtHora(RP.fimItem(f.obras[f.obras.length - 1])) + '</p>' : '') +
       '<p class="fraco" style="font-size:var(--fs-2)">Uma obra por vez; as próximas começam quando a anterior termina. Planeje horas ou a noite inteira.</p></div>';
   }
@@ -180,19 +183,18 @@
   function localObra(o) { return o.local || RP.SEDE; }
   function nomeLocalObra(o) { var x = W.local(localObra(o)); return x.tipo === 'castelo' ? 'no castelo' : 'em ' + x.nome; }
   function cartaoObra(o) {
-    var bloqueado = !!o.requisito, loc = localObra(o), faltaO = RP.faltaObj(o.custo, 1, loc), falta = Object.keys(faltaO);
+    var bloqueado = !!o.requisito, loc = localObra(o), plano = !bloqueado && !o.novo ? RP.planoRequisicao(o.custo, loc) : null, falta = plano && !plano.completo ? Object.keys(plano.faltaReino) : [];
     var nivel = o.tec ? '<span class="selo selo-destaque">Tecnologia</span>' : o.novo ? '<span class="selo selo-info">Novo</span>' : o.veiculo ? '<span class="selo">' + D.veiculos[o.veiculo].qtd + ' livre' + (D.veiculos[o.veiculo].qtd === 1 ? '' : 's') + '</span>' : '<span class="selo">Nv ' + o.de + ' → ' + o.para + '</span>';
     var acao = bloqueado ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + RP.esc(o.requisito) + '</span>'
       : o.novo ? '<button type="button" class="btn btn-p" data-escolher-local="' + o.id + '">' + RP.icone('mapa') + 'Escolher no mapa</button>'
-      : falta.length ? '<a class="btn btn-p btn-primario" href="' + RP.linkTrazer(loc, faltaO) + '">' + RP.icone('carroca') + 'Trazer recursos</a>'
-      : '<button type="button" class="btn btn-p btn-primario" data-construir="' + o.id + '">' + RP.icone(o.veiculo ? 'carroca' : 'martelo') + 'Construir</button>';
+      : '<button type="button" class="btn btn-p btn-primario' + (falta.length ? ' btn-inativo' : '') + '" data-construir="' + o.id + '">' + RP.icone(o.veiculo ? 'carroca' : 'martelo') + 'Construir</button>';
     return '<div class="card obra-card' + (bloqueado ? ' bloqueado' : '') + '" data-cat="' + o.cat + (o.novo ? ' novos' : '') + '">' +
       '<span class="ico-placa ico-placa-g">' + RP.icone(o.icone) + '</span><div class="obra-corpo">' +
       '<div class="linha-entre"><b>' + RP.esc(o.nome) + '</b>' + nivel + '</div>' +
       '<small class="fraco">' + RP.esc(o.onde) + '</small>' +
       '<span class="obra-efeito">' + RP.icone('subir', 'ico-p') + RP.esc(o.efeito) + '</span>' +
-      '<div class="linha obra-custo">' + RP.custoHTML(o.custo, 1, loc) + (o.porHex ? '<small class="fraco">por hexágono</small>' : '') + '<span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(o.tempo) + '</span></div>' +
-      (!bloqueado && !o.novo ? '<small class="obra-estoque' + (falta.length ? ' falta' : '') + '">' + (falta.length ? 'Faltam ' + RP.faltas(o.custo, 1, loc).join(', ') + ' ' + nomeLocalObra(o) : 'Material ' + nomeLocalObra(o)) + '</small>' : '') +
+      '<div class="linha obra-custo">' + RP.custoHTML(o.custo, 1, '*') + (o.porHex ? '<small class="fraco">por hexágono</small>' : '') + '<span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(o.tempo) + '</span></div>' +
+      (plano ? '<small class="obra-estoque' + (falta.length ? ' falta' : plano.viagens.length ? ' vem' : '') + '">' + RP.icone(plano.viagens.length ? 'carroca' : 'check', 'ico-p') + RP.esc(RP.textoPlano(plano, loc)) + '</small>' : '') +
       '<div class="obra-acao">' + acao + '</div></div></div>';
   }
   function desenharConstrucao(el) {
@@ -221,14 +223,14 @@
         }
         if ((b = e.target.closest('[data-construir]'))) {
           var o = D.construcoes.filter(function (x) { return x.id === b.getAttribute('data-construir'); })[0];
-          var f = D.filas, loc = localObra(o), falta = RP.faltas(o.custo, 1, loc);
+          var f = D.filas, loc = localObra(o), rot = o.nome + (o.tec || o.veiculo ? '' : ' → nível ' + o.para);
           if (f.obras.length >= f.vagasObras) { RP.aviso({ titulo: 'Fila de obras cheia', texto: 'Espere uma obra terminar.', icone: 'relogio', tipo: 'alerta' }); return; }
-          if (falta.length) { RP.aviso({ titulo: 'Recursos insuficientes', texto: 'Faltam ' + falta.join(', ') + ' ' + nomeLocalObra(o) + '.', icone: 'alerta', tipo: 'perigo' }); return; }
-          RP.gastar(o.custo, 1, loc);
-          var ultimo = f.obras.length ? RP.fimItem(f.obras[f.obras.length - 1]) : Date.now();
-          var fim = Math.max(ultimo, Date.now()) + o.tempo * 1000;
-          f.obras.push({ local: o.local, rotulo: o.nome + (o.tec || o.veiculo ? '' : ' → nível ' + o.para), fim: fim, total: o.tempo });
-          RP.aviso({ titulo: o.nome + ' na fila', texto: 'Termina em ' + RP.fmtResta(fim - Date.now()) + '. Acompanhe a obra na Vista.', icone: 'martelo', tipo: 'sucesso' });
+          /* requisição: o que falta no local vem sozinho dos locais mais próximos */
+          var plano = RP.requisitar(o.custo, loc, rot);
+          if (!plano) { RP.aviso({ titulo: 'Recursos insuficientes', texto: RP.textoPlano(RP.planoRequisicao(o.custo, loc), loc), icone: 'alerta', tipo: 'perigo' }); return; }
+          var aguarda = plano.viagens.length ? plano.chegada : 0, fim = RP.fimNaFila(f.obras, o.tempo, aguarda);
+          f.obras.push({ local: o.local, rotulo: rot, fim: fim, total: o.tempo, aguarda: aguarda });
+          RP.aviso({ titulo: o.nome + ' na fila', texto: aguarda ? 'O material está a caminho e chega em ' + RP.fmtResta(aguarda - Date.now()) + '. Acompanhe na Vista.' : 'Termina em ' + RP.fmtResta(fim - Date.now()) + '. Acompanhe a obra na Vista.', icone: aguarda ? 'carroca' : 'martelo', tipo: 'sucesso' });
           RP.invalidarTela('reino');
           desenharConstrucao(el);
         }
@@ -241,13 +243,13 @@
   var pedido = {}, LOCAL_RECRUT = 'quartel';   /* recruta com o estoque do quartel */
   function maxRecrutavel(u) {
     var m = Math.floor(RP.popAtual() / u.pop);
-    Object.keys(u.custo).forEach(function (k) { m = Math.min(m, Math.floor(RP.qtdRecurso(k, LOCAL_RECRUT) / u.custo[k])); });
+    Object.keys(u.custo).forEach(function (k) { m = Math.min(m, Math.floor(RP.qtdRecurso(k, '*') / u.custo[k])); });
     return Math.max(0, m);
   }
   function filaRecrutHTML() {
     var f = D.filas;
     return '<div class="card pilha fila-card"><div class="card-titulo" style="margin:0">' + RP.icone('tropas') + '<h3>Fila de recrutamento</h3><span class="selo">' + f.recrutamento.length + ' de ' + f.vagasRecrutamento + '</span></div>' +
-      (f.recrutamento.length ? f.recrutamento.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') +
+      (f.recrutamento.length ? f.recrutamento.map(RP.itemFilaHTML).join('') +
         '<p class="fila-termina">' + RP.icone('relogio', 'ico-p') + 'Fila termina ' + RP.fmtHora(RP.fimItem(f.recrutamento[f.recrutamento.length - 1])) + '</p>' : '<p class="fraco">Nada sendo recrutado.</p>') + '</div>';
   }
   function cartaoUnidade(u) {
@@ -258,7 +260,7 @@
       '<div class="unid-vantagens">' + u.forte.map(function (x) { return '<span class="selo selo-visivel">Forte contra ' + x.toLowerCase() + '</span>'; }).join('') +
       u.fraco.map(function (x) { return '<span class="selo selo-perigo">Fraco contra ' + x.toLowerCase() + '</span>'; }).join('') + '</div>' +
       '<div class="unid-atrib"><span>Ataque' + pontos(u.atk) + '</span><span>Defesa' + pontos(u.def) + '</span><span>Velocidade' + pontos(u.vel) + '</span><span>Carga' + pontos(u.carga) + '</span></div>' +
-      '<div class="linha unid-custo">' + RP.custoHTML(Object.assign({}, u.custo, { populacao: u.pop }), 1, LOCAL_RECRUT) + '<small class="fraco">por unidade</small></div>' +
+      '<div class="linha unid-custo">' + RP.custoHTML(Object.assign({}, u.custo, { populacao: u.pop }), 1, '*') + '<small class="fraco">por unidade</small></div>' +
       (u.requisito ? '' : '<div class="unid-qtd">' + stepper(u.id, q, max) +
         '<div class="chips-rapidos"><button type="button" class="btn btn-p" data-somar="5">+5</button><button type="button" class="btn btn-p" data-somar="10">+10</button><button type="button" class="btn btn-p" data-somar="max">Máx. ' + max + '</button></div></div>') +
       '</div>';
@@ -279,12 +281,13 @@
     RP.$('.recrut-conteudo', el).innerHTML =
       '<div class="card pop-mini"><div class="linha-entre"><span class="linha">' + RP.icone('populacao', 'r-populacao') + '<b class="num">' + RP.num(RP.popAtual()) + '</b><span class="fraco">/ ' + RP.num(p.teto) + '</span></span><span class="selo selo-visivel">+' + p.taxa + '/h</span></div>' +
       '<p class="fraco" style="font-size:var(--fs-2);margin-top:6px">Recrutar consome população. Tropas mortas não retornam.</p></div>' +
-      '<div class="card pilha"><div class="linha-entre"><span class="linha">' + RP.icone('quartel') + '<b>Estoque do quartel</b></span><a class="btn btn-p" href="' + RP.linkTrazer(LOCAL_RECRUT, {}) + '">' + RP.icone('carroca') + 'Trazer</a></div>' +
-      RP.estoqueHTML(LOCAL_RECRUT) + '<p class="fraco" style="font-size:var(--fs-2)">O recrutamento usa o que está no quartel. Para recrutar mais, leve recursos até lá.</p></div>' +
+      '<div class="card pilha"><div class="linha"><span class="linha">' + RP.icone('quartel') + '<b>Estoque do quartel</b></span></div>' +
+      RP.estoqueHTML(LOCAL_RECRUT) + '<p class="fraco" style="font-size:var(--fs-2)">O que faltar no quartel vem sozinho dos locais mais próximos, levado por carregadores.</p></div>' +
       filaRecrutHTML() + '<div class="secao-titulo">Unidades</div><div class="pilha">' + D.unidades.map(cartaoUnidade).join('') + '</div>';
-    var r = resumoRecrut(), falta = RP.faltas(r.custo, 1, LOCAL_RECRUT);
+    var r = resumoRecrut(), falta = RP.faltas(r.custo, 1, '*'), pl = r.pop ? RP.planoRequisicao(r.custo, LOCAL_RECRUT) : null;
     RP.$('.rodape-resumo', el).innerHTML = r.pop
-      ? '<div class="resumo-linha"><b>' + RP.esc(r.txt) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(r.tempo) + '</span></div>' + RP.custoHTML(r.custo, 1, LOCAL_RECRUT)
+      ? '<div class="resumo-linha"><b>' + RP.esc(r.txt) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(r.tempo) + '</span></div>' + RP.custoHTML(r.custo, 1, '*') +
+        (pl && pl.viagens.length ? '<div class="resumo-linha fraco">' + RP.esc(RP.textoPlano(pl, LOCAL_RECRUT)) + '</div>' : '')
       : '<div class="resumo-linha fraco">Escolha a quantidade de cada unidade.</div>';
     RP.$('[data-recrutar]', el).classList.toggle('btn-inativo', !r.pop || falta.length > 0);
   }
@@ -303,17 +306,17 @@
           desenharRecrut(el); return;
         }
         if (e.target.closest('[data-recrutar]')) {
-          var r = resumoRecrut(), falta = RP.faltas(r.custo, 1, LOCAL_RECRUT), f = D.filas;
+          var r = resumoRecrut(), falta = RP.faltas(r.custo, 1, '*'), f = D.filas;
           if (!r.pop) { RP.aviso({ titulo: 'Nada escolhido', texto: 'Use + e − em cada unidade.', icone: 'info', tipo: 'alerta' }); return; }
-          if (falta.length) { RP.aviso({ titulo: 'Recursos insuficientes no quartel', texto: 'Faltam ' + falta.join(', ') + '. Leve recursos até lá.', icone: 'alerta', tipo: 'perigo' }); return; }
+          if (falta.length) { RP.aviso({ titulo: 'Recursos insuficientes', texto: 'Faltam ' + falta.join(', ') + ' no reino todo.', icone: 'alerta', tipo: 'perigo' }); return; }
           var tipos = Object.keys(pedido).filter(function (id) { return pedido[id]; });
           if (f.recrutamento.length + tipos.length > f.vagasRecrutamento) { RP.aviso({ titulo: 'Fila cheia', texto: 'Cabem ' + (f.vagasRecrutamento - f.recrutamento.length) + ' tipos de unidade agora.', icone: 'relogio', tipo: 'alerta' }); return; }
-          RP.gastar(r.custo, 1, LOCAL_RECRUT);
-          var ultimo = f.recrutamento.length ? RP.fimItem(f.recrutamento[f.recrutamento.length - 1]) : Date.now();
+          var pl = RP.requisitar(r.custo, LOCAL_RECRUT, 'recrutamento');
+          RP.gastar({ populacao: r.pop });
+          var aguarda = pl && pl.viagens.length ? pl.chegada : 0;
           tipos.forEach(function (id) {
-            var un = unidade(id), qq = pedido[id], dur = un.tempo * qq;
-            ultimo = Math.max(ultimo, Date.now()) + dur * 1000;
-            f.recrutamento.push({ unidade: id, qtd: qq, rotulo: qq + ' ' + un.nome.toLowerCase() + (qq > 1 ? 's' : '') + ' · Quartel da Guarda', fim: ultimo, total: dur });
+            var un = unidade(id), qq = pedido[id], dur = un.tempo * qq, fimR = RP.fimNaFila(f.recrutamento, dur, aguarda);
+            f.recrutamento.push({ unidade: id, qtd: qq, rotulo: qq + ' ' + un.nome.toLowerCase() + (qq > 1 ? 's' : '') + ' · Quartel da Guarda', fim: fimR, total: dur, aguarda: aguarda });
           });
           RP.aviso({ titulo: 'Recrutamento na fila', texto: r.txt + '. População −' + r.pop + '.', icone: 'tropas', tipo: 'sucesso' });
           pedido = {};

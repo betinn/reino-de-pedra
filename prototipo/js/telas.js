@@ -263,6 +263,7 @@
         '</div>' +
         '<div class="conteudo-tela conteudo-reino">' +
         '<div class="reino-recursos">' + RP.barraRecursos({ semSino: true }) + '</div>' +
+        '<div class="reino-pendencias">' + RP.pendenciasResumo() + '</div>' +
         (RP.estado.recemFundado ? '<div class="card faixa-escudo">' + RP.icone('escudo') + '<div><b>Escudo de novato ativo</b><br><span class="suave">Ninguém pode atacar seus locais enquanto o escudo durar.</span></div></div>' : '') +
 
         '<div class="card pop-card">' +
@@ -281,9 +282,9 @@
         '<div class="secao-titulo">Filas</div>' +
         '<div class="card pilha">' +
         '<div class="card-titulo" style="margin:0">' + RP.icone('martelo') + '<h3>Obras</h3><span class="selo">' + D.filas.obras.length + ' de ' + D.filas.vagasObras + '</span></div>' +
-        D.filas.obras.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') +
+        D.filas.obras.map(RP.itemFilaHTML).join('') +
         '<div class="card-titulo" style="margin:var(--esp-2) 0 0">' + RP.icone('tropas') + '<h3>Recrutamento</h3><span class="selo">' + D.filas.recrutamento.length + ' de ' + D.filas.vagasRecrutamento + '</span></div>' +
-        D.filas.recrutamento.map(function (o) { return RP.timerHTML(RP.esc(o.rotulo), o.seg, o.total, '', o.fim); }).join('') +
+        D.filas.recrutamento.map(RP.itemFilaHTML).join('') +
         '<div class="linha" style="margin-top:var(--esp-2)"><a class="btn btn-p btn-primario" href="#/construcao" style="flex:1">' + RP.icone('martelo') + 'Construir</a><a class="btn btn-p" href="#/recrutamento" style="flex:1">' + RP.icone('tropas') + 'Recrutar</a></div>' +
         '</div>' +
 
@@ -390,7 +391,9 @@
     montar: function (el) {
       el.innerHTML = guia('Mais', 'Temporada, legado, bandeiras e avisos.', [
         ['temporada', 'Temporada e legado', 'Tempo restante, linhagem, relíquias, títulos e brasões', '#/temporada'],
-        ['lendario', 'Relíquias', 'Suas, as espionadas, as roubadas e as ruínas para escavar', '#/reliquias'],
+        ['alvo', 'Precisa de você', 'O que pede atenção, oportunidades e o andamento do reino', '#/agora'],
+        ['estandarte', 'Aliança', RP.dados.alianca.nome + ' · ' + RP.dados.alianca.membros.length + ' de ' + RP.dados.alianca.limite + ' · pedidos de recursos', '#/alianca'],
+        ['lendario', 'Relíquias', 'Suas, as espionadas, as concentrações à vista e as ruínas', '#/reliquias'],
         ['coroa', 'Ranking da temporada', 'Baixas, perdas, tropas e famílias', '#/ranking'],
         ['bandeira', 'Bandeiras', 'Sinais que você colocou e os de perto', '#/bandeiras'],
         ['sino', 'Notificações', 'Avisos recentes e o que chega no celular', '#/notificacoes'],
