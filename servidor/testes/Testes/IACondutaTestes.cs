@@ -30,8 +30,11 @@ public class IACondutaTestes
         return (t, ia, alvo, local);
     }
 
-    private static void Espionado(MundoTeste t, Reino ia, Local l, int nivel, int tropas) =>
+    private static void Espionado(MundoTeste t, Reino ia, Local l, int nivel, int tropas)
+    {
         ia.LocaisEspionados[l.Id] = new LocalEspionado { DonoId = l.ReinoId, Nivel = nivel, Quando = t.M.Agora, Tropas = tropas, Torres = 0 };
+        Nevoas.RevelarArea(t.M, ia.Id, l.Hex, 0);   // o batedor passou por lá: o local fica na foto da névoa
+    }
 
     private static Exercito? Ataque(MundoTeste t, Reino ia) => Exercitos.De(t.M, ia.Id).FirstOrDefault(e => e.Ordem == OrdemAtacar.Id);
 

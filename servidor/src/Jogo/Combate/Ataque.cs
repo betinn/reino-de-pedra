@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
@@ -193,13 +194,28 @@ public static class Ataques
                 throw new RegraException(u.Nome + " só defende: tire-a do ataque.");
     }
 
-    /// <summary>Alvo de um ataque no hexágono, ou erro.</summary>
-    public static Local Alvo(Mundo m, Reino r, int hex)
+    public const string SemAlvoConhecido = "Não há local conhecido neste hexágono para atacar.";
+
+    /// <summary>
+    /// Alvo de um ataque no hexágono, ou erro. Só vale o que o reino pode saber: o local à vista agora, ou o que a foto da
+    /// névoa guarda. Na névoa (sem local na foto), a resposta é a mesma tenha ou não local de verdade.
+    /// </summary>
+    public static Local Alvo(Mundo m, Reino r, int hex, HashSet<int>? vis = null)
     {
-        var l = m.LocalNoHex(hex) ?? throw new RegraException("Não há local neste hexágono para atacar.");
+        vis ??= Nevoas.VisiveisAgora(m, r.Id);
+        var l = m.LocalNoHex(hex);
+        if (!vis.Contains(hex))
+        {
+            if (FotoDoLocal(m, r, hex) == null || l == null) throw new RegraException(SemAlvoConhecido);
+        }
+        else if (l == null) throw new RegraException("Não há local neste hexágono para atacar.");
         if (l.ReinoId == r.Id && !l.Ruina) throw new RegraException("Esse local é seu.");
         return l;
     }
+
+    /// <summary>O local que a foto da névoa do reino guarda no hexágono (último estado conhecido), ou null.</summary>
+    public static JsonObject? FotoDoLocal(Mundo m, Reino r, int hex) =>
+        Fotos.De(m, r.Id).Objetos.TryGetValue(hex, out var objs) ? objs.FirstOrDefault(o => (string?)o["tipo"] == "local") : null;
 
     // ---------------------------------------------------------------- saque decrescente
 

@@ -36,7 +36,10 @@ public static class VisaoCombate
     /// <summary>Prévia do envio: chegada, carga, objetivos normalizados, saque decrescente e avisos, sem enviar nada.</summary>
     public static object Previa(Mundo m, Reino r, PedidoAtaque p, int para)
     {
-        var alvo = Ataques.Alvo(m, r, para);
+        var vis = Nevoas.VisiveisAgora(m, r.Id);
+        var alvo = Ataques.Alvo(m, r, para, vis);
+        // fora da vista, o alvo aparece como a foto da névoa o guarda (último estado conhecido)
+        var foto = vis.Contains(para) ? null : Ataques.FotoDoLocal(m, r, para);
         int de; Dictionary<string, int> grupo;
         if (p.MarchaId is long mid)
         {
@@ -69,7 +72,6 @@ public static class VisaoCombate
         var recentes = levaCarga ? Ataques.SaquesRecentes(m, r, alvo.Id) : 0;
         var rendimento = Ataques.Rendimento(m, recentes);
         var cargaObj = plano.Objetivos.Where(o => o.K == "recurso").Sum(o => o.Q);
-        var vis = Nevoas.VisiveisAgora(m, r.Id);
         var torres = TorresConhecidas(m, r, alvo, vis);
         var avisos = new List<object>();
         if (levaCarga && recentes > 0)
@@ -89,8 +91,11 @@ public static class VisaoCombate
         {
             alvo = new
             {
-                hex = alvo.Hex, c = m.G.C(alvo.Hex), l = m.G.L(alvo.Hex), nome = Ataques.NomeAlvo(alvo), local = alvo.Tipo.Chave(), produz = alvo.Produz,
-                dono = Ataques.SemDono(m, alvo) ? "livre" : "desconhecido", castelo = alvo.Tipo == TipoLocal.Castelo && !alvo.Ruina,
+                hex = alvo.Hex, c = m.G.C(alvo.Hex), l = m.G.L(alvo.Hex), aoVivo = foto == null,
+                nome = foto != null ? (string?)foto["nome"] : Ataques.NomeAlvo(alvo),
+                local = foto != null ? (string?)foto["local"] : alvo.Tipo.Chave(), produz = foto != null ? null : alvo.Produz,
+                dono = foto != null ? (string?)foto["dono"] : Ataques.SemDono(m, alvo) ? "livre" : "desconhecido",
+                castelo = foto != null ? (string?)foto["local"] == TipoLocal.Castelo.Chave() && foto["ruina"]?.GetValue<bool>() != true : alvo.Tipo == TipoLocal.Castelo && !alvo.Ruina,
                 torres = torres.Select(t => new { t.Hex, t.Nivel, alcance = Defesas.Alcance(m, t) }),
             },
             tipos = Ataques.TiposPara(m, alvo), bloqueio,

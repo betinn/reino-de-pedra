@@ -390,10 +390,12 @@ public class SocialTestes
         var ca = t.M.Locais[a.CasteloId]; var cb = t.M.Locais[b.CasteloId];
         ca.Guarnicao["cavalaria"] = 10;
         a.LocaisEspionados[cb.Id] = new LocalEspionado { DonoId = b.Id };
+        Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 0);
         Assert.Equal(SistemaSocial.MotivoPacto, Assert.Throws<RegraException>(() =>
             Exercitos.Enviar(t.M, a, ca.Id, G(("cavalaria", 5)), cb.Hex, OrdemAtacar.Id, false, CombateCenario.Plano())).Message);
         // sem saber de quem é, descobre ao chegar e volta sem combate
         var mina = t.M.LocaisDe(b.Id).First(l => l.Tipo == TipoLocal.Mina);
+        Nevoas.RevelarArea(t.M, a.Id, mina.Hex, 0);
         var ex = Exercitos.Enviar(t.M, a, ca.Id, G(("cavalaria", 5)), mina.Hex, OrdemAtacar.Id, false, CombateCenario.Plano());
         AvancarAte(t, ex.Chegada);
         Assert.Empty(t.M.Batalhas);
