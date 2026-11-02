@@ -35,6 +35,8 @@ Valor: custo em valor de referência (couro vale 2, cavalo de raça 40). Por 100
 | Aríete | Cerco | 10 | 10 | torres e portões (40) | Lenta | 0 | 300 madeira, 60 ferro | 360 | 15 min | 4 | 2.8 | 2.8 | — |
 | Trebuchet | Cerco | 5 | 5 | torres e portões (90) | Lenta | 0 | 600 madeira, 200 pedra, 150 ferro | 950 | 30 min | 6 | 0.5 | 0.5 | Era do Cerco Avançado |
 
+Mensageiro: 30 comida, 1 de população, 1 min, velocidade rápida (reino vizinho em 19 min). Mensagem de até 200 caracteres; recado de proposta, até 120.
+
 Veículos: carroça 500 (lenta, 150 madeira, 20 ferro); carroção 1500 (média, 400 madeira, 80 ferro, 2 cavalos de raça). Carregador da requisição: 50, a pé.
 
 ## Deslocamento

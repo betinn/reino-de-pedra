@@ -87,6 +87,8 @@ const P = {
   tetoBonus: 0.50,
   /* queda do castelo com outros locais: a sede vai para o local de maior nível */
   queda: { nivel: 0.5, recursos: 0.5, populacao: 0.3, tropas: 0.4 },     /* tropas: suposição da simulação (mortas no cerco), não regra */
+  /* mensageiro: leva mensagens a outros reinos; ocupa 1 de população; ninguém o ataca */
+  mensageiro: { custo: { comida: 30 }, pop: 1, tempo: 60, vel: 'Rápida', caracteres: 200, recadoProposta: 120 },
   /* salgadeira (sal): o local de comida guarda 20 h em vez de 10 h */
   salgadeira: { custo: { sal: 200, madeira: 300 }, tempo: 3600, horas: 20 }
 };
@@ -291,7 +293,8 @@ Object.values(U).forEach(u => {
   out('| ' + u.nome + ' | ' + NOME_FAM[u.fam] + ' | ' + u.atk + ' | ' + u.def + ' | ' + (u.vence ? NOME_FAM[u.vence] : u.cerco ? 'torres e portões (' + u.cerco + ')' : '—') + ' | ' + u.vel + ' | ' + u.carga + ' | ' + fmtC(u.custo) + ' | ' + t + ' | ' + fmtT(u.tempo) + ' | ' + u.pop + ' | ' +
     r1(100 * u.atk / t) + ' | ' + r1(100 * u.def / t) + ' | ' + (u.req || '—') + ' |');
 });
-out('\nVeículos: carroça ' + VEICULOS.carroca.carga + ' (lenta, ' + fmtC(VEICULOS.carroca.custo) + '); carroção ' + VEICULOS.carrocao.carga + ' (média, ' + fmtC(VEICULOS.carrocao.custo) + '). Carregador da requisição: 50, a pé.\n');
+out('\nMensageiro: ' + fmtC(P.mensageiro.custo) + ', ' + P.mensageiro.pop + ' de população, ' + fmtT(P.mensageiro.tempo) + ', velocidade ' + P.mensageiro.vel.toLowerCase() + ' (reino vizinho em ' + fmtT(viagemMin(14, P.mensageiro.vel) * 60) + '). Mensagem de até ' + P.mensageiro.caracteres + ' caracteres; recado de proposta, até ' + P.mensageiro.recadoProposta + '.\n');
+out('Veículos: carroça ' + VEICULOS.carroca.carga + ' (lenta, ' + fmtC(VEICULOS.carroca.custo) + '); carroção ' + VEICULOS.carrocao.carga + ' (média, ' + fmtC(VEICULOS.carrocao.custo) + '). Carregador da requisição: 50, a pé.\n');
 
 out('## Deslocamento\n');
 out('| Distância | Exemplo | Lenta | Média | Rápida | Lenta em rota |');
