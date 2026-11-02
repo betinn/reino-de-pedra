@@ -49,6 +49,10 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Marcha` (subclasse) | Novo tipo de marcha; implemente `Tipo`, `Chegou`, e se preciso `PopOcupada`, `RaioVisao`. |
 | `IModuloApi` (Api) | Novo grupo de rotas em `/api/v1`. Classe com construtor vazio; achada por reflexão. |
 | `Economia.ModificadoresProducao`, `HorasDeEstoque`, `OcupantesExtras`, `TetoExtra` | Relíquias, salgadeira, feridos... |
+| `Marcha.AoPartir` | Rodar a cada partida de marcha (fauna no caminho, encontros, avistamentos). |
+| `Combate.Bonus.Ataque/Defesa/DefesaExercito` | Bônus de combate (armas, veterania, relíquia, lendário, legado); o combate soma e aplica o teto. |
+| `Combate.Permissoes.AntesDeEnviar/AoChegar` | Bloqueios de ataque (aliança, pacto, trégua antes; escudo descoberto ao chegar). |
+| `Reliquia` (`m.Reliquias`, `Reliquias.Carregar/Guardar`) | Relíquia lendária guardada num local ou carregada por marcha. |
 | `Caminhos.CustosExtras` | Peso extra por hexágono na rota segura (fauna). |
 | `Nevoas.FontesDeVisao` | Visão extra (torres, exploradores parados...). |
 | `Obras.HexOcupado` | Hexágonos ocupados por objetos do sistema (torres, postos...). |

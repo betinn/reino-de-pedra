@@ -69,8 +69,16 @@ public abstract partial class Marcha : Documento
         if (!m.Marchas.ContemId(Id)) m.Marchas.Adicionar(this);
         EventoId = m.Agendar(new ChegadaMarchaEvento { MarchaId = Id, Quando = Chegada }).Id;
         m.Sujar(this);
+        foreach (var f in AoPartir) f(m, this);
         m.Avisar(ReinoId, "marchas");
     }
+
+    /// <summary>
+    /// Ganchos chamados a cada partida (inclusive volta e mudança de rota): fauna agenda ataques no caminho,
+    /// combate agenda encontros com guarnições em postura agressiva, avistamentos... Cancele seus eventos antigos
+    /// da marcha (ex.: guardando ids num campo partial) porque o caminho mudou.
+    /// </summary>
+    public static List<Action<Mundo, Marcha>> AoPartir { get; } = new();
 
     /// <summary>Tira a marcha do mapa.</summary>
     public void Encerrar(Mundo m)
