@@ -145,6 +145,28 @@ public sealed class ParametrosP
     public FaunaServP FaunaServ { get; init; } = new();
     /// <summary>Minutos no local da caçada.</summary>
     public double CacaMin { get; init; }
+    // ---------- ferraria, eras e equipamento lendário (servidor) ----------
+    public FerrariaServP FerrariaServ { get; init; } = new();
+}
+
+// ---------- ferraria, eras e equipamento lendário (servidor) ----------
+/// <summary>Requisito conferido pelo servidor: era já pesquisada e nível mínimo do maior local de cada tipo.</summary>
+public sealed class RequisitoP
+{
+    public string? Era { get; init; }
+    public int Ferraria { get; init; }
+    public int Quartel { get; init; }
+}
+public sealed class FerrariaServP
+{
+    /// <summary>Era → requisito (a mesma regra do texto de P.eras[].req).</summary>
+    public Dictionary<string, RequisitoP> Eras { get; init; } = new();
+    /// <summary>Requisito de cada nível de armas e armaduras (índice 0 = nível 1).</summary>
+    public RequisitoP[] Niveis { get; init; } = [];
+    public RequisitoP Lendario { get; init; } = new();
+    /// <summary>Famílias com armas e armaduras.</summary>
+    public string[] Familias { get; init; } = [];
+    public int LendarioPorReino { get; init; }
 }
 
 public sealed class CombateP

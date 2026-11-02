@@ -487,7 +487,40 @@
     "alto": 40
    }
   },
-  "cacaMin": 20
+  "cacaMin": 20,
+  "ferrariaServ": {
+   "eras": {
+    "aco": {
+     "ferraria": 7
+    },
+    "cerco": {
+     "era": "aco",
+     "quartel": 8
+    }
+   },
+   "niveis": [
+    {
+     "ferraria": 3
+    },
+    {
+     "era": "aco"
+    },
+    {
+     "era": "aco",
+     "ferraria": 9
+    }
+   ],
+   "lendario": {
+    "era": "aco",
+    "ferraria": 8
+   },
+   "familias": [
+    "infantaria",
+    "arqueiros",
+    "cavalaria"
+   ],
+   "lendarioPorReino": 1
+  }
  },
  "U": {
   "milicia": {

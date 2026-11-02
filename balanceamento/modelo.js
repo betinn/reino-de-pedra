@@ -156,7 +156,19 @@ const P = {
     /* rota segura: minutos extras por hexágono conforme o risco que o grupo correria ali (desvio vale a pena até ≈ 4 hexágonos) */
     custoSeguro: { baixo: 4, medio: 12, alto: 40 }
   },
-  cacaMin: 20                                              /* minutos no local da caçada */
+  cacaMin: 20,                                             /* minutos no local da caçada */
+  /* ---------- ferraria, eras e equipamento lendário (servidor) ---------- */
+  /* Os requisitos de eras.req, ferraria.niveis[].req e lendario.req, na forma que o servidor confere:
+     era = era já pesquisada; ferraria / quartel = nível mínimo do maior local desse tipo no reino.
+     Famílias com armas e armaduras (o cerco não tem); a milícia é infantaria (U.milicia.fam).
+     lendarioPorReino: quantos cada reino forja na temporada (capturar o de outro não conta). */
+  ferrariaServ: {
+    eras: { aco: { ferraria: 7 }, cerco: { era: 'aco', quartel: 8 } },
+    niveis: [{ ferraria: 3 }, { era: 'aco' }, { era: 'aco', ferraria: 9 }],
+    lendario: { era: 'aco', ferraria: 8 },
+    familias: ['infantaria', 'arqueiros', 'cavalaria'],
+    lendarioPorReino: 1
+  }
 };
 
 /* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */
