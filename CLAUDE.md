@@ -162,9 +162,9 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ### Defesa
 
-- Guarnição do local + **população como milícia** + muralhas.
-- **Muros** podem envolver uma construção ou várias. São **caros**, porque dão muita vantagem contra invasões.
-- Locais para **arqueiros defenderem do alto** (torres): ficam protegidos até o invasor entrar no reino ou destruir o muro.
+- Guarnição do local + **população como milícia** + **torres de arqueiros**.
+- **Não há muros.** A defesa construída são **torres de arqueiros**: construções próprias, com **alcance**, que protegem os locais em volta. Os arqueiros ficam no alto, protegidos, e o invasor precisa **derrubar a torre** para se livrar deles.
+- **Aríetes** derrubam torres e os portões do castelo.
 - O atacante chega apenas com as tropas enviadas, após a viagem; o defensor pode enviar reforços durante a batalha.
 - **Recuar** salva tropas e população, mas o local é saqueado.
 - Destruir um reino inteiro deve ser **muito difícil e caro**, mesmo para um veterano contra um iniciante.
@@ -228,7 +228,10 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - **Jogo livre**: sem missões fixas ou obrigatórias; nada força o jogador a fazer algo.
 - Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
+- **Atacar em 3 passos**: escolher a tropa, tocar no destino no mapa e confirmar. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**.
+- Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto.
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.
+- Opções e sistemas só aparecem **quando fazem sentido** para o jogador; nada é bloqueado.
 - Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação.
 
 ---
