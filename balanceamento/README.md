@@ -1,10 +1,10 @@
-# Balanceamento — v1 (aprovado)
+# Balanceamento — v1 (aprovado) e v2 (em validação)
 
 Números de tempos, custos, rendimentos e combate para o Reino de Pedra. Saem de **metas de ritmo** (o que o jogador deve sentir) e de um **modelo** que calcula as tabelas e simula uma temporada inteira, conferindo as metas a cada execução.
 
 - Modelo: [`modelo.js`](modelo.js). Rodar: `node balanceamento/modelo.js > balanceamento/tabelas.md`.
 - Tabelas completas, geradas pelo modelo: [`tabelas.md`](tabelas.md).
-- Estado: **aprovado**. As 4 regras abaixo, a temporada de 70 dias, as proteções e o tamanho do mapa estão no `CLAUDE.md`; os números ficam aqui e mudam com testes.
+- Estado: **v1 aprovado** (economia, tropas, deslocamento, combate, torres). **v2 em validação**: valiosos, comércio, ferraria, eras, veterania, feridos, equipamento lendário e queda do castelo, na [seção v2](#v2--valiosos-comércio-ferraria-e-guerra-em-validação). As regras ficam no `CLAUDE.md`; os números ficam aqui e mudam com testes.
 
 ---
 
@@ -77,12 +77,15 @@ O custo cresce mais rápido que a produção: cada nível rende menos por recurs
 |---|---|---|---|---|---|---|---|
 | Milícia | 5 | 15 | — | lenta | 20 | 20 comida, 10 madeira | 30 s |
 | Lanceiro | 25 | 40 | cavalaria | lenta | 40 | 30 comida, 30 madeira, 30 ferro | 3 min |
-| Arqueiro | 35 | 25 | lanceiro | média | 40 | 30 comida, 50 madeira, 10 couro | 3 min 30 s |
-| Cavalaria | 45 | 30 | arqueiro | rápida | 80 | 60 comida, 50 ferro, 30 couro | 6 min |
+| Arqueiro | 35 | 25 | infantaria | média | 40 | 30 comida, 50 madeira, 10 couro | 3 min 30 s |
+| Cavalaria | 45 | 30 | arqueiros | rápida | 80 | 60 comida, 50 ferro, 30 couro | 6 min |
+| Cavaleiro de elite (v2) | 60 | 40 | arqueiros | rápida | 80 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 8 min |
 | Aríete | 10 | 10 | 40 de estrutura por combate | lenta | 0 | 300 madeira, 60 ferro (4 pop.) | 15 min |
 | Trebuchet | 5 | 5 | 90 de estrutura, à distância | lenta | 0 | 600 madeira, 200 pedra, 150 ferro (6 pop.) | 30 min |
 
-Papéis: o lanceiro é a melhor **defesa por recurso** (44 por 100); o arqueiro, o melhor **ataque por recurso** (39 por 100); a cavalaria é cara, mas rápida e carrega o dobro: a unidade de **saque**. Veículos: carroça 500 de carga (150 madeira, 20 ferro); carroção 1.500 (400 madeira, 80 ferro, 2 cavalos de raça). Carregador da requisição: 50, a pé.
+As vantagens valem por **família**: a lança vence a cavalaria (inclusive a de elite), o arqueiro vence a infantaria e a cavalaria vence os arqueiros.
+
+Papéis: o lanceiro é a melhor **defesa por recurso** (44 por 100 de valor); o arqueiro, o melhor **ataque por recurso** (35 por 100); a cavalaria é cara, mas rápida e carrega o dobro: a unidade de **saque**. Os custos por 100 usam o valor de referência da v2 (couro vale 2). Veículos: carroça 500 de carga (150 madeira, 20 ferro); carroção 1.500 (400 madeira, 80 ferro, 2 cavalos de raça). Carregador da requisição: 50, a pé.
 
 ## Torres e cerco
 
@@ -113,7 +116,7 @@ A torre é a defesa mais eficiente por recurso (uma torre nível 2 defende como 
 - **Relíquias**: produção +15% num local nível 6 dá +17/h, meio nível. Três relíquias juntas (farol) passam de um nível inteiro, e por isso atraem ataque.
 - **Fauna** (força = soma de (ataque + defesa)/2): baixo 40, médio 120, alto 300; com o dobro, passa ileso. 20 lanceiros (650) atravessam qualquer região; um explorador sozinho (≈ 38) corre risco em quase todas.
 - **Escudo de novato 72 h**: cobre o primeiro fim de semana de quem entra numa sexta. **Regência após 48 h**: dois dias fora já põem o regente para defender. **Escudo de exílio 24 h**: tempo para refazer o mínimo.
-- **Legado**: relíquias da temporada com teto somado de 5%. **Aliança**: até 5 reinos.
+- **Legado**: relíquias da temporada de +1% a +2% cada, até 3 equipadas, teto somado de 5%. **Aliança**: até 5 reinos.
 
 ## Simulação de uma temporada (sem guerra)
 
@@ -132,7 +135,7 @@ Os dois enchem a fila até a próxima sessão (ou a noite), escolhem a melhoria 
 | 35 | 3.184 · 12 · 9 · 672 | 3.918 · 15 · 9 · 1.880 |
 | 70 | 3.674 · 14 · 9 · 776 | 6.004 · 18 · 10 · 2.540 |
 
-Limites do modelo: não há guerra (saques, sabotagens e perdas em batalha atrasariam todos), nem caça, extração de valiosos, relíquias ou o efeito do armazém. Os jogadores simulados são simples. Os números servem para dar a ordem de grandeza e mostrar o efeito de cada parâmetro, não para prever o jogo exato.
+Limites do modelo: não há guerra (saques, sabotagens e perdas em batalha atrasariam todos), nem caça, relíquias ou o efeito do armazém; a extração de valiosos e a ferraria são calculadas à parte, na v2. Os jogadores simulados são simples. Os números servem para dar a ordem de grandeza e mostrar o efeito de cada parâmetro, não para prever o jogo exato.
 
 ## O que muda no protótipo
 
@@ -144,6 +147,73 @@ Os valores desta proposta foram aplicados ao protótipo:
 - temporada de 70 dias.
 
 O protótipo continua mostrando ataque e defesa em escala de 1 a 5, só para comparação visual.
+
+---
+
+## v2 — valiosos, comércio, ferraria e guerra (em validação)
+
+Itens aprovados: lista de valiosos e usos, troca direta, resgate de explorador, negociação com reinos de IA, pacto de não agressão garantido pelo jogo, limites para o novato, ervas e feridos, armas e armaduras, equipamento lendário. Os números, as eras, a veterania, as regras finas de alianças e o legado são **proposta**, para validar. O modelo confere 12 metas novas (M10 a M21); **todas no alvo**.
+
+### Resumo
+
+| Tema | Proposta |
+|---|---|
+| Valor de referência | Básicos 1 · couro e peles 2 · sal 6 · ervas 8 · **prata 10** · aço 15 · **ouro 20** · gemas 30 · cavalo de raça 40 · minério raro 60 |
+| Jazidas | Cada valiosa guarda **20 mil em valor** (ex.: 1.000 de ouro, 2.000 de prata); 1 de cada valioso para cada 3 reinos (10 no mundo). Minério raro: 5 no mundo, 200 cada |
+| Extração | 10 lanceiros tiram **40 de valor/h** (2 de ouro/h); 40 lanceiros com posto, 181/h. Por pessoa, ≈ 2× um trabalhador de local nível 6 |
+| Era do Aço | Ferraria 7 · 80 ouro, 1.500 ferro, 1.000 madeira · 6 h. Libera armas e armaduras 2–3, cavaleiro de elite, lendário |
+| Era do Cerco Avançado | Era do Aço e quartel 8 · 150 ouro, 4.000 madeira, 3.000 pedra, 1.500 ferro · 12 h. Libera trebuchet e portões 4–5 |
+| Armas e armaduras | +8% por nível, 3 níveis, por família (infantaria, arqueiros, cavalaria). Linha completa: ≈ 20 mil de valor e 20 h; tudo: 122 mil (26% das obras do médio) |
+| Veterania | Marca por vitória com perdas < 50% contra inimigo com ≥ 30% da força. 2 / 5 / 9 marcas: +5% / +10% / +15% |
+| Feridos | 30% das baixas de quem vence ou recua pela tática. 5 ervas curam 1 em 2 h; sem ervas em 24 h, morrem |
+| Lendário | 100 minério raro, 1.500 ferro, 100 aço · 24 h. +25% para até 50 tropas (vale ≈ 12 tropas). No máximo 10 no mundo |
+| Teto de bônus | A soma de armas, veterania, relíquia, lendário e legado vale até **+50%** (sem teto chegaria a +84% / +89%) |
+| Novato | Sob escudo: diferença entre o que dá e recebe de até **2.000 de valor por dia** (24% do que produz no escudo) |
+| Pacto | 1 a 7 dias, até 3 ativos; começa quando o pagamento chega |
+| Queda do castelo | Sede vai para o local de maior nível com metade do nível do castelo; −50% dos recursos, −30% da população civil. Supondo ainda 40% das tropas mortas no cerco, o médio volta ao nível em **2,7 dias** |
+
+### Por que esses números
+
+- **Valor de referência**: a prata é a moeda (1 prata = 10 básicos), e o resto se mede por ela. Não é preço fixo: os jogadores combinam o que quiserem. Serve para a IA comerciante, para o limite do novato e para comparar custos.
+- **Extração mais lenta para o que vale mais**: o ritmo é medido em valor. 10 lanceiros tiram 40 de valor por hora, seja 40 de madeira, 4 de prata ou 2 de ouro. O ouro da Era do Aço sai em ≈ 23 h com 20 lanceiros, ou ≈ 9 h com 40 e posto. Por pessoa, extrair rende ≈ 2× trabalhar num local nível 6, mas a tropa fica longe, exposta, e a jazida acaba. Com o expoente 0,8, juntar tropas demais rende cada vez menos (até 50 por jazida).
+- **Escassez de propósito**: o ouro e o aço do mapa cobrem pouco mais que a demanda típica (≈ 100%). Nem todo reino fecha tudo sem disputar jazidas ou trocar: é motivo de PvP, como as relíquias.
+- **Ferraria para exércitos grandes**: o nível 1 só rende mais que recrutar com o mesmo valor a partir de ≈ 200 cavaleiros, 340 arqueiros ou 375 lanceiros. Abaixo disso, recrutar compensa. Mas o bônus não ocupa população, que é o limite real: por isso vale para quem já encheu o teto.
+- **Teto de +50%**: sem ele, um veterano com tudo teria +84% de ataque, e um novato não teria chance nem com o dobro de tropas. Com o teto, o exército no máximo vence uma defesa até 1,5× maior e perde para 2×. Torres e portões ficam fora do teto.
+- **Feridos**: curar custa 40 de valor, 44% de um lanceiro, e devolve a população. Suaviza "tropas mortas não voltam" sem anular: o perdedor que não recua perde tudo, e sem ervas os feridos morrem.
+- **Lendário pequeno de propósito**: +25% para até 50 tropas equivale a ≈ 12 tropas. É forte numa tropa de elite e irrelevante numa guerra de 700, para não decidir a temporada. O valor está em ser raro e roubável.
+- **Cavaleiro de elite**: mais ataque por pessoa (60 contra 45) e menos por valor (24 contra 26,5 por 100). É para quem tem recurso, mas não tem teto.
+- **Novato**: o limite de 2.000 por dia impede que contas secundárias alimentem uma principal, mas deixa um amigo ajudar. O reino sob escudo não pode ser cobrado por pacto.
+- **Queda do castelo**: perder metade do nível do castelo custa ≈ 78 mil de obras. O médio refaz em 2,7 dias e recupera a produção em 1,5 dia: perda pesada, que não faz o jogador desistir.
+
+### Metas novas
+
+| | Meta | Resultado |
+|---|---|---|
+| M10 | Bônus somados ficam no teto de +50% | ✓ |
+| M11 | Armas ou armaduras nível 1 só compensam a partir de 150 a 600 tropas da família | 199 a 375 |
+| M12 | Ferraria completa custa 25% a 50% das obras do médio na temporada | 26% |
+| M13 | Extrair valiosos rende por pessoa 1,5 a 3× um trabalhador de local nível 6 | 2,1× |
+| M14 | O ouro da Era do Aço sai em 6 a 36 h com 20 lanceiros, sem posto | 23 h |
+| M15 | Ouro e aço do mapa cobrem 90% a 150% da demanda típica | 101% / 96% |
+| M16 | Era do Aço custa 2 a 4 h de produção do médio no dia 10; Era do Cerco, 4 a 8 h no dia 21 (sem o ouro) | 2,3 h / 4,7 h |
+| M17 | Curar um ferido custa 25% a 60% de recrutar um lanceiro | 44% |
+| M18 | Equipamento lendário vale no máximo 15 tropas | 12,5 |
+| M19 | Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria | ✓ |
+| M20 | Reino sob escudo recebe no máximo 30% do que produz no escudo | 24% |
+| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível em 2 a 6 dias | 2,7 dias |
+
+### Combates com bônus
+
+| Situação | Resultado |
+|---|---|
+| 40 arqueiros contra mina com 15 lanceiros e torre nível 1, sem bônus | atacante vence com 43% de baixas (30% com feridos curados) |
+| Os mesmos 40 com armas nível 3 (+24%) | vence com 31% |
+| Os mesmos 40 com todos os bônus (+84%, limitado a +50%) | vence com 24% |
+| A mesma mina com todos os bônus de defesa (limitado a +50%) | o ataque sem bônus ainda vence, mas com 79% de baixas |
+
+Tabelas completas da v2 (valiosos, extração, eras, ferraria, queda do castelo) em [`tabelas.md`](tabelas.md).
+
+O protótipo ainda não mostra a v2: os valores atuais dele (ex.: Era do Aço com 60 de ouro, extração de prata em 34/h) são da v1 ilustrativa e mudam quando a v2 for aprovada.
 
 ## Como mudar um número
 
