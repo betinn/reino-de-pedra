@@ -55,17 +55,18 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - Exploradores ocupam **1 de população** cada. Podem ser capturados ou mortos.
 - Quem captura um explorador vê o **reino de origem** e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado.
+- Só explorador **sem escolta** é capturado, ao passar à vista de tropas de outro reino; o batedor de elite só é pego espionando. Resgate pedido e não pago no prazo também liberta.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
 
 ### Fauna hostil
 
 - Animais selvagens ocupam o mapa conforme o terreno: lobos e javalis em florestas, ursos em montanhas e colinas, crocodilos em pântanos e rios.
 - Ameaçam principalmente **exploradores sozinhos, grupos pequenos de extração e caravanas**; exércitos médios passam praticamente ilesos.
-- Criam a escolha entre **rota curta e perigosa** ou **longa e segura**, ou levar escolta. Rotas construídas reduzem a presença de animais.
-- **Caçar** rende comida e materiais (couro, peles).
+- Criam a escolha entre **rota curta e perigosa** ou **longa e segura**, ou levar escolta. Rotas construídas reduzem a presença de animais (um nível de perigo a menos no hexágono com rota).
+- **Caçar** rende comida e materiais (couro, peles). A caçada é uma luta com o bando pela mesma regra de perdas; se sobra alguém, o grupo traz o que couber na carga.
 - Áreas exploradas mostram o **nível de perigo**, sujeito ao mesmo envelhecimento de informação da névoa.
 - Animais se movem e **reaparecem** por região ao longo do tempo; um bando abatido volta em 24 h, e área limpa não fica segura para sempre.
-- Um explorador sozinho atacado por animais morre; grupos perdem parte das tropas, e com o dobro da força dos animais passam ilesos.
+- Um explorador sozinho atacado por animais morre; grupos perdem parte das tropas, e com o dobro da força dos animais passam ilesos. Carregadores e caravanas atacados perdem a mesma parte da carga.
 - Perto dos reinos iniciais a fauna é mais fraca, para não punir iniciantes.
 
 ### Rotas

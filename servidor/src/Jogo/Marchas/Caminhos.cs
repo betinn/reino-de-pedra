@@ -18,6 +18,8 @@ public sealed record OpcoesCaminho
     public double Forca { get; init; }
     /// <summary>Ajuste do fator de terreno por tipo de grupo (ex.: explorador a pé sem penalidade na floresta).</summary>
     public Func<Terreno, double, double>? AjusteTerreno { get; init; }
+    /// <summary>Reino que viaja: a rota segura evita a fauna que ESTE reino conhece (0 = a real).</summary>
+    public long ReinoId { get; init; }
     public static readonly OpcoesCaminho Padrao = new();
 }
 

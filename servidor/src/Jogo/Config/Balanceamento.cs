@@ -140,6 +140,11 @@ public sealed class ParametrosP
 
     // ---------- combate (servidor) ----------
     public CombateP Combate { get; init; } = new();
+    // ---------- exploração, fauna, caça, rotas e espionagem (servidor)
+    public ExploracaoServP ExploracaoServ { get; init; } = new();
+    public FaunaServP FaunaServ { get; init; } = new();
+    /// <summary>Minutos no local da caçada.</summary>
+    public double CacaMin { get; init; }
 }
 
 public sealed class CombateP
@@ -163,6 +168,29 @@ public sealed class PortaoP
     public double TempoN1 { get; init; }
     public int NivelSemEra { get; init; }
     public Dictionary<string, double> Receita { get; init; } = new();
+}
+
+public sealed class ExploracaoServP
+{
+    /// <summary>Tipo de explorador → terrenos sem penalidade (fator 1).</summary>
+    public Dictionary<string, string[]> SemPenalidade { get; init; } = new();
+    /// <summary>Tipo de explorador → terreno → multiplicador extra.</summary>
+    public Dictionary<string, Dictionary<string, double>> Penalidade { get; init; } = new();
+    public CapturaP Captura { get; init; } = new();
+}
+public sealed class CapturaP { public double Base { get; init; } public double PorTropa { get; init; } public double Max { get; init; } public double Furtivo { get; init; } }
+public sealed class FaunaServP
+{
+    public int RegioesPorReino { get; init; }
+    public int[] Raio { get; init; } = [1, 1];
+    public int DistanciaMin { get; init; }
+    public int LongeCastelo { get; init; }
+    public int PertoReino { get; init; }
+    public double Variacao { get; init; }
+    public double[] MoverH { get; init; } = [4, 4];
+    public Dictionary<string, int[]> Bando { get; init; } = new();
+    public double ForcaCarregador { get; init; }
+    public Dictionary<string, double> CustoSeguro { get; init; } = new();
 }
 
 public sealed class ArmazemP { public double CapN1 { get; init; } public double CapCresc { get; init; } }

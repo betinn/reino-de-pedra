@@ -427,7 +427,67 @@
      "ferro": 0.2
     }
    }
-  }
+  },
+  "exploracaoServ": {
+   "semPenalidade": {
+    "pe": [
+     "floresta",
+     "pantano"
+    ]
+   },
+   "penalidade": {
+    "cavalo": {
+     "floresta": 1.5,
+     "montanha": 1.5
+    }
+   },
+   "captura": {
+    "base": 0.05,
+    "porTropa": 0.01,
+    "max": 0.5,
+    "furtivo": 0
+   }
+  },
+  "faunaServ": {
+   "regioesPorReino": 2,
+   "raio": [
+    1,
+    2
+   ],
+   "distanciaMin": 4,
+   "longeCastelo": 2,
+   "pertoReino": 3,
+   "variacao": 0.25,
+   "moverH": [
+    3,
+    5
+   ],
+   "bando": {
+    "lobos": [
+     4,
+     8
+    ],
+    "javalis": [
+     3,
+     6
+    ],
+    "ursos": [
+     1,
+     3
+    ],
+    "crocodilos": [
+     2,
+     5
+    ]
+   },
+   "forcaCarregador": 5,
+   "custoSeguro": {
+    "baixo": 4,
+    "medio": 12,
+    "alto": 40
+   }
+  },
+  "cacaMin": 20
  },
  "U": {
   "milicia": {

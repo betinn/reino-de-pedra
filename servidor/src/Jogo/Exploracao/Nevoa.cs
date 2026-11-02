@@ -33,14 +33,20 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         public static bool Explorado(Mundo m, long reinoId, int h) => De(m, reinoId).MinutoVisto(h) > 0;
 
+        /// <summary>
+        /// Marca os hexágonos como vistos no instante <paramref name="quando"/> (padrão: agora) e tira a foto deles
+        /// (último estado conhecido: perigo da fauna e objetos). Nunca "desvê": só avança o minuto.
+        /// </summary>
         public static void Revelar(Mundo m, long reinoId, IEnumerable<int> hexes, long? quando = null)
         {
             var n = De(m, reinoId);
             var min = Minuto(m, quando ?? m.Agora);
-            var mudou = false;
+            List<int>? mudados = null;
             foreach (var h in hexes)
-                if (n.MinutoVisto(h) < min) { n.Marcar(h, min); mudou = true; }
-            if (mudou) m.Sujar(n);
+                if (n.MinutoVisto(h) < min) { n.Marcar(h, min); (mudados ??= new()).Add(h); }
+            if (mudados == null) return;
+            m.Sujar(n);
+            Fotos.Tirar(m, reinoId, mudados);
         }
         public static void RevelarArea(Mundo m, long reinoId, int centro, int raio, long? quando = null) =>
             Revelar(m, reinoId, m.G.Area(centro, raio), quando);
@@ -61,6 +67,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             foreach (var mc in m.Marchas)
             {
                 if (mc.ReinoId != reinoId) continue;
+                mc.RevelarPercorrido(m, agora);   // o que a marcha viu no caminho desde a última consulta
                 foreach (var h in m.G.Area(mc.HexEm(agora), mc.RaioVisao(m))) vis.Add(h);
             }
             foreach (var f in FontesDeVisao)

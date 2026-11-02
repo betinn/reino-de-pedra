@@ -18,3 +18,4 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0012](0012-tropas.md) | Tropas: recrutamento na fila, exércitos com ordens, interceptação |
 | [0017](0017-vista-e-mapa-no-cliente.md) | Vista 2.5D e Mapa tático (Canvas + marcadores SVG) com um modelo e pontos de extensão |
 | [0013](0013-combate.md) | Combate: ordem atacar, batalha como documento resolvida pela fórmula, torres como documento |
+| [0015](0015-exploracao.md) | Exploração: névoa com foto, fauna por região, exploradores, caça, rotas e espionagem |

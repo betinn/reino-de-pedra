@@ -81,7 +81,7 @@ public static class VisaoTropas
         var forca = GT.ForcaFauna(m, grupo);
         object Op(bool seguro)
         {
-            var rota = Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca });
+            var rota = Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca, ReinoId = r.Id });
             var ok = rota.Hexes[^1] == para;
             return new { ok, min = ok ? Math.Round(rota.TotalMin, 1) : (double?)null, hexes = ok ? rota.Hexes.Count : 0, caminho = ok ? rota.Hexes : null };
         }

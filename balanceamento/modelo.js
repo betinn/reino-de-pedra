@@ -135,7 +135,28 @@ const P = {
        Nível 1 ≈ 1.000 (pouco mais que uma torre nível 1, 600): ×1,15 na defesa do castelo inteiro vale mais que 6 arqueiros no alto.
        Acima de nivelSemEra (3) exige a Era do Cerco Avançado. */
     portao: { custoN1: 1000, custoCresc: 2.0, tempoN1: 3600, nivelSemEra: 3, receita: { pedra: 0.5, madeira: 0.3, ferro: 0.2 } }
-  }
+  },
+  /* ---------- exploração, fauna, caça, rotas e espionagem (servidor) ---------- */
+  /* explorador: a pé não sente floresta nem pântano (fator 1, como planície); a cavalo leva ×1,5 em floresta e montanha.
+     Com escolta, o grupo anda como tropa (sem ajuste) na velocidade do mais lento. */
+  exploracaoServ: {
+    semPenalidade: { pe: ['floresta', 'pantano'] }, penalidade: { cavalo: { floresta: 1.5, montanha: 1.5 } },
+    /* captura de explorador SEM escolta que passa no alcance de visão de uma guarnição (ou exército parado) de outro reino:
+       chance = base + porTropa × tropas que o veem, até max (20 lanceiros ≈ 25%). Batedor de elite é furtivo (×0 ao passar). */
+    captura: { base: 0.05, porTropa: 0.01, max: 0.5, furtivo: 0 }
+  },
+  /* fauna gerada com o mundo: 2 regiões por reino (raio 1 ou 2, centros a 4+ hexágonos uns dos outros, longe 2+ dos castelos).
+     Nível base = o da caça do animal, com 25% de chance de um nível abaixo e 25% acima. A até 3 hexágonos de um castelo
+     inicial (o que o castelo vê), sempre baixo. O bando muda de hexágono dentro da região a cada 3 a 5 h. Tamanho do bando (contador no mapa). */
+  faunaServ: {
+    regioesPorReino: 2, raio: [1, 2], distanciaMin: 4, longeCastelo: 2, pertoReino: 3, variacao: 0.25, moverH: [3, 5],
+    bando: { lobos: [4, 8], javalis: [3, 6], ursos: [1, 3], crocodilos: [2, 5] },
+    /* carregadores sem escolta: força 5 por pessoa (gente sem armas, metade de uma milícia) */
+    forcaCarregador: 5,
+    /* rota segura: minutos extras por hexágono conforme o risco que o grupo correria ali (desvio vale a pena até ≈ 4 hexágonos) */
+    custoSeguro: { baixo: 4, medio: 12, alto: 40 }
+  },
+  cacaMin: 20                                              /* minutos no local da caçada */
 };
 
 /* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */

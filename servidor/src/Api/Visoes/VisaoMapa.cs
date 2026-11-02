@@ -39,14 +39,14 @@ public static class VisaoMapa
         {
             if (x.ReinoId == r.Id) { objetos.Add(new { tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "meu", hex = x.HexEm(agora), caminho = x.Caminho, tempos = x.Tempos }); continue; }
             var h = x.HexEm(agora);
-            if (!vis.Contains(h)) continue;
+            if (!vis.Contains(h) || x.Furtiva) continue;
             objetos.Add(new { tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "desconhecido", hex = h, progresso = x.ProgressoEm(agora), caminho = x.Caminho, tempos = x.Tempos, tamanho = Aproximado(x.Tropas.Values.Sum()) });
         }
         foreach (var j in m.Jazidas)
             if (j.DescobertaPor.Contains(r.Id))
                 objetos.Add(new { tipo = "jazida", id = j.Id, hex = j.Hex, recurso = j.Recurso, restante = Math.Round(j.Restante / j.Inicial, 3) });
         foreach (var ru in m.Ruinas)
-            if (nevoa.MinutoVisto(ru.Hex) > 0)
+            if (vis.Contains(ru.Hex))   // fora da visão, a ruína vem da foto da névoa (Exploracao/Fotos)
                 objetos.Add(new { tipo = "ruina-antiga", id = ru.Id, hex = ru.Hex, esgotada = ru.Esgotada });
         foreach (var f in Extras) objetos.AddRange(f(m, r, vis));
         var vias = m.Vias;
