@@ -243,7 +243,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - A identidade só é revelada se o atacante escolher levar seu **estandarte**, ou se o defensor descobrir via batedores e espionagem.
 - **Bandeiras** podem ser colocadas em qualquer lugar do mapa, como sinal para outros jogadores (reivindicação, ameaça, aliança). Têm valor social, não mecânico.
 - Bandeiras **mostram quem as colocou**.
-- Cada jogador tem **até 20 bandeiras ativas**, com recado de até 60 caracteres. **Outros jogadores podem derrubá-las** com tropas no local.
+- Cada jogador tem **até 20 bandeiras ativas**, com recado de 3 a 60 caracteres, em hexágonos que já explorou. **Outros jogadores podem derrubá-las** com tropas no local, que voltam depois. Ver uma bandeira torna o autor conhecido.
 - O dono é avisado quando a bandeira cai, sem saber quem derrubou, a não ser que as tropas levassem estandarte.
 - Explorar um local de outro reino **não revela o dono**; espionar o local com batedores de elite revela.
 - Espiões são **descobertos se alguma tropa os vir**. Ficam no mapa como "visto há X horas" por apenas **10 horas**.
@@ -293,7 +293,10 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Cargos**: líder (convida, expulsa e promove), até 2 conselheiros (convidam e aceitam pedidos de entrada) e membros.
 - **Saída**: qualquer membro sai quando quiser, e o líder pode expulsar. Ao sair ou ser expulso, vale uma **trégua de 24 h** entre o reino e a aliança, garantida pelo jogo, e o reino só entra em outra aliança depois de 24 h. A visão das marchas acaba na hora.
 - **Traição**: não há ataque surpresa entre membros. Quem quer atacar um aliado precisa sair e esperar a trégua.
-- Se o líder entra em regência, a liderança passa ao conselheiro mais antigo, ou ao membro mais antigo.
+- Se o líder entra em regência ou sai, a liderança passa ao conselheiro mais antigo na aliança, ou ao membro mais antigo.
+- Convite só para reinos conhecidos; pedido de entrada só a aliança com algum membro conhecido. Convites e pedidos valem 24 h.
+- O reforço de um aliado defende com a guarnição, mas o dono do local não o usa; divide as perdas da defesa e volta para casa se a defesa recuar ou a aliança entre os dois acabar.
+- Pacto e trégua são descobertos ao chegar; o envio só é recusado se o atacante já sabe de quem é o local (espionado).
 
 ---
 
@@ -301,7 +304,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - **Sem mercado global**: um mercado único quebraria as regras de recurso no local e de roubo no caminho.
 - **Sem chat geral.** Fora da aliança, a comunicação é por **mensageiro** e pelos recados curtos que acompanham as propostas.
-- **Mensageiro**: unidade que ocupa 1 de população e leva uma mensagem até um local de outro reino, inclusive de dono desconhecido. Vai com bandeira branca, evidente no mapa como não agressivo; tropas e fauna não o atacam. A mensagem revela quem a mandou; o destinatário só se revela se responder. Depois de entregar, o mensageiro volta.
+- **Mensageiro**: treinado no castelo; unidade que ocupa 1 de população e leva uma mensagem até um local de outro reino, inclusive de dono desconhecido. Vai com bandeira branca, evidente no mapa como não agressivo; tropas e fauna não o atacam. A mensagem revela quem a mandou; o destinatário só se revela se responder. Depois de entregar, o mensageiro volta.
 - **Troca direta** ("dou X, quero Y") só com reinos conhecidos: aliados, espionados ou identificados por estandarte ou bandeira. A proposta revela quem propõe. Se aceita, as duas cargas saem dos locais mais próximos e viajam visíveis no mapa, podendo ser roubadas.
 - **Reinos de IA comerciantes** compram abaixo e vendem acima do valor de referência, só com o próprio estoque e pelas mesmas regras dos jogadores. Mantêm o comércio vivo quando há poucos jogadores.
 - **Pacto de não agressão**: qualquer lado propõe, com pagamento em qualquer direção (quem ameaça cobra para não atacar, ou quem teme paga para não ser atacado) ou sem pagamento.
@@ -309,7 +312,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Começa quando o pagamento chega; se a carga for roubada no caminho, não começa.
   - **O jogo garante o pacto**: enquanto durar, nenhum dos dois consegue atacar, saquear ou interceptar o outro. Tropas enviadas a um local do outro descobrem o pacto ao chegar e voltam sem combate.
 - **Resgate de explorador**: ver Exploradores.
-- **Limites para o novato**: enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajuda de aliados, pagamentos) tem limite por dia, para que contas secundárias não alimentem outra. Ninguém pode cobrar pacto de um reino sob escudo.
+- **Limites para o novato**: enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajuda de aliados, pagamentos de pacto e resgate), somada transação a transação em valor de referência, tem limite por dia (janela de 24 h), para que contas secundárias não alimentem outra. Ninguém pode cobrar pacto de um reino sob escudo.
 
 ---
 
