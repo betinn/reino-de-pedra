@@ -107,6 +107,8 @@ public static class VisaoValiosos
         var de = m.Locais.Obter(deLocalId);
         if (de == null || de.ReinoId != r.Id) throw new RegraException("Local não é seu.", 404);
         var dest = m.Locais.Obter(destinoLocalId);
+        // como em ReliquiasLendarias.Mover: só para local próprio (o caminho e a concentração de um local alheio não vazam)
+        if (dest != null && !Exercitos.LocalProprio(dest, r.Id)) throw new RegraException("Local não é seu.", 404);
         var g = GT.Limpo(tropas);
         var vel = GT.Velocidade(m, g);
         var forca = GT.ForcaFauna(m, g);

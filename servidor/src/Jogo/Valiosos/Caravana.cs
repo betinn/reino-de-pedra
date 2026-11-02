@@ -258,12 +258,15 @@ public static class Caravanas
         var vel = Velocidade(m, veic, tropas);
         var op = new OpcoesCaminho { Seguro = p.Seguro, Forca = GT.ForcaFauna(m, tropas), ReinoId = r.Id };
         Rota? buscar = null, levar = null;
-        if (baseL != null && o != null && baseL.Hex != o.Hex)
+        // só caminhos entre locais do próprio reino: a prévia não pode dar o hexágono de um local alheio
+        var proprios = Exercitos.LocalProprio(o, r.Id) && Exercitos.LocalProprio(d, r.Id) && Exercitos.LocalProprio(baseL, r.Id);
+        if (!proprios) { o = Exercitos.LocalProprio(o, r.Id) ? o : null; d = Exercitos.LocalProprio(d, r.Id) ? d : null; baseL = Exercitos.LocalProprio(baseL, r.Id) ? baseL : null; }
+        if (proprios && baseL != null && o != null && baseL.Hex != o.Hex)
         {
             buscar = Caminhos.Calcular(m, baseL.Hex, o.Hex, vel, op);
             if (buscar.Hexes[^1] != o.Hex) { Falha("Não há caminho até a origem."); buscar = null; }
         }
-        if (o != null && d != null && o.Hex != d.Hex)
+        if (proprios && o != null && d != null && o.Hex != d.Hex)
         {
             levar = Caminhos.Calcular(m, o.Hex, d.Hex, vel, op);
             if (levar.Hexes[^1] != d.Hex) { Falha("Não há caminho até o destino."); levar = null; }

@@ -100,4 +100,45 @@ public class VisibilidadeTestes
         Assert.Equal("desconhecido", pv.GetProperty("dono").GetString());
         Assert.NotEqual("Ruína", pv.GetProperty("nome").GetString());
     }
+
+    // ---------------------------------------------------------------- caravana e relíquia para local alheio (achados 8 e 9)
+
+    [Fact]
+    public void Previa_de_caravana_nao_calcula_caminho_ate_local_alheio()
+    {
+        var t = new MundoTeste();
+        var a = t.NovoReino(); var b = t.NovoReino();
+        var ca = t.M.Locais[a.CasteloId];
+        var alheio = t.M.LocaisDe(b.Id).First(l => l.Id != b.CasteloId);
+        Guarnecer(t, a, ca, "lanceiro", 4);
+        t.DarRecursos(a, 100);
+        var tropas = new Dictionary<string, int> { ["lanceiro"] = 4 };
+        var pl = Caravanas.Planejar(t.M, a, new PedidoCaravana(ca.Id, alheio.Id, new Dictionary<string, double> { ["madeira"] = 10 }, null, tropas));
+        Assert.NotNull(pl.Problema);
+        Assert.Null(pl.Levar);
+        Assert.False(J(VisaoValiosos.PlanoCaravana(t.M, pl)).TryGetProperty("levar", out _));
+        // base alheia (de onde saem as tropas) também não
+        var meu = t.M.LocaisDe(a.Id).First(l => l.Id != a.CasteloId);
+        var pb = Caravanas.Planejar(t.M, a, new PedidoCaravana(ca.Id, meu.Id, new Dictionary<string, double> { ["madeira"] = 10 }, null, tropas, alheio.Id));
+        Assert.Null(pb.Buscar);
+        // origem alheia
+        var po = Caravanas.Planejar(t.M, a, new PedidoCaravana(alheio.Id, meu.Id, new Dictionary<string, double> { ["madeira"] = 10 }, null, tropas));
+        Assert.Null(po.Buscar); Assert.Null(po.Levar);
+    }
+
+    [Fact]
+    public void Previa_de_mover_reliquia_recusa_destino_alheio()
+    {
+        var t = new MundoTeste();
+        var a = t.NovoReino(); var b = t.NovoReino();
+        var ca = t.M.Locais[a.CasteloId];
+        var alheio = t.M.LocaisDe(b.Id).First(l => l.Id != b.CasteloId);
+        var rel = t.M.Reliquias.Adicionar(new Reliquia { Nome = "Cálice", Tipo = "producao", ReinoId = a.Id, LocalId = ca.Id });
+        t.M.Reliquias.Adicionar(new Reliquia { Nome = "Pedra", Tipo = "resistencia", ReinoId = b.Id, LocalId = alheio.Id });
+        var tropas = new Dictionary<string, int> { ["lanceiro"] = 2 };
+        var e = Assert.Throws<RegraException>(() => VisaoValiosos.PreviaMover(t.M, a, rel.Id, ca.Id, tropas, alheio.Id));
+        Assert.Equal(404, e.Status);
+        var meu = t.M.LocaisDe(a.Id).First(l => l.Id != a.CasteloId);
+        Assert.Equal(1, J(VisaoValiosos.PreviaMover(t.M, a, rel.Id, ca.Id, tropas, meu.Id)).GetProperty("depois").GetInt32());
+    }
 }
