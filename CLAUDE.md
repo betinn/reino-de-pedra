@@ -37,7 +37,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
   - Planície: deslocamento rápido, comida.
   - Floresta: lenta, madeira e caça.
-  - Colina: ferro e pedra.
+  - Colina: deslocamento normal, ferro e pedra.
   - Montanha: lenta, ouro e pedras preciosas.
   - Pântano: muito lento, ervas raras.
   - Rio: exige ponte ou vau.
@@ -156,7 +156,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - A identidade só é revelada se o atacante escolher levar seu **estandarte**, ou se o defensor descobrir via batedores e espionagem.
 - **Bandeiras** podem ser colocadas em qualquer lugar do mapa, como sinal para outros jogadores (reivindicação, ameaça, aliança). Têm valor social, não mecânico.
 - Bandeiras **mostram quem as colocou**.
-- Explorar um local de outro reino **não revela o dono**.
+- Explorar um local de outro reino **não revela o dono**; espionar o local com batedores de elite revela.
 
 ### Território
 
