@@ -137,7 +137,26 @@ public sealed class ParametrosP
     public SalgadeiraP Salgadeira { get; init; } = new();
     /// <summary>Unidades que o castelo recruta (o quartel recruta todas).</summary>
     public string[] RecrutaCastelo { get; init; } = [];
+
+    // ---------- relíquias, extração e caravanas (servidor) ----------
+    /// <summary>Tempo de construção (s) de cada veículo, por tipo de <c>VEICULOS</c>.</summary>
+    public VeiculoP Veiculo { get; init; } = new();
+    /// <summary>Caravana e escolta de relíquia: força mínima da escolta para não ser "pouco protegida".</summary>
+    public CaravanaP Caravana { get; init; } = new();
+    /// <summary>Posto de extração ou de escavação (obra opcional no hexágono da jazida ou ruína).</summary>
+    public ObraP Posto { get; init; } = new();
+    /// <summary>Fração mínima do caminho até o depósito em rota pública para valer o bônus de rota da extração.</summary>
+    public double ExtracaoRotaFrac { get; init; }
+    /// <summary>Distância (hexágonos) do castelo a partir da qual um local fundado revela o transporte manual.</summary>
+    public int LogisticaLongeHex { get; init; }
+    /// <summary>Relíquias no mesmo local a partir das quais o local brilha (quem explorou a área vê) ou vira farol (todos veem).</summary>
+    public ReliquiaVisP ReliquiaVis { get; init; } = new();
 }
+
+public sealed class ReliquiaVisP { public int Brilho { get; init; } public int Farol { get; init; } }
+
+public sealed class VeiculoP { public Dictionary<string, double> Tempo { get; init; } = new(); }
+public sealed class CaravanaP { public double EscoltaMin { get; init; } }
 
 public sealed class ArmazemP { public double CapN1 { get; init; } public double CapCresc { get; init; } }
 public sealed class CarregadorP { public double Carga { get; init; } public string Vel { get; init; } = "Lenta"; }

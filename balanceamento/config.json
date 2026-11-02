@@ -392,7 +392,29 @@
    "milicia",
    "lanceiro",
    "arqueiro"
-  ]
+  ],
+  "veiculo": {
+   "tempo": {
+    "carroca": 300,
+    "carrocao": 900
+   }
+  },
+  "caravana": {
+   "escoltaMin": 120
+  },
+  "posto": {
+   "custo": {
+    "madeira": 350,
+    "pedra": 200
+   },
+   "tempo": 1200
+  },
+  "extracaoRotaFrac": 0.5,
+  "reliquiaVis": {
+   "brilho": 2,
+   "farol": 3
+  },
+  "logisticaLongeHex": 4
  },
  "U": {
   "milicia": {
