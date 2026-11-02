@@ -33,7 +33,10 @@
   function disponiveis() { var l = localDe(); return l ? l.guarnicao : {}; }
   function grupoAtual() { var e = exercitoDe(); return e ? e.tropas : est.grupo; }
 
+  /* RP.grupoPadraoEnvio(local) → grupo ou null: o combate devolve as tropas do último ataque (ordem rápida) */
   function grupoPadrao(l) {
+    var g0 = RP.grupoPadraoEnvio && RP.grupoPadraoEnvio(l);
+    if (g0) return g0;
     var g = {};
     Object.keys(l.guarnicao || {}).forEach(function (k) { var n = l.guarnicao[k]; if (n > 0) g[k] = Math.max(1, Math.floor(n / 2)); });
     return g;
