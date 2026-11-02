@@ -143,11 +143,16 @@
   rotas.forEach(function (r) { r.hexes.forEach(function (h) { indexar('rota', r.d, h[0], h[1]); }); });
   D.vaus.forEach(function (v) { indexar('vau', v, v.c, v.l); });
 
+  /* Explorar não revela o dono de locais de outros reinos (só o seu é conhecido) */
+  var NOME_TIPO = { castelo: 'Castelo', vila: 'Vila', mina: 'Mina', serraria: 'Serraria', pasto: 'Pasto', armazem: 'Armazém', ferraria: 'Ferraria', quartel: 'Quartel' };
+  function donoAparente(reino) { return reino === 'meu' ? 'meu' : 'desconhecido'; }
+  function nomeAparente(x) { return x.reino === 'meu' ? x.nome : NOME_TIPO[x.tipo]; }
+
   function achar(lista, id) { return lista.filter(function (x) { return x.id === id; })[0]; }
 
   RP.mundo = {
     T: T, rios: rios, rioSet: rioSet, rotas: rotas, rotaSet: rotaSet, marchas: marchas, porHex: porHex,
-    chave: k, dentro: dentro, noRaio: noRaio, estado: estado,
+    chave: k, dentro: dentro, noRaio: noRaio, estado: estado, donoAparente: donoAparente, nomeAparente: nomeAparente,
     pontoEm: pontoEm, comprimento: comprimento,
     NIVEIS: NIVEIS, NOME_NIVEL: NOME_NIVEL, ANIMAL: ANIMAL,
     posFauna: posFauna, faunaVisivel: faunaVisivel, perigoHex: perigoHex, riscoMarcha: riscoMarcha,

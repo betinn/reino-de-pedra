@@ -107,16 +107,16 @@
     if (e.v === 'desconhecido') return '';
     var castelo = x.tipo === 'castelo';
     var antigo = e.v === 'explorado' ? ' antigo' : '';
-    var h = '<g class="ent local' + (castelo ? ' castelo' : '') + ' ' + corDono(x.reino) + antigo + (x.ameaca ? ' ameacado' : '') + '" data-ent="local:' + x.id + '" transform="translate(' + n1(ce.x) + ' ' + n1(ce.y) + ')">' +
+    var h = '<g class="ent local' + (castelo ? ' castelo' : '') + ' ' + corDono(W.donoAparente(x.reino)) + antigo + (x.ameaca ? ' ameacado' : '') + '" data-ent="local:' + x.id + '" transform="translate(' + n1(ce.x) + ' ' + n1(ce.y) + ')">' +
       '<circle class="ponto" r="' + (castelo ? 9 : 6) + '"/><g class="ent-k"><circle class="alvo-toque" r="24"/>';
     if (x.ameaca) h += '<circle class="anel-ameaca" r="' + (castelo ? 27 : 21) + '"/>';
     if (castelo) {
       h += '<circle class="lc-base" r="21"/><circle class="lc-anel" r="16.5"/>' +
         '<use href="#i-castelo" x="-13" y="-14" width="26" height="26"/>' +
-        '<g transform="translate(9 -30)">' + RP.brasao(D.reinos[x.reino].brasao, { tamanho: 20, desconhecido: !D.reinos[x.reino].brasao }) + '</g>' +
-        rotuloSvg(D.reinos[x.reino].nome, 38, 'rotulo-castelo');
+        '<g transform="translate(9 -30)">' + RP.brasao(D.reinos[x.reino].brasao, { tamanho: 20, desconhecido: x.reino !== 'meu' }) + '</g>' +
+        rotuloSvg(x.reino === 'meu' ? D.reinos.meu.nome : 'Castelo', 38, 'rotulo-castelo');
     } else {
-      h += '<circle class="lc-base" r="15"/><use href="#i-' + x.tipo + '" x="-10" y="-10.5" width="20" height="20"/>' + rotuloSvg(x.nome, 30, '');
+      h += '<circle class="lc-base" r="15"/><use href="#i-' + x.tipo + '" x="-10" y="-10.5" width="20" height="20"/>' + rotuloSvg(W.nomeAparente(x), 30, '');
     }
     if (antigo) h += '<g class="selo-antigo-mapa" transform="translate(' + (castelo ? 16 : 11) + ' ' + (castelo ? 14 : 10) + ')"><circle r="7.5"/><use href="#i-relogio" x="-6" y="-6" width="12" height="12"/></g>';
     return h + '</g></g>';
@@ -309,7 +309,7 @@
   function itemConteudo(it) {
     var o = it.o;
     if (it.tipo === 'local') {
-      return '<button type="button" class="conteudo" data-abrir="local:' + o.id + '"><span class="ico-placa ' + corDono(o.reino) + '">' + RP.icone(o.tipo) + '</span><span><b>' + RP.esc(o.nome) + '</b><small>' + RP.TIPOS_LOCAL[o.tipo] + ' · ' + RP.esc(o.reino === 'meu' ? 'Seu reino' : D.reinos[o.reino].nome) + '</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
+      return '<button type="button" class="conteudo" data-abrir="local:' + o.id + '"><span class="ico-placa ' + corDono(W.donoAparente(o.reino)) + '">' + RP.icone(o.tipo) + '</span><span><b>' + RP.esc(W.nomeAparente(o)) + '</b><small>' + RP.TIPOS_LOCAL[o.tipo] + ' · ' + (o.reino === 'meu' ? 'Seu reino' : 'Dono desconhecido') + '</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
     }
     if (it.tipo === 'jazida') {
       return '<button type="button" class="conteudo" data-abrir="jazida:' + o.id + '"><span class="ico-placa">' + RP.icone(o.tipo, 'r-' + o.tipo) + '</span><span><b>' + RP.esc(o.nome) + '</b><small>' + (o.classe === 'lendario' ? 'Lendário' : 'Valioso') + ' · ' + Math.round(o.restante * 100) + '% restante</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
@@ -324,7 +324,7 @@
       return '<button type="button" class="conteudo" data-abrir="fauna:' + o.id + '"><span class="ico-placa nivel-' + o.nivel + '">' + RP.icone(W.ANIMAL[o.tipo].icone) + '</span><span><b>' + W.ANIMAL[o.tipo].nome + ' (≈ ' + o.qtd + ')</b><small>À vista agora · perigo ' + W.NOME_NIVEL[o.nivel].toLowerCase() + '</small></span>' + RP.icone('avancar', 'ico-p') + '</button>';
     }
     if (it.tipo === 'rota') {
-      return '<div class="conteudo"><span class="ico-placa">' + RP.icone('rota') + '</span><span><b>' + RP.esc(o.nome) + '</b><small>Rota pública · construída por ' + RP.esc(o.por === 'meu' ? 'você' : D.reinos[o.por].nome) + '. Qualquer jogador usa; reduz a presença de animais.</small></span></div>';
+      return '<div class="conteudo"><span class="ico-placa">' + RP.icone('rota') + '</span><span><b>' + RP.esc(o.nome) + '</b><small>Rota pública' + (o.por === 'meu' ? ' · construída por você' : '') + '. Qualquer jogador usa; reduz a presença de animais.</small></span></div>';
     }
     if (it.tipo === 'vau') {
       return '<div class="conteudo"><span class="ico-placa">' + RP.icone('pedra') + '</span><span><b>' + RP.esc(o.nome) + '</b><small>Vau: travessia do rio sem ponte</small></span></div>';
@@ -385,10 +385,10 @@
       var meu = o.reino === 'meu';
       corpo = notaAntiga(e) + '<div class="info">' +
         linhaInfo('Tipo', RP.TIPOS_LOCAL[o.tipo]) +
-        linhaInfo('Dono', '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18, desconhecido: !reino.brasao }) + RP.esc(meu ? 'Seu reino' : reino.nome) + '</span>') +
+        linhaInfo('Dono', meu ? '<span class="linha">' + RP.brasao(reino.brasao, { tamanho: 18 }) + 'Seu reino</span>' : '<span class="selo selo-desconhecido">' + RP.icone('interrogacao') + 'Desconhecido</span>') +
         linhaInfo('Terreno', H.TERRENOS[T[o.l][o.c]].nome) +
-        (meu ? linhaInfo('Nível', o.nivel) + linhaInfo('Guarnição', o.guarnicao) + linhaInfo('Postura', '<span class="selo selo-info">' + o.postura + '</span>') : linhaInfo('Defesa', '<span class="fraco">Desconhecida · espione para saber</span>')) +
-        '</div>';
+        (meu ? linhaInfo('Nível', o.nivel) + linhaInfo('Guarnição', o.guarnicao) + linhaInfo('Postura', '<span class="selo selo-info">' + o.postura + '</span>') : linhaInfo('Defesa', '<span class="fraco">Desconhecida</span>')) +
+        '</div>' + (meu ? '' : '<p class="fraco" style="margin-top:var(--esp-3);font-size:var(--fs-2)">Explorar não revela a quem pertence um local. Batedores de elite podem espionar.</p>');
       if (o.ameaca) {
         var mh = marchas.filter(function (m) { return m.d.alvo === o.id; })[0];
         if (mh) corpo = '<button type="button" class="faixa-alerta" data-abrir="marcha:' + mh.d.id + '">' + RP.icone('alerta') + '<span class="txt"><b>Forças desconhecidas a caminho</b><br>Chegada em <span data-fim="' + RP.fim(mh.d.seg) + '">' + RP.fmtResta(mh.d.seg * 1000) + '</span></span>' + RP.icone('avancar', 'ico-p') + '</button>' + corpo;
@@ -397,9 +397,9 @@
         ? botao('Abrir no reino', 'castelo', 'btn-primario', 'data-ir="reino?local=' + o.id + '"') + botao('Postura', 'escudo', '', 'data-em-breve="Posturas"')
         : botao('Atacar este local', 'tropas', 'btn-primario', 'data-em-breve="Envio de ataque"') + botao('Espionar', 'batedor', '', 'data-em-breve="Exploradores (batedor de elite)"');
       abrirFolhaMapa({
-        titulo: RP.esc(o.reino === 'meu' && o.tipo === 'castelo' ? 'Castelo de ' + D.reinos.meu.nome : o.nome),
+        titulo: RP.esc(o.reino === 'meu' && o.tipo === 'castelo' ? 'Castelo de ' + D.reinos.meu.nome : W.nomeAparente(o)),
         subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
-        icone: '<span class="ico-placa folha-ico ' + corDono(o.reino) + '">' + RP.icone(o.tipo) + '</span>',
+        icone: '<span class="ico-placa folha-ico ' + corDono(W.donoAparente(o.reino)) + '">' + RP.icone(o.tipo) + '</span>',
         corpo: corpo, acoes: acoes
       }, o.c, o.l);
     } else if (tipo === 'jazida') {
@@ -440,8 +440,8 @@
       o = W.ruina(id); e = estado(o.c, o.l);
       var livre = o.tipo === 'livre';
       corpo = notaAntiga(e) + '<div class="info">' + linhaInfo('Dono', '<span class="fraco">Nenhum</span>') + linhaInfo('Terreno', H.TERRENOS[T[o.l][o.c]].nome) + '</div>' +
-        '<p class="suave" style="margin-top:var(--esp-3)">' + (livre ? 'Terra sem dono, onde antes havia um local de outro reino.' : 'Restos de um local que deixou de ter dono. Não produz nem defende.') + '</p>';
-      acoes = botao('Explorar área', 'explorador', 'btn-primario', 'data-em-breve="Exploradores"') + botao('Colocar bandeira', 'bandeira', '', 'data-em-breve="Bandeiras"');
+        '<p class="suave" style="margin-top:var(--esp-3)">' + (livre ? 'Terra sem dono, onde antes havia um local. Pode ser ocupada e receber uma nova construção.' : 'Restos de um local sem dono. Não produz nem defende, mas pode ser ocupado e reconstruído.') + '</p>';
+      acoes = botao('Ocupar', 'bandeira', 'btn-primario', 'data-em-breve="Ocupação"') + (livre ? botao('Construir local', 'martelo', '', 'data-em-breve="Construção"') : botao('Reconstruir', 'martelo', '', 'data-em-breve="Construção"'));
       abrirFolhaMapa({
         titulo: RP.esc(o.nome), subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(o.c, o.l) + '</div>',
         icone: '<span class="ico-placa folha-ico">' + RP.icone(livre ? 'estaca' : 'escombros') + '</span>', corpo: corpo, acoes: acoes
@@ -518,9 +518,9 @@
         '<div class="secao-titulo">Terrenos</div>' + terr +
         '<div class="secao-titulo">Donos</div>' +
         '<div class="legenda-item"><span class="ponto-dono dono-meu"></span><span><b>Seu reino</b></span></div>' +
-        '<div class="legenda-item"><span class="ponto-dono dono-rival-1"></span><span><b>Outros reinos</b><small>Cada reino tem sua cor e brasão.</small></span></div>' +
-        '<div class="legenda-item"><span class="ponto-dono dono-desconhecido"></span><span><b>Desconhecido</b><small>Dono ou atacante não identificado.</small></span></div>' +
-        '<div class="legenda-item"><span class="ico-placa">' + RP.icone('escombros') + '</span><span><b>Ruína / terra livre</b><small>Locais sem dono.</small></span></div>'
+        '<div class="legenda-item"><span class="ponto-dono dono-desconhecido"></span><span><b>Dono desconhecido</b><small>Locais de outros reinos e atacantes sem estandarte. Explorar não revela o dono.</small></span></div>' +
+        '<div class="legenda-item"><span class="ponto-dono dono-rival-1"></span><span><b>Identidade revelada</b><small>Exército com estandarte ou bandeira: cor do brasão de quem a colocou.</small></span></div>' +
+        '<div class="legenda-item"><span class="ico-placa">' + RP.icone('escombros') + '</span><span><b>Ruína / terra livre</b><small>Sem dono. Podem ser ocupadas e reconstruídas.</small></span></div>'
     });
   }
 
@@ -573,7 +573,7 @@
     D.locais.forEach(function (x) {
       if (estado(x.c, x.l).v === 'desconhecido') return;
       var p = H.centro(x.c, x.l);
-      ctx.fillStyle = corD[D.reinos[x.reino].cor];
+      ctx.fillStyle = corD[D.reinos[W.donoAparente(x.reino)].cor];
       ctx.beginPath(); ctx.arc(p.x, p.y, x.tipo === 'castelo' ? 34 : 20, 0, Math.PI * 2); ctx.fill();
     });
     marchas.forEach(function (m) {

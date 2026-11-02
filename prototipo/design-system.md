@@ -65,10 +65,10 @@ Contraste medido (WCAG): texto principal ≥ 12:1 sobre superfície; secundário
 | Token | Valor | Regra |
 |---|---|---|
 | `--cor-meu` | `#5ea6ea` | Sempre o seu reino |
-| `--cor-rival-1` / `-2` | `#e0503f` / `#a77ad9` | Outros reinos (na implementação, a cor principal do brasão de cada reino) |
-| `--cor-desconhecido` | `#9aa0a8` | Dono não identificado, ruína, terra livre |
+| `--cor-rival-1` / `-2` | `#e0503f` / `#a77ad9` | Identidade revelada de outro reino: exército com estandarte e bandeiras (na implementação, a cor principal do brasão do autor) |
+| `--cor-desconhecido` | `#9aa0a8` | Locais de outros reinos (explorar não revela o dono), ruína, terra livre |
 
-Forças hostis sem estandarte: `--cor-perigo` no Mapa; armadura cinza sem bandeira na Vista.
+Locais de outros reinos nunca usam cor de reino: cinza, brasão "?", nome genérico ("Castelo", "Mina"). Forças hostis sem estandarte: `--cor-perigo` no Mapa; armadura cinza sem bandeira na Vista.
 
 ### 2.5 Recursos e perigo
 
@@ -142,7 +142,7 @@ Luz natural levemente quente, para conversar com a interface escura:
 ### 5.3 O que aparece
 | Elemento | Desenho | Animação |
 |---|---|---|
-| Castelo | Muralhas, 4 torres, torre de menagem, portão com grade | Bandeiras na cor do dono, guardas patrulhando |
+| Castelo | Muralhas, 4 torres, torre de menagem, portão com grade | Bandeiras na cor do seu reino; tecido cru quando o dono é desconhecido. Guardas patrulhando |
 | Vila | 3 casas, poço, campo cultivado, horta | Moinho girando (Vila do Moinho), fumaça de chaminé, aldeões indo e vindo |
 | Mina | Colina com entrada escorada, trilho, carrinho e monte de minério (cor do recurso) | Mineiro com picareta; carregador levando minério ao armazém |
 | Serraria | Telheiro, serra, pilha de toras, tocos | Lâmina girando; lenhador; carregador de toras |
@@ -183,7 +183,7 @@ Chão, vegetação, relevo e névoa ficam num cache que só é refeito ao sair d
 
 | Marcador | Forma |
 |---|---|
-| Castelo | Círculo grande com anel duplo, brasão e nome |
+| Castelo | Círculo grande com anel duplo, brasão e nome (de outro reino: cinza, brasão "?", "Castelo") |
 | Local | Círculo com ícone do tipo, na cor do dono; ameaçado com anel pulsante |
 | Jazida | Losango com ícone do recurso; lendária com brilho |
 | Fauna ao vivo | Círculo com o animal, contorno na cor do nível e contador do bando |
@@ -234,6 +234,9 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 - Não usar cor literal em componente de interface: sempre token.
 - Não criar estado de névoa novo: visível, explorado ou desconhecido, iguais nas duas visões.
 - Não mostrar identidade de atacante sem estandarte ou espionagem.
+- Não revelar o dono de locais de outros reinos, nem quem construiu rotas alheias.
+- Rotas só aparecem em área explorada; bandeiras sempre mostram o autor.
+- Tempo de viagem sempre visível e curto: nada de esperas de muitas horas sem o que fazer.
 - Não marcar reino como IA de nenhuma forma.
 - Não esconder ação principal atrás de gesto.
 - Toda contagem regressiva diz o que acontece no fim ("chegada", "nível 4").

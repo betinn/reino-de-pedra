@@ -54,7 +54,7 @@
   function cores() {
     if (CORES) return CORES;
     var cs = getComputedStyle(document.documentElement), g = function (n) { return cs.getPropertyValue(n).trim(); };
-    CORES = { meu: g('--cor-meu'), 'rival-1': g('--cor-rival-1'), 'rival-2': g('--cor-rival-2'), desconhecido: '#4a4f57', perigo: g('--cor-perigo'),
+    CORES = { meu: g('--cor-meu'), 'rival-1': g('--cor-rival-1'), 'rival-2': g('--cor-rival-2'), desconhecido: '#a39d90', perigo: g('--cor-perigo'),
       selecao: g('--selecao'), alerta: g('--cor-alerta'), sucesso: g('--cor-sucesso'), fundo: g('--ent-fundo'), texto: g('--ent-texto') };
     return CORES;
   }
@@ -824,12 +824,12 @@
       var e = W.estado(x.c, x.l); if (e.v === 'desconhecido') return;
       var p = H.centro(x.c, x.l); if (!naTela(p.x, p.y)) return;
       var antigo = e.v === 'explorado';
-      itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); desenharLocal(c, x, t, antigo ? PA : P, corReino(x.reino), !antigo); }, alvo: { x: p.x, y: p.y, w: x.tipo === 'castelo' ? 64 : 50, h: x.tipo === 'castelo' ? 66 : 42, ent: ['local', x.id] } });
+      itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); desenharLocal(c, x, t, antigo ? PA : P, corReino(W.donoAparente(x.reino)), !antigo); }, alvo: { x: p.x, y: p.y, w: x.tipo === 'castelo' ? 64 : 50, h: x.tipo === 'castelo' ? 66 : 42, ent: ['local', x.id] } });
       if (x.tipo === 'pasto' && !antigo) {
         itens.push({ y: p.y - 18, d: function () { obj(c, V, p.x, p.y); cerca(c, P, false); } });
         itens.push({ y: p.y + 18, d: function () { obj(c, V, p.x, p.y); cerca(c, P, true); } });
       }
-      if (x.tipo === 'castelo') rotulos.push({ x: p.x, y: p.y, dy: 26, txt: D.reinos[x.reino].nome, cls: 'castelo', cor: corReino(x.reino) });
+      if (x.tipo === 'castelo') rotulos.push({ x: p.x, y: p.y, dy: 26, txt: x.reino === 'meu' ? D.reinos.meu.nome : 'Castelo', cls: 'castelo', cor: corReino(W.donoAparente(x.reino)) });
       if (x.ameaca) rotulos.push({ x: p.x, y: p.y, dy: -46, txt: 'Ameaçado', cls: 'perigo' });
     });
     D.ruinas.forEach(function (rr) {

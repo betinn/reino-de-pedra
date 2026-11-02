@@ -94,7 +94,7 @@
     /* Rotas públicas (qualquer jogador usa) */
     rotas: [
       { id: 'r-rei', nome: 'Estrada do Rei', por: 'meu', pts: [[14, 19], [17, 18], [20, 17], [23, 16]] },
-      { id: 'r-valdren', nome: 'Caminho de Valdren', por: 'valdren', pts: [[32, 8], [29, 11], [26, 13], [23, 16]] },
+      { id: 'r-valdren', nome: 'Caminho do Leste', por: 'valdren', pts: [[32, 8], [29, 11], [26, 13], [23, 16]] },
       { id: 'r-sul', nome: 'Trilha do Sul', por: 'meu', pts: [[14, 19], [13, 23], [13, 27]] }
     ],
     vaus: [{ c: 17, l: 26, nome: 'Vau do Salgueiro' }],

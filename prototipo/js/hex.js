@@ -142,7 +142,7 @@
   var NOMES_TERRENO = {
     planicie: { nome: 'Planície', efeito: 'Deslocamento rápido · comida' },
     floresta: { nome: 'Floresta', efeito: 'Deslocamento lento · madeira e caça' },
-    colina: { nome: 'Colina', efeito: 'Ferro e pedra' },
+    colina: { nome: 'Colina', efeito: 'Deslocamento normal · ferro e pedra' },
     montanha: { nome: 'Montanha', efeito: 'Deslocamento lento · ouro e pedras preciosas' },
     pantano: { nome: 'Pântano', efeito: 'Deslocamento muito lento · ervas raras' },
     rio: { nome: 'Rio', efeito: 'Travessia exige ponte ou vau' }

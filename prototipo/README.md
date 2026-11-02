@@ -126,23 +126,26 @@ prototipo/
 - **Vista como padrão do mundo**, Mapa a um toque. Pinça para longe leva ao Mapa (zoom semântico).
 - **Névoa em três estados** nas duas visões: visível (cor e movimento), explorado (dessaturado, parado, "Visto há X"), desconhecido (nada desenhado: fumaça/nuvem).
 - **Reino como conjunto de locais**: cada local é uma construção própria na Vista e um alvo próprio no Mapa.
-- **Anonimato**: forças sem estandarte usam armadura cinza, sem bandeira, com "?"; com estandarte, levam a bandeira nas cores do brasão.
+- **Anonimato**: forças sem estandarte usam armadura cinza, sem bandeira, com "?"; com estandarte, levam a bandeira nas cores do brasão. Locais de outros reinos não mostram dono: cinza, sem brasão, nome genérico.
 - **Rotas públicas** iguais para todos, com ponte sobre rio e vau marcado com pedras.
 - **Ações sempre visíveis**: todo gesto tem botão equivalente; a folha inferior concentra detalhes e ações.
 - **Barra de recursos com 7 itens** (madeira, pedra, comida, ferro, couro, peles, população) em números curtos (`2,3k`); o valor exato fica na folha de recursos.
 
 ---
 
+## Decisões confirmadas (registradas no `CLAUDE.md`)
+
+1. **Rotas não atravessam a névoa:** só aparecem em áreas já exploradas.
+2. **Bandeiras mostram quem as colocou** (brasão e nome do autor).
+3. **Explorar não revela o dono** de locais de outros reinos. No Mapa e na Vista eles aparecem em cinza, sem brasão, com nome genérico ("Castelo", "Mina"); a folha diz "Dono desconhecido". Rotas de outros também não dizem quem construiu. A identidade só aparece quando o próprio reino a mostra: exército com estandarte ou bandeira.
+4. **Deslocamento curto:** viagens não devem levar muitas horas sem outras ações para o jogador. Os tempos mock de marcha ficam entre 10 e 50 minutos.
+5. **Ruínas e terra livre podem ser ocupadas ou reconstruídas:** a folha oferece Ocupar e Reconstruir / Construir local.
+6. **Couro e peles são recursos** do reino, obtidos pela caça.
+
 ## Pontos em aberto (perguntas, não regras)
 
-Nada abaixo altera o `CLAUDE.md`; são escolhas provisórias do protótipo que precisam de confirmação.
-
-1. **Rotas públicas e névoa:** "qualquer jogador vê" significa ver através da névoa ou só ao explorar? O protótipo mostra rotas apenas em áreas conhecidas.
-2. **Autoria das bandeiras:** a bandeira mostra quem a colocou? O protótipo mostra o brasão do autor.
-3. **Dono de locais explorados:** ao explorar um local de outro reino, o jogador vê a quem ele pertence? O protótipo mostra (o anonimato vale para ataques).
-4. **Deslocamento em colina:** o `CLAUDE.md` não define a velocidade; a tela mostra só os recursos.
-5. **Terra livre e ruínas:** podem ser ocupadas, reconstruídas ou saqueadas? O protótipo só permite explorar e colocar bandeira.
-6. **Couro e peles no `CLAUDE.md`:** a decisão de tratá-los como recursos ainda não está no documento de regras.
+1. **Colina:** o protótipo trata como "deslocamento normal" (entre planície e floresta), seguindo a diretriz de deslocamento curto. Confirmar.
+2. **Espionagem e dono:** um batedor de elite espionando um local revela a quem ele pertence? Hoje a folha só oferece "Espionar", sem prometer o resultado.
 
 ---
 
