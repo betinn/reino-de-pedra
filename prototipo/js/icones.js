@@ -60,6 +60,44 @@
       '<path class="ic-s" d="M2.5 20.5c0-4.1 2.9-7 6.5-7s6.5 2.9 6.5 7Z"/>' +
       '<circle class="ic-s" cx="16.8" cy="8.6" r="2.7"/>' +
       '<path class="ic-s" d="M15.6 13.8c.4-.1.8-.2 1.2-.2 2.9 0 5 2.6 5 6.9h-4.4c0-2.8-.6-5.1-1.8-6.7Z"/>',
+    couro:
+      '<path class="ic-s" d="M5 3.5c2.2 1.2 4.4 1.2 7 0s4.8-1.2 7 0c-1.2 3-1.2 5.3 0 8.3s1.2 5.4 0 8.7c-2.2-1.2-4.4-1.2-7 0s-4.8 1.2-7 0c1.2-3.3 1.2-5.7 0-8.7s-1.2-5.3 0-8.3Z"/>' +
+      '<path class="ic-d" d="M8 7.5h.1M16 7.5h.1M8 16.5h.1M16 16.5h.1M10 12h4" style="stroke-width:2"/>',
+    peles:
+      '<path class="ic-s" d="M12 3c1.3 1.4 2.6 1.1 3.6.4.4 1.6 1.6 2.2 3.1 2.1-.3 1.6.5 2.7 1.8 3.3-1 1.2-1 2.5 0 3.7-1.3.6-2.1 1.7-1.8 3.3-1.5-.1-2.7.5-3.1 2.1-1-.7-2.3-1-3.6.4-1.3-1.4-2.6-1.1-3.6-.4-.4-1.6-1.6-2.2-3.1-2.1.3-1.6-.5-2.7-1.8-3.3 1-1.2 1-2.5 0-3.7 1.3-.6 2.1-1.7 1.8-3.3 1.5.1 2.7-.5 3.1-2.1 1 .7 2.3 1 3.6-.4Z"/>' +
+      '<path class="ic-d" d="M9 10.5c1-1 2-1 3 0s2 1 3 0M9 14c1-1 2-1 3 0s2 1 3 0"/>',
+    /* fauna hostil */
+    lobo:
+      '<path class="ic-s" d="M3.5 2.5 8.5 7h7l5-4.5.5 8.5c0 4.6-3.8 9.6-9 10.5C6.8 20.6 3 15.6 3 11Z"/>' +
+      '<path class="ic-d" d="M8.5 11.5h.2M15.3 11.5h.2M10.5 16.5 12 18l1.5-1.5" style="stroke-width:2"/>',
+    javali:
+      '<path class="ic-s" d="M4.5 5.5 8 8h8l3.5-2.5-.6 6.2c-.2 1.7-.8 3.3-1.8 4.6L15.5 19h-7l-1.6-2.7c-1-1.3-1.6-2.9-1.8-4.6Z"/>' +
+      '<path class="ic-d" d="M9 11.5h.2M14.8 11.5h.2M10 16.5h4M8.5 15.5c-1.2.2-2 1-2.3 2.4M15.5 15.5c1.2.2 2 1 2.3 2.4" style="stroke-width:1.8"/>',
+    urso:
+      '<circle class="ic-s" cx="6" cy="6" r="3.3"/><circle class="ic-s" cx="18" cy="6" r="3.3"/>' +
+      '<circle class="ic-s" cx="12" cy="13" r="8.2"/>' +
+      '<path class="ic-d" d="M9 11.5h.2M14.8 11.5h.2M10.6 15.4h2.8l-1.4 1.4Z" style="stroke-width:2"/>',
+    crocodilo:
+      '<path class="ic-s" d="M1.5 13.5c0-2.5 2-4.5 4.5-4.5h3.3l1.7-2h3l1.7 2H21c.8 0 1.5.7 1.5 1.5V12H13v1h9.5v1.5c0 .8-.7 1.5-1.5 1.5H6c-2.5 0-4.5-1-4.5-2.5Z"/>' +
+      '<path class="ic-d" d="M12 9.6h.2M14 12l1 1 1-1 1 1 1-1 1 1 1-1" style="stroke-width:1.6"/>',
+    pata:
+      '<ellipse class="ic-s" cx="12" cy="15.5" rx="5" ry="4.5"/>' +
+      '<ellipse class="ic-s" cx="5.5" cy="10" rx="2.2" ry="2.8"/><ellipse class="ic-s" cx="9.5" cy="5.8" rx="2.2" ry="2.8"/>' +
+      '<ellipse class="ic-s" cx="14.5" cy="5.8" rx="2.2" ry="2.8"/><ellipse class="ic-s" cx="18.5" cy="10" rx="2.2" ry="2.8"/>',
+    escombros:
+      '<path class="ic-s" d="M2.5 21.5V14l2.5-1.5V8.5l3-2 1 3.5 2-1.5v5.5l2.5-1.2 1.5 2.2V11l3 1.5 2 3.5v5.5Z"/>' +
+      '<path class="ic-d" d="M2.5 17.5h19M7 14v3.5M12 17.5v4M17 14.5v3"/>',
+    estaca:
+      '<path class="ic-s" d="M4 8.5 5.5 6 7 8.5v13H4Z"/><path class="ic-s" d="M10.5 8.5 12 6l1.5 2.5v13h-3Z"/><path class="ic-s" d="M17 8.5 18.5 6 20 8.5v13h-3Z"/>' +
+      '<path class="ic-l" d="M5.5 11c2.2 1.6 4.3 1.6 6.5 0s4.3-1.6 6.5 0" style="stroke-width:1.6"/>',
+    vista:
+      '<path class="ic-s" d="M2 17.5 7 12l3.5 3.5L15 9l7 8.5Z"/>' +
+      '<path class="ic-s" d="M6.5 7.5V4h1.2v1h1.1V4h1.1v1H11V4h1.2v3.5L11.4 9H7.3Z"/>' +
+      '<path class="ic-l" d="M2 20.5h20"/>',
+    hexagonos:
+      '<path class="ic-s" d="M7 3.5l3.9 2.2v4.5L7 12.4 3.1 10.2V5.7Z"/>' +
+      '<path class="ic-s" d="M15 3.5l3.9 2.2v4.5L15 12.4l-3.9-2.2V5.7Z"/>' +
+      '<path class="ic-s" d="M11 11.6l3.9 2.2v4.5L11 20.5l-3.9-2.2v-4.5Z"/>',
     /* valiosos e lendários */
     ouro:
       '<path class="ic-s" d="M3.5 15.5v3c0 1.4 3.8 2.5 8.5 2.5s8.5-1.1 8.5-2.5v-3Z"/>' +

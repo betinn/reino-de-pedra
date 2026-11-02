@@ -31,34 +31,72 @@
     return h ? h + ' h ' + (m ? m + ' min' : '') : m + ' min';
   };
 
-  /* ---------------------------------------------------------------- direção visual */
-  RP.DIRECOES = {
-    a: { nome: 'Fortaleza', resumo: 'Pedra escura, ferro e brasa' },
-    b: { nome: 'Cartógrafo', resumo: 'Pergaminho, tinta e lacre' }
+  /* número curto para barras estreitas: 640 · 2,3k · 12k */
+  RP.numCurto = function (n) {
+    n = Math.round(n);
+    if (n < 1000) return String(n);
+    if (n < 10000) return (Math.floor(n / 100) / 10).toLocaleString('pt-BR') + 'k';
+    return Math.floor(n / 1000) + 'k';
   };
-  RP.direcao = function () { return raiz.getAttribute('data-direcao') || 'a'; };
-  RP.definirDirecao = function (d) {
-    if (!RP.DIRECOES[d]) return;
-    raiz.setAttribute('data-direcao', d);
-    try { localStorage.setItem('rp-direcao', d); } catch (e) { /* sem armazenamento: segue a sessão */ }
-    document.dispatchEvent(new CustomEvent('rp:direcao', { detail: d }));
+
+  /* preferências do visitante (só conveniência; funciona sem armazenamento) */
+  RP.pref = function (chave, valor) {
+    try {
+      if (valor === undefined) return localStorage.getItem('rp-' + chave);
+      localStorage.setItem('rp-' + chave, valor);
+    } catch (e) { return null; }
   };
-  RP.seletorDirecao = function () {
-    var d = RP.direcao();
-    return '<div class="abas" role="group" aria-label="Direção visual">' +
-      Object.keys(RP.DIRECOES).map(function (k) {
-        return '<button class="aba" type="button" data-dir="' + k + '" aria-pressed="' + (k === d) + '">' +
-          k.toUpperCase() + ' · ' + RP.DIRECOES[k].nome + '</button>';
-      }).join('') + '</div>';
+
+  /* ---------------------------------------------------------------- gestos (arrastar, pinça, roda, toque)
+     h = { inicio(), arrasto(dx, dy), pinca(fator, mx, my, mx0, my0), roda(fator, x, y), toque(x, y), fim() }
+     Coordenadas relativas ao elemento. */
+  RP.gestos = function (el, h) {
+    var pts = new Map(), arr = null, pin = null, toq = null;
+    function rel(e) { var r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    el.addEventListener('pointerdown', function (e) {
+      if (e.isPrimary) { pts.clear(); pin = null; } /* novo gesto: descarta ponteiros que não terminaram */
+      try { el.setPointerCapture(e.pointerId); } catch (er) { /* ignora */ }
+      pts.set(e.pointerId, rel(e));
+      if (h.inicio) h.inicio();
+      if (pts.size === 1) { var p = rel(e); arr = p; toq = { x: p.x, y: p.y, cx: e.clientX, cy: e.clientY, t: performance.now(), movido: false }; }
+      else if (pts.size === 2) {
+        var a = Array.from(pts.values());
+        pin = { d: Math.max(1, Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y)), mx: (a[0].x + a[1].x) / 2, my: (a[0].y + a[1].y) / 2 };
+        toq = null; arr = null;
+        if (h.inicioPinca) h.inicioPinca();
+      }
+    });
+    el.addEventListener('pointermove', function (e) {
+      if (!pts.has(e.pointerId)) return;
+      var p = rel(e);
+      pts.set(e.pointerId, p);
+      if (pin && pts.size >= 2) {
+        var a = Array.from(pts.values());
+        var d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+        h.pinca(d / pin.d, (a[0].x + a[1].x) / 2, (a[0].y + a[1].y) / 2, pin.mx, pin.my);
+      } else if (arr) {
+        var dx = p.x - arr.x, dy = p.y - arr.y;
+        if (toq && Math.hypot(p.x - toq.x, p.y - toq.y) > 8) toq.movido = true;
+        if (!toq || toq.movido) { h.arrasto(dx, dy); arr = p; }
+      }
+    });
+    function fim(e) {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      if (toq && !toq.movido && e.type === 'pointerup' && performance.now() - toq.t < 600 && h.toque) h.toque(toq.x, toq.y, toq.cx, toq.cy);
+      toq = null;
+      if (pts.size === 1) { arr = Array.from(pts.values())[0]; pin = null; }
+      if (pts.size === 0) { arr = null; pin = null; if (h.fim) h.fim(); }
+    }
+    el.addEventListener('pointerup', fim);
+    el.addEventListener('pointercancel', fim);
+    el.addEventListener('lostpointercapture', fim);
+    if (h.roda) el.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var p = rel(e);
+      h.roda(Math.exp(-e.deltaY * 0.0016), p.x, p.y);
+    }, { passive: false });
   };
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-dir]');
-    if (!b) return;
-    RP.definirDirecao(b.getAttribute('data-dir'));
-  });
-  document.addEventListener('rp:direcao', function (e) {
-    RP.$$('[data-dir]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-dir') === e.detail)); });
-  });
 
   /* ---------------------------------------------------------------- reino do jogador (pode vir da criação) */
   RP.estado = { nome: RP.dados.jogador.nome, brasao: RP.dados.jogador.brasao, recemFundado: false };
@@ -196,10 +234,10 @@
     });
     RP.$$('[data-rec]').forEach(function (el) {
       var r = RP.dados.recursos[el.getAttribute('data-rec')];
-      el.textContent = RP.num(RP.qtdAtual(r));
+      el.textContent = el.hasAttribute('data-curto') ? RP.numCurto(RP.qtdAtual(r)) : RP.num(RP.qtdAtual(r));
     });
     var p = RP.dados.populacao;
-    RP.$$('[data-pop]').forEach(function (el) { el.textContent = RP.num(RP.popAtual()); });
+    RP.$$('[data-pop]').forEach(function (el) { el.textContent = el.hasAttribute('data-curto') ? RP.numCurto(RP.popAtual()) : RP.num(RP.popAtual()); });
     document.dispatchEvent(new CustomEvent('rp:tique'));
   }
   RP.qtdAtual = function (r) { return Math.min(r.cap, r.qtd + (r.taxa * (Date.now() - RP.t0)) / 3600000); };
@@ -207,17 +245,18 @@
   setInterval(tique, 1000);
 
   /* ---------------------------------------------------------------- barra de recursos */
-  var ORDEM_REC = ['madeira', 'pedra', 'comida', 'ferro'];
+  var ORDEM_REC = ['madeira', 'pedra', 'comida', 'ferro', 'couro', 'peles'];
+  RP.ORDEM_REC = ORDEM_REC;
   RP.barraRecursos = function (opt) {
     opt = opt || {};
     var h = '<div class="recursos" role="group" aria-label="Recursos do reino">';
     ORDEM_REC.forEach(function (k) {
       var r = RP.dados.recursos[k], q = RP.qtdAtual(r);
-      h += '<button class="rec' + (q >= r.cap * 0.95 ? ' rec-cheio' : '') + '" type="button" data-abrir-recursos aria-label="' + r.nome + '">' +
-        RP.icone(k, 'r-' + k) + '<span class="rec-num" data-rec="' + k + '">' + RP.num(q) + '</span></button>';
+      h += '<button class="rec' + (q >= r.cap * 0.95 ? ' rec-cheio' : '') + '" type="button" data-abrir-recursos aria-label="' + r.nome + ': ' + RP.num(q) + '">' +
+        RP.icone(k, 'r-' + k) + '<span class="rec-num" data-rec="' + k + '" data-curto>' + RP.numCurto(q) + '</span></button>';
     });
     h += '<button class="rec" type="button" data-abrir-recursos aria-label="População">' + RP.icone('populacao', 'r-populacao') +
-      '<span class="rec-num" data-pop>' + RP.num(RP.popAtual()) + '</span></button>';
+      '<span class="rec-num" data-pop data-curto>' + RP.numCurto(RP.popAtual()) + '</span></button>';
     if (!opt.semSino) h += '<button class="btn-sino" type="button" data-abrir-notificacoes aria-label="Notificações (' + RP.dados.notificacoesNaoLidas + ' novas)">' +
       RP.icone('sino') + '<span class="contador">' + RP.dados.notificacoesNaoLidas + '</span></button>';
     return h + '</div>';
@@ -229,7 +268,7 @@
       corpo += '<div class="lista-item"><span class="ico-placa">' + RP.icone(k, 'r-' + k) + '</span><div style="flex:1;min-width:0">' +
         '<div class="linha-entre"><b>' + r.nome + '</b><span class="num"><b data-rec="' + k + '">' + RP.num(q) + '</b> <span class="fraco">/ ' + RP.num(r.cap) + '</span></span></div>' +
         '<div class="barra" style="margin:6px 0 4px"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
-        '<div class="linha-entre" style="font-size:var(--fs-2)"><span class="suave">+' + r.taxa + '/h</span>' +
+        '<div class="linha-entre" style="font-size:var(--fs-2)"><span class="suave">' + (r.taxa ? '+' + r.taxa + '/h' : r.origem) + '</span>' +
         (pct >= 95 ? '<span class="selo selo-antigo">Armazém quase cheio</span>' : '') + '</div></div></div>';
     });
     corpo += '</div><div class="secao-titulo">Valiosos</div><div class="linha" style="flex-wrap:wrap">';

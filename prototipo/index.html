@@ -1,22 +1,14 @@
 <!doctype html>
-<html lang="pt-BR" data-direcao="a">
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d0f12">
   <title>Reino de Pedra — Protótipo</title>
   <meta name="description" content="Protótipo navegável de telas do Reino de Pedra: estratégia e conquista.">
-  <script>
-    /* aplica a direção visual antes de pintar: ?dir=a|b, depois a última escolha */
-    (function () {
-      var d = (location.search.match(/[?&]dir=([ab])/) || [])[1];
-      try { d = d || localStorage.getItem('rp-direcao'); } catch (e) {}
-      if (d === 'a' || d === 'b') document.documentElement.setAttribute('data-direcao', d);
-    })();
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Cinzel:wght@600;700&family=Alegreya+Sans:wght@400;500;700&family=IM+Fell+English+SC&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Cinzel:wght@600;700&display=swap">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/telas.css">
@@ -31,6 +23,8 @@
   <script src="js/hex.js"></script>
   <script src="js/dados.js"></script>
   <script src="js/nucleo.js"></script>
+  <script src="js/mundo.js"></script>
+  <script src="js/cena.js"></script>
   <script src="js/mapa.js"></script>
   <script src="js/telas.js"></script>
   <script>RP.iniciar();</script>
