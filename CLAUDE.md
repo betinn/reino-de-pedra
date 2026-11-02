@@ -1,0 +1,185 @@
+# Reino de Pedra
+
+Jogo de estratégia medieval de conquista de território, multiplayer, persistente e em tempo real. Mobile-first, com cliente web e app compartilhando o mesmo mundo.
+
+Subtítulo de loja: **Estratégia e Conquista**.
+
+Este documento registra as **decisões de negócio e de game design** já fechadas. Decisões técnicas (stack, arquitetura, infraestrutura) são tratadas fora deste arquivo.
+
+---
+
+## Regras para agentes neste repositório
+
+- **O repositório é público.** Nunca commitar informações sensíveis: credenciais, chaves, tokens, senhas, connection strings, endereços de servidores, IPs, nomes de hosts, dados de infraestrutura ou de deploy, e-mails ou dados pessoais.
+- **Nenhum caminho de máquina local** pode aparecer no repositório, em código, configuração, documentação, logs, scripts ou mensagens de commit (ex.: diretórios de usuário, drives, caminhos absolutos de qualquer máquina). Use sempre caminhos relativos ao repositório.
+- **Infraestrutura não é documentada aqui.** Informações de servidor, hospedagem e operação ficam fora do repositório.
+- Configurações sensíveis devem vir de variáveis de ambiente ou arquivos ignorados pelo git; exemplos commitados usam apenas valores fictícios.
+- Antes de cada commit, revisar o diff procurando segredos e caminhos locais.
+- Mudanças de regra de jogo devem ser refletidas neste documento.
+
+---
+
+## Visão do jogo
+
+- Gênero: MMO de estratégia persistente (4X), com construção e ações por **tempo real** (timers), **sem turnos**.
+- Referências de gênero: Travian, Tribal Wars, Stronghold Kingdoms, Rise of Kingdoms.
+- Diferencial: **exploração real** de um mapa grande, com recursos valiosos escondidos que precisam ser descobertos.
+- O mundo continua funcionando com o jogador offline: construções terminam, tropas marcham e defesas reagem.
+- **Multiplayer desde o início**: todos os jogadores no mesmo mapa.
+- Sessões curtas no celular: o jogador dá ordens longas, sai e recebe notificações.
+
+---
+
+## Mapa e exploração
+
+- Mapa **grande**, que exige deslocamento real: distância e terreno importam.
+- Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido.
+- Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
+  - Planície: deslocamento rápido, comida.
+  - Floresta: lenta, madeira e caça.
+  - Colina: ferro e pedra.
+  - Montanha: lenta, ouro e pedras preciosas.
+  - Pântano: muito lento, ervas raras.
+  - Rio: exige ponte ou vau.
+
+### Exploradores
+
+| Tipo | Velocidade | Visão | Custo | Característica |
+|---|---|---|---|---|
+| A pé | Lenta | Média | Barato | Sem penalidade em floresta e pântano |
+| A cavalo | Rápida | Alta | Médio | Penalizado em floresta e montanha |
+| Prospector | Lenta | Baixa | Caro | Único que revela jazidas valiosas e lendárias |
+| Batedor de elite | Rápida | Alta | Caro | Furtivo; espiona exércitos e reinos inimigos |
+
+- Exploradores podem ser capturados ou mortos.
+- Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
+
+### Rotas
+
+- Rotas construídas funcionam como **ruas públicas**: qualquer jogador vê, usa e recebe as mesmas vantagens de deslocamento.
+- Quem constrói paga o custo; a rota pode beneficiar inclusive inimigos.
+
+---
+
+## Recursos
+
+- **Básicos**: madeira, pedra, comida, ferro. Espalhados pelo mapa, base da economia.
+- **Valiosos**: ex. ouro, prata, sal, cavalos de raça, aço de qualidade. Raros, liberam unidades e tecnologias melhores.
+- **Lendários**: minérios raros, relíquias, ruínas antigas. Pouquíssimos no mapa, bônus únicos, alvo de disputa.
+- Recursos valiosos e lendários ficam **ocultos** até serem descobertos.
+- Jazidas são **finitas** e se esgotam com o tempo.
+- **O reino base já gera recursos básicos** suficientes para recrutar tropas básicas, sem depender de exploração.
+
+### Extração
+
+- **Nada é obrigatório.** Qualquer tropa pode coletar um recurso descoberto, inclusive uma única unidade sem preparo.
+- Posto de extração, mais tropas, unidades adequadas e rotas são **opcionais** e aumentam velocidade e rendimento da extração.
+
+### Tempos
+
+- Recursos e construções básicas: **tempos baixos**.
+- Recursos e construções mais fortes ou valiosos: **tempos mais altos**.
+- O equilíbrio entre tempos, custos e rendimento é ponto central de balanceamento e deve ser ajustado com testes.
+
+---
+
+## População
+
+- População é um **número abstrato** do reino, sem divisão por gênero ou profissão.
+- **Teto** definido por moradias.
+- **Crescimento** por tempo, mais rápido com excedente de comida.
+- **Recrutar consome população**; tropas mortas não retornam.
+- A população sustenta a produção de recursos e atua como **milícia** na defesa.
+- Objetivo: criar a decisão central entre **tropas e economia**.
+- Moral, profissões e migração ficam para depois, apenas se o balanceamento pedir.
+
+---
+
+## Tropas e evolução
+
+- Tipos de unidade: milícia, lanceiro, arqueiro, cavalaria e máquinas de cerco (aríete, trebuchet).
+- Relação de vantagens entre tipos (ex.: lança vence cavalaria, cavalaria vence arqueiro, arqueiro vence infantaria lenta).
+- **Evolução de armas e tecnologias** por eras (ferro, aço, cerco avançado), dependente de recursos valiosos.
+- Exércitos sobreviventes ganham **veterania**.
+- Exércitos em marcha são visíveis no mapa; o tempo de viagem depende de distância, terreno, rotas e da unidade mais lenta.
+
+---
+
+## Combate
+
+- **Semi-automático**: as tropas lutam sozinhas, mas o jogador pode tomar decisões estratégicas durante o combate (ex.: enviar reforços, recuar).
+- Cada exército e guarnição tem uma **postura configurável** que funciona sem o jogador online:
+  - Atacar qualquer ameaça.
+  - Apenas defender.
+  - Atacar apenas quem atacar.
+
+### Reino como conjunto de alvos
+
+- O reino não é um ponto único: é um **castelo (capital)** mais **locais espalhados** (vilas, minas, serrarias, pastos com animais, armazéns, ferrarias, quartéis).
+- Cada local é um alvo com defesa própria. O atacante escolhe **por onde começar** conforme seus objetivos.
+
+### Tipos de ataque
+
+- **Saque**: leva recursos daquele local (madeira, ferro, armas, animais etc.), limitado à capacidade de carga.
+- **Sabotagem**: destrói ou danifica construções.
+- **Massacre**: mata população do local; enfraquece o reino a longo prazo, sem ganho de recurso.
+- **Ocupação**: toma o local e passa a explorá-lo até alguém retomar.
+- **Cerco ao castelo**: o ataque mais difícil do jogo.
+
+### Defesa
+
+- Guarnição do local + **população como milícia** + muralhas.
+- O atacante chega apenas com as tropas enviadas, após a viagem; o defensor pode enviar reforços durante a batalha.
+- Destruir um reino inteiro deve ser **muito difícil e caro**, mesmo para um veterano contra um iniciante.
+
+### Queda do castelo
+
+- Se o reino ainda possui outros locais: o castelo vira ruína e a sede se transfere para outro local, com perdas pesadas, sem extinção.
+- Se perder tudo: o jogador recomeça **em exílio** em um novo ponto do mapa, com um kit de recomeço, mantendo linhagem e relíquias, e recebe **escudo temporário** contra ataques.
+
+### Anonimato e bandeiras
+
+- Ser atacado **não revela o atacante**. O relatório mostra apenas forças desconhecidas (tropas, tipo, direção de origem).
+- A identidade só é revelada se o atacante escolher levar seu **estandarte**, ou se o defensor descobrir via batedores e espionagem.
+- **Bandeiras** podem ser colocadas em qualquer lugar do mapa, como sinal para outros jogadores (reivindicação, ameaça, aliança). Têm valor social, não mecânico.
+
+### Território
+
+- Controle de território é **presença física**: construções e tropas no local.
+- **Não existe** barra de progresso, placar de domínio ou estado de "mapa conquistado". A disputa é contínua.
+
+### Pontos de atenção no balanceamento
+
+- Evitar farm de iniciantes: escudo de novato, rendimento decrescente em saques repetidos ao mesmo alvo, milícia proporcional à população.
+- Monitorar abuso do anonimato para assédio.
+
+---
+
+## Temporadas e legado
+
+- Mundo organizado em **temporadas** (ordem de grandeza: 2 a 3 meses), com reset de mapa e reinos.
+- Objetivo: evitar domínio permanente dos primeiros jogadores sem desanimar veteranos.
+- **Legado** que atravessa temporadas:
+  - **Relíquias da temporada**: itens únicos e limitados, ganhos por conquistas, com bônus pequeno e com teto.
+  - **Títulos, brasões e skins** permanentes, mostrando o histórico do jogador.
+  - **Linhagem**: progressão de conta que desbloqueia opções (ex.: escolha de região inicial), não poder bruto.
+- Novos jogadores devem conseguir competir; veteranos carregam identidade e vantagem pequena.
+
+---
+
+## Monetização
+
+- **Nenhuma** neste momento. Prioridade é ter jogadores.
+- Direção futura: **sem pay-to-win**.
+  - Permitido: cosméticos (castelos, tropas, brasões, bandeiras) e passe de temporada cosmético.
+  - Avaliar com cuidado: conveniências de assinatura.
+  - Proibido: venda de aceleração de timers e de recursos.
+
+---
+
+## Em aberto
+
+- Valores concretos de tempos, custos e rendimentos (balanceamento).
+- Lista final de recursos valiosos e lendários.
+- Duração exata das temporadas e regras precisas de legado.
+- Detalhes de diplomacia e alianças.
