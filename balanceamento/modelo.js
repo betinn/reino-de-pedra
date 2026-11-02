@@ -210,6 +210,60 @@ const P = {
     propostaH: 24,                                         /* convites, pedidos de entrada e de recursos, trocas e pactos sem resposta expiram em 24 h */
     novatoJanelaH: 24,                                     /* o "dia" do limite do novato (P.comercio.novatoDia) é uma janela móvel de 24 h */
     bandeiras: { ativas: 20, minimo: 3, caracteres: 60 }   /* por reino: até 20 ativas; recado de 3 a 60 caracteres */
+  },
+  /* ---------- reinos de IA, meta de ocupação, regência e IA comerciante (servidor) ---------- */
+  /* Meta de ocupação: a temporada começa com 25 reinos de IA (dos P.reinos) e o mundo nunca fica com menos de 20 reinos
+     ativos (jogadores + IA); abaixo disso, surge um reino de IA na vaga livre mais longe dos jogadores ativos. Quem entra usa
+     uma vaga livre; sem vaga, o reino de IA de menor porte abdica (castelo em ruína, os outros locais viram terra livre).
+     Os ids dos reinos e dos 5 locais iniciais saem de um sorteio entre idsPorReino × reservaReinos números reservados na
+     primeira subida: a ordem dos ids não revela quem entrou junto com a temporada. */
+  ia: {
+    inicial: 25, minimo: 20, reservaReinos: 90, idsPorReino: 6,
+    /* sessões: hora local (fuso em horas de UTC) com variação sorteada de até ±40 min em cada uma */
+    fusoH: -3, variacaoMin: 40,
+    /* habilidade = as regras de decisão da simulação (medio e ativo são os PERFIS do modelo; fraco entra menos e escolhe pior).
+       Novos locais: até 4 + 1 a cada locaisCadaDias dias, no máximo locaisMax. acerto: chance de escolher a obra de melhor
+       retorno (senão, uma qualquer das candidatas). arqueiros: fração do recrutamento em arqueiros (limitada pelo couro). */
+    habilidades: {
+      fraco: { sessoes: [9, 14, 21], militar: 0.25, mantemTrab: 1.0, fracTropas: 0.30, horizonte: 8, horizonteNoite: 12, locaisCadaDias: 5, locaisMax: 12, acerto: 0.6, arqueiros: 0.2 },
+      medio: { sessoes: [8, 13, 19, 23], militar: 0.30, mantemTrab: 1.0, fracTropas: 0.35, horizonte: 6, horizonteNoite: 10, locaisCadaDias: 4, locaisMax: 14, acerto: 0.9, arqueiros: 0.25 },
+      ativo: { sessoes: [7, 9, 11, 13, 16, 19, 21, 23], militar: 0.42, mantemTrab: 0.95, fracTropas: 0.55, horizonte: 3, horizonteNoite: 9, locaisCadaDias: 3, locaisMax: 18, acerto: 1.0, arqueiros: 0.3 }
+    },
+    locaisBase: 4, obrasPorSessao: 12,
+    /* moradia quando faltam trabalhadores (população < 1,1 × os necessários) e o teto está cheio (população + tropas > 90%), como na simulação */
+    moradia: { trabalhadores: 1.1, teto: 0.9 },
+    pesosHabilidade: { fraco: 0.3, medio: 0.5, ativo: 0.2 },
+    /* perfis: multiplicam locais e militar da habilidade; ataca (saques a alvos espionados), ocupa (ruínas e terra livre à
+       vista), espiona (batedor de elite), torres (quantas perto do castelo), prospecta (prospector e extração), comercia
+       (margem P.comercio.margemIA; os outros perfis exigem margemOutros × essa margem) */
+    perfis: {
+      expansionista: { peso: 0.3, locais: 1.25, militar: 0.9, ataca: false, ocupa: true, espiona: false, torres: 0, prospecta: true, comercia: false },
+      defensivo: { peso: 0.25, locais: 0.9, militar: 1.1, ataca: false, ocupa: false, espiona: false, torres: 2, prospecta: false, comercia: false },
+      saqueador: { peso: 0.25, locais: 0.9, militar: 1.25, ataca: true, ocupa: false, espiona: true, torres: 0, prospecta: false, comercia: false },
+      comerciante: { peso: 0.2, locais: 1.0, militar: 0.85, ataca: false, ocupa: false, espiona: false, torres: 1, prospecta: true, comercia: true }
+    },
+    /* ataque: só com castelo 3+, contra local espionado há até 24 h, a até 16 hexágonos, cujo dono não está sob escudo e não é
+       muito menor (maior nível conhecido dele ≥ 60% do nosso castelo); vai com 60% das tropas de ataque do castelo (ficam pelo
+       menos 20) se a força de ataque passar de 2,5× a defesa estimada (guarnição como lanceiros, torres e milícia); um ataque por vez */
+    ataque: { castelo: 3, espionagemH: 24, alcance: 16, porte: 0.6, forca: 2.5, fracTropas: 0.6, reserva: 20, tatica: 'conservadora' },
+    /* espionagem: batedor a partir do castelo 4, alvo a até 16 hexágonos, cada local de novo só depois de 24 h */
+    espionagem: { castelo: 4, alcance: 16, refazerH: 24 },
+    /* ocupação de ruína ou terra livre à vista, a até 8 hexágonos, com 10 lanceiros */
+    ocupacao: { alcance: 8, tropas: 10 },
+    /* exploração: um explorador a pé, mandado a um hexágono ainda não visto a 4 a 9 hexágonos do castelo (6 tentativas de sorteio) */
+    exploracao: { distancia: [4, 9], tentativas: 6 },
+    /* caça quando o couro guardado cai abaixo de 100: 20 lanceiros, região conhecida a até 6 hexágonos, só se passam ilesos */
+    caca: { couroMin: 100, alcance: 6, tropas: 20 },
+    /* extração: prospector a partir do castelo 5; 10 lanceiros numa jazida conhecida a até 10 hexágonos */
+    extracao: { castelo: 5, alcance: 10, tropas: 10 },
+    /* defesa durante a sessão: reforça um local em batalha com metade das tropas livres do castelo; a defesa recua se a força
+       dela cair abaixo de metade da do ataque */
+    defesa: { reforco: 0.5, recuo: 0.5 },
+    /* comércio: os perfis não comerciantes pedem margemOutros × P.comercio.margemIA; ninguém troca mais que metade do que guarda */
+    comercio: { margemOutros: 2, reserva: 0.5 },
+    /* regência (P.regenciaH sem entrar): IA conservadora com 2 sessões por dia, sem fundar, atacar, espionar ou ocupar;
+       relatório com até 30 linhas de ações e de perdas */
+    regencia: { sessoes: [9, 21], militar: 0.2, mantemTrab: 1.0, fracTropas: 0.3, horizonte: 12, horizonteNoite: 12, acerto: 1.0, arqueiros: 0.25, linhas: 30 }
   }
 };
 

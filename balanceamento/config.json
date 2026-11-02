@@ -585,6 +585,185 @@
     "minimo": 3,
     "caracteres": 60
    }
+  },
+  "ia": {
+   "inicial": 25,
+   "minimo": 20,
+   "reservaReinos": 90,
+   "idsPorReino": 6,
+   "fusoH": -3,
+   "variacaoMin": 40,
+   "habilidades": {
+    "fraco": {
+     "sessoes": [
+      9,
+      14,
+      21
+     ],
+     "militar": 0.25,
+     "mantemTrab": 1,
+     "fracTropas": 0.3,
+     "horizonte": 8,
+     "horizonteNoite": 12,
+     "locaisCadaDias": 5,
+     "locaisMax": 12,
+     "acerto": 0.6,
+     "arqueiros": 0.2
+    },
+    "medio": {
+     "sessoes": [
+      8,
+      13,
+      19,
+      23
+     ],
+     "militar": 0.3,
+     "mantemTrab": 1,
+     "fracTropas": 0.35,
+     "horizonte": 6,
+     "horizonteNoite": 10,
+     "locaisCadaDias": 4,
+     "locaisMax": 14,
+     "acerto": 0.9,
+     "arqueiros": 0.25
+    },
+    "ativo": {
+     "sessoes": [
+      7,
+      9,
+      11,
+      13,
+      16,
+      19,
+      21,
+      23
+     ],
+     "militar": 0.42,
+     "mantemTrab": 0.95,
+     "fracTropas": 0.55,
+     "horizonte": 3,
+     "horizonteNoite": 9,
+     "locaisCadaDias": 3,
+     "locaisMax": 18,
+     "acerto": 1,
+     "arqueiros": 0.3
+    }
+   },
+   "locaisBase": 4,
+   "obrasPorSessao": 12,
+   "moradia": {
+    "trabalhadores": 1.1,
+    "teto": 0.9
+   },
+   "pesosHabilidade": {
+    "fraco": 0.3,
+    "medio": 0.5,
+    "ativo": 0.2
+   },
+   "perfis": {
+    "expansionista": {
+     "peso": 0.3,
+     "locais": 1.25,
+     "militar": 0.9,
+     "ataca": false,
+     "ocupa": true,
+     "espiona": false,
+     "torres": 0,
+     "prospecta": true,
+     "comercia": false
+    },
+    "defensivo": {
+     "peso": 0.25,
+     "locais": 0.9,
+     "militar": 1.1,
+     "ataca": false,
+     "ocupa": false,
+     "espiona": false,
+     "torres": 2,
+     "prospecta": false,
+     "comercia": false
+    },
+    "saqueador": {
+     "peso": 0.25,
+     "locais": 0.9,
+     "militar": 1.25,
+     "ataca": true,
+     "ocupa": false,
+     "espiona": true,
+     "torres": 0,
+     "prospecta": false,
+     "comercia": false
+    },
+    "comerciante": {
+     "peso": 0.2,
+     "locais": 1,
+     "militar": 0.85,
+     "ataca": false,
+     "ocupa": false,
+     "espiona": false,
+     "torres": 1,
+     "prospecta": true,
+     "comercia": true
+    }
+   },
+   "ataque": {
+    "castelo": 3,
+    "espionagemH": 24,
+    "alcance": 16,
+    "porte": 0.6,
+    "forca": 2.5,
+    "fracTropas": 0.6,
+    "reserva": 20,
+    "tatica": "conservadora"
+   },
+   "espionagem": {
+    "castelo": 4,
+    "alcance": 16,
+    "refazerH": 24
+   },
+   "ocupacao": {
+    "alcance": 8,
+    "tropas": 10
+   },
+   "exploracao": {
+    "distancia": [
+     4,
+     9
+    ],
+    "tentativas": 6
+   },
+   "caca": {
+    "couroMin": 100,
+    "alcance": 6,
+    "tropas": 20
+   },
+   "extracao": {
+    "castelo": 5,
+    "alcance": 10,
+    "tropas": 10
+   },
+   "defesa": {
+    "reforco": 0.5,
+    "recuo": 0.5
+   },
+   "comercio": {
+    "margemOutros": 2,
+    "reserva": 0.5
+   },
+   "regencia": {
+    "sessoes": [
+     9,
+     21
+    ],
+    "militar": 0.2,
+    "mantemTrab": 1,
+    "fracTropas": 0.3,
+    "horizonte": 12,
+    "horizonteNoite": 12,
+    "acerto": 1,
+    "arqueiros": 0.25,
+    "linhas": 30
+   }
   }
  },
  "U": {
