@@ -155,6 +155,21 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ---
 
+## Reinos controlados por IA
+
+- O mundo nunca deve parecer vazio: existe uma **meta de ocupação** de reinos ativos por mundo, completada por reinos de IA quando faltam jogadores.
+- **Indistinguíveis**: reinos de IA não são identificados como tal para os jogadores.
+- **Mesmas regras dos jogadores**: timers, recursos, população e limites idênticos, sem trapaça. Perfis variados (expansionista, defensivo, saqueador, comerciante) e níveis de habilidade diferentes.
+- Respeitam o escudo de novato e calibram a agressividade pelo porte do alvo.
+- **Saída gradual**: conforme jogadores entram, não são criados novos reinos de IA; reinos de IA destruídos não renascem, e excedentes podem abdicar, com seus locais virando ruínas ou terra livre.
+- **Entrada quando jogadores saem**:
+  - **Regência**: após um período de inatividade, o reino do jogador ausente passa a ser governado por IA. Se o jogador voltar, retoma o controle do que restou.
+  - A regência é **conservadora** (defende e produz, sem expansão agressiva), para que abandonar nunca seja vantajoso.
+  - Se a ocupação cair abaixo da meta, novos reinos de IA surgem em regiões com pouca atividade.
+- Cada temporada começa com mais reinos de IA, que vão saindo conforme a base de jogadores cresce.
+
+---
+
 ## Temporadas e legado
 
 - Mundo organizado em **temporadas** (ordem de grandeza: 2 a 3 meses), com reset de mapa e reinos.
