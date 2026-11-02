@@ -166,6 +166,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ## Tropas e evolução
 
 - Tipos de unidade: milícia, lanceiro, arqueiro, cavalaria, cavaleiro de elite e máquinas de cerco (aríete, trebuchet).
+- O castelo recruta milícia, lanceiro e arqueiro; o quartel recruta todas as unidades.
 - Vantagens por **família**: lança vence cavalaria (inclusive a de elite), cavalaria vence arqueiros, arqueiro vence infantaria.
 - **Eras**: Ferro (inicial), Aço e Cerco Avançado. Cada era seguinte custa ouro e libera:
   - Era do Ferro: armas e armaduras do nível 1.
