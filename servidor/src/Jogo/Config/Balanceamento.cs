@@ -76,6 +76,8 @@ public sealed class ParametrosP
     public double CrescPop { get; init; }
     public double BonusComida { get; init; }
     public int TrabPorNivel { get; init; }
+    /// <summary>População civil abaixo disso cresce em linha (CrescPop × PopSemente por hora) até chegar a ela; daí, logística.</summary>
+    public double PopSemente { get; init; }
     public Dictionary<string, double> Kit { get; init; } = new();
     public Dictionary<string, double> KitExtra { get; init; } = new();
     public double EstoqueHoras { get; init; }

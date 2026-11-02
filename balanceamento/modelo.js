@@ -19,6 +19,9 @@ const P = {
      Tropas ocupam o teto (moram no reino): cada soldado é um trabalhador a menos. */
   tetoCastelo: 300, tetoPorMoradia: 60, popInicial: 220, custoMoradia: 400, moradiaPasso: 120,
   crescPop: 0.05, bonusComida: 0.30, trabPorNivel: 10,
+  /* servidor: população civil abaixo de popSemente cresce em linha (crescPop × popSemente pessoas por hora, 1/h) até chegar
+     a ela e daí segue a logística: um reino que recrutou toda a população volta a crescer */
+  popSemente: 20,
   /* estoque inicial (kit) e capacidade de estoque de um local em horas de produção */
   kit: { madeira: 600, pedra: 400, comida: 800, ferro: 300 },
   estoqueHoras: 10,

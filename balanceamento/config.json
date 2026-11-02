@@ -27,6 +27,7 @@
   "crescPop": 0.05,
   "bonusComida": 0.3,
   "trabPorNivel": 10,
+  "popSemente": 20,
   "kit": {
    "madeira": 600,
    "pedra": 400,

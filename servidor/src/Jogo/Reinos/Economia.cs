@@ -135,7 +135,7 @@ public static class Economia
         var livreTeto = Math.Max(1, Teto(m, r) - Tropas(m, r));
         var taxaPop = m.P.CrescPop * (sobra ? 1 + m.P.BonusComida : 1);
         foreach (var f in ModificadoresCrescimento) taxaPop *= f(m, r);
-        r.Pop = Logistica(r.Pop, livreTeto, taxaPop, dtH);
+        r.Pop = Logistica(r.Pop, livreTeto, taxaPop, dtH, m.P.PopSemente);
         r.AtualizadoEm = agora;
         m.Sujar(r);
     }
@@ -143,11 +143,24 @@ public static class Economia
     /// <summary>Multiplicadores da taxa de crescimento da população do reino (legado: relíquia de crescimento).</summary>
     public static List<Func<Mundo, Reino, double>> ModificadoresCrescimento { get; } = new();
 
-    /// <summary>Solução fechada de dP/dt = k·P·(1 − P/K).</summary>
-    public static double Logistica(double p0, double K, double k, double dtH)
+    /// <summary>
+    /// Solução fechada de dP/dt = k·P·(1 − P/K). Abaixo de <paramref name="semente"/> (P.popSemente) a população cresce em
+    /// linha, k × semente pessoas por hora, até chegar à semente (ou ao teto livre) e daí segue a logística: com a população
+    /// civil em 0 (todos recrutados) o reino volta a crescer.
+    /// </summary>
+    public static double Logistica(double p0, double K, double k, double dtH, double semente = 0)
     {
-        if (p0 <= 0) return 0;
         if (p0 >= K) return K;   // população acima do teto livre não cresce (e não some sozinha)
+        if (p0 < semente && k > 0 && dtH > 0)
+        {
+            var alvo = Math.Min(semente, K);
+            var porHora = k * semente;
+            var t = (alvo - Math.Max(0, p0)) / porHora;
+            if (t >= dtH) return Math.Max(0, p0) + porHora * dtH;
+            p0 = alvo; dtH -= t;
+            if (p0 >= K) return K;
+        }
+        if (p0 <= 0) return 0;
         var e = Math.Exp(-k * dtH);
         return K / (1 + (K - p0) / p0 * e);
     }

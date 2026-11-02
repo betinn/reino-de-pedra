@@ -309,4 +309,31 @@ public class RegrasRevisaoTestes
         Assert.Equal(0, r.MensageirosLivres);
         Assert.True(q.RecursosPerdidos.GetValueOrDefault("madeira") >= it.Custo.Qtd("madeira") - 1e-6);
     }
+
+    // ---------------------------------------------------------------- população
+
+    [Fact]
+    public void Populacao_civil_em_zero_volta_a_crescer()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        t.DarRecursos(r);
+        Economia.Atualizar(t.M, r);
+        var tudo = (int)Math.Floor(r.Pop);
+        Recrutamento.Recrutar(t.M, r, r.CasteloId, "milicia", tudo / t.M.B.U["milicia"].Pop);
+        Assert.True(r.Pop < 1);
+        t.AvancarHoras(1);
+        Economia.Atualizar(t.M, r);
+        Assert.True(r.Pop > 0);
+        t.AvancarHoras(200);
+        Economia.Atualizar(t.M, r);
+        Assert.True(r.Pop > 50);
+        // a semente vale também no cálculo fechado: de 0 cresce em linha até o mínimo e depois segue a logística
+        var sem = t.M.P.PopSemente;
+        Assert.True(sem > 0);
+        Assert.Equal(0.05 * sem * 3, Economia.Logistica(0, 300, 0.05, 3, sem), 9);
+        Assert.Equal(Economia.Logistica(sem, 300, 0.05, 10), Economia.Logistica(0, 300, 0.05, 1 / 0.05 + 10, sem), 9);
+        Assert.Equal(Economia.Logistica(220, 300, 0.05, 2), Economia.Logistica(220, 300, 0.05, 2, sem), 12);
+        Assert.Equal(5, Economia.Logistica(0, 5, 0.05, 100, sem), 9);   // teto livre abaixo da semente
+    }
 }
