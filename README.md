@@ -7,6 +7,7 @@
 - Protótipo de telas (referência visual): [`prototipo/`](prototipo/)
 - Arquitetura e convenções do código: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Decisões técnicas: [`docs/decisoes/`](docs/decisoes/)
+- Próximos passos (o que falta e como testar): [`docs/proximos-passos.md`](docs/proximos-passos.md)
 
 ## Rodar localmente
 
