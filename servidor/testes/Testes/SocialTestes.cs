@@ -239,6 +239,7 @@ public class SocialTestes
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino(); var ladrao = t.NovoReino();
         SemEscudo(a, b, ladrao);
+        t.DarRecursos(b, 5000);
         Alianca(t, a, b);
         var conhecido = t.NovoReino();
         Assert.Throws<RegraException>(() => Comercio.PedirRecursos(t.M, a, conhecido.Id, R(("pedra", 300)), null, null));   // só a aliado
@@ -254,7 +255,7 @@ public class SocialTestes
         Assert.True(t.M.Locais[a.CasteloId].Estoque.Qtd("pedra") >= antes + 300 - 1e-6);
 
         // de novo, mas roubado no caminho
-        var p2 = Comercio.PedirRecursos(t.M, a, b.Id, R(("madeira", 200)), null, null);
+        var p2 = Comercio.PedirRecursos(t.M, a, b.Id, R(("madeira", 100)), null, null);
         Comercio.AceitarPedido(t.M, b, p2.Id);
         var rems2 = Remessas.Do(t.M, Comercio.Pedido, p2.Id).ToList();
         var cl = t.M.Locais[ladrao.CasteloId];
@@ -262,7 +263,7 @@ public class SocialTestes
         var lad = Exercitos.Enviar(t.M, ladrao, cl.Id, G(("cavalaria", 10)), t.M.G.Vizinhos(cl.Hex).First(h => !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
         foreach (var x in rems2) x.AoSerVencida(t.M, lad);
         Assert.Empty(Remessas.Do(t.M, Comercio.Pedido, p2.Id));
-        Assert.Equal(200, lad.Carga.Qtd("madeira"), 3);
+        Assert.Equal(100, lad.Carga.Qtd("madeira"), 3);   // 10 cavaleiros levam 100
         Assert.Contains(t.M.Notificacoes, n => n.ReinoId == a.Id && n.Titulo == "Carga roubada no caminho");
     }
 
@@ -277,7 +278,7 @@ public class SocialTestes
         Assert.Throws<RegraException>(() => Mensageiros.Enviar(t.M, a, "olá", null, t.M.Locais[b.CasteloId].Id));   // sem mensageiro
         var item = Mensageiros.Treinar(t.M, a, 1);
         Assert.Equal(t.M.P.Mensageiro.Tempo, item.DuracaoSeg);
-        t.AvancarMin(2);
+        t.AvancarMin(t.M.P.Mensageiro.Tempo / 60 + 1);
         Assert.Equal(1, a.MensageirosLivres);
         var cb = t.M.Locais[b.CasteloId];
         Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 0);
@@ -301,7 +302,7 @@ public class SocialTestes
         // b responde: agora a sabe quem é
         t.DarRecursos(b);
         Mensageiros.Treinar(t.M, b, 1);
-        t.AvancarMin(2);
+        t.AvancarMin(t.M.P.Mensageiro.Tempo / 60 + 1);
         var resp = Mensageiros.Enviar(t.M, b, "Podemos.", null, null, msg.Id);
         AvancarAte(t, t.M.Marchas[resp.MarchaId!.Value].Chegada);
         Assert.True(Conhecimento.Conhece(a, b.Id));
@@ -521,7 +522,7 @@ public class SocialTestes
         var cc = t.M.Locais[captor.CasteloId];
         var p = t.M.Prisioneiros.Adicionar(new Prisioneiro { CaptorId = captor.Id, DonoId = dono.Id, TipoExp = "pe", Hex = cc.Hex, Ate = t.M.Agora + T.DeHoras(t.M.P.ResgateH) });
         Assert.Throws<RegraException>(() => Comercio.PagarResgate(t.M, dono, p.Id));   // ninguém pediu
-        Capturas.Decidir(t.M, captor, p.Id, "resgate", R(("comida", 100)));
+        Capturas.Decidir(t.M, captor, p.Id, "resgate", R(("comida", 50)));
         Comercio.PagarResgate(t.M, dono, p.Id);
         Assert.Throws<RegraException>(() => Comercio.PagarResgate(t.M, dono, p.Id));   // já está a caminho
         var rems = Remessas.Do(t.M, Comercio.Resgate, p.Id).ToList();

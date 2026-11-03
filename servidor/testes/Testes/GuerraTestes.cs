@@ -16,12 +16,12 @@ public class GuerraTestes
 
     private static Dictionary<string, int> G(params (string k, int n)[] x) => x.ToDictionary(p => p.k, p => p.n);
 
-    /// <summary>30 arqueiros contra uma mina com 15 lanceiros: o atacante vence com 33% de baixas (combate de referência).</summary>
+    /// <summary>16 arqueiros contra uma mina com 8 lanceiros e 6 civis: o atacante vence com ≈ 34% de baixas (o combate de referência, dobrado).</summary>
     private static (CombateCenario s, Exercito ex, Batalha b) Vitoria()
     {
         var s = new CombateCenario();
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 200);
-        var ex = s.Atacar(alvo, G(("arqueiro", 30)), CombateCenario.Plano("saque", "semLimite"));
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 8)), 6);
+        var ex = s.Atacar(alvo, G(("arqueiro", 16)), CombateCenario.Plano("saque", "semLimite"));
         var b = s.Chegar(ex);
         s.Terminar(b);
         Assert.Equal("vitoria", b.Resultado);
@@ -159,21 +159,21 @@ public class GuerraTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = t.M.Locais[r.CasteloId];
-        c.Guarnicao["arqueiro"] = 10; c.Marcas = 3; c.MarcasTropas = 10;
+        c.Guarnicao["arqueiro"] = 4; c.Marcas = 3; c.MarcasTropas = 4;
         t.DarRecursos(r);
         t.DarRecursos(r, 1000, "couro");
-        var item = Recrutamento.Recrutar(t.M, r, c.Id, "lanceiro", 10);
+        var item = Recrutamento.Recrutar(t.M, r, c.Id, "lanceiro", 4);
         t.AvancarMin(item.DuracaoSeg / 60 + 1);
-        Assert.Equal(20, GT.Total(c.Guarnicao));
+        Assert.Equal(8, GT.Total(c.Guarnicao));
         Assert.Equal(1.5, c.Marcas, 6);
-        var ex = Exercitos.Enviar(t.M, r, c.Id, G(("arqueiro", 5)), t.M.G.Area(c.Hex, 1).First(h => h != c.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
+        var ex = Exercitos.Enviar(t.M, r, c.Id, G(("arqueiro", 2)), t.M.G.Area(c.Hex, 1).First(h => h != c.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
         Assert.Equal(1.5, ex.Marcas, 6);
         Assert.Equal(1.5, Veterania.DoLocal(t.M, c), 6);
         // um exército veterano que volta faz a média ponderada
         ex.Marcas = 5.5; t.M.Sujar(ex);
         Exercitos.Retornar(t.M, ex);
         t.AvancarMin(30);
-        Assert.Equal((1.5 * 15 + 5.5 * 5) / 20, c.Marcas, 6);
+        Assert.Equal((1.5 * 6 + 5.5 * 2) / 8, c.Marcas, 6);
     }
 
     // ---------------------------------------------------------------- queda do castelo
@@ -283,7 +283,7 @@ public class GuerraTestes
         var mina = s.Alvo(TipoLocal.Mina, G(("lanceiro", lanceiros)), 0);
         var destino = s.HexLivre(mina.Hex, dist);
         var alvo = Exercitos.Enviar(s.M, s.Def, mina.Id, G(("lanceiro", lanceiros)), destino, OrdemMover.Id);
-        alvo.Carga.Somar("ferro", 300);
+        alvo.Carga.Somar("ferro", 200);   // cabe na carga dos 30 cavaleiros mesmo depois das baixas
         return (s, mina, alvo);
     }
 
@@ -306,7 +306,7 @@ public class GuerraTestes
         Assert.True(ex.Parado);
         s.AvancarAte(e.Eles);
         Assert.False(s.M.Marchas.ContemId(alvo.Id));                 // a marcha perdeu e saiu do mapa
-        Assert.Equal(300, ex.Carga.Qtd("ferro"), 6);
+        Assert.Equal(200, ex.Carga.Qtd("ferro"), 6);
         Assert.True(ex.Retornando);
         var rel = s.M.Relatorios.Single(x => x.ReinoId == s.Def.Id && x.Tipo == "defesa");
         Assert.Equal("interceptacao", rel.Dados["tipo"]!.GetValue<string>());
@@ -518,7 +518,7 @@ public class GuerraTestes
             m2.ProcessarAte(e.Eles);
             AjustesTeste.FalharSeErro();
             Assert.False(m2.Marchas.ContemId(alvo.Id));
-            Assert.Equal(300, m2.Marchas[ex.Id].Carga.Qtd("ferro"), 6);
+            Assert.Equal(200, m2.Marchas[ex.Id].Carga.Qtd("ferro"), 6);
         }
         finally { try { Directory.Delete(dir, true); } catch { } }
     }

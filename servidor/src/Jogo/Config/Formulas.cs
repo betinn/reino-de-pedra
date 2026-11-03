@@ -19,10 +19,13 @@ public sealed class Formulas(Balanceamento b)
     public double Custo(int L) => P.CustoN2 * Math.Pow(P.CustoCresc, L - 2);
     /// <summary>Tempo de obra, em segundos, para subir um local ao nível L.</summary>
     public double TempoObra(int L) => P.TempoN2 * Math.Pow(P.TempoCresc, L - 2);
-    /// <summary>Divide um total pela receita (45% madeira, 35% pedra...), arredondando a dezenas como o modelo.</summary>
+    /// <summary>Divide um total pela receita (45% madeira, 35% pedra...), arredondando a inteiros como o modelo.</summary>
     public Dictionary<string, double> Receita(double total) =>
-        P.Receita.ToDictionary(kv => kv.Key, kv => ArredJs(total * kv.Value / 10) * 10);
-    public int Trabalhadores(int L) => P.TrabPorNivel * L;
+        P.Receita.ToDictionary(kv => kv.Key, kv => ArredJs(total * kv.Value));
+    /// <summary>Vagas de trabalho de um local de produção no nível L (uma pessoa por vaga).</summary>
+    public int Vagas(int L) => Math.Max(P.Vagas.Minimo, (int)ArredJs(L * P.Vagas.PorNivel));
+    /// <summary>Trabalhadores que o local comporta: o mesmo que <see cref="Vagas"/>.</summary>
+    public int Trabalhadores(int L) => Vagas(L);
     public double CustoMoradia(int n) => P.CustoMoradia + P.MoradiaPasso * n;
     public double TempoMoradia(int n) => 10 * 60 * (1 + 0.1 * n);
     public Dictionary<string, double> CustoNovoLocal(int fundados) => Receita(P.CustoNovoLocal * Math.Pow(P.NovoLocalCresc, fundados));
@@ -36,7 +39,7 @@ public sealed class Formulas(Balanceamento b)
     public Dictionary<string, double> CustoTorre(int n)
     {
         var c = P.Torre.CustoN1 * Math.Pow(P.Torre.CustoCresc, n - 1);
-        return new() { ["pedra"] = ArredJs(c * 0.7 / 10) * 10, ["madeira"] = ArredJs(c * 0.3 / 10) * 10 };
+        return new() { ["pedra"] = ArredJs(c * 0.7), ["madeira"] = ArredJs(c * 0.3) };
     }
     public double TempoTorre(int n) => P.Torre.TempoN1 * n;
     public int AlcanceTorre(int n) => n + P.Torre.AlcanceBase;

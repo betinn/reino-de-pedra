@@ -120,10 +120,10 @@ public class CombateTestes
     public void Defesa_que_recua_salva_tropas_e_populacao_mas_o_local_e_saqueado()
     {
         var s = new CombateCenario();
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 10)), 200);
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 3)), 4);
         var vila = s.M.AdicionarLocal(new Local { ReinoId = s.Def.Id, Tipo = TipoLocal.Vila, Produz = "comida", Hex = s.HexLivre(alvo.Hex, 3), Nome = "Vila Vizinha" });
-        alvo.Estoque["ferro"] = 2000;
-        var ex = s.Atacar(alvo, G(("cavalaria", 30)), CombateCenario.Plano("saque", "media", new JsonArray(CombateCenario.Obj("recurso", "ferro", 1000))));
+        alvo.Estoque["ferro"] = 200;
+        var ex = s.Atacar(alvo, G(("cavalaria", 6)), CombateCenario.Plano("saque", "media", new JsonArray(CombateCenario.Obj("recurso", "ferro", 50))));
         var b = s.Chegar(ex);
         var pop0 = s.Def.Pop;
         s.AvancarAte(b.Inicio + (b.Fim - b.Inicio) / 4);
@@ -134,30 +134,30 @@ public class CombateTestes
         Assert.Empty(alvo.Guarnicao);
         var fuga = s.M.Marchas.OfType<Exercito>().Single(e => e.ReinoId == s.Def.Id);
         Assert.Equal(vila.Id, fuga.AlvoLocalId);
-        Assert.Equal(10 - GT.Total(b.PerdasDefesa), GT.Total(fuga.Tropas));
-        Assert.Equal(1000, ex.Carga.Qtd("ferro"), 6);
+        Assert.Equal(3 - GT.Total(b.PerdasDefesa), GT.Total(fuga.Tropas));
+        Assert.Equal(50, ex.Carga.Qtd("ferro"), 6);
     }
 
     [Fact]
     public void Reforco_que_chega_durante_a_batalha_muda_o_resultado()
     {
         var s = new CombateCenario();
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 200);
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 4)), 3);
         var quartel = s.M.AdicionarLocal(new Local { ReinoId = s.Def.Id, Tipo = TipoLocal.Quartel, Hex = s.M.G.Vizinhos(alvo.Hex).First(h => Obras.HexLivre(s.M, h) && !s.M.Mapa.Rio[h]), Nome = "Quartel" });
-        s.Guarnecer(quartel, G(("cavalaria", 40)));
-        var ex = s.Atacar(alvo, G(("arqueiro", 30)));
+        s.Guarnecer(quartel, G(("cavalaria", 10)));
+        var ex = s.Atacar(alvo, G(("arqueiro", 8)));
         var b = s.Chegar(ex);
         Assert.Equal(1, b.Marcos[0].PerdaD);   // sem reforço, o ataque venceria
-        var reforco = Exercitos.Enviar(s.M, s.Def, quartel.Id, G(("cavalaria", 40)), alvo.Hex, OrdemReforcar.Id);
+        var reforco = Exercitos.Enviar(s.M, s.Def, quartel.Id, G(("cavalaria", 10)), alvo.Hex, OrdemReforcar.Id);
         Assert.True(reforco.Chegada < b.FimPrevisto);
         s.AvancarAte(reforco.Chegada);
-        Assert.Equal(55, GT.Total(alvo.Guarnicao));
+        Assert.Equal(14, GT.Total(alvo.Guarnicao));
         Assert.Equal(2, b.Marcos.Count);
         Assert.Equal("defesa", b.Marcos[1].Lado);
         s.Terminar(b);
         Assert.Equal("derrota", b.Resultado);
-        var esperado = s.M.F.Batalha(G(("arqueiro", 30)), G(("lanceiro", 15), ("cavalaria", 40)), new ExtraDefesa { Pop = 200 }, null);
-        Assert.Equal((int)Formulas.ArredJs(55 * esperado.PerdaD), GT.Total(b.PerdasDefesa));
+        var esperado = s.M.F.Batalha(G(("arqueiro", 8)), G(("lanceiro", 4), ("cavalaria", 10)), new ExtraDefesa { Pop = 3 }, null);
+        Assert.Equal((int)Formulas.ArredJs(14 * esperado.PerdaD), GT.Total(b.PerdasDefesa));
         // a série mostra o salto na chegada do reforço
         var serie = Batalhas.Serie(b, s.M.Agora);
         Assert.Contains(serie, p => p.T == b.Marcos[1].T - b.Inicio && p.D > b.Marcos[0].D);
@@ -167,12 +167,12 @@ public class CombateTestes
     public void Tropas_que_saem_do_local_em_batalha_deixam_de_defender()
     {
         var s = new CombateCenario();
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 40)), 200);
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 12)), 3);
         s.M.AdicionarLocal(new Local { ReinoId = s.Def.Id, Tipo = TipoLocal.Vila, Produz = "comida", Hex = s.HexLivre(alvo.Hex, 3), Nome = "Vila" });
-        var ex = s.Atacar(alvo, G(("arqueiro", 30)));
+        var ex = s.Atacar(alvo, G(("arqueiro", 8)));
         var b = s.Chegar(ex);
         Assert.True(b.Marcos[0].PerdaA >= 1);
-        Exercitos.Enviar(s.M, s.Def, alvo.Id, G(("lanceiro", 35)), s.HexLivre(alvo.Hex, 2), OrdemMover.Id);
+        Exercitos.Enviar(s.M, s.Def, alvo.Id, G(("lanceiro", 10)), s.HexLivre(alvo.Hex, 2), OrdemMover.Id);
         Assert.Equal(2, b.Marcos.Count);
         s.Terminar(b);
         Assert.Equal("vitoria", b.Resultado);
@@ -182,25 +182,26 @@ public class CombateTestes
     public void Torre_no_alcance_muda_o_resultado_e_fica_fora_do_teto()
     {
         var sem = new CombateCenario();
-        var a1 = sem.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 200);
-        var b1 = sem.Chegar(sem.Atacar(a1, G(("arqueiro", 30))));
+        var a1 = sem.Alvo(TipoLocal.Mina, G(("lanceiro", 4)), 3);
+        var b1 = sem.Chegar(sem.Atacar(a1, G(("arqueiro", 8))));
         sem.Terminar(b1);
         Assert.Equal("vitoria", b1.Resultado);
 
         var com = new CombateCenario();
-        var a2 = com.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 200);
+        var a2 = com.Alvo(TipoLocal.Mina, G(("lanceiro", 4)), 3);
         var t = com.Torre(a2, 2);
         Assert.Contains(a2, Defesas.Protege(com.M, t));
-        var b2 = com.Chegar(com.Atacar(a2, G(("arqueiro", 30))));
+        var b2 = com.Chegar(com.Atacar(a2, G(("arqueiro", 8))));
         com.Terminar(b2);
         Assert.Equal("derrota", b2.Resultado);
         // fora do teto: com +50% de bônus de defesa, a torre continua somando inteira
-        var x = new ExtraDefesa { Pop = 200, ArqTorre = 12, BonusD = 0.5 };
-        var sTorre = com.M.F.ValorDefesa(G(("lanceiro", 15)), G(("arqueiro", 30)), x) - com.M.F.ValorDefesa(G(("lanceiro", 15)), G(("arqueiro", 30)), x with { ArqTorre = 0 });
-        Assert.Equal(12 * com.M.B.U["arqueiro"].Def * com.M.P.Torre.BonusAlto * 1.5, sTorre, 6);
+        var alto = 2 * com.M.P.Torre.ArqPorNivel;
+        var x = new ExtraDefesa { Pop = 3, ArqTorre = alto, BonusD = 0.5 };
+        var sTorre = com.M.F.ValorDefesa(G(("lanceiro", 4)), G(("arqueiro", 8)), x) - com.M.F.ValorDefesa(G(("lanceiro", 4)), G(("arqueiro", 8)), x with { ArqTorre = 0 });
+        Assert.Equal(alto * com.M.B.U["arqueiro"].Def * com.M.P.Torre.BonusAlto * 1.5, sTorre, 6);
         // torre de outro reino não protege
         var alheia = new CombateCenario();
-        var a3 = alheia.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 200);
+        var a3 = alheia.Alvo(TipoLocal.Mina, G(("lanceiro", 4)), 3);
         alheia.Torre(a3, 2).ReinoId = alheia.Atk.Id;
         Assert.Equal(0, Defesas.ArqueirosNoAlto(alheia.M, a3));
     }
@@ -313,16 +314,16 @@ public class CombateTestes
     {
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(), 0);
-        alvo.Estoque["ferro"] = 5000; alvo.Estoque["madeira"] = 300;
+        alvo.Estoque["ferro"] = 500; alvo.Estoque["madeira"] = 30;
         var cap = 10 * s.M.B.U["cavalaria"].Carga;
         var ex = s.Atacar(alvo, G(("cavalaria", 10)), CombateCenario.Plano("saque", "media",
-            new JsonArray(CombateCenario.Obj("recurso", "madeira", 1000), CombateCenario.Obj("recurso", "ferro", 5000))));
+            new JsonArray(CombateCenario.Obj("recurso", "madeira", 100), CombateCenario.Obj("recurso", "ferro", 500))));
         var b = s.Chegar(ex);
         s.Terminar(b);
         Assert.Equal("vitoria", b.Resultado);
-        Assert.Equal(300, ex.Carga.Qtd("madeira"), 6);           // limitado pelo estoque
-        Assert.Equal(cap - 300, ex.Carga.Qtd("ferro"), 6);       // limitado pela carga
-        Assert.Equal(5000 - (cap - 300), alvo.Estoque.Qtd("ferro"), 6);
+        Assert.Equal(30, ex.Carga.Qtd("madeira"), 6);            // limitado pelo estoque
+        Assert.Equal(cap - 30, ex.Carga.Qtd("ferro"), 6);        // limitado pela carga
+        Assert.Equal(500 - (cap - 30), alvo.Estoque.Qtd("ferro"), 6);
         var rel = s.M.Relatorios.Single(r => r.ReinoId == s.Atk.Id && r.Tipo == "ataque");
         var objs = rel.Dados["objetivos"]!.AsArray();
         Assert.Equal("parcial", objs[0]!["estado"]!.GetValue<string>());
@@ -331,7 +332,7 @@ public class CombateTestes
         // a carga chega ao castelo
         s.AvancarAte(ex.Chegada);
         Assert.False(s.M.Marchas.ContemId(ex.Id));
-        Assert.True(s.CasteloAtk.Estoque.Qtd("ferro") >= cap - 300);
+        Assert.True(s.CasteloAtk.Estoque.Qtd("ferro") >= cap - 30);
     }
 
     [Fact]
@@ -339,11 +340,11 @@ public class CombateTestes
     {
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(), 0);
-        alvo.Estoque["ferro"] = 100; alvo.Estoque["couro"] = 50;
+        alvo.Estoque["ferro"] = 40; alvo.Estoque["couro"] = 20;
         var ex = s.Atacar(alvo, G(("cavalaria", 10)), CombateCenario.Plano("saque", "media", new JsonArray(CombateCenario.Obj("reliquia")), completar: true));
         s.Terminar(s.Chegar(ex));
-        Assert.Equal(100, ex.Carga.Qtd("ferro"), 6);
-        Assert.Equal(50, ex.Carga.Qtd("couro"), 6);
+        Assert.Equal(40, ex.Carga.Qtd("ferro"), 6);
+        Assert.Equal(20, ex.Carga.Qtd("couro"), 6);
     }
 
     [Fact]
@@ -355,15 +356,15 @@ public class CombateTestes
         var levou = new List<double>();
         for (var i = 0; i < 6; i++)
         {
-            alvo.Estoque["ferro"] = 1000;
+            alvo.Estoque["ferro"] = 100;
             Assert.Equal(Math.Max(P.SaqueMinimo, 1 - P.SaqueQueda * i), Ataques.Rendimento(s.M, Ataques.SaquesRecentes(s.M, s.Atk, alvo.Id)), 9);
-            var ex = s.Atacar(alvo, G(("cavalaria", 30)), CombateCenario.Plano("saque", "media", new JsonArray(CombateCenario.Obj("recurso", "ferro", 2000))));
+            var ex = s.Atacar(alvo, G(("cavalaria", 30)), CombateCenario.Plano("saque", "media", new JsonArray(CombateCenario.Obj("recurso", "ferro", 200))));
             var b = s.Chegar(ex);
             s.Terminar(b);
             levou.Add(ex.Carga.Qtd("ferro"));
             s.AvancarAte(ex.Chegada);
         }
-        Assert.Equal(new double[] { 1000, 800, 600, 400, 200, 200 }, levou);
+        Assert.Equal(new double[] { 100, 80, 60, 40, 20, 20 }, levou);
         // fora da janela, volta ao rendimento cheio
         s.T.AvancarHoras(P.Combate.SaqueJanelaH + 1);
         Assert.Equal(1, Ataques.Rendimento(s.M, Ataques.SaquesRecentes(s.M, s.Atk, alvo.Id)));
@@ -457,39 +458,39 @@ public class CombateTestes
     public void Massacre_mata_populacao_do_local_ate_o_pedido()
     {
         var s = new CombateCenario();
-        var alvo = s.Alvo(TipoLocal.Mina, G(), 400);
-        var ex = s.Atacar(alvo, G(("cavalaria", 30)), CombateCenario.Plano("massacre", "media", new JsonArray(CombateCenario.Obj("populacao", q: 50))));
+        var alvo = s.Alvo(TipoLocal.Mina, G(), 40);   // 40 civis lutam como milícia (600 de defesa) contra 30 cavaleiros
+        var ex = s.Atacar(alvo, G(("cavalaria", 30)), CombateCenario.Plano("massacre", "media", new JsonArray(CombateCenario.Obj("populacao", q: 10))));
         var b = s.Chegar(ex);
         s.Terminar(b);
         Assert.Equal("vitoria", b.Resultado);
-        Assert.Equal(400 - b.MiliciaMorta - 50, s.Def.Pop, 6);
+        Assert.Equal(40 - b.MiliciaMorta - 10, s.Def.Pop, 6);
         Assert.Empty(ex.Carga);
-        // limitado pela população do local e pelas tropas que sobram
+        // limitado pela população do local e pelas tropas que sobram (cada tropa mata até P.combate.massacrePorTropa)
         var s2 = new CombateCenario();
-        var a2 = s2.Alvo(TipoLocal.Mina, G(), 30);
+        var a2 = s2.Alvo(TipoLocal.Mina, G(), 3);
         var ex2 = s2.Atacar(a2, G(("cavalaria", 2)), CombateCenario.Plano("massacre", "media", new JsonArray(CombateCenario.Obj("populacao", q: 500))));
         s2.Terminar(s2.Chegar(ex2));
         var vivos = GT.Total(ex2.Tropas);
-        Assert.Equal(30 - s2.M.Batalhas.Single().MiliciaMorta - Math.Min(30 - s2.M.Batalhas.Single().MiliciaMorta, vivos * s2.M.P.Combate.MassacrePorTropa), s2.Def.Pop, 6);
+        Assert.Equal(3 - s2.M.Batalhas.Single().MiliciaMorta - Math.Min(3 - s2.M.Batalhas.Single().MiliciaMorta, vivos * s2.M.P.Combate.MassacrePorTropa), s2.Def.Pop, 6);
     }
 
     [Fact]
     public void Cerco_vitorioso_derruba_portoes_leva_recursos_e_chama_a_queda_do_castelo()
     {
         var s = new CombateCenario();
-        var castelo = s.Alvo(TipoLocal.Castelo, G(("lanceiro", 5)), 100);
+        var castelo = s.Alvo(TipoLocal.Castelo, G(("lanceiro", 5)), 10);
         castelo.Portoes = 2; castelo.EstruturaPortoes = 2 * s.M.P.PortoesEstrutura;
-        castelo.Estoque["madeira"] = 3000;
+        castelo.Estoque["madeira"] = 300;
         var arietes = (int)Math.Ceiling(s.M.P.PortoesEstrutura / s.M.B.U["ariete"].Cerco) + 2;
-        var ex = s.Atacar(castelo, G(("arqueiro", 100), ("ariete", arietes)), CombateCenario.Plano("cerco", "media",
-            new JsonArray(CombateCenario.Obj("portoes", q: 1), CombateCenario.Obj("recurso", "madeira", 1000))));
+        var ex = s.Atacar(castelo, G(("arqueiro", 30), ("ariete", arietes)), CombateCenario.Plano("cerco", "media",
+            new JsonArray(CombateCenario.Obj("portoes", q: 1), CombateCenario.Obj("recurso", "madeira", 100))));
         var b = s.Chegar(ex);
         s.Terminar(b);
         Assert.Equal("vitoria", b.Resultado);
         // os portões caíram um nível (depois a queda do castelo arruína o castelo: ver GuerraTestes)
         var defesa = s.M.Relatorios.Single(r => r.ReinoId == s.Def.Id && r.Tipo == "defesa");
         Assert.Contains("portões −1", defesa.Dados["danos"]!.AsArray().Select(x => x!.GetValue<string>()));
-        Assert.Equal(1000, ex.Carga.Qtd("madeira"), 6);
+        Assert.Equal(100, ex.Carga.Qtd("madeira"), 6);
         Assert.Equal("cerco", PlanoAtaque.Ler(b.Plano).Tipo);
         Assert.Single(AjustesTeste.De(s.M).Fins);
         var q = Assert.Single(AjustesTeste.De(s.M).Quedas);
@@ -502,12 +503,12 @@ public class CombateTestes
     public void Trebuchets_batem_de_longe_mesmo_na_derrota()
     {
         var s = new CombateCenario();
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 200)), 0);
-        var t = s.Torre(alvo, 1);
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 20)), 0);
+        var t = s.Torre(alvo, 3);
         var ex = s.Atacar(alvo, G(("trebuchet", 2)), CombateCenario.Plano("sabotagem", "semLimite", new JsonArray(CombateCenario.Obj("torre", q: 1))));
         s.Terminar(s.Chegar(ex));
         Assert.Equal("derrota", s.M.Batalhas.Single().Resultado);
-        Assert.Equal(Defesas.EstruturaCheia(s.M, 1) - 2 * s.M.B.U["trebuchet"].Cerco, t.Estrutura, 6);
+        Assert.Equal(Defesas.EstruturaCheia(s.M, 3) - 2 * s.M.B.U["trebuchet"].Cerco, t.Estrutura, 6);
     }
 
     // ---------------------------------------------------------------- relatórios e anonimato
@@ -594,9 +595,9 @@ public class CombateTestes
         try
         {
             var s = new CombateCenario();
-            var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 200);
+            var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 4)), 3);
             using var db = new ReinoDePedra.Jogo.Persistencia.Banco(Path.Combine(dir, "t.db"));
-            var ex = s.Atacar(alvo, G(("arqueiro", 30)));
+            var ex = s.Atacar(alvo, G(("arqueiro", 8)));
             var b = s.Chegar(ex);
             db.Salvar(s.M);
             Assert.Equal(0, db.SalvarEsquecidos(s.M));

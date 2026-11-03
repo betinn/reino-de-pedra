@@ -54,7 +54,7 @@ public static class VisaoMapa
             {
                 tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = aliada ? "aliado" : "desconhecido", hex = h, caminho, tempos,
                 paraMim = !aliada && ParaMim(m, r, x) ? true : (bool?)null,   // sem isso, o fim dos tempos é quando ela sai da vista
-                tamanho = Aproximado(x.Tropas.Values.Sum()), estandarte = x.Estandarte ? true : (bool?)null,
+                tamanho = Aproximado(m, x.Tropas.Values.Sum()), estandarte = x.Estandarte ? true : (bool?)null,
                 reino = dm != null ? Espionagem.Identidade(dm) : null, brasao = dm?.Brasao,
             });
         }
@@ -141,5 +141,5 @@ public static class VisaoMapa
     public static bool ParaMim(Mundo m, Reino r, Marcha x) =>
         x.Caminho.Count > 0 && m.LocalNoHex(x.Caminho[^1]) is { } l && l.ReinoId == r.Id && !l.Ruina;
 
-    public static string Aproximado(int n) => n switch { 0 => "nenhuma", < 10 => "poucas", < 30 => "≈ " + (n / 5 * 5), < 100 => "≈ " + (n / 10 * 10), _ => "≈ " + (n / 50 * 50) };
+    public static string Aproximado(Mundo m, int n) => Jogo.Combate.Avistamentos.Aproximado(m, n);
 }

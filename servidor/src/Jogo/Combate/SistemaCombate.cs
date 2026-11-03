@@ -63,7 +63,15 @@ public static class Avistamentos
         m.Sujar(ex);
     }
 
-    public static string Aproximado(int n) => n switch { 0 => "nenhuma", < 10 => "poucas", < 30 => "≈ " + (n / 5 * 5), < 100 => "≈ " + (n / 10 * 10), _ => "≈ " + (n / 50 * 50) };
+    /// <summary>Tamanho aproximado de uma força (P.aproximado): "nenhuma", "poucas" ou "≈ n" arredondado ao passo.</summary>
+    public static string Aproximado(Mundo m, int n)
+    {
+        var p = m.P.Aproximado;
+        if (n <= 0) return "nenhuma";
+        if (n < p.Poucas) return "poucas";
+        var passo = Math.Max(1, p.Passo);
+        return "≈ " + Math.Max(passo, (int)Math.Round(n / (double)passo) * passo);
+    }
 }
 
 public sealed class AvistamentoAtaqueEvento : Evento
@@ -82,7 +90,7 @@ public sealed class AvistamentoAtaqueEvento : Evento
         var quem = RelatoriosCombate.NomeAtacante(m, ex.ReinoId, ex.Estandarte);
         var n = GT.Total(ex.Tropas);
         Registros.Notificar(m, DefensorId, "ataques", quem + " a caminho de " + l.Nome,
-            Avistamentos.Aproximado(n) + " tropas vindas do " + m.G.Direcao(l.Hex, ex.Origem) + ".", "mapa?foco=" + l.Hex);
+            Avistamentos.Aproximado(m, n) + " tropas vindas do " + m.G.Direcao(l.Hex, ex.Origem) + ".", "mapa?foco=" + l.Hex);
         m.Avisar(DefensorId, "mapa");
     }
 }

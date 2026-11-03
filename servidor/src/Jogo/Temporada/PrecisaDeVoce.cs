@@ -49,7 +49,7 @@ namespace ReinoDePedra.Jogo.Temporada
                 if (ex.Chegada <= agora || !vis.Contains(ex.HexEm(agora))) continue;   // só o que o reino vê agora
                 var l = m.Locais.Obter(alvo)!;
                 var quem = ex.Estandarte && m.Reinos.Obter(ex.ReinoId) is { } atk ? "Reino de " + atk.Nome : "Forças desconhecidas";
-                L.Add(new(Urgente, "alerta", "Ataque a caminho: " + l.Nome, quem + " · " + Combate.Avistamentos.Aproximado(GT.Total(ex.Tropas)) + " tropas · chegam em",
+                L.Add(new(Urgente, "alerta", "Ataque a caminho: " + l.Nome, quem + " · " + Combate.Avistamentos.Aproximado(m, GT.Total(ex.Tropas)) + " tropas · chegam em",
                     "#/mapa?foco=" + l.Hex, "Ver", ex.Chegada));
             }
             if (r.Feridos.Count > 0)

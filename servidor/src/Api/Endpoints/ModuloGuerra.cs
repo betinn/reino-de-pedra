@@ -140,7 +140,7 @@ public static class ExtrasGuerra
             return ForcasVistas.De(mm, r.Id).Where(f => !vivas.Contains(f.MarchaId)).Select(f => (object)new
             {
                 tipo = "avistamento", id = f.Id, hex = f.Hex, avistado = "tropas", marcha = f.Marcha, quando = f.Quando, ate = f.Ate,
-                tamanho = VisaoMapa.Aproximado(f.Tropas), rumo = f.Rumo,
+                tamanho = VisaoMapa.Aproximado(m, f.Tropas), rumo = f.Rumo,
             }).ToList();
         });
     });
@@ -190,7 +190,7 @@ public static class VisaoGuerra
             agora,
             alvo = new
             {
-                id = alvo.Id, marcha = alvo.Tipo, nome = Campo.NomeMarcha(alvo.Tipo), hex = alvo.HexEm(agora), tamanho = VisaoMapa.Aproximado(GT.Total(alvo.Tropas)),
+                id = alvo.Id, marcha = alvo.Tipo, nome = Campo.NomeMarcha(alvo.Tipo), hex = alvo.HexEm(agora), tamanho = VisaoMapa.Aproximado(m, GT.Total(alvo.Tropas)),
                 some, chegada = VisaoMapa.ParaMim(m, r, alvo) ? alvo.Chegada : (long?)null, rumo = alvo.Caminho.Count > 1 ? m.G.Direcao(alvo.HexEm(agora), alvo.Destino) : null,
                 carga = alvo.Carga.Total >= 1, forcasDesconhecidas = true,
             },

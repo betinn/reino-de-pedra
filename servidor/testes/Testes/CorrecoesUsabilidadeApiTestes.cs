@@ -52,7 +52,7 @@ public class CorrecoesUsabilidadeApiTestes
         Assert.True(Nulo(ex, "bloqueio"));
         Assert.True(Nulo(ex, "trabalho"));
         Assert.Equal(0, ex.GetProperty("cargaUsada").GetDouble());
-        Assert.Equal(120, ex.GetProperty("cargaMax").GetDouble());
+        Assert.Equal(15, ex.GetProperty("cargaMax").GetDouble());   // 3 lanceiros × 5
 
         // o mapa leva a marcha própria com carga, tropas, estado e ordem (nada disso vai para marchas alheias)
         var (_, mapa) = await c.Get("mapa");
@@ -63,7 +63,7 @@ public class CorrecoesUsabilidadeApiTestes
         Assert.False(mm.GetProperty("parado").GetBoolean());
         Assert.True(mm.GetProperty("chegada").GetInt64() > mapa.GetProperty("agora").GetInt64());
         Assert.Empty(mm.GetProperty("carga").EnumerateObject());
-        Assert.Equal(120, mm.GetProperty("cargaMax").GetDouble());
+        Assert.Equal(15, mm.GetProperty("cargaMax").GetDouble());
         Assert.Equal(0, mm.GetProperty("cargaUsada").GetDouble());
         Assert.Equal(3, mm.GetProperty("tropas").GetProperty("lanceiro").GetInt32());
         Assert.Equal("3 lanceiros", mm.GetProperty("resumo").GetString());
@@ -139,24 +139,24 @@ public class CorrecoesUsabilidadeApiTestes
             return p.GetProperty("fauna");
         }
         // bando à vista: espécie, tamanho, nível e idade 0
-        var f = await FaunaDe(new { lanceiro = 3 }, perto);
+        var f = await FaunaDe(new { lanceiro = 4 }, perto);
         Assert.Equal("javalis", f.GetProperty("animal").GetString());
         Assert.Equal(5, f.GetProperty("qtd").GetInt32());
         Assert.Equal("baixo", f.GetProperty("nivel").GetString());
-        Assert.Equal(40, f.GetProperty("forca").GetDouble());
+        Assert.Equal(50, f.GetProperty("forca").GetDouble());
         Assert.Equal(0, f.GetProperty("vistoHaMin").GetInt64());
-        Assert.Equal("ileso", f.GetProperty("veredito").GetString());   // 97,5 ≥ 80
+        Assert.Equal("ileso", f.GetProperty("veredito").GetString());   // 130 ≥ 100
         // fora da vista: o último estado conhecido, com a idade; os vereditos da regra de perdas
         f = await FaunaDe(new { milicia = 1 }, longe);
         Assert.Equal("ursos", f.GetProperty("animal").GetString());
         Assert.True(Nulo(f, "qtd"));
         Assert.Equal("alto", f.GetProperty("nivel").GetString());
-        Assert.Equal(300, f.GetProperty("forca").GetDouble());
+        Assert.Equal(180, f.GetProperty("forca").GetDouble());
         Assert.InRange(f.GetProperty("vistoHaMin").GetInt64(), 29, 31);
-        Assert.Equal("perde", f.GetProperty("veredito").GetString());            // 10 < 300: 25%, e 1 de 1 morre
-        Assert.Equal("perdeParte", (await FaunaDe(new { lanceiro = 5 }, longe)).GetProperty("veredito").GetString());        // 162 < 300: perde 25% (2 de 5)
-        Assert.Equal("venceComPerdas", (await FaunaDe(new { lanceiro = 10 }, longe)).GetProperty("veredito").GetString());   // 325 ≥ 300: perde 5% (1)
-        var ileso = await FaunaDe(new { lanceiro = 20 }, longe);                                                             // 650 ≥ 600
+        Assert.Equal("perde", f.GetProperty("veredito").GetString());            // 10 < 180: 25%, e 1 de 1 morre
+        Assert.Equal("perdeParte", (await FaunaDe(new { lanceiro = 5 }, longe)).GetProperty("veredito").GetString());        // 162 < 180: perde 25% (1 de 5)
+        Assert.Equal("venceComPerdas", (await FaunaDe(new { lanceiro = 10 }, longe)).GetProperty("veredito").GetString());   // 325 ≥ 180: perde 5% (1)
+        var ileso = await FaunaDe(new { lanceiro = 20 }, longe);                                                             // 650 ≥ 360
         Assert.Equal("ileso", ileso.GetProperty("veredito").GetString());
         Assert.Equal(0, ileso.GetProperty("baixas").GetInt32());
         // GET /tropas continua dando a força de cada unidade para o cliente calcular "mande pelo menos N"
@@ -172,6 +172,13 @@ public class CorrecoesUsabilidadeApiTestes
         using var c = s.NovoCliente();
         var reino = await c.ContaComReino("nei@exemplo.com", "Corvo Negro");
         var casteloId = reino.GetProperty("casteloId").GetInt64();
+        await s.Motor.Executar(m =>
+        {
+            var cast = m.Locais[casteloId];
+            Economia.Atualizar(m, m.Reinos.Obter(cast.ReinoId)!);
+            foreach (var k in new[] { "comida", "ferro", "couro" }) cast.Estoque.Somar(k, 1000);   // material para os três treinos
+            m.Sujar(cast);
+        });
 
         // fila vazia: começa na hora, com início e fim
         var (s1, i1) = await c.Post("exploradores/treinar", new { tipo = "pe", qtd = 1 });

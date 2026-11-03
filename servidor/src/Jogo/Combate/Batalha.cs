@@ -299,7 +299,7 @@ namespace ReinoDePedra.Jogo.Combate
             var perdasDef = Combates.Perdas(c.Defesa, perdaD);
             if (l != null && perdasDef.Count > 0) { Combates.Tirar(l.Guarnicao, perdasDef); m.Sujar(l); }
             var miliciaPessoas = c.Extra.Pop * m.P.MiliciaPorPop;
-            var miliciaMorta = modo == ModoRecuoDefesa ? 0 : Math.Floor(miliciaPessoas * perdaD + 1e-9);
+            var miliciaMorta = modo == ModoRecuoDefesa ? 0 : Math.Floor(miliciaPessoas * perdaD * m.P.MiliciaBaixas + 1e-9);   // os outros civis fogem
             if (defR != null && miliciaMorta > 0) { defR.Pop = Math.Max(0, defR.Pop - miliciaMorta); m.Sujar(defR); }
             b.PerdasAtaque = perdasAtk; b.PerdasDefesa = perdasDef; b.MiliciaMorta = miliciaMorta;
 

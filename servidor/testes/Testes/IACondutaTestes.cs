@@ -190,6 +190,7 @@ public class IACondutaTestes
         var j = MundoIA.Jogador(t, 0);
         var ia = MundoIA.Criar(t, perfil);
         Conhecimento.Conhecer(t.M, j, ia, "teste"); Conhecimento.Conhecer(t.M, ia, j, "teste");
+        j.EscudoAte = 0; ia.EscudoAte = 0;   // sem o limite do novato: o que se testa aqui é a margem da IA
         t.DarRecursos(j, 2000, "prata", "comida");
         return (t, ia, j);
     }

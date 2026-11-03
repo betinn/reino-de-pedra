@@ -30,9 +30,9 @@ public class ReinoTestes
         var r = t.NovoReino();
         Assert.Equal(5, t.M.LocaisDe(r.Id).Count());
         var c = t.M.Locais[r.CasteloId];
-        Assert.Equal(600, c.Estoque.Qtd("madeira"));
+        Assert.Equal(t.B.P.Kit["madeira"], c.Estoque.Qtd("madeira"));
         Assert.Equal(t.M.Agora + 72 * T.Hora, r.EscudoAte);
-        Assert.Equal(220, r.Pop);
+        Assert.Equal(t.B.P.PopInicial, r.Pop);   // 8 pessoas (escala do plano de pessoas no mapa)
     }
 
     [Fact]
@@ -51,14 +51,16 @@ public class ReinoTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var serraria = t.M.LocaisDe(r.Id).First(l => l.Tipo == TipoLocal.Serraria);
+        var prod = t.M.F.Producao(1);
         t.AvancarHoras(5);
         Economia.Atualizar(t.M, r);
-        Assert.Equal(150, serraria.Estoque.Qtd("madeira"), 3);
+        Assert.Equal(prod * 5, serraria.Estoque.Qtd("madeira"), 3);
         t.AvancarHoras(10);
         Economia.Atualizar(t.M, r);
-        Assert.Equal(300, serraria.Estoque.Qtd("madeira"), 3);   // 10 h × 30/h
+        var cap = prod * t.B.P.EstoqueHoras;
+        Assert.Equal(cap, serraria.Estoque.Qtd("madeira"), 3);   // 10 h × 3/h
         var c = t.M.Locais[r.CasteloId];
-        Assert.Equal(600 + 25 * 15 + 150, c.Estoque.Qtd("madeira"), 1);   // kit + castelo 15 h + excedente
+        Assert.Equal(t.B.P.Kit["madeira"] + t.M.F.ProducaoCastelo(1) * 15 + (prod * 15 - cap), c.Estoque.Qtd("madeira"), 1);   // kit + castelo 15 h + excedente
     }
 
     [Fact]
@@ -68,11 +70,12 @@ public class ReinoTestes
         var r = t.NovoReino();
         t.AvancarHoras(1);
         Economia.Atualizar(t.M, r);
-        // comida 55/h (castelo 25 + vila 30) > 2 × 25: sobra de comida, +30%
-        Assert.Equal(Economia.Logistica(220, 300, 0.05 * 1.3, 1), r.Pop, 6);
+        // comida 5,5/h (castelo 2,5 + vila 3) > 2 × 2,5: sobra de comida, +30%
+        var P = t.B.P;
+        Assert.Equal(Economia.Logistica(P.PopInicial, P.TetoCastelo, P.CrescPop * (1 + P.BonusComida), 1, P.PopSemente), r.Pop, 6);
         t.AvancarHoras(500);
         Economia.Atualizar(t.M, r);
-        Assert.InRange(r.Pop, 299, 300);
+        Assert.InRange(r.Pop, P.TetoCastelo - 1, P.TetoCastelo);
     }
 
     [Fact]

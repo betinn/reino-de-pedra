@@ -327,14 +327,14 @@ public class RegrasRevisaoTestes
         Assert.True(r.Pop > 0);
         t.AvancarHoras(200);
         Economia.Atualizar(t.M, r);
-        Assert.True(r.Pop > 50);
+        Assert.True(r.Pop > 5);   // cresce até o teto livre (castelo 15 menos as milícias)
         // a semente vale também no cálculo fechado: de 0 cresce em linha até o mínimo e depois segue a logística
         var sem = t.M.P.PopSemente;
         Assert.True(sem > 0);
         Assert.Equal(0.05 * sem * 3, Economia.Logistica(0, 300, 0.05, 3, sem), 9);
         Assert.Equal(Economia.Logistica(sem, 300, 0.05, 10), Economia.Logistica(0, 300, 0.05, 1 / 0.05 + 10, sem), 9);
         Assert.Equal(Economia.Logistica(220, 300, 0.05, 2), Economia.Logistica(220, 300, 0.05, 2, sem), 12);
-        Assert.Equal(5, Economia.Logistica(0, 5, 0.05, 100, sem), 9);   // teto livre abaixo da semente
+        Assert.Equal(2, Economia.Logistica(0, 2, 0.05, 100, sem), 9);   // teto livre abaixo da semente
     }
 
     // ---------------------------------------------------------------- reset da temporada

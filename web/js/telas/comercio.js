@@ -129,7 +129,7 @@
   }
 
   /* ---------------------------------------------------------------- Propor troca */
-  var tr = { reino: null, da: 'madeira', qDa: 500, quer: 'ouro', qQuer: 20, recado: '' };
+  var tr = { reino: null, da: 'madeira', qDa: 50, quer: 'ouro', qQuer: 2, recado: '' };
   function cargas() { var a = {}, b = {}; a[tr.da] = tr.qDa; b[tr.quer] = tr.qQuer; return { da: a, quer: b }; }
   function desenharTroca(el) {
     if (!dados.conhecidos.some(function (c) { return c.reino.id === tr.reino; })) tr.reino = dados.conhecidos.length ? dados.conhecidos[0].reino.id : null;

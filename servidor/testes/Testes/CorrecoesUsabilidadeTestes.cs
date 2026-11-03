@@ -209,7 +209,7 @@ public class CorrecoesUsabilidadeTestes
         var mp = Assert.Single(MarchasMinhas(J(VisaoMapa.Montar(t.M, r))));
         Assert.Equal("trabalhando", mp.GetProperty("estado").GetString());
         Assert.Equal("cacar", mp.GetProperty("ordem").GetString());
-        Assert.Equal(400, mp.GetProperty("cargaMax").GetDouble());
+        Assert.Equal(10 * t.B.U["arqueiro"].Carga, mp.GetProperty("cargaMax").GetDouble());
 
         Exercitos.DarOrdem(t.M, r, ex.Id, OrdemMover.Id, alvo);   // parar aqui: a caçada é interrompida
         Assert.Equal(OrdemMover.Id, ex.Ordem);
@@ -227,8 +227,8 @@ public class CorrecoesUsabilidadeTestes
         var c = Castelo(t, r);
         var j = t.M.Jazidas.Adicionar(new Jazida { Hex = HexLivre(t, c.Hex, 3), Recurso = "prata", Inicial = 2000, Restante = 2000 });
         j.DescobertaPor.Add(r.Id);
-        Guarnecer(t, r, c, "lanceiro", 10);
-        var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
+        Guarnecer(t, r, c, "lanceiro", 5);
+        var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 5 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         AvancarAte(t, ex.Chegada + 1);
         Assert.Equal(j.Id, ex.ExtraiJazidaId);
         t.AvancarHoras(2);
@@ -259,7 +259,7 @@ public class CorrecoesUsabilidadeTestes
         AvancarAte(t, ex.Chegada + 1);
         t.AvancarHoras(1);
         var ok = Assert.Single(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "caca");
-        Assert.Contains("traz 120 comida", ok.Dados["resumo"]!.GetValue<string>());
+        Assert.Contains("traz " + t.B.P.Caca["javalis"].Comida + " comida", ok.Dados["resumo"]!.GetValue<string>());
         // sem presa: o bando acabou de ser abatido
         var alvo2 = HexLivre(t, c.Hex, 3, pular: 3);
         var rg2 = Fauna.Adicionar(t.M, new RegiaoFauna { Centro = alvo2, Hex = alvo2, Raio = 1, Animal = "javalis", Nivel = "baixo", Qtd = 4 });

@@ -197,11 +197,11 @@ public class FerrariaTestes
     {
         var s = new CombateCenario();
         var m = s.M;
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 200);
-        // armas nível 3 (+24%), lendário (+25%) e outros +30%: passa do teto de +50%
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 4)), 3);
+        // armas nível 3 (+24%), lendário (+25%, até P.lendario.tropas) e outros +30%: passa do teto de +50%
         s.Atk.Forja["arqueiros:armas"] = 3;
         AjustesTeste.De(m).BonusA = 0.30;
-        var tropas = G(("arqueiro", 40));
+        var tropas = G(("arqueiro", m.P.Lendario.Tropas));
         var ex = s.Atacar(alvo, tropas);
         m.Lendarios.Adicionar(new EquipamentoLendario { DonoId = s.Atk.Id, ForjadoPor = s.Atk.Id, Tipo = Ferrarias.Ataque, Nome = "x", MarchaId = ex.Id });
         var soma = Bonus.SomaAtaque(m, ex);
@@ -210,7 +210,7 @@ public class FerrariaTestes
         var bt = s.Chegar(ex);
         var semBonus = m.F.ValorAtaque(tropas, alvo.Guarnicao, 0);
         Assert.Equal(semBonus * (1 + m.P.TetoBonus), bt.Marcos[0].A, 6);
-        var x = new ExtraDefesa { Pop = 200, BonusA = soma, BonusD = 0.9 };
+        var x = new ExtraDefesa { Pop = 3, BonusA = soma, BonusD = 0.9 };
         var res = m.F.Batalha(tropas, alvo.Guarnicao, x, null);
         Assert.Equal(semBonus * (1 + m.P.TetoBonus), res.A, 6);
         Assert.Equal(m.F.ValorDefesa(alvo.Guarnicao, tropas, x with { BonusD = 0 }) * (1 + m.P.TetoBonus), res.D, 6);
@@ -264,7 +264,7 @@ public class FerrariaTestes
         Assert.Equal(0, Lendarios.DefesaExercito(m, ex));
         ex.Tropas = G(("lanceiro", 2 * m.P.Lendario.Tropas));
         Assert.Equal(m.P.Lendario.Bonus / 2, Lendarios.Ataque(m, ex), 9);
-        ex.Tropas = G(("lanceiro", 10));
+        ex.Tropas = G(("lanceiro", m.P.Lendario.Tropas - 3));
         Assert.Equal(m.P.Lendario.Bonus, Lendarios.Ataque(m, ex), 9);
         // na guarnição: o de defesa vale para quem defende o local (guarnição, milícia e arqueiros no alto)
         var c = m.Locais[r.CasteloId];
@@ -324,10 +324,10 @@ public class FerrariaTestes
     {
         var s = new CombateCenario();
         var m = s.M;
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 5)), 100);
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 5)), 5);
         var eq = m.Lendarios.Adicionar(new EquipamentoLendario { DonoId = s.Def.Id, ForjadoPor = s.Def.Id, Tipo = Ferrarias.Defesa, Nome = "x", LocalId = alvo.Id });
         Assert.True(Bonus.SomaDefesa(m, alvo) > 0);
-        var ex = s.Atacar(alvo, G(("cavalaria", 40)));
+        var ex = s.Atacar(alvo, G(("cavalaria", 12)));
         var b = s.Chegar(ex);
         s.Terminar(b);
         Assert.Equal("vitoria", b.Resultado);

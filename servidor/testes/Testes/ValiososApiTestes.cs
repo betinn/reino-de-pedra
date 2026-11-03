@@ -20,7 +20,7 @@ public class ValiososApiTestes
         var castelo = reino.GetProperty("casteloId").GetInt64();
         var sistemas = reino.GetProperty("sistemas");
         Assert.False(sistemas.GetProperty("logistica").GetBoolean());
-        Assert.Equal(500, reino.GetProperty("veiculos").GetProperty("carroca").GetProperty("carga").GetDouble());
+        Assert.Equal(60, reino.GetProperty("veiculos").GetProperty("carroca").GetProperty("carga").GetDouble());
         var locais = reino.GetProperty("locais").EnumerateArray().ToList();
         var vila = locais.First(l => l.GetProperty("tipo").GetString() == "vila");
         Assert.True(vila.GetProperty("podeSalgadeira").GetBoolean());
@@ -38,12 +38,12 @@ public class ValiososApiTestes
         Assert.Equal(1, r.GetProperty("veiculos").GetProperty("carroca").GetProperty("livres").GetInt32());
 
         // caravana: prévia e envio
-        var corpo = new { origemLocalId = castelo, destinoLocalId = vila.GetProperty("id").GetInt64(), carga = new { madeira = 300 }, veiculos = new { carroca = 1 } };
+        var corpo = new { origemLocalId = castelo, destinoLocalId = vila.GetProperty("id").GetInt64(), carga = new { madeira = 50 }, veiculos = new { carroca = 1 } };
         var (sp, previa) = await c.Post("caravanas/previa", corpo);
         Assert.Equal(HttpStatusCode.OK, sp);
         Assert.True(previa.GetProperty("ok").GetBoolean(), previa.ToString());
         Assert.True(previa.GetProperty("poucoProtegida").GetBoolean());
-        Assert.Equal(500, previa.GetProperty("capacidade").GetDouble());
+        Assert.Equal(60, previa.GetProperty("capacidade").GetDouble());
         var (scv, cv) = await c.Post("caravanas", corpo);
         Assert.Equal(HttpStatusCode.Created, scv);
         (_, r) = await c.Get("reino");
@@ -77,7 +77,7 @@ public class ValiososApiTestes
         var (_, ext) = await c.Get("extracao");
         Assert.Equal(hexJazida, ext.GetProperty("jazidas").EnumerateArray().Single().GetProperty("hex").GetInt32());
         Assert.Contains(ext.GetProperty("ruinas").EnumerateArray(), x => x.GetProperty("hex").GetInt32() == hexRuina);
-        var (spe, pe) = await c.Post("extracao/previa", new { deLocalId = castelo, tropas = new { lanceiro = 10 }, hex = hexJazida });
+        var (spe, pe) = await c.Post("extracao/previa", new { deLocalId = castelo, tropas = new { lanceiro = 5 }, hex = hexJazida });
         Assert.Equal(HttpStatusCode.OK, spe);
         Assert.Equal("extracao", pe.GetProperty("tipo").GetString());
         Assert.Equal(3, pe.GetProperty("cenarios").GetArrayLength());

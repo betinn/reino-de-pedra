@@ -270,8 +270,8 @@ public class TemporadaTestes
     public void Ranking_conta_baixas_e_perdas_das_batalhas_tropas_e_familias()
     {
         var s = new CombateCenario();
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 100);
-        var ex = s.Atacar(alvo, G(("arqueiro", 30)));
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 4)), 3);
+        var ex = s.Atacar(alvo, G(("arqueiro", 8)));   // o atacante vence (combate de referência)
         s.Terminar(s.Chegar(ex));
         var rc = AjustesTeste.De(s.M).Fins.Single();
         var pa = GT.Total(rc.PerdasAtaque);
