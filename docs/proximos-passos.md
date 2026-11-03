@@ -2,6 +2,8 @@
 
 O que ficou pendente na primeira etapa de implementação e como testar o jogo. Cada item diz onde mexer. Decisões técnicas novas vão para `docs/decisoes/`; regra de jogo nova, para o `CLAUDE.md`; número novo, para `balanceamento/modelo.js`.
 
+> **Prioridade agora:** o refactor de [`plano-pessoas-no-mapa.md`](plano-pessoas-no-mapa.md) (pessoas com nome e ofício no mapa, números menores, visual mais realista). Ele absorve o "Plano futuro: gráficos e animações" abaixo. Os itens desta lista esperam o refactor, e os que dependem da escala ou da população abstrata serão revistos nele.
+
 ## Como testar
 
 - `scripts/rodar-local.sh` e abra `http://localhost:5080` (viewport de celular, 390 × 844).

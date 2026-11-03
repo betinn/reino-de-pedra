@@ -20,6 +20,12 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ---
 
+## Refactor em andamento: pessoas no mapa
+
+Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada soldado é uma pessoa com nome e ofício, visível no mapa, que o jogador toca para ver o que faz e atribuir trabalho ou missão (sozinha ou em grupo), com números bem menores e visual mais realista. As regras e as metas estão em [`docs/plano-pessoas-no-mapa.md`](docs/plano-pessoas-no-mapa.md). Onde aquele plano e este documento divergem (população abstrata, trabalhadores por nível, milícia por porcentagem, tetos de 50 tropas, números de escala), vale o plano até este documento ser reescrito.
+
+---
+
 ## Visão do jogo
 
 - Gênero: MMO de estratégia persistente (4X), com construção e ações por **tempo real** (timers), **sem turnos**.
