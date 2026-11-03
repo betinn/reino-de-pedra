@@ -534,6 +534,7 @@ a.guia-item { color: inherit; text-decoration: none; }
 .destino-card { padding: var(--esp-3); }
 .mini-rota-card { padding: var(--esp-2); overflow: hidden; }
 .mini-rota { width: 100%; height: 210px; border-radius: var(--raio-2); background: var(--mapa-fundo); }
+.folha .mini-rota { height: 150px; }
 .mr-nevoa { fill: var(--nevoa-2); stroke: var(--nevoa-2); }
 .mr-rio { fill: var(--rio-agua); }
 .mr-antigo { opacity: .6; }

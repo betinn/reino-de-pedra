@@ -21,7 +21,7 @@
 
   var ORDENS_BASE = {
     mover: { rotulo: 'Mover tropas para cá', verbo: 'Mover', icone: 'seta', titulo: 'Mover para cá',
-      descricao: function () { return linha('Ordem', 'Vão até lá e ficam no lugar') + linha('Postura', 'Atacar apenas quem atacar'); } },
+      descricao: function () { return linha('Ordem', 'Vão até lá e ficam no lugar') + linha('Comportamento', 'Revidar: defendem e saem atrás de quem atacar'); } },
     reforcar: { rotulo: 'Reforçar', verbo: 'Reforçar', icone: 'escudo', titulo: 'Reforçar',
       descricao: function () { return linha('Ordem', 'Entram na defesa do local ao chegar'); } }
   };
@@ -120,6 +120,33 @@
     if (!RP.somaGrupo(grupoAtual())) { folhaGrupo(); return; }
     RP.tentar(RP.post('/tropas/previa', corpo)).then(function (p) { est.previa = p; folhaConfirmar(); });
   }
+  /* minimapa do caminho (SVG): terreno conhecido, névoa, rio e os caminhos curto e seguro, com o escolhido em destaque.
+     O mundo atrás do painel continua à vista; o minimapa mostra o caminho inteiro de uma vez. */
+  RP.miniRota = function (previa, seguro, rotulo) {
+    var M = RP.mapaModelo, curta = previa.curta && previa.curta.ok ? previa.curta.caminho : null, segura = previa.segura && previa.segura.ok ? previa.segura.caminho : null;
+    var todos = [].concat(curta || [], segura || []);
+    if (!todos.length || !M) return '';
+    var cs = todos.map(H.c), ls = todos.map(H.l);
+    var c0 = Math.max(0, Math.min.apply(null, cs) - 1), c1 = Math.min(H.COLS - 1, Math.max.apply(null, cs) + 1);
+    var l0 = Math.max(0, Math.min.apply(null, ls) - 1), l1 = Math.min(H.LINS - 1, Math.max.apply(null, ls) + 1);
+    var a = H.centro(c0, l0), b = H.centro(c1, l1);
+    var vb = [a.x - H.W, a.y - H.R, b.x - a.x + 2 * H.W, b.y - a.y + 2 * H.R], out = '', c, l;
+    for (l = l0; l <= l1; l++) for (c = c0; c <= c1; c++) {
+      var h = H.idx(c, l), ce = H.centro(c, l), e = M.estado(h), t = M.terreno(h);
+      var cls = e.v === 'desconhecido' || !t ? 'mr-nevoa' : 't-' + t;
+      out += '<polygon class="hx ' + cls + (e.v === 'explorado' ? ' mr-antigo' : '') + '" points="' + H.cantos(ce.x, ce.y, H.R + 0.6) + '"/>';
+      if (t && e.v !== 'desconhecido' && M.rio(h)) out += '<circle class="mr-rio" cx="' + ce.x.toFixed(0) + '" cy="' + ce.y.toFixed(0) + '" r="' + (H.R * 0.4).toFixed(0) + '"/>';
+    }
+    function linhaCaminho(hs, cls) {
+      return '<polyline class="mr-caminho ' + cls + '" points="' + hs.map(function (x) { var q = H.centroH(x); return q.x.toFixed(0) + ',' + q.y.toFixed(0); }).join(' ') + '"/>';
+    }
+    if (segura) out += linhaCaminho(segura, 'mr-segura' + (seguro ? ' ativo' : ''));
+    if (curta) out += linhaCaminho(curta, 'mr-curta' + (seguro ? '' : ' ativo'));
+    var o = H.centroH(todos[0]), dd = H.centroH((seguro && segura ? segura : curta || segura).slice(-1)[0]);
+    out += '<g transform="translate(' + o.x.toFixed(0) + ' ' + o.y.toFixed(0) + ')"><circle class="mr-pino" r="15"/></g>';
+    out += '<g transform="translate(' + dd.x.toFixed(0) + ' ' + dd.y.toFixed(0) + ')"><circle class="mr-destino" r="14"/><circle class="mr-destino-c" r="5"/></g>';
+    return '<div class="card mini-rota-card"><svg class="mini-rota mapa-svg" viewBox="' + vb.map(function (v) { return v.toFixed(0); }).join(' ') + '" role="img" aria-label="Caminho até ' + RP.esc(rotulo || 'o destino') + '">' + out + '</svg></div>';
+  };
   function folhaConfirmar() {
     var d = defOrdem(est.ordem), p = est.previa, h = est.hex, g = grupoAtual();
     var mesma = p.segura.ok && p.curta.ok && p.segura.hexes === p.curta.hexes && p.segura.min === p.curta.min;
@@ -132,7 +159,7 @@
       linha('Chegada', esc && esc.ok ? '<b>em ' + RP.fmtDuracao(esc.min * 60) + '</b>' : '—') + '</div>' +
       '<div style="margin-top:var(--esp-2)">' + RP.cargaHTML(ex ? ex.carga : {}, p.carga) + '</div>' +
       RP.faunaVereditoHTML(p, h, g) +
-      (p.curta.ok ? '<div class="secao-titulo">Caminho</div><div class="pilha">' + opcaoCaminho('curta', p.curta) + (mesma ? '' : opcaoCaminho('segura', p.segura)) + '</div>' +
+      (p.curta.ok ? '<div class="secao-titulo">Caminho</div>' + RP.miniRota(p, est.seguro, local ? local.nome : 'o destino') + '<div class="pilha">' + opcaoCaminho('curta', p.curta) + (mesma ? '' : opcaoCaminho('segura', p.segura)) + '</div>' +
         (mesma ? '<p class="fraco" style="font-size:var(--fs-2)">A rota curta já é a mais segura que se conhece.</p>' : '')
         : '<p class="txt-alerta">Não há caminho até o destino.</p>');
     RP.abrirFolha({

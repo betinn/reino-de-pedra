@@ -57,6 +57,11 @@ html.jogo .tela-extracao .conteudo-tela, html.jogo .tela-envio .conteudo-tela, h
 html.jogo .tela-bandeiras .conteudo-tela, html.jogo .tela-bandeira-nova .conteudo-tela, html.jogo .tela-exilio .conteudo-tela, html.jogo .tela-regencia .conteudo-tela,
 html.jogo .tela-construcao .conteudo-tela { padding-bottom: var(--esp-4); }
 
+/* tela sem o que mostrar (aberta sem alvo, lista vazia): explica e oferece uma ação */
+.vazio { display: grid; justify-items: center; gap: var(--esp-2); text-align: center; padding: var(--esp-5) var(--esp-3); }
+.vazio > .ico, .vazio > svg { width: 32px; height: 32px; opacity: .7; }
+.vazio p { margin: 0; max-width: 32ch; }
+
 /* barra do painel recolhido: só o título, para voltar */
 .painel-barra {
   position: fixed; left: 50%; bottom: calc(var(--nav-altura) + env(safe-area-inset-bottom) + 8px); z-index: var(--z-folha);

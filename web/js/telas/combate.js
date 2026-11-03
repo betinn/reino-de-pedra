@@ -302,6 +302,14 @@
     });
   }
 
+  /* tela aberta sem alvo (link antigo, voltar do navegador): explica e leva ao mapa, sem pedir nada ao servidor */
+  function semAlvo(el, titulo, texto) {
+    var cont = RP.$('.env-conteudo', el), rod = RP.$('.rodape-acao', el);
+    if (rod) rod.hidden = true;
+    if (cont) cont.innerHTML = '<div class="vazio">' + RP.icone('alvo') + '<b>' + titulo + '</b><p class="fraco">' + texto + '</p>' +
+      '<a class="btn btn-primario" href="#/mapa">' + RP.icone('mapa') + 'Ir ao mapa</a></div>';
+  }
+  RP.semAlvoEnvio = semAlvo;
   function desenharEnvio(el) {
     var cont = RP.$('.env-conteudo', el); if (!cont || !env) return;
     var p = env.previa;
@@ -428,7 +436,9 @@
       document.addEventListener('rp:tropas', function () { if (!el.hidden && env) desenharEnvio(el); });
     },
     entrar: function (el, q) {
-      var hex = +q.get('alvo');
+      var hex = q.get('alvo') ? +q.get('alvo') : NaN;
+      if (!(hex >= 0)) { env = null; semAlvo(el, 'Escolha o alvo no mapa', 'Toque num local de outro reino no mapa e escolha Atacar. O envio abre aqui com o alvo escolhido.'); return; }
+      var rod = RP.$('.rodape-acao', el); if (rod) rod.hidden = false;
       env = { hex: hex, de: q.get('de') ? +q.get('de') : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null, modelo: null };
       desenharEnvio(el);
       var repetir = q.get('repetir') === '1';
@@ -577,13 +587,34 @@
       corpo: b.reforcos.length ? '<div class="pilha">' + b.reforcos.map(function (r) {
         return '<button type="button" class="rota-opcao ' + (r.aTempo ? 'segura' : 'curta') + '" data-bat-reforco="' + r.localId + '"><i class="rota-cor" aria-hidden="true"></i><span><b>' + RP.esc(r.nome) + '</b><small>' +
           RP.esc(RP.partesGrupo(r.tropas)) + (r.aTempo ? '' : ' · chegam depois do fim') + '</small></span><span class="rota-tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(r.min * 60) + '</span></button>';
-      }).join('') + '</div><p class="fraco env-nota">Todas as tropas do local vão. Para escolher quantas, envie pelo mapa.</p>' : '<p class="fraco">Nenhum local seu com tropas que cheguem até lá.</p>'
+      }).join('') + '</div><p class="fraco env-nota">Escolha o local; depois, quantas tropas vão.</p>' : '<p class="fraco">Nenhum local seu com tropas que cheguem até lá.</p>'
+    });
+  }
+  /* tropas do local que podem ir (no ataque, a milícia só defende e fica) */
+  function reforcoDisp(r) {
+    var d = {};
+    Object.keys(r.tropas).forEach(function (k) { var u = RP.unidade(k); if (bat.ordemReforco !== 'atacar' || !u || u.so !== 'defesa') d[k] = r.tropas[k]; });
+    return d;
+  }
+  var reforco = null;   /* { localId, grupo } */
+  function folhaReforcoGrupo(localId) {
+    var b = bat, r = b && b.reforcos.filter(function (x) { return x.localId === localId; })[0]; if (!r) return;
+    if (!reforco || reforco.localId !== localId) reforco = { localId: localId, grupo: reforcoDisp(r) };
+    var n = RP.somaGrupo(reforco.grupo);
+    RP.abrirFolha({
+      titulo: 'Reforços de ' + RP.esc(r.nome),
+      subtitulo: '<span class="fraco">' + (r.aTempo ? 'Chegam em ' + RP.fmtDuracao(r.min * 60) + ', antes do fim.' : 'Chegam depois do fim da batalha.') + '</span>',
+      corpo: '<div class="card pilha" data-reforco-grupo>' + RP.grupoTropas.linhas(reforco.grupo, reforcoDisp(r)) + '</div>',
+      acoes: '<button type="button" class="btn btn-p btn-primario' + (n ? '' : ' btn-inativo') + '" data-reforco-enviar>' + RP.icone('escudo') + (n ? 'Enviar ' + n + (n === 1 ? ' tropa' : ' tropas') : 'Escolha as tropas') + '</button>' +
+        '<button type="button" class="btn btn-p btn-fantasma" data-bat-reforcos-voltar>' + RP.icone('voltar') + 'Outro local</button>'
     });
   }
   function enviarReforco(localId) {
     var b = bat, r = b.reforcos.filter(function (x) { return x.localId === localId; })[0]; if (!r) return;
-    var tropas = {};
-    Object.keys(r.tropas).forEach(function (k) { var u = RP.unidade(k); if (b.ordemReforco !== 'atacar' || !u || u.so !== 'defesa') tropas[k] = r.tropas[k]; });
+    var tropas = {}, g = reforco && reforco.localId === localId ? reforco.grupo : reforcoDisp(r);
+    Object.keys(g).forEach(function (k) { if (g[k] > 0) tropas[k] = g[k]; });
+    if (!RP.somaGrupo(tropas)) return;
+    reforco = null;
     var p = b.ordemReforco === 'atacar' ? RP.post('/ataques', { deLocalId: localId, tropas: tropas, destinoHex: b.hex })
       : RP.post('/tropas/enviar', { deLocalId: localId, tropas: tropas, destinoHex: b.hex, ordem: b.ordemReforco });
     RP.tentar(p).then(function (ex) {
@@ -614,7 +645,17 @@
       });
       document.addEventListener('click', function (e) {
         var b = e.target.closest('[data-bat-reforco]');
-        if (b) enviarReforco(+b.getAttribute('data-bat-reforco'));
+        if (b) { reforco = null; folhaReforcoGrupo(+b.getAttribute('data-bat-reforco')); return; }
+        if (!reforco || !bat) return;
+        var r = bat.reforcos.filter(function (x) { return x.localId === reforco.localId; })[0];
+        if (e.target.closest('[data-reforco-grupo]') && r && RP.grupoTropas.clique(e, reforco.grupo, reforcoDisp(r))) {
+          var n = RP.somaGrupo(reforco.grupo), bt = RP.$('[data-reforco-enviar]');
+          RP.$('[data-reforco-grupo]').innerHTML = RP.grupoTropas.linhas(reforco.grupo, reforcoDisp(r));
+          if (bt) { bt.classList.toggle('btn-inativo', !n); bt.innerHTML = RP.icone('escudo') + (n ? 'Enviar ' + n + (n === 1 ? ' tropa' : ' tropas') : 'Escolha as tropas'); }
+          return;
+        }
+        if (e.target.closest('[data-reforco-enviar]')) enviarReforco(reforco.localId);
+        else if (e.target.closest('[data-bat-reforcos-voltar]')) { reforco = null; folhaReforcos(); }
       });
       RP.ouvir('batalha', function (d) { if (!el.hidden && bat && d && d.id === bat.id) carregarBatalha(el, bat.id); });
     },

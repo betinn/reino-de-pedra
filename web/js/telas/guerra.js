@@ -296,6 +296,15 @@
       document.addEventListener('rp:tropas', function () { if (!el.hidden && it) desenharInterceptar(el); });
     },
     entrar: function (el, q) {
+      if (!(+q.get('marcha') > 0)) {
+        it = null;
+        var cont = RP.$('.it-conteudo', el), rod = RP.$('.rodape-acao', el);
+        if (rod) rod.hidden = true;
+        if (cont) cont.innerHTML = '<div class="vazio">' + RP.icone('alvo') + '<b>Escolha as forças no mapa</b><p class="fraco">Toque numa marcha de outro reino que esteja à vista e escolha Interceptar.</p>' +
+          '<a class="btn btn-primario" href="#/mapa">' + RP.icone('mapa') + 'Ir ao mapa</a></div>';
+        return;
+      }
+      RP.$('.rodape-acao', el).hidden = false;
       it = { marcha: +q.get('marcha'), de: null, grupo: {}, previa: null, erro: null };
       desenharInterceptar(el);
       RP.carregarTropas().then(function () {

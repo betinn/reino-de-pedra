@@ -215,8 +215,11 @@
       corpo = x ? x.html(r) : '';
     }
     el.innerHTML = '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/reino" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Construção</h1></header>' +
-      '<div class="abas" role="tablist" style="margin:var(--esp-2) var(--esp-3) 0">' + abas.map(function (a) { return '<a role="tab" class="aba" href="#/construcao?aba=' + a[0] + '" aria-selected="' + (a[0] === aba) + '">' + a[1] + '</a>'; }).join('') + '</div>' +
+      '<div class="abas abas-rolagem" role="tablist" style="margin:var(--esp-2) var(--esp-3) 0">' + abas.map(function (a) { return '<a role="tab" class="aba" href="#/construcao?aba=' + a[0] + '" aria-selected="' + (a[0] === aba) + '">' + a[1] + '</a>'; }).join('') + '</div>' +
       '<div class="conteudo-tela pilha">' + (((r.filas || {}).obras || []).length ? '<div class="card pilha" style="gap:var(--esp-2)">' + filaHTML('obras', 'Obras', 'martelo') + '</div>' : '') + corpo + '</div>';
+    /* a aba escolhida fica à vista (no celular, "Ferraria" e as outras extras passam da largura) */
+    var faixa = RP.$('.abas', el), sel = faixa && RP.$('[aria-selected="true"]', faixa);
+    if (sel) faixa.scrollLeft = Math.max(0, sel.offsetLeft - faixa.offsetLeft - (faixa.clientWidth - sel.offsetWidth) / 2);
   }
 
   RP.registrarTela('construcao', {
