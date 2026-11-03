@@ -31,8 +31,20 @@
     this.vida = null; this.chaveVida = '';
     if (this.opt.interativa) this.ligarGestos();
     else if (this.opt.tocavel) this.ligarToqueSimples();
+    observarTamanho(this);
   }
   var C = Cena.prototype;
+
+  /* o canvas muda de tamanho sem 'resize' da janela (a coluna do painel abre com transição): mede de novo
+     sempre que o elemento muda, para que o toque e o desenho usem a mesma largura e altura */
+  function observarTamanho(cena) {
+    if (!window.ResizeObserver) return;
+    new ResizeObserver(function () {
+      var w = cena.w, h = cena.h;
+      cena.redimensionar();
+      if ((w !== cena.w || h !== cena.h) && cena.rodando) cena.quadro(performance.now());
+    }).observe(cena.cv);
+  }
 
   /* ---------------------------------------------------------------- câmera */
   C.redimensionar = function () {
@@ -125,13 +137,35 @@
       fim: function () { self.ultimaMudanca = performance.now(); }
     });
   };
+  /* O toque vale para o hexágono sob o ponteiro. A caixa de um objeto (castelo alto, marcha) passa da borda do
+     hexágono dele; ela só ganha quando o objeto está no hexágono tocado, ou quando o toque cai no próprio objeto
+     (marcha, que fica entre hexágonos) ou em hexágono sem nada. Ao escolher destino (opt.escolhendoHex), nunca
+     troca o hexágono tocado pelo vizinho. */
   C.tocar = function (x, y) {
-    for (var i = this.alvos.length - 1; i >= 0; i--) {
-      var a = this.alvos[i];
-      if (x >= a.x0 && x <= a.x1 && y >= a.y0 && y <= a.y1) { if (this.opt.aoTocar) this.opt.aoTocar({ ent: a.ent, obj: a.obj, hex: a.hex }); return; }
+    if (!this.opt.aoTocar) return;
+    var w0 = this.w, h0 = this.h;
+    this.redimensionar();
+    if (w0 !== this.w || h0 !== this.h) this.quadro(performance.now()); /* refaz os alvos na medida nova */
+    var w = this.mundo(x, y), h = H.pixelParaHex(w.x, w.y), a = this.alvoEm(x, y, h);
+    if (a) { this.opt.aoTocar({ ent: a.ent, obj: a.obj, hex: a.hex }); return; }
+    if (h >= 0) this.opt.aoTocar({ hex: h });
+  };
+  C.alvoEm = function (x, y, h) {
+    var dentro = [], i, a;
+    for (i = this.alvos.length - 1; i >= 0; i--) {
+      a = this.alvos[i];
+      if (x >= a.x0 && x <= a.x1 && y >= a.y0 && y <= a.y1) dentro.push(a);
     }
-    var w = this.mundo(x, y), h = H.pixelParaHex(w.x, w.y);
-    if (this.opt.aoTocar && h >= 0) this.opt.aoTocar({ hex: h });
+    if (!dentro.length) return null;
+    for (i = 0; i < dentro.length; i++) if (dentro[i].hex === h) return dentro[i];
+    for (i = 0; i < dentro.length; i++) if (dentro[i].ent && dentro[i].ent[0] === 'marcha' && dentro[i].perto(x, y)) return dentro[i];
+    var escolhendo = this.opt.escolhendoHex && this.opt.escolhendoHex();
+    if (escolhendo || this.temAlvoNoHex(h)) return null;
+    return dentro[0];
+  };
+  C.temAlvoNoHex = function (h) {
+    for (var i = 0; i < this.alvos.length; i++) if (this.alvos[i].hex === h) return true;
+    return false;
   };
 
   /* ---------------------------------------------------------------- laço (≤ 30 quadros/s) */
@@ -547,7 +581,7 @@
       if (M.sumiu(m, ag)) return;
       if (!M.marchaVisivel(m, pos) || !naTela(pos.x, pos.y)) return;
       self.desenharMarcha(c, V, m, pos, t, ag, itens, rot);
-      self.alvos.push(alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.id], m));
+      var am = alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.id], m); am.hex = pos.hex; self.alvos.push(am);
     });
 
     itens.sort(function (a, b) { return a.y - b.y; });
@@ -653,7 +687,9 @@
 
   function alvoTela(cena, x, y, w, h, ent, o) {
     var p = cena.tela(x, y), s = cena.cam.s;
-    return { x0: p.x - (w / 2) * s, x1: p.x + (w / 2) * s, y0: p.y - h * s, y1: p.y + 10 * s, ent: ent, obj: o, hex: o && o.hex != null ? o.hex : (ent && ent[0] === 'hex' ? ent[1] : null) };
+    return { x0: p.x - (w / 2) * s, x1: p.x + (w / 2) * s, y0: p.y - h * s, y1: p.y + 10 * s, ent: ent, obj: o, hex: o && o.hex != null ? o.hex : (ent && ent[0] === 'hex' ? ent[1] : null),
+      /* perto do pé do objeto (metade da caixa): a marcha fica entre hexágonos */
+      perto: function (tx, ty) { return Math.abs(tx - p.x) <= (w / 4) * s && ty >= p.y - (h / 2) * s && ty <= p.y + 10 * s; } };
   }
 
   Cena.SMIN = SMIN; Cena.SMAX = SMAX;

@@ -76,6 +76,13 @@
     this.cache = document.createElement('canvas'); this.cctx = this.cache.getContext('2d');
     this.selecao = -1; this.fundar = null; this.versaoSvg = -1;
     this.ligarGestos();
+    var self = this;
+    /* a coluna do painel abre com transição, sem 'resize' da janela no fim: mede de novo quando o elemento muda */
+    if (window.ResizeObserver) new ResizeObserver(function () {
+      var w = self.w, h = self.h;
+      self.redimensionar();
+      if (w !== self.w || h !== self.h) self.pedirQuadro();
+    }).observe(el);
   }
   /* uma escuta do relógio para todos os mapas ativos (sem vazamento por instância) */
   var ativos = [];
@@ -152,6 +159,7 @@
   };
   TP.tocar = function (x, y, cx, cy) {
     var d = M.dados; if (!d) return;
+    this.redimensionar();
     var alvo = document.elementFromPoint(cx, cy), ent = alvo && alvo.closest && alvo.closest('[data-k]');
     var w = this.mundo(x, y), h = H.pixelParaHex(w.x, w.y);
     if (ent) {

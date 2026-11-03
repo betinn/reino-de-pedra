@@ -308,7 +308,10 @@
   });
 
   function aoTocar(alvo) {
-    if (alvoFundar) { var hh = alvo.hex != null ? alvo.hex : (alvo.obj && alvo.obj.hex); if (hh != null && hh >= 0) folhaFundar(hh); return; }
+    var hh = alvo.hex != null ? alvo.hex : (alvo.obj && alvo.obj.hex);
+    if (alvoFundar) { if (hh != null && hh >= 0) folhaFundar(hh); return; }
+    /* escolhendo destino de tropas: o toque escolhe o hexágono (a folha dele traz as ordens), nunca abre o painel do local */
+    if (RP.envio && RP.envio.ativo()) { if (hh != null && hh >= 0) folhaHex(hh); return; }
     if (alvo.obj) folhaObjeto(alvo.obj);
     else if (alvo.hex != null && alvo.hex >= 0) folhaHex(alvo.hex);
   }
@@ -442,6 +445,7 @@
     cena = new RP.Cena(RP.$('.cena-cv', el), {
       interativa: true, camadas: MAPA.camadas,
       selecao: function () { return selecao; },
+      escolhendoHex: function () { return !!alvoFundar || !!(RP.envio && RP.envio.ativo()); },
       aoTocar: aoTocar, aoMover: pedirMinimapa,
       aoAfastarDemais: function () {
         definirModo('tatico', { s: 0.75 });
