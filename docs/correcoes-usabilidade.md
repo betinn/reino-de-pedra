@@ -28,7 +28,7 @@ Feito nesta etapa, para conferir jogando (`REINO_ACELERACAO=60 scripts/rodar-loc
 | 16 | **Feito.** O cliente anda na mesma aceleração do servidor (`aceleracao` em `GET /mundo`); sessão de ritmo a 6× registrada abaixo. Números do balanceamento não mudaram. | `api.js` (`RP.agora`), `ModuloReino.cs` |
 | 17 | **Feito.** Recrutamento (e exploradores, mensageiros e carroças) entrega uma unidade por vez; "2 de 5 prontos · todos em …" no item da fila. | `Fila.cs` (`ITipoItemPorUnidade`), `reino.js`, `CLAUDE.md` |
 
-Pendente: a revisão com alguém de fora (regra 6) a cada tela refeita; as telas de ação longas (caça, exploradores, caravana, ferraria, social) ainda têm o desenho antigo dentro do painel novo e merecem a mesma dieta de informação.
+Telas longas: exploradores, caça, caravana, ferraria e bandeiras passaram pela dieta de informação (1 ação principal, regras em "Como funciona", seções secundárias recolhidas, listas de uma linha com o detalhe só do escolhido). Pendente: a revisão com alguém de fora (regra 6) a cada tela refeita, e a mesma dieta em extração, comércio, alianças, mensagens, relíquias e temporada (ver [`proximos-passos.md`](proximos-passos.md), Cliente: acabamentos).
 
 ## Teste manual do toque na Vista (item 15)
 

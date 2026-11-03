@@ -160,6 +160,7 @@ Valem para toda tela nova ou refeita (ver [decisão 0023](decisoes/0023-concha-j
 6. **Regra de teste:** quem nunca viu o jogo olha a tela por 5 segundos e diz o que ela mostra e qual é a próxima coisa a fazer.
 7. **Linguagem do jogador.** Termo interno (teto, guarnição, postura, requisição) não aparece na tela: "moradores", "tropas no local", "comportamento", "o material vem sozinho". Chaves da API não mudam.
 8. **Tempo sempre como duração** ("pronto em 5 min", `RP.fmtEm`) e nunca `NaN` ou `Invalid Date`: as formatações aceitam valor vazio.
+9. **Informação em camadas.** Regras e notas que não são a decisão de agora ficam em "Como funciona" (`RP.comoFunciona`); seções secundárias, recolhidas (`RP.secaoRecolhida`). Listas de escolha usam uma linha por item (`escolhas-linhas`) e o detalhe só do escolhido.
 
 ### Convenções
 
@@ -167,9 +168,10 @@ Valem para toda tela nova ou refeita (ver [decisão 0023](decisoes/0023-concha-j
 - Base: `icones.js`, `brasao.js`, `hex.js`, `api.js` (`RP.get/post/put/del`, `RP.ouvir` para SSE), `nucleo.js` (concha: painel, folha, confirmação, avisos, navegação; timers, barra de recursos, produção, carga, rotas, estado `RP.reino`).
 - Concha (`web/css/concha.css`): a tela `mapa` é a tela de fundo (`fundo: true`), montada em `#mundo` e nunca escondida enquanto há reino. As outras telas do jogo são montadas em `#telas`, o painel (baixo no celular, coluna à direita no computador; `RP.painel`). A folha de seleção (`RP.abrirFolha`) fica por cima do painel, sem véu, com até 3 ações. Telas públicas (`publica: true`) ocupam a tela toda.
 - Cada tela num arquivo de `web/js/telas/`, registrada com `RP.registrarTela(nome, { montar, entrar, sair, nav, secao, fundo, publica })`. Rotas em hash: `#/nome?param=1`. `nav: true` marca um destino de `RP.NAV`; `secao` liga uma sub-tela ao seu destino.
-- Peças comuns: `RP.custoHTML` (custo com "faltam X · pronto em Y"), `RP.cargaHTML` (carga com barra), `RP.popSomaHTML` (população + tropas = moradores), `RP.producaoHTML` / `RP.contaRecursoHTML` (produção e "quando terei X"), `RP.faunaVereditoHTML` (força do bando × força do grupo), `RP.textoFilaItem` (aviso ao enfileirar).
+- Peças comuns: `RP.custoHTML` (custo com "faltam X · pronto em Y"; o que nada produz diz "extraia ou troque"), `RP.itemFilaServidor` (item de fila; com várias unidades, "2 de 5 prontos"), `RP.miniRota` (minimapa do caminho), `RP.cargaHTML` (carga com barra), `RP.popSomaHTML` (população + tropas = moradores), `RP.producaoHTML` / `RP.contaRecursoHTML` (produção e "quando terei X"), `RP.faunaVereditoHTML` (força do bando × força do grupo), `RP.textoFilaItem` (aviso ao enfileirar).
 - Siga `prototipo/design-system.md` e reaproveite CSS, ícones e arte do protótipo. Estilos novos em `web/css/jogo.css` (ou arquivo próprio do sistema), sempre com os tokens.
-- Tempo no cliente: `RP.agora()` (relógio do servidor). Estoques andam sozinhos entre atualizações (`RP.qtdRecurso`).
+- Tempo no cliente: `RP.agora()` (relógio do servidor, na mesma aceleração dele: `aceleracao` de `GET /mundo`, só > 1 no teste local). Estoques andam sozinhos entre atualizações (`RP.qtdRecurso`).
+- Toque no mundo: a Vista e o Mapa medem o canvas por `ResizeObserver` (a coluna do painel muda a largura com transição) e de novo a cada toque. Na Vista, o objeto só ganha o toque no hexágono dele; escolhendo destino (`escolhendoHex`), vale sempre o hexágono do chão.
 - Mundo: `web/js/vista/` (modelo do `/mapa`, arte, Vista 2.5D, Mapa tático). Objetos novos no mapa ganham desenho registrando `RP.mapa.tiposObjeto[tipo]` (e `RP.mapa.tiposMarcha`, `RP.mapa.perigoHex`, `extrasFolhaHex`...) no arquivo do próprio sistema; ver [decisão 0017](decisoes/0017-vista-e-mapa-no-cliente.md). A inclinação da câmera é do jogador (`RP.arte.definirK`, `Cena.inclinar`).
 
 ## Testes

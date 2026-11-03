@@ -9,21 +9,21 @@ O que ficou pendente na primeira etapa de implementação e como testar o jogo. 
 - Temporada curta, para ver o fim e o reset: `REINO_TEMPORADA_MIN=<minutos>`.
 - Sem reinos de IA: `REINO_IA=0`. Mapa fixo: `REINO_SEMENTE=42`.
 - Dois jogadores: duas janelas anônimas com contas diferentes (o mesmo navegador compartilha o cookie).
-- Testes automáticos: `cd servidor && dotnet test` (286 testes, inclusive o de carga com 30 reinos).
+- Testes automáticos: `cd servidor && dotnet test` (304 testes, inclusive o de carga com 30 reinos). `CombateApiTestes.Previa_envio_batalha_anonima_recuo_relatorio_e_defesas_pela_api` falhou uma vez em três rodadas da suíte inteira e passa sozinho: investigar (provável dependência do mapa sorteado ou da IA no cenário).
+- Tempo acelerado: o cliente anda junto com o servidor (`aceleracao` em `GET /mundo`). Para julgar o ritmo, prefira 6× a 60× (ver a sessão de ritmo em [`correcoes-usabilidade.md`](correcoes-usabilidade.md)).
 - Saúde do servidor: `GET /api/v1/saude` (eventos na agenda, conexões, memória).
 
 ## Regras ainda incompletas
 
-1. **IA dos reinos** (`servidor/src/Jogo/IA/`, decisão 0021). A IA ainda não:
+1. **IA dos reinos** (`servidor/src/Jogo/IA/`, decisão 0021). Já cura feridos (também na regência) e decide o destino de exploradores capturados (`Governo.Curar`, `Governo.Prisioneiros`). A IA ainda não:
    - pesquisa eras nem usa a ferraria (armas, armaduras, lendário);
-   - cura feridos (ficam para morrer em 24 h);
    - forma alianças nem responde a convites (eles expiram);
-   - decide o destino de exploradores capturados nem paga resgates (são soltos no prazo);
+   - paga resgates (o explorador dela é solto no prazo);
    - propõe trocas por conta própria (só responde);
    - na regência, recua de batalhas só no início da sessão, não no meio.
 2. **Batedor de elite espionando exércitos em campo.** O `CLAUDE.md` diz que o batedor "espiona exércitos e reinos inimigos"; hoje só espiona locais (decisão 0015). Falta a ordem de espionar uma marcha visível, com relatório de tropas, carga, relíquia e equipamento lendário.
-3. **Equipamento lendário perdido sem batalha.** Se o exército que o leva some sem combate (por exemplo, morto pela fauna), o equipamento se perde. Decidir o destino (fica no hexágono, volta à ferraria) e implementar (`servidor/src/Jogo/Forja/`).
-4. **Atacar um local conhecido que sumiu** é recusado no envio, e a recusa revela que algo mudou ali. Trocar por descoberta na chegada (as tropas encontram ruína ou terra livre), como o escudo (`servidor/src/Jogo/Combate/Ataque.cs`).
+3. ~~Equipamento lendário perdido sem batalha.~~ **Feito:** volta à guarnição do castelo do dono (regra no `CLAUDE.md`; `Lendarios.Recolher`). Só se perde quando o dono não tem castelo.
+4. ~~Atacar um local conhecido que sumiu.~~ **Feito:** fora da vista, o ataque é planejado contra a foto da névoa (local fantasma, `Ataques.Alvo`) e as tropas descobrem na chegada ("O alvo não existe mais"). Ainda vale o local real quando o mesmo local mudou de dono ou virou ruína: a prévia mostra os tipos de ataque do estado atual, o que pode revelar a mudança; avaliar planejar sempre pela foto.
 5. **Ranking** mostra nome e brasão de todos os reinos, inclusive os que o jogador ainda não conhece (como no protótipo). Confirmar se é a regra desejada; se não, mostrar "Reino desconhecido" para quem não é conhecido.
 6. **Avistamento de ataque** usa a visão do defensor no instante em que o atacante parte. Considerar avistar quando a marcha entra na visão (evento no instante da entrada, sem tique).
 
@@ -40,12 +40,14 @@ As animações atuais (pessoas trabalhando, marchas, fumaça, névoa à deriva) 
 
 ## Cliente: acabamentos
 
-1. Abrir `#/envio` ou `#/interceptar` sem alvo gera um 400/404 no console: a tela deve explicar e oferecer escolher o alvo no mapa.
-2. A aba "Ferraria" da Construção fica fora da tela em celular: rolar a aba selecionada para a vista (`web/js/telas/reino.js`).
-3. Reforçar pela folha da batalha manda todas as tropas do local: permitir escolher quantidades.
-4. A confirmação do envio não tem o minimapa do caminho que o protótipo mostra.
+1. ~~`#/envio` ou `#/interceptar` sem alvo.~~ **Feito:** a tela explica e leva ao mapa, sem pedir prévia.
+2. ~~Aba "Ferraria" fora da tela.~~ **Feito:** a aba escolhida rola para a vista.
+3. ~~Reforçar manda todas as tropas.~~ **Feito:** escolher o local e depois quantas (testado com batalha simulada no navegador; falta uma batalha de verdade).
+4. ~~Minimapa do caminho na confirmação.~~ **Feito:** `RP.miniRota` na confirmação do envio. Caça, extração e caravana ainda não o usam.
 5. A pinça (zoom com dois dedos) no mapa não foi testada em aparelho real.
 6. Rodar uma auditoria de acessibilidade (WCAG 2.1 AA) nas telas novas, como foi feito no protótipo.
+7. Telas longas: exploradores, caça, caravana, ferraria e bandeiras passaram pela dieta de informação (camadas com `RP.comoFunciona` e `RP.secaoRecolhida`). Faltam extração, comércio, alianças, mensagens, relíquias e temporada; e a revisão com alguém de fora (regra 6) em todas.
+8. A tela da ferraria abre pelo endereço mesmo antes do gatilho (primeira ferraria): mostrar só "Fundar ferraria" até lá.
 
 ## Operação e desempenho
 
