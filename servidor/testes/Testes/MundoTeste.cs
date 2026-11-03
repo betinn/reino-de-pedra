@@ -8,6 +8,8 @@ namespace ReinoDePedra.Testes;
 /// <summary>
 /// Mundo de teste: relógio falso, semente fixa, sistemas iniciados. Avance o tempo com <see cref="Avancar"/>.
 /// Sem fauna por padrão (ataques de fauna são sorteios); <c>fauna: true</c> mantém a fauna gerada com o mundo.
+/// Reinos novos nascem sem os primeiros passos (<see cref="InicioP.Vazio"/>: nível 1, sem tropas nem exploradores), para os
+/// cenários partirem de um estado conhecido; <c>inicioPronto: true</c> usa o início do balanceamento.
 /// </summary>
 public sealed class MundoTeste
 {
@@ -16,9 +18,9 @@ public sealed class MundoTeste
     public Mundo M { get; }
     public Balanceamento B => M.B;
 
-    public MundoTeste(ulong semente = 7, bool fauna = false)
+    public MundoTeste(ulong semente = 7, bool fauna = false, bool inicioPronto = false)
     {
-        M = new Mundo(Balanceamento.Padrao, Relogio);
+        M = new Mundo(Balanceamento.Padrao, Relogio) { InicioReino = inicioPronto ? null : InicioP.Vazio };
         M.CriarNovo(semente);
         Sistemas.IniciarTodos(M);
         if (!fauna) ReinoDePedra.Jogo.Exploracao.Fauna.Limpar(M);

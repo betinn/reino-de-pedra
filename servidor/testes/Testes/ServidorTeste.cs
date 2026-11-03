@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using ReinoDePedra.Api;
 using ReinoDePedra.Jogo;
+using ReinoDePedra.Jogo.Config;
 using ReinoDePedra.Jogo.Nucleo;
 
 namespace ReinoDePedra.Testes;
@@ -22,8 +23,8 @@ public sealed class ServidorTeste : IAsyncDisposable
 
     private ServidorTeste(WebApplication app, string dir, string b, RelogioFalso r) { App = app; _dir = dir; Base = b; Relogio = r; }
 
-    /// <summary>Sobe o servidor. Sem fauna por padrão (ataques de fauna são sorteios).</summary>
-    public static async Task<ServidorTeste> Iniciar(bool fauna = false, int conexoesPorIp = 0)
+    /// <summary>Sobe o servidor. Sem fauna por padrão (ataques de fauna são sorteios); reinos novos sem os primeiros passos, salvo <paramref name="inicioPronto"/>.</summary>
+    public static async Task<ServidorTeste> Iniciar(bool fauna = false, int conexoesPorIp = 0, bool inicioPronto = false)
     {
         var dir = Path.Combine(Path.GetTempPath(), "rp-srv-" + Guid.NewGuid().ToString("N"));
         var relogio = new RelogioFalso(MundoTeste.Inicio);
@@ -31,6 +32,7 @@ public sealed class ServidorTeste : IAsyncDisposable
         var app = Servidor.Construir([], cfg, relogio);
         await app.StartAsync();
         if (!fauna) await app.Services.GetRequiredService<Motor>().Executar(m => ReinoDePedra.Jogo.Exploracao.Fauna.Limpar(m));
+        if (!inicioPronto) await app.Services.GetRequiredService<Motor>().Executar(m => m.InicioReino = InicioP.Vazio);
         var end = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         return new ServidorTeste(app, dir, end, relogio);
     }

@@ -63,6 +63,7 @@ O que ficou lento ou rápido demais (sem mudar números; cada um é candidato pa
 - **Lento:** a produção de ferro (55/h com o kit) contra o custo do lanceiro (30) e da obra do castelo nível 3 (40 de ferro): o segundo lote de tropas só sai horas depois.
 - **Ordem importa:** a meta M1 (kit recruta 10 lanceiros) só vale se o jogador recrutar antes de melhorar o castelo; melhorando primeiro, faltam 19 de ferro. A tela de recrutamento já diz "faltam X · pronto em Y", então não é um beco sem saída.
 - **Tempo de exploração** bom; a volta automática do explorador ao castelo é tempo morto que poderia virar "explorar outra área" (ideia para depois, não regra).
+- **Depois (decisão [0025](decisoes/0025-primeiros-passos.md)):** o reino nasce com os primeiros passos dados. Castelo e locais já estão no nível 2, 4 lanceiros e 2 arqueiros guardam o castelo e 3 exploradores (a pé, a cavalo e prospector) estão prontos. O entorno já está explorado até 6 hexágonos. A primeira sessão começa explorando, caçando e prospectando, sem esperar treino.
 
 ## Princípios de design novos
 

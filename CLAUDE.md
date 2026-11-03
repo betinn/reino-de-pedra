@@ -165,7 +165,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## População
 
-- **Toda pessoa do reino é um indivíduo**: nome próprio, ofício, onde mora, onde está e o que faz. A população civil é a contagem das pessoas civis; o reino novo começa com 8. A escala é de dezenas, não de centenas (valores em `balanceamento/`).
+- **Toda pessoa do reino é um indivíduo**: nome próprio, ofício, onde mora, onde está e o que faz. A população civil é a contagem das pessoas civis; o reino novo começa com 8 civis, além da guarnição e dos exploradores do início. A escala é de dezenas, não de centenas (valores em `balanceamento/`).
 - **Ofícios civis** ligados aos locais: agricultor (vila e pasto), lenhador (serraria), pedreiro (pedreira), mineiro (mina) e sem ofício (quem fica no castelo sem vaga). Soldados têm o ofício da unidade; explorador, prospector, batedor e mensageiro também são ofícios.
 - **Cada nível de local de produção abre vagas de trabalho** (1 vaga até o nível 4, 2 até o 8, 3 nos níveis 9 e 10). Uma vaga vazia produz menos: a produção do local é proporcional às vagas ocupadas por quem está presente. Castelo, quartel, armazém, ferraria e posto não têm vagas.
 - **Atribuição automática por padrão.** Uma pessoa nova vai para a vaga mais necessária (o ofício anterior, se tem vaga; senão o local com mais vagas livres, o mais perto). Subir de nível, fundar ou ocupar um local chama quem está sem trabalho. O jogador pode reatribuir qualquer pessoa: tocar nela e escolher outro trabalho ou outro local; ela caminha até lá, visível no mapa. Quem é levado ao castelo sem trabalho fica assim: a vaga que deixou é do jogador. Nada obriga a microgerenciar.
@@ -348,6 +348,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ## Experiência do jogador
 
 - **Jogo livre**: sem missões fixas ou obrigatórias; nada força o jogador a fazer algo.
+- **O reino nasce com os primeiros passos já dados**: castelo e locais acima do nível 1, moradias prontas, uma guarnição pequena (lanceiros e arqueiros com nome) e exploradores prontos no castelo (a pé, a cavalo e prospector), com o entorno do castelo já explorado. Quem entra explora, caça e prospecta na hora, sem passar a primeira sessão só esperando timers. Vale igual para reinos de IA.
 - Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
 - **Atacar em 3 passos**: escolher a tropa, tocar no destino no mapa e confirmar. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**.
 - Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".

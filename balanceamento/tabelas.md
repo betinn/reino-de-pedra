@@ -23,6 +23,8 @@ Castelo: produz 2.5/h de cada recurso básico no nível 1 e 6.9/h no nível 10. 
 
 População: o castelo abriga 15 pessoas e cada moradia mais 3 (a primeira custa 18 madeira, 14 pedra, 4 ferro, 4 comida, cada uma 24 a mais). Reino novo: 8 pessoas. Crescimento 5%/h (logístico), +30% com sobra de comida.
 
+Reino novo com os primeiros passos já dados: castelo e locais no nível 2, 2 moradias, 4 lanceiros e 2 arqueiros no castelo, 1 a pé, 1 a cavalo, 1 prospector (exploradores prontos) e o entorno explorado até 6 hexágonos do castelo.
+
 ## Unidades
 
 Cada unidade é uma pessoa do reino (as máquinas de cerco, a equipe que as opera). Valor: custo em valor de referência (couro vale 2, cavalo de raça 40). Por 100: ataque e defesa por 100 de valor.
@@ -94,42 +96,42 @@ Portões do castelo: 100 de estrutura por nível (nível 3: 300, 8 aríetes ou 4
 
 ### Médio (4 sessões/dia)
 
-| Dia | Produção/h (total) | Locais | Nível médio | Castelo | Pessoas (civis + tropas) / teto | Vagas | Eficiência | Tropas |
+| Dia | Produção/h (total) | Locais | Nível médio | Castelo | Pessoas (civis + tropas + exploradores) / teto | Vagas | Eficiência | Tropas |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 33 | 4 | 3 | 3 | 13 (9 + 4) / 15 | 4 | 100% | 4 |
-| 3 | 54 | 4 | 5.3 | 6 | 15 (10 + 5) / 15 | 8 | 100% | 5 |
-| 7 | 92 | 5 | 7 | 7 | 18 (12 + 6) / 18 | 10 | 100% | 6 |
-| 10 | 122 | 6 | 7.5 | 8 | 19 (13 + 7) / 24 | 12 | 100% | 7 |
-| 14 | 150 | 7 | 7.9 | 8 | 24 (16 + 8) / 24 | 14 | 100% | 8 |
-| 21 | 179 | 9 | 7.6 | 8 | 29 (18 + 10) / 33 | 17 | 100% | 10 |
-| 35 | 318 | 12 | 9 | 9 | 63 (41 + 21) / 63 | 36 | 100% | 21 |
-| 50 | 367 | 14 | 9 | 9 | 72 (47 + 25) / 72 | 42 | 100% | 25 |
-| 70 | 367 | 14 | 9 | 9 | 72 (47 + 25) / 72 | 42 | 100% | 25 |
+| 1 | 40 | 4 | 4 | 4 | 20 (10 + 7 + 3) / 21 | 4 | 100% | 7 |
+| 3 | 62 | 4 | 6 | 6 | 21 (11 + 7 + 3) / 21 | 8 | 100% | 7 |
+| 7 | 92 | 5 | 7 | 7 | 21 (11 + 7 + 3) / 21 | 10 | 100% | 7 |
+| 10 | 131 | 6 | 7.8 | 8 | 26 (14 + 9 + 3) / 27 | 12 | 100% | 9 |
+| 14 | 150 | 7 | 7.9 | 8 | 28 (16 + 10 + 3) / 30 | 14 | 100% | 10 |
+| 21 | 179 | 9 | 7.6 | 8 | 34 (19 + 12 + 3) / 36 | 17 | 100% | 12 |
+| 35 | 318 | 12 | 9 | 9 | 65 (39 + 22 + 3) / 69 | 36 | 100% | 22 |
+| 50 | 367 | 14 | 9 | 9 | 81 (50 + 28 + 3) / 81 | 42 | 100% | 28 |
+| 70 | 367 | 14 | 9 | 9 | 81 (50 + 27 + 3) / 81 | 42 | 100% | 27 |
 
-Gasto em obras 44790 · em tropas 2700 · economia no máximo (nível médio ≥ 9,5), sem guerra: não chega.
+Gasto em obras 46203 · em tropas 2430 · economia no máximo (nível médio ≥ 9,5), sem guerra: não chega.
 
 ### Ativo (8 sessões/dia)
 
-| Dia | Produção/h (total) | Locais | Nível médio | Castelo | Pessoas (civis + tropas) / teto | Vagas | Eficiência | Tropas |
+| Dia | Produção/h (total) | Locais | Nível médio | Castelo | Pessoas (civis + tropas + exploradores) / teto | Vagas | Eficiência | Tropas |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 40 | 4 | 4 | 4 | 13 (9 + 4) / 15 | 4 | 100% | 4 |
-| 3 | 50 | 4 | 5 | 5 | 17 (9 + 8) / 21 | 8 | 100% | 8 |
-| 7 | 97 | 6 | 6.5 | 7 | 27 (14 + 13) / 27 | 12 | 100% | 13 |
-| 10 | 134 | 7 | 7.4 | 8 | 30 (14 + 16) / 33 | 14 | 98% | 16 |
-| 14 | 173 | 8 | 8 | 8 | 36 (18 + 18) / 36 | 16 | 100% | 18 |
-| 21 | 253 | 10 | 8.7 | 9 | 63 (29 + 34) / 69 | 27 | 100% | 34 |
-| 35 | 392 | 15 | 9 | 9 | 105 (52 + 52) / 105 | 45 | 100% | 52 |
-| 50 | 600 | 18 | 10 | 10 | 123 (61 + 61) / 123 | 54 | 100% | 61 |
-| 70 | 600 | 18 | 10 | 10 | 123 (62 + 61) / 123 | 54 | 100% | 61 |
+| 1 | 40 | 4 | 4 | 4 | 20 (7 + 10 + 3) / 21 | 4 | 100% | 10 |
+| 3 | 54 | 4 | 5.3 | 6 | 25 (9 + 13 + 3) / 27 | 8 | 100% | 13 |
+| 7 | 100 | 6 | 6.7 | 7 | 33 (14 + 16 + 3) / 33 | 12 | 100% | 16 |
+| 10 | 137 | 7 | 7.4 | 8 | 36 (14 + 19 + 3) / 42 | 14 | 100% | 19 |
+| 14 | 173 | 8 | 8 | 8 | 45 (20 + 22 + 3) / 45 | 16 | 100% | 22 |
+| 21 | 253 | 10 | 8.7 | 9 | 70 (32 + 36 + 3) / 72 | 27 | 100% | 36 |
+| 35 | 392 | 15 | 9 | 9 | 105 (49 + 52 + 3) / 105 | 45 | 100% | 52 |
+| 50 | 600 | 18 | 10 | 10 | 135 (65 + 67 + 3) / 135 | 54 | 100% | 67 |
+| 70 | 600 | 18 | 10 | 10 | 135 (64 + 67 + 3) / 135 | 54 | 100% | 67 |
 
-Gasto em obras 120664 · em tropas 7650 · economia no máximo (nível médio ≥ 9,5), sem guerra: dia 45.
+Gasto em obras 124277 · em tropas 7920 · economia no máximo (nível médio ≥ 9,5), sem guerra: dia 43.
 
 ### Queda do castelo no dia 35 (médio)
 
 O castelo cai com o reino ainda tendo outros locais: a sede vai para o local de maior nível, que vira castelo com 50% do nível antigo; o reino perde 50% dos recursos guardados e 30% da população civil; as relíquias do castelo vão com o atacante. A simulação supõe ainda 40% das tropas mortas no cerco e a fila de obras perdida.
 
-- Castelo: nível 9 → 4. Volta ao nível 9 em 2.3 dias.
-- Produção: 318/h antes da queda; volta a 95% disso em 1.5 dias.
+- Castelo: nível 9 → 4. Volta ao nível 9 em 2.2 dias.
+- Produção: 318/h antes da queda; volta a 95% disso em 1.4 dias.
 
 ## Recursos valiosos e lendários
 
@@ -169,7 +171,7 @@ Oferta e demanda típica (Era do Aço, Era do Cerco Avançado e 2 linhas da ferr
 
 - Sem mercado global. **Troca direta** só com reinos conhecidos; a proposta revela quem propõe. As duas cargas viajam pelo mapa, visíveis e roubáveis.
 - **IA comerciante**: compra a 85% e vende a 115% do valor, só com o próprio estoque (mesmas regras dos jogadores). Ex.: 10 de ouro custam 230 em básicos; vender 10 de ouro rende 170.
-- **Reino sob escudo de novato**: a diferença entre o que dá e o que recebe (trocas, ajuda de aliados, pagamentos) fica em até 200 de valor por dia; no escudo inteiro, 600, 22% do que um jogador médio produz no mesmo período (2686). Não pode ser cobrado por pacto.
+- **Reino sob escudo de novato**: a diferença entre o que dá e o que recebe (trocas, ajuda de aliados, pagamentos) fica em até 200 de valor por dia; no escudo inteiro, 600, 19% do que um jogador médio produz no mesmo período (3191). Não pode ser cobrado por pacto.
 - **Pacto de não agressão**: de 1 a 7 dias, até 3 ativos por reino; pagamento em qualquer direção (ou nenhum). Começa quando o pagamento chega; se a carga for roubada, não começa. O jogo impede ataques, saques e interceptações entre os dois até o fim.
 - **Resgate de explorador**: quem captura vê o reino de origem e tem 24 h para pedir resgate, libertar ou executar; sem decisão, o explorador é libertado.
 
@@ -179,7 +181,7 @@ A Era do Ferro é a inicial (armas e armaduras do nível 1).
 
 | Era | Requisito | Custo | Valor | Tempo | Libera | Custo sem o ouro, em horas de produção do médio |
 |---|---|---|---|---|---|---|
-| Era do Aço | ferraria nível 7 | 8 ouro, 150 ferro, 100 madeira | 410 | 6 h | armas e armaduras dos níveis 2 e 3, cavaleiro de elite, equipamento lendário | 2 h (dia 10) |
+| Era do Aço | ferraria nível 7 | 8 ouro, 150 ferro, 120 madeira | 430 | 6 h | armas e armaduras dos níveis 2 e 3, cavaleiro de elite, equipamento lendário | 2.1 h (dia 10) |
 | Era do Cerco Avançado | Era do Aço e quartel nível 8 | 15 ouro, 400 madeira, 300 pedra, 150 ferro | 1150 | 12 h | trebuchet e portões dos níveis 4 e 5 | 4.7 h (dia 21) |
 
 ## Ferraria: armas e armaduras
@@ -228,7 +230,7 @@ Fauna: força 50 / 110 / 180 (baixo, médio, alto); bandos de 1 a 6 animais. Cha
 | Ursos | alto | 9 | 6 | 6 | 33 | 12 arqueiros |
 | Crocodilos | médio | 5 | 9 | 0 | 23 | 8 arqueiros |
 
-Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5 por dia para recrutar (1/3 arqueiros, 1/6 cavalaria).
+Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5.2 por dia para recrutar (1/3 arqueiros, 1/6 cavalaria).
 
 **Exploradores** (pessoas do reino; 1 de população cada):
 
@@ -255,6 +257,7 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5 por dia para recrutar
 |---|---|---|---|
 | M1a | Kit inicial recruta 2 a 3 lanceiros na primeira sessão | 3 | ✓ |
 | M1b | Os lanceiros do kit ficam prontos em até 45 min (a primeira sessão tem o que fazer) | 36 min | ✓ |
+| M1c | Reino novo começa com tropas que caçam o perigo baixo ilesas e exploradores prontos (nada de esperar a primeira hora) | 190 de força · 3 exploradores | ✓ |
 | M2a | Primeira melhoria se paga em até 6 h | 5.6 h | ✓ |
 | M2b | Melhoria para o nível 10 se paga em 1 a 2 semanas (investimento de fim de temporada) | 13 dias | ✓ |
 | M3a | Obra para o nível 2 leva até 2 min | 2 min | ✓ |
@@ -263,13 +266,13 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5 por dia para recrutar
 | M4a | Vizinho do próprio reino (3 hex.) em até 3 min, tropa lenta | 2 min | ✓ |
 | M4b | Reino vizinho (24 hex.) entre 10 e 20 min, tropa lenta | 16 min | ✓ |
 | M4c | Travessia do mapa (104 hex.) em até 90 min, tropa lenta | 1 h 10 min | ✓ |
-| M5a | Jogador médio com 4 a 10 soldados e 15 a 25 pessoas no fim do escudo (dia 3) | 5 · 15 | ✓ |
-| M5b | Jogador médio com 20 a 30 soldados e 50 a 80 pessoas no dia 35 | 21 · 63 | ✓ |
-| M5c | Jogador ativo com 1,5 a 2,5× as tropas do médio no dia 35 | 2.5× | ✓ |
+| M5a | Jogador médio com 4 a 10 soldados e 15 a 25 pessoas no fim do escudo (dia 3) | 7 · 21 | ✓ |
+| M5b | Jogador médio com 20 a 30 soldados e 50 a 80 pessoas no dia 35 | 22 · 65 | ✓ |
+| M5c | Jogador ativo com 1,5 a 2,5× as tropas do médio no dia 35 | 2.4× | ✓ |
 | M5d | Recrutar não derruba a economia do médio (eficiência ≥ 90% no dia 35) | 100% | ✓ |
-| M5e | Sem guerra, o ativo chega ao máximo da economia entre os dias 30 e 50 | dia 45 | ✓ |
+| M5e | Sem guerra, o ativo chega ao máximo da economia entre os dias 30 e 50 | dia 43 | ✓ |
 | M5f | Sem guerra, o médio só chega ao máximo depois do dia 40 (ou não chega) | não chega | ✓ |
-| M5g | Teto prático de um reino: o ativo termina a temporada com 90 a 130 pessoas | 123 | ✓ |
+| M5g | Teto prático de um reino: o ativo termina a temporada com 90 a 140 pessoas | 135 | ✓ |
 | M6 | 6 cavaleiros levam pelo menos 2 h de produção de um local nível 6 | 5.4 h | ✓ |
 | M7a | Local defendido cai com cerca de 1,5× a força (arqueiros contra lanceiros) | 2× | ✓ |
 | M7b | Torre muda o resultado do mesmo ataque | defesa vence | ✓ |
@@ -282,14 +285,14 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5 por dia para recrutar
 | M13 | Extrair valiosos rende por pessoa 1,5 a 3× um trabalhador de local nível 6 (4 lanceiros) | 1.7× | ✓ |
 | M14 | O ouro da Era do Aço sai em 3 a 12 h com 4 lanceiros, sem posto | 4 h 13 min | ✓ |
 | M15 | Ouro e aço no mapa cobrem 90% a 150% da demanda típica (escassos, motivo de disputa) | 101% / 96% | ✓ |
-| M16 | Era do Aço custa 2 a 4 h de produção do médio no dia 10; Era do Cerco, 4 a 8 h no dia 21 (sem o ouro) | 2 h / 4.7 h | ✓ |
+| M16 | Era do Aço custa 2 a 4 h de produção do médio no dia 10; Era do Cerco, 4 a 8 h no dia 21 (sem o ouro) | 2.1 h / 4.7 h | ✓ |
 | M17 | Curar um ferido custa 25% a 60% de recrutar um lanceiro | 44% | ✓ |
 | M18 | Equipamento lendário vale no máximo 3 tropas | 2 tropas | ✓ |
 | M19 | Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria | 60 > 45 · 24 < 26.5 | ✓ |
-| M20 | Reino sob escudo recebe no máximo 30% do que ele mesmo produz no escudo | 22% | ✓ |
-| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias | 2.3 dias | ✓ |
+| M20 | Reino sob escudo recebe no máximo 30% do que ele mesmo produz no escudo | 19% | ✓ |
+| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias | 2.2 dias | ✓ |
 | M22 | Explorador sozinho corre risco em qualquer perigo; 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto | sim | ✓ |
-| M23 | 1 caçada por dia cobre 70% a 150% do couro que o médio usa para recrutar | 110% | ✓ |
+| M23 | 1 caçada por dia cobre 70% a 150% do couro que o médio usa para recrutar | 105% | ✓ |
 | M24 | 10 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14 | 1.3 h | ✓ |
 | M25 | Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo | 35% / 60% | ✓ |
 

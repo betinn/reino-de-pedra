@@ -83,6 +83,10 @@ namespace ReinoDePedra.Jogo.Temporada
                          && !Extracoes.OcupadoPorOutro(m, r.Id, x.Hex))
                      .OrderBy(x => meus.Count == 0 ? 0 : meus.Min(l => m.G.Distancia(l.Hex, x.Hex))).Take(max))
                 L.Add(new(Oportunidade, "ruina", "Ruína antiga avistada", "Guarda uma relíquia lendária · ninguém seu escavando", "#/mapa?foco=" + ru.Hex, "Ver"));
+            var exploradores = r.ExploradoresLivres.Values.Sum();
+            if (exploradores > 0)
+                L.Add(new(Oportunidade, "batedor", exploradores == 1 ? "1 explorador parado no castelo" : exploradores + " exploradores parados no castelo",
+                    "A névoa em volta do reino esconde caça, jazidas e ruínas.", "#/exploradores", "Explorar"));
 
             // ---------------- no seu reino
             var obras = r.Fila(Obras.Fila).Itens;
@@ -108,7 +112,7 @@ namespace ReinoDePedra.Jogo.Temporada
             }
             var paradas = meus.Sum(l => GT.Total(l.Guarnicao));
             if (paradas > 0 && !Exercitos.De(m, r.Id).Any())
-                L.Add(new(NoReino, "tropas", paradas + (paradas == 1 ? " tropa nas guarnições" : " tropas nas guarnições"), "Defendem os locais; podem receber outra ordem.", "#/tropas", "Ordens"));
+                L.Add(new(NoReino, "tropas", paradas + (paradas == 1 ? " tropa nas guarnições" : " tropas nas guarnições"), "Defendem os locais; podem caçar, escoltar ou extrair.", "#/tropas", "Ordens"));
             foreach (var f in Extras) L.AddRange(f(m, r));
             return L;
         }

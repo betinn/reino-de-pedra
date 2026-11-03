@@ -37,6 +37,11 @@ const P = {
   /* servidor: estoque mínimo do castelo por recurso (o castelo também guarda o excedente quando não há armazém),
      capacidade do armazém por recurso no nível L = capN1 × capCresc^(L−1), couro inicial do kit */
   estoqueMinimo: 200, armazem: { capN1: 200, capCresc: 1.35 }, kitExtra: { couro: 20 },
+  /* reino novo com os primeiros passos já dados: ao fundar, o castelo e os 4 locais já estão no nível do início, com moradias
+     prontas, uma guarnição pequena no castelo, exploradores prontos (um de cada tipo básico e um prospector) e o entorno do
+     castelo já percorrido (raio em hexágonos). Quem entra tem o que fazer na hora: explorar, caçar, prospectar e enfileirar
+     obras, sem passar a primeira hora esperando. Tropas e exploradores são pessoas além das popInicial civis e ocupam o teto. */
+  inicio: { castelo: 2, locais: 2, moradias: 2, tropas: { lanceiro: 4, arqueiro: 2 }, exploradores: { pe: 1, cavalo: 1, prospector: 1 }, raioExplorado: 6 },
   /* servidor: carregadores da requisição (pessoas do local de origem, a pé, sem escolta; cada uma leva 30 num carrinho de mão,
      bem mais que os 5 da mochila de um soldado; com menos gente que o necessário o grupo faz mais viagens); rio sem ponte se atravessa pelo vau (× custo do terreno) */
   carregador: { carga: 30, vel: 'Lenta' }, rio: { vau: 2.0 },
@@ -106,7 +111,7 @@ const P = {
   resgateH: 24, treguaSaidaH: 24,
   /* eras: a do ferro é a inicial */
   eras: {
-    aco:   { nome: 'Era do Aço', req: 'ferraria nível 7', custo: { ouro: 8, ferro: 150, madeira: 100 }, tempo: 6 * 3600, dia: 10,
+    aco:   { nome: 'Era do Aço', req: 'ferraria nível 7', custo: { ouro: 8, ferro: 150, madeira: 120 }, tempo: 6 * 3600, dia: 10,
              libera: 'armas e armaduras dos níveis 2 e 3, cavaleiro de elite, equipamento lendário' },
     cerco: { nome: 'Era do Cerco Avançado', req: 'Era do Aço e quartel nível 8', custo: { ouro: 15, madeira: 400, pedra: 300, ferro: 150 }, tempo: 12 * 3600, dia: 21,
              libera: 'trebuchet e portões dos níveis 4 e 5' }
@@ -399,12 +404,15 @@ function batalha(atk, def, extra, limiteBaixas) {
 
 /* ================================================================ simulação de 70 dias */
 const TIPOS = ['comida', 'madeira', 'pedra', 'ferro'];
+const somaQtd = o => Object.values(o || {}).reduce((s, v) => s + v, 0);
 function simular(perfil, opc) {
   opc = opc || {};
   const S = {
     h: 0, est: Object.assign({}, P.kit), couro: P.kitExtra.couro, prodAcum: 0,
-    locais: [{ t: 'comida', L: 1 }, { t: 'madeira', L: 1 }, { t: 'pedra', L: 1 }, { t: 'ferro', L: 1 }],
-    casteloL: 1, moradias: 0, pop: P.popInicial, tropas: 0, fila: [], gastoMil: 0, gastoObra: 0, obras: 0, filaHorasNoite: [], fundados: 0,
+    locais: TIPOS.map(t => ({ t, L: P.inicio.locais })),
+    casteloL: P.inicio.castelo, moradias: P.inicio.moradias, pop: P.popInicial, tropas: somaQtd(P.inicio.tropas),
+    outros: somaQtd(P.inicio.exploradores),          /* exploradores do início: ocupam o teto, não são soldados */
+    fila: [], gastoMil: 0, gastoObra: 0, obras: 0, filaHorasNoite: [], fundados: 0,
     log: {}
   };
   const sessoes = perfil.sessoes;                     /* horas do dia em que o jogador entra */
@@ -433,7 +441,7 @@ function simular(perfil, opc) {
     const horizonte = noite ? perfil.horizonteNoite : perfil.horizonte;    /* a fila cobre até a próxima sessão (ou a noite) */
     for (let tent = 0; tent < 12 && S.fila.length < 10 && fimFila() - S.h < horizonte; tent++) {
       const dia = S.h / 24, alvoTropas = perfil.fracTropas * teto();
-      const precisaMoradia = S.pop < trabNec() * 1.1 && S.pop + S.tropas > teto() * 0.9;   /* faltam trabalhadores e o teto está cheio */
+      const precisaMoradia = S.pop < trabNec() * 1.1 && S.pop + S.tropas + S.outros > teto() * 0.9;   /* faltam trabalhadores e o teto está cheio */
       if (precisaMoradia && S.fila.every(q => q.rot !== 'moradia')) {
         const c = receita(custoMoradia(S.moradias)); if (enfileirar('moradia', c, tempoMoradia(S.moradias), () => S.moradias++)) continue;
       }
@@ -476,7 +484,7 @@ function simular(perfil, opc) {
     S.prodAcum += soma(pr); if (S.h + 1 === P.escudoNovatoH) S.prodEscudo = S.prodAcum;
     S.couro += P.cacasDia * couroMedioCaca() / 24;    /* caça (cacasDia caçadas por dia, rendimento médio por bando) */
     const sobra = pr.comida > castelo(S.casteloL) * 2;
-    const livre = Math.max(1, teto() - S.tropas);     /* tropas ocupam o teto */
+    const livre = Math.max(1, teto() - S.tropas - S.outros);     /* tropas e exploradores ocupam o teto */
     S.pop = Math.max(0, Math.min(livre, S.pop + P.crescPop * S.pop * (1 - S.pop / livre) * (sobra ? 1 + P.bonusComida : 1)));
     S.tropas *= (1 - perfil.perdasDia / 24);          /* desgaste por combate */
     const dia = (S.h + 1) / 24;
@@ -485,7 +493,7 @@ function simular(perfil, opc) {
     if (S.caiu && !S.recupProd && soma(producaoH()) >= 0.95 * S.prodAntes) S.recupProd = r1(dia - opc.quedaDia);
     if ([1, 3, 7, 10, 14, 21, 35, 50, 70].includes(dia)) {
       S.log[dia] = { prod: r0(soma(producaoH())), locais: S.locais.length, nivelMedio: r1(S.locais.reduce((s, x) => s + x.L, 0) / S.locais.length),
-        castelo: S.casteloL, pop: r0(S.pop + S.tropas), civis: r0(S.pop), teto: teto(), trab: trabNec(), tropas: r0(S.tropas), efic: r0(eficiencia() * 100), obras: S.obras };
+        castelo: S.casteloL, pop: r0(S.pop + S.tropas + S.outros), civis: r0(S.pop), outros: S.outros, teto: teto(), trab: trabNec(), tropas: r0(S.tropas), efic: r0(eficiencia() * 100), obras: S.obras };
     }
   }
   S.noiteMedia = S.filaHorasNoite.slice(7).reduce((s, v) => s + v, 0) / Math.max(1, S.filaHorasNoite.length - 7);
@@ -518,6 +526,9 @@ for (let n = 1; n <= P.nivelMax; n++) {
 out('\nEstoque de cada local: até ' + P.estoqueHoras + ' h da própria produção; o excedente vai para o armazém, que também guarda os valiosos. Uma vaga vazia produz menos: a produção do local é proporcional às vagas ocupadas.\n');
 out('Castelo: produz ' + r1(castelo(1)) + '/h de cada recurso básico no nível 1 e ' + r1(castelo(10)) + '/h no nível 10. Nenhum local passa do nível do castelo. Melhorar o castelo custa ' + P.casteloCusto + '× e leva ' + P.casteloTempo + '× o tempo de um local do mesmo nível (nível 10: ' + fmtT(tempoObra(10) * P.casteloTempo) + ').\n');
 out('População: o castelo abriga ' + P.tetoCastelo + ' pessoas e cada moradia mais ' + P.tetoPorMoradia + ' (a primeira custa ' + fmtC(receita(custoMoradia(0))) + ', cada uma ' + P.moradiaPasso + ' a mais). Reino novo: ' + P.popInicial + ' pessoas. Crescimento ' + P.crescPop * 100 + '%/h (logístico), +' + P.bonusComida * 100 + '% com sobra de comida.\n');
+out('Reino novo com os primeiros passos já dados: castelo e locais no nível ' + P.inicio.castelo + ', ' + P.inicio.moradias + ' moradias, ' +
+  Object.entries(P.inicio.tropas).map(([k, n]) => n + ' ' + U[k].nome.toLowerCase() + (n > 1 ? 's' : '')).join(' e ') + ' no castelo, ' +
+  Object.entries(P.inicio.exploradores).map(([k, n]) => n + ' ' + P.exploradores[k].nome.toLowerCase()).join(', ') + ' (exploradores prontos) e o entorno explorado até ' + P.inicio.raioExplorado + ' hexágonos do castelo.\n');
 
 out('## Unidades\n');
 out('Cada unidade é uma pessoa do reino (as máquinas de cerco, a equipe que as opera). Valor: custo em valor de referência (couro vale 2, cavalo de raça 40). Por 100: ataque e defesa por 100 de valor.\n');
@@ -590,9 +601,9 @@ const sims = {};
 Object.entries(PERFIS).forEach(([k, pf]) => {
   const S = simular(pf); sims[k] = S;
   out('### ' + pf.nome + '\n');
-  out('| Dia | Produção/h (total) | Locais | Nível médio | Castelo | Pessoas (civis + tropas) / teto | Vagas | Eficiência | Tropas |');
+  out('| Dia | Produção/h (total) | Locais | Nível médio | Castelo | Pessoas (civis + tropas + exploradores) / teto | Vagas | Eficiência | Tropas |');
   out('|---|---|---|---|---|---|---|---|---|');
-  Object.entries(S.log).forEach(([d, v]) => out('| ' + d + ' | ' + v.prod + ' | ' + v.locais + ' | ' + v.nivelMedio + ' | ' + v.castelo + ' | ' + v.pop + ' (' + v.civis + ' + ' + v.tropas + ') / ' + v.teto + ' | ' + v.trab + ' | ' + v.efic + '% | ' + v.tropas + ' |'));
+  Object.entries(S.log).forEach(([d, v]) => out('| ' + d + ' | ' + v.prod + ' | ' + v.locais + ' | ' + v.nivelMedio + ' | ' + v.castelo + ' | ' + v.pop + ' (' + v.civis + ' + ' + v.tropas + ' + ' + v.outros + ') / ' + v.teto + ' | ' + v.trab + ' | ' + v.efic + '% | ' + v.tropas + ' |'));
   out('\nGasto em obras ' + r0(S.gastoObra) + ' · em tropas ' + r0(S.gastoMil) + ' · economia no máximo (nível médio ≥ 9,5), sem guerra: ' + (S.diaMax ? 'dia ' + S.diaMax : 'não chega') + '.\n');
 });
 
@@ -720,6 +731,9 @@ const kitLanceiros = Math.floor(Math.min(...Object.keys(U.lanceiro.custo).map(k 
 const metas = [
   ['M1a', 'Kit inicial recruta 2 a 3 lanceiros na primeira sessão', kitLanceiros, kitLanceiros >= 2 && kitLanceiros <= 3],
   ['M1b', 'Os lanceiros do kit ficam prontos em até 45 min (a primeira sessão tem o que fazer)', fmtT(kitLanceiros * U.lanceiro.tempo), kitLanceiros * U.lanceiro.tempo <= 45 * 60],
+  ['M1c', 'Reino novo começa com tropas que caçam o perigo baixo ilesas e exploradores prontos (nada de esperar a primeira hora)',
+    r0(forcaFauna(P.inicio.tropas)) + ' de força · ' + somaQtd(P.inicio.exploradores) + ' exploradores',
+    riscoFauna('baixo', forcaFauna(P.inicio.tropas)) === 'nenhum' && somaQtd(P.inicio.exploradores) >= 2],
   ['M2a', 'Primeira melhoria se paga em até 6 h', r1(payback(2)) + ' h', payback(2) <= 6],
   ['M2b', 'Melhoria para o nível 10 se paga em 1 a 2 semanas (investimento de fim de temporada)', r1(payback(10) / 24) + ' dias', payback(10) >= 168 && payback(10) <= 336],
   ['M3a', 'Obra para o nível 2 leva até 2 min', fmtT(tempoObra(2)), tempoObra(2) <= 120],
@@ -734,7 +748,7 @@ const metas = [
   ['M5d', 'Recrutar não derruba a economia do médio (eficiência ≥ 90% no dia 35)', sims.medio.log[35].efic + '%', sims.medio.log[35].efic >= 90],
   ['M5e', 'Sem guerra, o ativo chega ao máximo da economia entre os dias 30 e 50', sims.ativo.diaMax ? 'dia ' + sims.ativo.diaMax : 'não chega', sims.ativo.diaMax >= 30 && sims.ativo.diaMax <= 50],
   ['M5f', 'Sem guerra, o médio só chega ao máximo depois do dia 40 (ou não chega)', sims.medio.diaMax ? 'dia ' + sims.medio.diaMax : 'não chega', !sims.medio.diaMax || sims.medio.diaMax > 40],
-  ['M5g', 'Teto prático de um reino: o ativo termina a temporada com 90 a 130 pessoas', sims.ativo.log[70].pop, sims.ativo.log[70].pop >= 90 && sims.ativo.log[70].pop <= 130],
+  ['M5g', 'Teto prático de um reino: o ativo termina a temporada com 90 a 140 pessoas', sims.ativo.log[70].pop, sims.ativo.log[70].pop >= 90 && sims.ativo.log[70].pop <= 140],
   ['M6', '6 cavaleiros levam pelo menos 2 h de produção de um local nível 6', r1(6 * U.cavalaria.carga / prod(6)) + ' h', 6 * U.cavalaria.carga / prod(6) >= 2],
   ['M7a', 'Local defendido cai com cerca de 1,5× a força (arqueiros contra lanceiros)', r1(resCasos[1].razao) + '×', resCasos[1].venceA && resCasos[1].perdaA <= 0.6],
   ['M7b', 'Torre muda o resultado do mesmo ataque', resCasos[2].venceA ? 'não muda' : 'defesa vence', !resCasos[2].venceA],

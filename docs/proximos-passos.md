@@ -11,7 +11,7 @@ O que ficou pendente na primeira etapa de implementação e como testar o jogo. 
 - Temporada curta, para ver o fim e o reset: `REINO_TEMPORADA_MIN=<minutos>`.
 - Sem reinos de IA: `REINO_IA=0`. Mapa fixo: `REINO_SEMENTE=42`.
 - Dois jogadores: duas janelas anônimas com contas diferentes (o mesmo navegador compartilha o cookie).
-- Testes automáticos: `cd servidor && dotnet test` (326 testes, inclusive o de carga com 30 reinos). `CombateApiTestes.Previa_envio_batalha_anonima_recuo_relatorio_e_defesas_pela_api` falhou uma vez em três rodadas da suíte inteira e passa sozinho: investigar (provável dependência do mapa sorteado ou da IA no cenário).
+- Testes automáticos: `cd servidor && dotnet test` (329 testes, inclusive o de carga com 30 reinos). `CombateApiTestes.Previa_envio_batalha_anonima_recuo_relatorio_e_defesas_pela_api` falhou uma vez em três rodadas da suíte inteira e passa sozinho: investigar (provável dependência do mapa sorteado ou da IA no cenário).
 - Tempo acelerado: o cliente anda junto com o servidor (`aceleracao` em `GET /mundo`). Para julgar o ritmo, prefira 6× a 60× (ver a sessão de ritmo em [`correcoes-usabilidade.md`](correcoes-usabilidade.md)).
 - Saúde do servidor: `GET /api/v1/saude` (eventos na agenda, conexões, memória).
 

@@ -81,6 +81,8 @@ public sealed class ParametrosP
     public double PopSemente { get; init; }
     public Dictionary<string, double> Kit { get; init; } = new();
     public Dictionary<string, double> KitExtra { get; init; } = new();
+    /// <summary>Reino novo com os primeiros passos já dados: níveis, moradias, guarnição, exploradores prontos e entorno explorado.</summary>
+    public InicioP Inicio { get; init; } = new();
     public double EstoqueHoras { get; init; }
     public double EstoqueMinimo { get; init; }
     public ArmazemP Armazem { get; init; } = new();
@@ -247,6 +249,18 @@ public sealed class GuerraP
     public PosturaP Postura { get; init; } = new();
     public int ModelosMax { get; init; }
     public int ModeloNome { get; init; }
+}
+public sealed class InicioP
+{
+    public int Castelo { get; init; } = 1;
+    public int Locais { get; init; } = 1;
+    public int Moradias { get; init; }
+    public Dictionary<string, int> Tropas { get; init; } = new();
+    public Dictionary<string, int> Exploradores { get; init; } = new();
+    /// <summary>Raio (hexágonos) em volta do castelo que o reino novo já conhece.</summary>
+    public int RaioExplorado { get; init; }
+    /// <summary>Reino novo sem os primeiros passos: tudo no nível 1, sem tropas nem exploradores (cenários de teste).</summary>
+    public static readonly InicioP Vazio = new();
 }
 public sealed class ExilioP
 {
