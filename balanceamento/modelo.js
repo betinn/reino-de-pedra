@@ -37,8 +37,9 @@ const P = {
   /* servidor: estoque mínimo do castelo por recurso (o castelo também guarda o excedente quando não há armazém),
      capacidade do armazém por recurso no nível L = capN1 × capCresc^(L−1), couro inicial do kit */
   estoqueMinimo: 200, armazem: { capN1: 200, capCresc: 1.35 }, kitExtra: { couro: 20 },
-  /* servidor: carregadores da requisição (pessoas do reino, a pé, sem escolta; carga por pessoa); rio sem ponte se atravessa pelo vau (× custo do terreno) */
-  carregador: { carga: 5, vel: 'Lenta' }, rio: { vau: 2.0 },
+  /* servidor: carregadores da requisição (pessoas do local de origem, a pé, sem escolta; cada uma leva 30 num carrinho de mão,
+     bem mais que os 5 da mochila de um soldado; com menos gente que o necessário o grupo faz mais viagens); rio sem ponte se atravessa pelo vau (× custo do terreno) */
+  carregador: { carga: 30, vel: 'Lenta' }, rio: { vau: 2.0 },
   /* servidor: raio de visão (hexágonos) do castelo, dos locais e de marchas sem tropa (carregadores, caravana sem escolta);
      um exército enxerga com a maior U.visao do grupo e revela a névoa por onde passa e onde fica. Avistamentos somem depois de 10 h */
   visao: { castelo: 3, local: 2, tropa: 1 }, avistamentoH: 10,

@@ -39,7 +39,7 @@ Cada unidade é uma pessoa do reino (as máquinas de cerco, a equipe que as oper
 
 Mensageiro: 30 comida, 1 de população, 4 min, velocidade rápida (reino vizinho em 6 min). Mensagem de até 200 caracteres; recado de proposta, até 120.
 
-Veículos: carroça 60 (lenta, 15 madeira, 2 ferro); carroção 180 (média, 40 madeira, 8 ferro, 2 cavalos de raça). Carregador da requisição: 5 por pessoa, a pé.
+Veículos: carroça 60 (lenta, 15 madeira, 2 ferro); carroção 180 (média, 40 madeira, 8 ferro, 2 cavalos de raça). Carregador da requisição: 30 por pessoa, a pé.
 
 ## Deslocamento
 

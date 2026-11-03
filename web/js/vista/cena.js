@@ -649,6 +649,14 @@
         add(pt(k * 8, ((k % 2) * 2 - 1) * 3), function () { A.pessoa(c, 0, 0, t, P, { roupa: P.roupa[k % 5], dir: dir, andando: true, fase: k * 0.9, carga: k % 3 === 1 ? 'tronco' : 'saco' }); });
       })(k);
       prefixo = 'Material · ';
+    } else if (tipo === 'pessoas') {
+      /* civis andando entre locais do reino (troca de trabalho, volta para casa): sem carga, sem armas */
+      var mq = RP.reino && (RP.reino.marchas || []).filter(function (x) { return x.id === m.id; })[0];
+      var np = Math.max(1, Math.min(5, (mq && mq.pessoas) || 1));
+      for (var j = 0; j < np; j++) (function (j) {
+        add(pt(j * 8, ((j % 2) * 2 - 1) * 3), function () { A.pessoa(c, 0, 0, t, P, { roupa: P.roupa[(j + 2) % 5], dir: dir, andando: true, fase: j * 0.7 }); });
+      })(j);
+      prefixo = (np === 1 ? 'Pessoa' : np + ' pessoas') + ' · ';
     } else if (/explor|batedor|prospector/.test(tipo)) {
       add(pos, function () {
         if (/cavalo/.test(tipo)) A.cavalo(c, 0, 0, t, P, { cor: P.cavalo[3], dir: dir, andando: true, galope: true, cavaleiro: cor });

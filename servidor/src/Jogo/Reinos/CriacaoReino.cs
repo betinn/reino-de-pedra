@@ -91,7 +91,7 @@ public static partial class CriacaoReino
         var r = m.Reinos.Adicionar(new Reino
         {
             Id = IdNovo?.Invoke(m) ?? 0, ContaId = contaId, Nome = nome, Brasao = brasao, CriadoEm = agora, UltimoAcesso = agora, Vaga = vaga,
-            EscudoAte = agora + T.DeHoras(m.P.EscudoNovatoH), Pop = m.P.PopInicial, AtualizadoEm = agora,
+            EscudoAte = agora + T.DeHoras(m.P.EscudoNovatoH), AtualizadoEm = agora,
         });
         var castelo = m.AdicionarLocal(new Local
         {
@@ -106,6 +106,7 @@ public static partial class CriacaoReino
         Inicial(TipoLocal.Mina, "pedra", V.Pedra);
         Inicial(TipoLocal.Mina, "ferro", V.Ferro);
         foreach (var l in m.LocaisDe(r.Id)) Nevoas.RevelarArea(m, r.Id, l.Hex, Nevoas.RaioLocal(m, l));
+        Pessoas.Pessoas.Nascer(m, r, m.P.PopInicial, andar: false);   // as primeiras pessoas já aparecem nas vagas
         Economia.GarantirCheckpoint(m, r);
         m.Sujar(r);
         AoCriar?.Invoke(m, r);

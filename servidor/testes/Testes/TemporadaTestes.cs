@@ -4,6 +4,7 @@ using ReinoDePedra.Jogo.Combate;
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Temporada;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
@@ -65,8 +66,9 @@ public class TemporadaTestes
     private static Reino Parado(MundoTeste t, long baixas, int pop, int lanceiros, bool ia = false)
     {
         var r = t.NovoReino(ia: ia);
-        r.RankBaixas = baixas; r.Pop = pop; r.AtualizadoEm = long.MaxValue / 4;
+        r.RankBaixas = baixas; r.AtualizadoEm = long.MaxValue / 4;
         var c = t.M.Locais[r.CasteloId];
+        Pessoas.Povoar(t.M, r, c, pop);
         c.Guarnicao["lanceiro"] = lanceiros;
         return r;
     }
@@ -126,7 +128,7 @@ public class TemporadaTestes
         var a1 = Rel(l, Linhagem.Ataque, 0.02); var a2 = Rel(l, Linhagem.Ataque, 0.02); var p = Rel(l, Linhagem.Producao, 0.02); var c = Rel(l, Linhagem.Crescimento, 0.01);
         l.Reliquias.AddRange([a1, a2, p, c]);
         var serraria = t.M.LocaisDe(r.Id).First(x => x.Produz == "madeira");
-        var antes = Economia.TaxaLocal(t.M, r, serraria, 1)["madeira"];
+        var antes = Economia.TaxaLocal(t.M, r, serraria)["madeira"];
         Linhagem.Equipar(t.M, r.ContaId!.Value, a1.Id, true);
         Linhagem.Equipar(t.M, r.ContaId!.Value, a2.Id, true);
         Linhagem.Equipar(t.M, r.ContaId!.Value, p.Id, true);
@@ -135,7 +137,7 @@ public class TemporadaTestes
         var f = t.M.P.Legado.Teto / 0.06;
         Assert.Equal(0.04 * f, Linhagem.BonusReino(t.M, r.Id, Linhagem.Ataque), 9);
         Assert.Equal(0.02 * f, Linhagem.BonusReino(t.M, r.Id, Linhagem.Producao), 9);
-        Assert.Equal(antes * (1 + 0.02 * f), Economia.TaxaLocal(t.M, r, serraria, 1)["madeira"], 6);
+        Assert.Equal(antes * (1 + 0.02 * f), Economia.TaxaLocal(t.M, r, serraria)["madeira"], 6);
         // no combate: entra na soma de bônus de ataque, e a soma inteira respeita o teto de combate
         var ex = new Exercito { ReinoId = r.Id, Tropas = G(("lanceiro", 10)) };
         Assert.Equal(0.04 * f, Bonus.SomaAtaque(t.M, ex), 9);
@@ -324,7 +326,7 @@ public class TemporadaTestes
         Assert.Contains(l2, x => x.Titulo == "Explorador capturado");
         // no reino: estoque cheio e população no teto
         meu.Estoque["ferro"] = Economia.Capacidade(m, meu, "ferro");
-        r.Pop = Economia.Teto(m, r);
+        Pessoas.Povoar(m, r, meu, Economia.Teto(m, r));
         var l3 = PrecisaDeVoce.Listar(m, r);
         Assert.Contains(l3, x => x.Titulo == "Estoque cheio: " + meu.Nome);
         Assert.Contains(l3, x => x.Titulo == "População no teto");

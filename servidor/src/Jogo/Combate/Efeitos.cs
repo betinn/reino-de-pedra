@@ -20,6 +20,8 @@ public sealed class ResumoEfeitos
     public int TorresDanificadas { get; set; }
     public int PortoesPerdidos { get; set; }
     public double Mortos { get; set; }
+    /// <summary>Nomes de quem morreu no massacre.</summary>
+    public List<string> MortosNomes { get; } = new();
     public bool Ocupou { get; set; }
     public double Rendimento { get; set; } = 1;
     public string PorQue { get; set; } = "";
@@ -138,8 +140,9 @@ public static class Efeitos
                     var popL = Combates.PopDoLocal(m, def, l);
                     var tropas = vivos.Sum(e => GT.Total(e.Tropas));
                     var mata = Math.Floor(Math.Min(o.Q, Math.Min(popL, tropas * m.P.Combate.MassacrePorTropa)) + 1e-9);
-                    if (mata > 0) { def.Pop = Math.Max(0, def.Pop - mata); m.Sujar(def); r.Mortos += mata; }
-                    r.Objetivos.Add(new(txt, mata >= o.Q - 0.5 ? "cumprido" : mata > 0 ? "parcial" : "falhou", mata > 0 ? N(mata) + " mortos" : "não havia ninguém"));
+                    if (mata > 0) { r.MortosNomes.AddRange(Pessoas.Pessoas.Matar(m, Pessoas.Pessoas.Presentes(m, l), (int)mata)); r.Mortos += mata; }
+                    r.Objetivos.Add(new(txt, mata >= o.Q - 0.5 ? "cumprido" : mata > 0 ? "parcial" : "falhou",
+                        mata > 0 ? N(mata) + " mortos: " + Pessoas.Pessoas.Nomear(r.MortosNomes) : "não havia ninguém"));
                     break;
                 }
                 case "tomar":
@@ -221,6 +224,8 @@ public static class Efeitos
         l.Guarnicao.Clear();
         l.Ruina = false;
         m.MudarDono(l, novo.Id);
+        Pessoas.Pessoas.LocalMudou(m, l);          // quem trabalhava aqui foge para o castelo do dono antigo
+        Pessoas.Pessoas.PreencherVagas(m, novo);   // ociosos do novo dono vêm trabalhar
         Exploracao.Nevoas.RevelarArea(m, novo.Id, l.Hex, Exploracao.Nevoas.RaioLocal(m, l));
         if (antigo != 0) m.Avisar(antigo, "reino");
         m.Avisar(novo.Id, "reino");
@@ -245,6 +250,7 @@ public static class Efeitos
         l.Nivel = 1; l.Ruina = true; l.Guarnicao.Clear();
         foreach (var rel in Reliquias.NoLocal(m, l.Id)) { rel.ReinoId = 0; m.Sujar(rel); }
         m.MudarDono(l, 0);
+        Pessoas.Pessoas.LocalMudou(m, l);
         r.LocalDestruido = true;
         if (antigo != 0) m.Avisar(antigo, "reino");
     }

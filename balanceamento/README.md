@@ -77,7 +77,7 @@ O custo cresce mais rápido que a produção: cada nível rende menos por recurs
 
 **População**: o castelo dá teto de 15; cada moradia, +3, custando `40 + 24 × (moradias já feitas)`. Cresce `5%/h × população × (1 − população/teto livre)`, +30% com sobra de comida; abaixo de 3 pessoas, cresce em linha. Recrutar tira da população (converte uma pessoa); as tropas ocupam o teto.
 
-**Deslocamento**: `hexágonos × terreno médio 1,35 × minutos por velocidade` (lenta 0,5; média 0,33; rápida 0,2). Rota pública: ×0,55. Carregadores da requisição andam na velocidade lenta com 5 de carga por pessoa. **Visão em marcha**: um exército revela a névoa com a maior visão do grupo (milícia, lanceiro e cerco 1; arqueiro, cavalaria e elite 2).
+**Deslocamento**: `hexágonos × terreno médio 1,35 × minutos por velocidade` (lenta 0,5; média 0,33; rápida 0,2). Rota pública: ×0,55. Carregadores da requisição são pessoas do local de origem, andam na velocidade lenta com 30 de carga por pessoa (carrinho de mão) e fazem mais viagens quando falta gente. **Visão em marcha**: um exército revela a névoa com a maior visão do grupo (milícia, lanceiro e cerco 1; arqueiro, cavalaria e elite 2).
 
 **Combate**:
 - Ataque = soma de `ataque × quantidade`. Defesa = soma de `defesa × quantidade` + milícia + arqueiros no alto.

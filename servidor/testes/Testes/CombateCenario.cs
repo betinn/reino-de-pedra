@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Combate;
 using ReinoDePedra.Jogo.Marchas;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Testes;
@@ -82,7 +83,7 @@ public sealed class CombateCenario
             Guarnicao = guarnicao.ToDictionary(kv => kv.Key, kv => kv.Value),
         });
         if (tipo == TipoLocal.Castelo) Def.CasteloId = alvo.Id;
-        Def.Pop = pop;
+        Pessoas.Povoar(M, Def, alvo, (int)pop);   // os civis presentes no local são a milícia
         Congelar(Def);
         return alvo;
     }

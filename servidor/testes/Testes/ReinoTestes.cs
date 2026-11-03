@@ -72,7 +72,7 @@ public class ReinoTestes
         Economia.Atualizar(t.M, r);
         // comida 5,5/h (castelo 2,5 + vila 3) > 2 × 2,5: sobra de comida, +30%
         var P = t.B.P;
-        Assert.Equal(Economia.Logistica(P.PopInicial, P.TetoCastelo, P.CrescPop * (1 + P.BonusComida), 1, P.PopSemente), r.Pop, 6);
+        Assert.Equal(Economia.Logistica(P.PopInicial, P.TetoCastelo, P.CrescPop * (1 + P.BonusComida), 1, P.PopSemente), r.Pop + r.PopFracao, 6);   // a fração espera a próxima pessoa
         t.AvancarHoras(500);
         Economia.Atualizar(t.M, r);
         Assert.InRange(r.Pop, P.TetoCastelo - 1, P.TetoCastelo);

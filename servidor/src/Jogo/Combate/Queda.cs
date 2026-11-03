@@ -25,6 +25,8 @@ namespace ReinoDePedra.Jogo.Combate
         public string Atacante { get; set; } = "";
         public Dictionary<string, double> RecursosPerdidos { get; set; } = new();
         public double PopulacaoPerdida { get; set; }
+        /// <summary>Nomes dos civis perdidos na queda.</summary>
+        public List<string> CivisMortos { get; set; } = new();
         public List<string> ReliquiasLevadas { get; set; } = new();
         public List<string> ReliquiasMantidas { get; set; } = new();
         public Dictionary<string, double> Kit { get; set; } = new();
@@ -86,8 +88,8 @@ namespace ReinoDePedra.Jogo.Combate
                 m.Sujar(l);
             }
             var popPerdida = Math.Floor(r.Pop * m.P.Queda.Populacao + 1e-9);
-            r.Pop = Math.Max(0, r.Pop - popPerdida);
-            q.PopulacaoPerdida = popPerdida;
+            q.CivisMortos = Pessoas.Pessoas.Matar(m, Pessoas.Pessoas.Civis(m, r.Id), (int)popPerdida);
+            q.PopulacaoPerdida = q.CivisMortos.Count;
             var restoCastelo = castelo.Estoque.Copia();
             var outros = m.LocaisDe(r.Id).Where(l => !l.Ruina && l.Id != castelo.Id).ToList();
             Arruinar(m, castelo);
@@ -103,6 +105,7 @@ namespace ReinoDePedra.Jogo.Combate
                 m.Sujar(novo);
                 r.CasteloId = novo.Id;
                 ArrumarFilas(m, r, castelo, novo, false);
+                Pessoas.Pessoas.LocalMudou(m, castelo);   // quem morava no castelo caído vai para o novo
                 q.NivelNovo = nivel;
             }
             else
@@ -111,7 +114,7 @@ namespace ReinoDePedra.Jogo.Combate
                 foreach (var (k, v) in restoCastelo) q.RecursosPerdidos[k] = q.RecursosPerdidos.GetValueOrDefault(k) + v;
                 novo = Exilar(m, r, atk, castelo);
                 ArrumarFilas(m, r, castelo, novo, true, q);
-                r.Pop = m.P.Guerra.Exilio.Pop;   // o recrutamento cancelado não devolve população no exílio
+                Pessoas.Pessoas.Exilar(m, r, novo, (int)m.P.Guerra.Exilio.Pop);   // só a população de recomeço segue o reino
                 q.Exilio = true; q.NivelNovo = novo.Nivel;
                 q.Kit = new(m.P.Guerra.Exilio.Kit); q.KitTropas = new(m.P.Guerra.Exilio.Tropas);
                 q.EscudoAte = r.EscudoAte;
@@ -185,7 +188,6 @@ namespace ReinoDePedra.Jogo.Combate
             });
             r.CasteloId = c.Id;
             r.Vaga = vaga;
-            r.Pop = e.Pop;
             // carroças, exploradores e mensageiros parados ficavam no castelo caído: o exílio recomeça só com o kit
             r.Veiculos.Clear(); r.ExploradoresLivres.Clear(); r.MensageirosLivres = 0;
             r.Fundados = 0;
@@ -239,7 +241,7 @@ namespace ReinoDePedra.Jogo.Combate
                 new JsonObject { ["rotulo"] = "Castelo perdido", ["valor"] = q.CasteloAntigo + " · nível " + q.NivelAntigo },
                 new JsonObject { ["rotulo"] = q.Exilio ? "Novo castelo (exílio)" : "Nova sede", ["valor"] = q.NovoCastelo + " · nível " + q.NivelNovo },
                 new JsonObject { ["rotulo"] = "Recursos perdidos", ["valor"] = perdidos.Length > 0 ? perdidos : "nenhum" },
-                new JsonObject { ["rotulo"] = "População perdida", ["valor"] = N(q.PopulacaoPerdida) });
+                new JsonObject { ["rotulo"] = "População perdida", ["valor"] = N(q.PopulacaoPerdida) + (q.CivisMortos.Count > 0 ? ": " + Pessoas.Pessoas.Nomear(q.CivisMortos) : "") });
             if (q.ReliquiasLevadas.Count > 0) linhas.Add(new JsonObject { ["rotulo"] = "Relíquias levadas", ["valor"] = string.Join(", ", q.ReliquiasLevadas) });
             if (q.Exilio) linhas.Add(new JsonObject { ["rotulo"] = "Escudo de exílio", ["valor"] = m.P.EscudoExilioH + " h" });
             var resumo = q.Exilio

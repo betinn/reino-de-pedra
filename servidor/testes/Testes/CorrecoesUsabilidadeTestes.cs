@@ -7,6 +7,7 @@ using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Mapa;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Valiosos;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
@@ -46,7 +47,7 @@ public class CorrecoesUsabilidadeTestes
     {
         Economia.Atualizar(t.M, r);
         l.Guarnicao[unidade] = l.Guarnicao.GetValueOrDefault(unidade) + n;
-        r.Pop -= t.B.U[unidade].Pop * n;
+        Pessoas.RemoverCivis(t.M, r, t.B.U[unidade].Pop * n);
         t.M.Sujar(l); t.M.Sujar(r);
     }
 

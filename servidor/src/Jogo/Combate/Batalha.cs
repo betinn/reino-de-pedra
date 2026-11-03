@@ -60,6 +60,8 @@ namespace ReinoDePedra.Jogo.Combate
         public Dictionary<string, int> PerdasAtaque { get; set; } = new();
         public Dictionary<string, int> PerdasDefesa { get; set; } = new();
         public double MiliciaMorta { get; set; }
+        /// <summary>Nomes dos civis mortos na milícia.</summary>
+        public List<string> CivisMortos { get; set; } = new();
         public long? RelatorioAtaque { get; set; }
         public long? RelatorioDefesa { get; set; }
     }
@@ -300,7 +302,7 @@ namespace ReinoDePedra.Jogo.Combate
             if (l != null && perdasDef.Count > 0) { Combates.Tirar(l.Guarnicao, perdasDef); m.Sujar(l); }
             var miliciaPessoas = c.Extra.Pop * m.P.MiliciaPorPop;
             var miliciaMorta = modo == ModoRecuoDefesa ? 0 : Math.Floor(miliciaPessoas * perdaD * m.P.MiliciaBaixas + 1e-9);   // os outros civis fogem
-            if (defR != null && miliciaMorta > 0) { defR.Pop = Math.Max(0, defR.Pop - miliciaMorta); m.Sujar(defR); }
+            if (defR != null && l != null && miliciaMorta > 0) b.CivisMortos = Pessoas.Pessoas.Matar(m, Pessoas.Pessoas.Presentes(m, l), (int)miliciaMorta);
             b.PerdasAtaque = perdasAtk; b.PerdasDefesa = perdasDef; b.MiliciaMorta = miliciaMorta;
 
             // feridos: de quem vence ou recua (quem perde sem recuar não tem feridos)

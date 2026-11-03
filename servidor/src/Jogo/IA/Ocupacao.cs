@@ -164,6 +164,7 @@ public static class Ocupacao
             m.MudarDono(l, 0);
         }
         foreach (var t in Defesas.DoReino(m, r.Id).ToList()) m.Torres.Remover(t);
+        Pessoas.Pessoas.RemoverTodas(m, r);
         r.Ativo = false;
         m.Sujar(r);
         foreach (var outro in Ativos(m)) m.Avisar(outro.Id, "mapa");

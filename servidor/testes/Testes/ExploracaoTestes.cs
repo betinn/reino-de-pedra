@@ -6,6 +6,7 @@ using ReinoDePedra.Jogo.Mapa;
 using ReinoDePedra.Jogo.Persistencia;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Testes;
@@ -40,7 +41,7 @@ public class ExploracaoTestes
     {
         Economia.Atualizar(t.M, r);
         l.Guarnicao[unidade] = l.Guarnicao.GetValueOrDefault(unidade) + n;
-        r.Pop -= t.B.U[unidade].Pop * n;
+        Pessoas.RemoverCivis(t.M, r, t.B.U[unidade].Pop * n);
         t.M.Sujar(l); t.M.Sujar(r);
     }
 
@@ -274,7 +275,7 @@ public class ExploracaoTestes
         var (t, r, c, alvo) = MundoComRegiaoLonge();
         var rg = Regiao(t, alvo, "javalis", "medio");
         var mc = Logistica.Enviar(t.M, r, c.Hex, alvo, Recursos.De(new Dictionary<string, double> { ["madeira"] = 10 }), null, "obras", null);
-        Assert.Equal(10, mc.ForcaContraFauna(t.M));   // 2 pessoas × 5
+        Assert.Equal(5, mc.ForcaContraFauna(t.M));   // 1 pessoa (30 de carga) × 5
         Fauna.Atacar(t.M, mc, rg, alvo, 2);
         Assert.Equal(7.5, mc.Carga.Qtd("madeira"), 6);
         Assert.Contains(mc, t.M.Marchas);

@@ -4,6 +4,7 @@ using ReinoDePedra.Jogo.Config;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Persistencia;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Testes;
@@ -27,7 +28,7 @@ public class TropasTestes
     {
         Economia.Atualizar(t.M, r);
         l.Guarnicao[unidade] = l.Guarnicao.GetValueOrDefault(unidade) + n;
-        r.Pop -= t.B.U[unidade].Pop * n;
+        Pessoas.RemoverCivis(t.M, r, t.B.U[unidade].Pop * n);
         t.M.Sujar(l); t.M.Sujar(r);
     }
 
@@ -131,7 +132,7 @@ public class TropasTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         t.DarRecursos(r);
-        r.Pop = 20;   // mais gente que o reino novo tem (8), para encher a fila
+        Pessoas.Nascer(t.M, r, 12, andar: false);   // mais gente que o reino novo tem (8), para encher a fila
         for (var i = 0; i < 10; i++) Recrutamento.Recrutar(t.M, r, r.CasteloId, "milicia", 1);
         Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, r, r.CasteloId, "milicia", 1));
         var itens = r.Fila(Recrutamento.Fila).Itens;
@@ -180,7 +181,7 @@ public class TropasTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        r.Pop = 3;
+        Pessoas.RemoverCivis(t.M, r, (int)r.Pop - 3);
         var antes = c.Estoque.Qtd("comida");
         Assert.Contains("população", Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, r, c.Id, "milicia", 5)).Message);
         Assert.Equal(antes, c.Estoque.Qtd("comida"));

@@ -7,6 +7,8 @@ using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
+
 namespace ReinoDePedra.Jogo.Exploracao
 {
     /// <summary>
@@ -70,12 +72,13 @@ namespace ReinoDePedra.Jogo.Exploracao
         public void Entregar(Mundo m, Reino r, ItemFila item, int n)
         {
             if (item.Param == null || n <= 0) return;
+            PS.TreinoPronto(m, r, item, n);
             r.ExploradoresLivres[item.Param] = r.ExploradoresLivres.GetValueOrDefault(item.Param) + n;
             m.Sujar(r);
         }
         public void Concluir(Mundo m, Reino r, ItemFila item) =>
             Registros.Notificar(m, r.Id, "exploracao", item.Qtd > 1 ? "Exploradores prontos" : "Explorador pronto", item.Rotulo, "exploradores");
-        public void Cancelado(Mundo m, Reino r, ItemFila item) { r.Pop += item.Restantes; m.Sujar(r); }
+        public void Cancelado(Mundo m, Reino r, ItemFila item) => PS.TreinoCancelado(m, r, item);
     }
 
     [Sistema]
@@ -118,7 +121,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             var c = m.Locais.Obter(r.CasteloId);
             if (c == null || c.ReinoId != r.Id || c.Ruina) throw new RegraException("Exploradores são treinados no castelo.");
             Economia.Atualizar(m, r);
-            var livre = (long)Math.Floor(r.Pop);
+            var livre = PS.LivresParaTreino(m, r);
             if (livre < qtd) throw new RegraException($"Falta população civil livre: precisa de {qtd}, há {livre}.");
             var custo = new Recursos(); custo.Somar(x.Custo, qtd);
             var item = Filas.Enfileirar(m, r, Recrutamento.Fila, new ItemFila
@@ -126,7 +129,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                 Tipo = ItemExplorador.Id, LocalId = c.Id, Hex = c.Hex, Param = tipo, Qtd = qtd,
                 Rotulo = qtd + " × " + NomeTipo(m, tipo).ToLowerInvariant(), Custo = custo, DuracaoSeg = x.Tempo * qtd,
             });
-            r.Pop -= qtd;
+            PS.ParaTreino(m, r, qtd, Pessoas.Oficios.DeExplorador(tipo), item, c);
             m.Sujar(r);
             return item;
         }

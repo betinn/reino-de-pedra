@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Exploracao;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Testes;
@@ -23,7 +24,7 @@ public class CorrecoesUsabilidadeApiTestes
         var r = m.Reinos.Obter(reinoId)!;
         var c = m.Locais[r.CasteloId];
         Economia.Atualizar(m, r);
-        foreach (var (k, n) in tropas) { c.Guarnicao[k] = c.Guarnicao.GetValueOrDefault(k) + n; r.Pop -= m.B.U[k].Pop * n; }
+        foreach (var (k, n) in tropas) { c.Guarnicao[k] = c.Guarnicao.GetValueOrDefault(k) + n; Pessoas.RemoverCivis(m, r, m.B.U[k].Pop * n); }
         m.Sujar(c); m.Sujar(r);
         return c.Hex;
     });

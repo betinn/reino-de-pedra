@@ -324,7 +324,10 @@ public class RegrasRevisaoTestes
         Assert.True(r.Pop < 1);
         t.AvancarHoras(1);
         Economia.Atualizar(t.M, r);
-        Assert.True(r.Pop > 0);
+        Assert.True(r.PopFracao > 0);   // pessoas são inteiras: a primeira nasce quando a fração fecha 1
+        t.AvancarHoras(24);
+        Economia.Atualizar(t.M, r);
+        Assert.True(r.Pop >= 1);
         t.AvancarHoras(200);
         Economia.Atualizar(t.M, r);
         Assert.True(r.Pop > 5);   // cresce até o teto livre (castelo 15 menos as milícias)

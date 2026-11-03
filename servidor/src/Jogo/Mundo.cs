@@ -147,6 +147,7 @@ public sealed partial class Mundo
         IndiceNevoa.Clear();
         foreach (var n in NevoasDosReinos) IndiceNevoa[n.ReinoId] = n.Id;
         IndiceFotos.Clear(); BandeirasPorHex = null;   // remontados sob demanda
+        ReindexarPessoas();
         if (Mapa != null) AoReconstruirIndices?.Invoke(this);
     }
     public static event Action<Mundo>? AoReconstruirIndices;

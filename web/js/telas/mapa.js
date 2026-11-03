@@ -16,7 +16,7 @@
     pantano: ['Pântano', 'Deslocamento muito lento · ervas raras']
   };
   var NOME_MARCHA = RP.NOMES_MARCHA = RP.NOMES_MARCHA || {};
-  ['carregadores:Carregadores', 'mensageiro:Mensageiro', 'caravana:Caravana', 'exercito:Exército'].forEach(function (x) { var p = x.split(':'); if (!NOME_MARCHA[p[0]]) NOME_MARCHA[p[0]] = p[1]; });
+  ['carregadores:Carregadores', 'pessoas:Pessoas', 'mensageiro:Mensageiro', 'caravana:Caravana', 'exercito:Exército'].forEach(function (x) { var p = x.split(':'); if (!NOME_MARCHA[p[0]]) NOME_MARCHA[p[0]] = p[1]; });
 
   var tela = null, cena = null, tat = null, modo = 'cena', selecao = -1, alvoFundar = null, posicionado = false;
   var mm = null, mmCtx = null, mmVista = null, mmVersao = -1, mmEscala = 1, rafMm = 0;

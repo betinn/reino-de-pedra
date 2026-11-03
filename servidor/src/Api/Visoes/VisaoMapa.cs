@@ -2,6 +2,7 @@ using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Reinos;
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 using ReinoDePedra.Jogo.Valiosos;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
@@ -89,7 +90,7 @@ public static class VisaoMapa
         };
         long? alvoId = x switch
         {
-            Exercito e => e.AlvoLocalId, Carregadores c => c.DestinoLocalId,
+            Exercito e => e.AlvoLocalId, Carregadores c => c.Retornando ? c.OrigemLocalId : c.DestinoLocalId, ReinoDePedra.Jogo.Pessoas.Deslocamento d => d.ParaLocalId,
             Caravana c => c.Fase == Caravana.Buscar ? c.OrigemLocalId : c.Fase == Caravana.Levar ? c.DestinoLocalId : c.BaseLocalId,
             _ => null,
         };
@@ -100,7 +101,7 @@ public static class VisaoMapa
             estado = VisaoTropas.Estado(m, x),
             ordem = x switch { Exercito e => e.Ordem, Explorador ex => ex.Ordem, Caravana c => c.Fase, _ => null },
             carga = x.Carga.Arredondado(), cargaMax, cargaUsada = Math.Floor(x.Carga.Total),
-            tropas = x.Tropas, resumo = GT.Partes(m, x.Tropas), pessoas = x is Carregadores cg ? cg.Pessoas : (int?)null,
+            tropas = x.Tropas, resumo = GT.Partes(m, x.Tropas), pessoas = x is Carregadores cg ? cg.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento dp ? dp.PessoaIds.Count : (int?)null,
             alvo = VisaoTropas.NomeLocal(m, r, alvoId), destinoNome = VisaoTropas.NomeLocal(m, r, m.LocalNoHex(x.Destino)?.Id),
             reliquias = x.Reliquias.Count, x.Estandarte,
         };

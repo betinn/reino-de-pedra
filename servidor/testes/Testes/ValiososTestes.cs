@@ -4,6 +4,7 @@ using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Mapa;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 using ReinoDePedra.Jogo.Valiosos;
@@ -28,7 +29,7 @@ public class ValiososTestes
     {
         Economia.Atualizar(t.M, r);
         l.Guarnicao[unidade] = l.Guarnicao.GetValueOrDefault(unidade) + n;
-        r.Pop = Math.Max(0, r.Pop - t.B.U[unidade].Pop * n);
+        Pessoas.RemoverCivis(t.M, r, t.B.U[unidade].Pop * n);
         t.M.Sujar(l); t.M.Sujar(r);
     }
 
@@ -460,16 +461,15 @@ public class ValiososTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var vila = LocalDe(t, r, TipoLocal.Vila);
-        var ef = Economia.Eficiencia(t.M, r);
-        var base0 = Economia.TaxaLocal(t.M, r, vila, ef).Qtd("comida");
+        var base0 = Economia.TaxaLocal(t.M, r, vila).Qtd("comida");
         DarReliquia(t, r, vila, "producao");
-        Assert.Equal(base0 * (1 + t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila, ef).Qtd("comida"), 6);
+        Assert.Equal(base0 * (1 + t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila).Qtd("comida"), 6);
         DarReliquia(t, r, vila, "producao");
-        Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila, ef).Qtd("comida"), 6);
+        Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila).Qtd("comida"), 6);
         DarReliquia(t, r, vila, "ataque");   // outro tipo não muda a produção
-        Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila, ef).Qtd("comida"), 6);
+        Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila).Qtd("comida"), 6);
         var serraria = LocalDe(t, r, TipoLocal.Serraria);
-        Assert.Equal(t.M.F.Producao(serraria.Nivel) * ef, Economia.TaxaLocal(t.M, r, serraria, ef).Qtd("madeira"), 6);
+        Assert.Equal(t.M.F.Producao(serraria.Nivel) * Economia.EficienciaLocal(t.M, serraria), Economia.TaxaLocal(t.M, r, serraria).Qtd("madeira"), 6);
     }
 
     [Fact]

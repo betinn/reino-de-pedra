@@ -4,6 +4,8 @@ using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
 
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
+
 namespace ReinoDePedra.Jogo.Social
 {
     /// <summary>
@@ -52,12 +54,13 @@ namespace ReinoDePedra.Jogo.Social
         public void Entregar(Mundo m, Reino r, ItemFila item, int n)
         {
             if (n <= 0) return;
+            PS.TreinoPronto(m, r, item, n * m.P.Mensageiro.Pop);
             r.MensageirosLivres += n;
             m.Sujar(r);
         }
         public void Concluir(Mundo m, Reino r, ItemFila item) =>
             Registros.Notificar(m, r.Id, "mensagens", item.Qtd > 1 ? "Mensageiros prontos" : "Mensageiro pronto", item.Rotulo, "mensagens");
-        public void Cancelado(Mundo m, Reino r, ItemFila item) { r.Pop += item.Restantes * m.P.Mensageiro.Pop; m.Sujar(r); }
+        public void Cancelado(Mundo m, Reino r, ItemFila item) => PS.TreinoCancelado(m, r, item);
     }
 
     public static class Mensageiros
@@ -79,7 +82,7 @@ namespace ReinoDePedra.Jogo.Social
             if (c == null || c.ReinoId != r.Id || c.Ruina) throw new RegraException("Mensageiros são treinados no castelo.");
             Economia.Atualizar(m, r);
             var pop = qtd * m.P.Mensageiro.Pop;
-            var livre = (long)Math.Floor(r.Pop);
+            var livre = PS.LivresParaTreino(m, r);
             if (livre < pop) throw new RegraException($"Falta população civil livre: precisa de {pop}, há {livre}.");
             var custo = new Recursos(); custo.Somar(m.P.Mensageiro.Custo, qtd);
             var item = Filas.Enfileirar(m, r, Recrutamento.Fila, new ItemFila
@@ -87,7 +90,7 @@ namespace ReinoDePedra.Jogo.Social
                 Tipo = ItemMensageiro.Id, LocalId = c.Id, Hex = c.Hex, Qtd = qtd,
                 Rotulo = qtd + (qtd > 1 ? " × mensageiros" : " × mensageiro"), Custo = custo, DuracaoSeg = m.P.Mensageiro.Tempo * qtd,
             });
-            r.Pop -= pop;
+            PS.ParaTreino(m, r, pop, Pessoas.Oficios.Mensageiro, item, c);
             m.Sujar(r);
             return item;
         }
