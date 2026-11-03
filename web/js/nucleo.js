@@ -684,7 +684,7 @@
     telas.insertAdjacentHTML('afterbegin', '<div class="painel-pega" aria-hidden="true"></div>');
     gestoPainel(telas);
     window.addEventListener('hashchange', rotear);
-    RP.get('/mundo').then(function (m) { RP.mundo = m; RP.sincronizar(m.agora); RP.hex.configurar(m.cols, m.lins); }).catch(function () { /* sem rede */ })
+    RP.get('/mundo').then(function (m) { RP.mundo = m; RP.aceleracao = m.aceleracao > 0 ? m.aceleracao : 1; RP.sincronizar(m.agora); RP.hex.configurar(m.cols, m.lins); }).catch(function () { /* sem rede */ })
       .then(function () { return RP.entrarNoJogo(); })
       .then(rotear, rotear);
   };

@@ -42,10 +42,12 @@
   };
 
   /* ---------------------------------------------------------------- tempo do servidor
-     O relógio do servidor é a verdade: guardamos a diferença para o relógio do aparelho. */
-  RP.difRelogio = 0;
-  RP.agora = function () { return Date.now() + RP.difRelogio; };
-  RP.sincronizar = function (agoraServidor) { if (agoraServidor) RP.difRelogio = agoraServidor - Date.now(); };
+     O relógio do servidor é a verdade: guardamos o último instante dele e quando chegou. Com o tempo acelerado
+     de desenvolvimento (REINO_ACELERACAO, vem em GET /mundo), o relógio daqui anda na mesma velocidade do servidor. */
+  var baseServidor = 0, baseLocal = 0;
+  RP.aceleracao = 1;
+  RP.agora = function () { return baseLocal ? baseServidor + (Date.now() - baseLocal) * RP.aceleracao : Date.now(); };
+  RP.sincronizar = function (agoraServidor) { if (agoraServidor) { baseServidor = agoraServidor; baseLocal = Date.now(); } };
 
   /* ---------------------------------------------------------------- avisos em tempo real */
   var fonte = null, ouvintes = {};
