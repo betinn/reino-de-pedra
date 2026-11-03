@@ -1,6 +1,6 @@
 # Correções de usabilidade (antes dos próximos passos)
 
-Defeitos encontrados nos testes locais (itens 1 a 14; a lista cresce conforme os testes seguem). Esta etapa vem **antes** de [`proximos-passos.md`](proximos-passos.md). Foco: usabilidade. Melhoria gráfica fica para depois (ver "Fora desta etapa").
+Defeitos encontrados nos testes locais (itens 1 a 17; a lista cresce conforme os testes seguem). Esta etapa vem **antes** de [`proximos-passos.md`](proximos-passos.md). Foco: usabilidade. Melhoria gráfica fica para depois (ver "Fora desta etapa").
 
 Regras desta etapa:
 
@@ -24,8 +24,45 @@ Feito nesta etapa, para conferir jogando (`REINO_ACELERACAO=60 scripts/rodar-loc
 | 11 | **Feito.** Carga com a mesma peça em todo lugar (`RP.cargaHTML`: o que leva, quanto, quanto cabe, barra); "Carga: vazia · 300 livres"; marchas próprias no `/mapa` levam carga. | `tropas.js`, `mapa.js`, `VisaoMapa`, `VisaoTropas` |
 | 12 | **Feito.** `fmtHora`/`fmtDuracao`/`fmtResta` protegidos; aviso ao enfileirar usa `RP.textoFilaItem` (hora só quando já começou; "na fila" ou "material a caminho" nos outros casos). | `nucleo.js`, `reino.js`, `exploracao.js` |
 | 13 | **Feito.** Tocar em marcha própria no mapa abre painel com estado, destino, chegada, carga e ações "Novo destino", "Voltar ao castelo", "Parar aqui" (exércitos) ou "Novo destino"/"Voltar" (exploradores); a nova rota sai da posição atual; `podeOrdem`/`bloqueio` vêm do servidor. | `mapa.js` (`folhaMarchaPropria`), `Exercito.DarOrdem` |
+| 15 | **Feito.** O toque na Vista usa a medida atual do canvas (`ResizeObserver` e nova medida a cada toque; a coluna do painel muda a largura com transição e o canvas ficava com a largura antiga); caixas de toque de objetos não roubam o hexágono vizinho; escolhendo destino, o toque abre sempre a folha do hexágono, com as ordens. | `vista/cena.js` (`alvoEm`), `vista/tatico.js`, `mapa.js` |
+| 16 | **Feito.** O cliente anda na mesma aceleração do servidor (`aceleracao` em `GET /mundo`); sessão de ritmo a 6× registrada abaixo. Números do balanceamento não mudaram. | `api.js` (`RP.agora`), `ModuloReino.cs` |
+| 17 | **Feito.** Recrutamento (e exploradores, mensageiros e carroças) entrega uma unidade por vez; "2 de 5 prontos · todos em …" no item da fila. | `Fila.cs` (`ITipoItemPorUnidade`), `reino.js`, `CLAUDE.md` |
 
 Pendente: a revisão com alguém de fora (regra 6) a cada tela refeita; as telas de ação longas (caça, exploradores, caravana, ferraria, social) ainda têm o desenho antigo dentro do painel novo e merecem a mesma dieta de informação.
+
+## Teste manual do toque na Vista (item 15)
+
+Servidor local, uma conta com tropas no castelo.
+
+1. **Computador, painel fechado** (janela ≥ 900 px, `#/mapa`): Exército → enviar tropas (ou "Enviar tropas daqui" na folha do castelo). Tocar num hexágono de grama logo acima do telhado do castelo: a folha que abre é a desse hexágono (título com o terreno e as coordenadas), com as ordens de envio; não é o castelo.
+2. **Computador, painel aberto**: abrir Reino (a coluna aparece à direita e o mundo encolhe). Sem fechar a coluna, começar o envio e tocar em três hexágonos diferentes (perto da borda esquerda, no centro e perto da coluna): cada folha mostra o hexágono sob o ponteiro. Fechar e abrir a coluna algumas vezes e repetir.
+3. **Celular** (390 × 844): começar o envio e tocar no telhado do castelo e em hexágonos na borda de cima e de baixo da área visível: a folha é sempre a do chão sob o dedo.
+4. Tocar num local seu durante o envio abre a folha do hexágono com **Reforçar**, não o painel do local. Fora do envio, tocar no castelo continua abrindo o painel dele.
+
+Conferência rápida no console (desenvolvimento): `document.querySelector('.cena-cv').clientWidth` igual a `.width` (ou `.width / devicePixelRatio`) depois de abrir e fechar a coluna.
+
+## Sessão de ritmo a 6× (item 16)
+
+`REINO_ACELERACAO=6`, `REINO_SEMENTE=42`, reino novo, computador e celular. Tempos abaixo em **tempo de jogo** (o que o jogador sente sem aceleração).
+
+O que escondia o ritmo a 60×: o servidor andava 60× mais rápido, mas o relógio do cliente andava a 1× entre uma resposta e outra. Uma obra de 4 min mostrava "04:00" contando devagar e terminava 4 s depois, com o número pulando; marchas andavam devagar na tela e "teleportavam" no fim. Corrigido: o cliente recebe a aceleração em `GET /mundo` e anda junto.
+
+| Ação | Tempo de jogo | Impressão |
+|---|---|---|
+| Castelo nível 2 | 4 min | Bom para a primeira sessão. O nível 3 já pede 8 min, e o material (180 madeira, 150 pedra) leva cerca de 3 h de produção. |
+| Locais nível 2 | 2 min | Rápido, mas travados pelo castelo ("nenhum local passa do nível do castelo") até ele subir. |
+| Milícia | 30 s cada (5 em 2 min 30 s) | Rápido; com a entrega por unidade, a primeira sai em 30 s. |
+| Lanceiro | 3 min cada (9 em 27 min) | Com a entrega por unidade dá para mandar os primeiros sem esperar o lote. Antes, 27 min parados. |
+| Explorador a pé | 1 min de treino; 6 min 30 s até 8 hexágonos; volta em 6 min | Revelou 42 hexágonos. Ida e volta de 13 min para ver a vizinhança é aceitável; a volta automática sem nova ordem deixa o explorador ocioso no caminho de casa. |
+| Milícia andando | 4 hex. em 3 min; 6 hex. em 5 min; 10 hex. em 7 min; 18 hex. em 11 min; 32 hex. em 19 min | Dentro da meta M4 (o caminho real passa de 3 hex. para 4 por causa do rio). |
+| Produção | castelo 25/h de cada básico; local nível 1 30/h | O gargalo da primeira hora: um lanceiro custa 30 de ferro, e o reino faz 55 de ferro por hora. |
+
+O que ficou lento ou rápido demais (sem mudar números; cada um é candidato para o ajuste fino com partidas reais):
+
+- **Rápido demais:** depois de uns 10 min, o kit acabou e tudo o que dá para fazer está na fila; o resto da primeira sessão é esperar. Combina com "o jogador dá ordens longas e sai", mas a primeira sessão termina cedo.
+- **Lento:** a produção de ferro (55/h com o kit) contra o custo do lanceiro (30) e da obra do castelo nível 3 (40 de ferro): o segundo lote de tropas só sai horas depois.
+- **Ordem importa:** a meta M1 (kit recruta 10 lanceiros) só vale se o jogador recrutar antes de melhorar o castelo; melhorando primeiro, faltam 19 de ferro. A tela de recrutamento já diz "faltam X · pronto em Y", então não é um beco sem saída.
+- **Tempo de exploração** bom; a volta automática do explorador ao castelo é tempo morto que poderia virar "explorar outra área" (ideia para depois, não regra).
 
 ## Princípios de design novos
 
@@ -230,6 +267,32 @@ Fazer, em ordem:
 8. **Revisão com alguém de fora** (regra 6 dos princípios) a cada tela refeita, antes de passar para a próxima.
 
 Pronto quando: cada tela passa no orçamento do passo 2 e a regra dos 5 segundos funciona para Meu reino e para o Mapa.
+
+### 15. Clique na Vista cai em hexágono errado ao enviar tropas
+
+Problema: ao tocar no mapa (Vista) durante o envio de tropas, o hexágono escolhido não era o que estava sob o ponteiro.
+
+Causas: (a) no computador, a coluna do painel muda a largura do mundo com transição de 360 ms e o `resize` saía no começo dela; o canvas ficava com a largura antiga e o toque convertia a posição com a medida velha; (b) as caixas de toque dos objetos (castelo com 64 × 66 de mundo, marcha com 60 × 44) passam da borda do hexágono deles, e um toque no hexágono de cima caía no objeto de baixo; (c) tocar num local seu durante o envio abria o painel do local, sem as ordens.
+
+Feito: `ResizeObserver` no canvas da Vista e no Mapa, e nova medida a cada toque; o objeto só ganha o toque quando está no hexágono tocado (ou quando o toque cai no pé de uma marcha); escolhendo destino de tropas ou de fundação, o toque escolhe sempre o hexágono do chão e abre a folha dele. Teste manual acima.
+
+Pronto quando: nos passos do teste manual, toda folha aberta é a do hexágono sob o ponteiro.
+
+### 16. Tempo acelerado escondeu o ritmo
+
+Problema: o jogador testou com `REINO_ACELERACAO=60` e não conseguiu julgar o que leva tempo.
+
+Feito: o cliente anda na aceleração do servidor; sessão a 6× registrada acima, sem mudar números do balanceamento.
+
+Pronto quando: com tempo acelerado, contagens e marchas na tela andam na velocidade do servidor e terminam junto com ele.
+
+### 17. Recrutamento entrega uma tropa por vez
+
+Problema: "5 lanceiros" só entregava as 5 juntas no fim do tempo total.
+
+Feito: regra no `CLAUDE.md` (Tempos). Cada unidade fica pronta no seu tempo e entra na guarnição na hora; vale para tropas, exploradores, mensageiros e carroças (`ITipoItemPorUnidade` em `Fila.cs`, evento `UnidadeProntaEvento`). O item continua um só na fila; cancelar devolve material e população só do que faltava. A meta M1 não muda (é de custo). Testes em `TropasTestes`, `ExploracaoTestes` e `PersistenciaTestes`.
+
+Pronto quando: numa fila de 5 lanceiros, a guarnição cresce de um em um e o item mostra "2 de 5 prontos".
 
 ## Ordem sugerida
 
