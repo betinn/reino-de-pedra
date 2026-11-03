@@ -189,16 +189,15 @@
       h += '<div class="card card-moldura pilha"><div class="linha"><span class="ico-placa dono-meu">' + RP.icone(RP.ICONE_EXPLORADOR[ativo.tipoExp]) + '</span><div style="flex:1"><b>Nova ordem: ' + RP.esc(ativo.nome) + '</b><br><small class="fraco">Sai de onde está agora.</small></div>' +
         '<button type="button" class="btn btn-p btn-fantasma" data-exp-nova="">' + RP.icone('fechar') + 'Cancelar</button></div></div>';
     } else {
-      h += '<div class="secao-titulo"' + (d.exploradores.length || d.presos.length || d.capturados.length ? '' : ' style="margin-top:0"') + '>1. Tipo</div><div class="escolhas">' + tiposVisiveis(d).map(function (x) {
-        return '<button type="button" class="escolha" data-exp-tipo="' + x.id + '" aria-pressed="' + (ex.tipo === x.id) + '">' +
-          '<span class="linha"><span class="ico-placa">' + RP.icone(RP.ICONE_EXPLORADOR[x.id] || 'explorador') + '</span><b>' + RP.esc(x.curto) + '</b></span>' +
-          '<span class="escolha-atrib"><span>Velocidade <b>' + RP.esc((RP.VELOCIDADES || {})[x.vel] || x.vel) + '</b></span><span>Visão <b>' + x.visao + (x.jazidas ? ' · jazidas a ' + x.jazidas : '') + '</b></span><span>Força <b>' + x.forca + '</b> contra fauna</span></span>' +
-          '<small class="fraco">' + RP.esc(RP.CARAC_EXPLORADOR[x.id] || '') + '</small>' +
-          (x.livres ? '<span class="selo selo-visivel">' + x.livres + ' livre' + (x.livres > 1 ? 's' : '') + '</span>' : '<span class="selo selo-desconhecido">Nenhum livre</span>') +
-          (x.emTreino ? '<span class="selo selo-info">' + x.emTreino + ' em treino</span>' : '') + '</button>';
+      /* camada 1: uma linha por tipo (nome e quantos livres); o detalhe só do escolhido; treinar fica junto dele */
+      h += '<div class="secao-titulo"' + (d.exploradores.length || d.presos.length || d.capturados.length ? '' : ' style="margin-top:0"') + '>1. Tipo</div><div class="escolhas escolhas-linhas">' + tiposVisiveis(d).map(function (x) {
+        return '<button type="button" class="escolha escolha-linha" data-exp-tipo="' + x.id + '" aria-pressed="' + (ex.tipo === x.id) + '">' +
+          '<span class="ico-placa">' + RP.icone(RP.ICONE_EXPLORADOR[x.id] || 'explorador') + '</span><span class="escolha-txt"><b>' + RP.esc(x.curto) + '</b>' +
+          '<small class="fraco">' + (x.livres ? x.livres + ' livre' + (x.livres > 1 ? 's' : '') : 'nenhum livre') + (x.emTreino ? ' · ' + x.emTreino + ' em treino' : '') + '</small></span></button>';
       }).join('') + '</div>' +
-        '<div class="card linha-entre exp-treino"><span><b>Treinar ' + RP.esc(tipo.nome.toLowerCase()) + '</b><br><small class="fraco">' + RP.fmtDuracao(tipo.tempo) + ' no castelo · 1 de população</small><br>' + RP.custoHTML(tipo.custo) + '</span>' +
-        '<button type="button" class="btn btn-p" data-exp-treinar="' + tipo.id + '">' + RP.icone('mais') + 'Treinar</button></div>';
+        '<div class="card pilha exp-detalhe"><small class="fraco">Velocidade <b>' + RP.esc((RP.VELOCIDADES || {})[tipo.vel] || tipo.vel) + '</b> · visão <b>' + tipo.visao + (tipo.jazidas ? ' (jazidas a ' + tipo.jazidas + ')' : '') + '</b> · força <b>' + tipo.forca + '</b> contra fauna. ' + RP.esc(RP.CARAC_EXPLORADOR[tipo.id] || '') + '</small>' +
+        '<div class="linha-entre exp-treino"><span><small class="fraco">Treinar: ' + RP.fmtDuracao(tipo.tempo) + ' · 1 de população</small><br>' + RP.custoHTML(tipo.custo) + '</span>' +
+        '<button type="button" class="btn btn-p' + (tipo.livres ? ' btn-fantasma' : '') + '" data-exp-treinar="' + tipo.id + '">' + RP.icone('mais') + 'Treinar</button></div></div>';
     }
     var ordens = ['explorar', 'rota', 'patrulhar'].concat(ex.tipo === 'batedor' ? ['espionar'] : []);
     h += '<div class="secao-titulo">' + (ativo ? '' : '2. ') + 'Ordem</div><div class="abas abas-rolagem" role="group" aria-label="Ordem">' + ordens.map(function (k) {

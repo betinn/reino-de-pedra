@@ -62,6 +62,16 @@ html.jogo .tela-construcao .conteudo-tela { padding-bottom: var(--esp-4); }
 .vazio > .ico, .vazio > svg { width: 32px; height: 32px; opacity: .7; }
 .vazio p { margin: 0; max-width: 32ch; }
 
+/* informação em camadas (RP.comoFunciona, RP.secaoRecolhida): um toque abre o detalhe */
+.recolhido { margin-top: var(--esp-3); }
+.recolhido > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; min-height: var(--alvo-min); }
+.recolhido > summary::-webkit-details-marker { display: none; }
+.recolhido > summary::after { content: "▸"; margin-left: auto; color: var(--cor-texto-2); transition: transform var(--dur-2, .2s); }
+.recolhido[open] > summary::after { transform: rotate(90deg); }
+.como-funciona > summary { font-size: var(--fs-2); color: var(--cor-texto-2); font-weight: 700; }
+.como-funciona .recolhido-corpo { font-size: var(--fs-2); color: var(--cor-texto-2); display: grid; gap: 6px; }
+.como-funciona .recolhido-corpo p { margin: 0; }
+
 /* barra do painel recolhido: só o título, para voltar */
 .painel-barra {
   position: fixed; left: 50%; bottom: calc(var(--nav-altura) + env(safe-area-inset-bottom) + 8px); z-index: var(--z-folha);

@@ -222,9 +222,9 @@
     RP.get('/bandeiras').then(function (d) {
       dadosB = d;
       RP.$('.band-conteudo', el).innerHTML =
-        '<div class="nota-regra">' + RP.icone('bandeira', 'ico-p') + '<span>Bandeiras são sinais para outros jogadores: valor social, sem efeito no jogo. <b>Sempre mostram quem as colocou.</b> Qualquer jogador pode derrubá-las com tropas no local.</span></div>' +
-        '<div class="secao-titulo">Suas bandeiras · ' + d.minhas.length + ' de ' + d.max + '</div><div class="pilha">' + (d.minhas.length ? d.minhas.map(function (b) { return itemBandeira(b, true); }).join('') : S.vazio('Nenhuma bandeira colocada. Toque num hexágono do mapa e escolha Bandeira.')) + '</div>' +
-        '<div class="secao-titulo">Vistas por você</div><div class="pilha">' + (d.vistas.length ? d.vistas.map(function (b) { return itemBandeira(b, false); }).join('') : S.vazio('Nenhuma bandeira de outro reino à vista.')) + '</div><div style="height:120px"></div>';
+        '<div class="secao-titulo" style="margin-top:0">Suas bandeiras · ' + d.minhas.length + ' de ' + d.max + '</div><div class="pilha">' + (d.minhas.length ? d.minhas.map(function (b) { return itemBandeira(b, true); }).join('') : S.vazio('Nenhuma bandeira colocada. Toque num hexágono do mapa e escolha Bandeira.')) + '</div>' +
+        '<div class="secao-titulo">Vistas por você</div><div class="pilha">' + (d.vistas.length ? d.vistas.map(function (b) { return itemBandeira(b, false); }).join('') : S.vazio('Nenhuma bandeira de outro reino à vista.')) + '</div>' +
+        RP.comoFunciona('<p>Bandeiras são sinais para outros jogadores: valor social, sem efeito no jogo. <b>Sempre mostram quem as colocou.</b></p><p>Qualquer jogador pode derrubá-las com tropas no local; você é avisado, sem saber quem foi.</p>') + '<div style="height:120px"></div>';
     }).catch(function (e) { RP.$('.band-conteudo', el).innerHTML = S.vazio(RP.esc(e.message)); });
   }
   RP.registrarTela('bandeiras', {
@@ -250,11 +250,11 @@
     RP.$('.bn-conteudo', el).innerHTML =
       '<div class="secao-titulo" style="margin-top:0">Onde</div><div class="card linha destino-card"><span class="ico-placa">' + RP.icone(a ? 'alvo' : 'mapa') + '</span><div style="flex:1"><b>' + RP.esc(lugar) + '</b><br><small class="fraco">' +
       (e.v === 'desconhecido' && a ? 'Só em lugar que o seu reino já explorou.' : 'Em qualquer hexágono que você já explorou.') + '</small></div><a class="btn btn-p" href="#/mapa">' + RP.icone('mapa') + 'Trocar</a></div>' +
-      '<div class="secao-titulo">Tipo</div><div class="escolhas">' + TIPOS_B.map(function (tb2) {
-        return '<button type="button" class="escolha" data-tipo-bandeira="' + tb2.id + '" aria-pressed="' + (nova.tipo === tb2.id) + '"><span class="linha"><span class="ico-placa">' + RP.icone(tb2.icone) + '</span><b>' + RP.TIPOS_BANDEIRA[tb2.id] + '</b></span><small class="fraco">' + tb2.txt + '</small></button>';
+      '<div class="secao-titulo">Tipo</div><div class="escolhas escolhas-linhas">' + TIPOS_B.map(function (tb2) {
+        return '<button type="button" class="escolha escolha-linha" data-tipo-bandeira="' + tb2.id + '" aria-pressed="' + (nova.tipo === tb2.id) + '"><span class="ico-placa">' + RP.icone(tb2.icone) + '</span><span class="escolha-txt"><b>' + RP.TIPOS_BANDEIRA[tb2.id] + '</b><small class="fraco">' + tb2.txt + '</small></span></button>';
       }).join('') + '</div>' +
       '<div class="secao-titulo">Recado</div><div class="campo"><label for="texto-bandeira">Texto da bandeira</label><input id="texto-bandeira" type="text" maxlength="' + max + '" value="' + RP.esc(nova.texto) + '" placeholder="Ex.: Estrada do Rei: passagem livre." autocomplete="off"><span class="campo-ajuda"><span data-contador>' + n + '</span>/' + max + ' · todos verão seu brasão e nome</span></div>' +
-      '<div class="secao-titulo">Prévia</div><div class="card band-previa">' + flagSVG(40) + '<div><span class="rotulo">' + RP.TIPOS_BANDEIRA[nova.tipo] + '</span><b class="band-previa-texto">“' + RP.esc(nova.texto.trim() || 'Seu recado aqui') + '”</b><div class="linha" style="margin-top:6px">' + RP.iconeReino(RP.reino, 20) + '<small class="fraco">' + RP.esc(RP.reino ? RP.reino.nome : '') + '</small></div></div></div><div style="height:120px"></div>';
+      '<div class="card band-previa" style="margin-top:var(--esp-3)" aria-label="Prévia">' + flagSVG(40) + '<div><span class="rotulo">' + RP.TIPOS_BANDEIRA[nova.tipo] + '</span><b class="band-previa-texto">“' + RP.esc(nova.texto.trim() || 'Seu recado aqui') + '”</b><div class="linha" style="margin-top:6px">' + RP.iconeReino(RP.reino, 20) + '<small class="fraco">' + RP.esc(RP.reino ? RP.reino.nome : '') + '</small></div></div></div><div style="height:120px"></div>';
     RP.$('[data-colocar]', el).classList.toggle('btn-inativo', n < min || !a);
     var inp = RP.$('#texto-bandeira', el);
     inp.addEventListener('input', function () {

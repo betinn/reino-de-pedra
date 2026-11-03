@@ -375,16 +375,26 @@
   /* "faltam 120 madeira · pronto em 12 min" (ou vazio se nada falta) */
   RP.faltaHTML = function (custo, mult, local) {
     mult = mult || 1;
-    var falta = [], pior = 0;
+    var falta = [], pior = 0, semProducao = [];
     Object.keys(custo || {}).forEach(function (k) {
       if (k === 'populacao') { if ((RP.reino ? RP.reino.pop : 0) < custo[k] * mult) falta.push('gente'); return; }
       var f = custo[k] * mult - RP.qtdRecurso(k, local || '*');
       if (f <= 0) return;
       falta.push(RP.num(Math.ceil(f)) + ' ' + RP.nomeRecurso(k));
-      pior = Math.max(pior, RP.tempoParaTer(k, custo[k] * mult, local));
+      var t = RP.tempoParaTer(k, custo[k] * mult, local);
+      if (isFinite(t)) pior = Math.max(pior, t); else semProducao.push(RP.nomeRecurso(k));
     });
     if (!falta.length) return '';
-    return '<span class="custo-falta">' + RP.icone('relogio', 'ico-p') + 'faltam ' + RP.esc(falta.join(', ')) + (pior ? ' · pronto ' + RP.fmtTempoParaTer(pior) : '') + '</span>';
+    /* o que nenhum local produz (ouro, valiosos) não tem "pronto em": vem de extração, comércio ou saque */
+    var quando = semProducao.length ? ' · ' + RP.esc(semProducao.join(', ')) + ' não se produz: extraia ou troque' : pior ? ' · pronto ' + RP.fmtTempoParaTer(pior) : '';
+    return '<span class="custo-falta">' + RP.icone('relogio', 'ico-p') + 'faltam ' + RP.esc(falta.join(', ')) + quando + '</span>';
+  };
+  /* informação em camadas: regras e detalhes que não são a decisão de agora ficam recolhidos, um toque adiante */
+  RP.comoFunciona = function (html, titulo) {
+    return '<details class="recolhido como-funciona"><summary>' + RP.icone('info', 'ico-p') + (titulo || 'Como funciona') + '</summary><div class="recolhido-corpo">' + html + '</div></details>';
+  };
+  RP.secaoRecolhida = function (titulo, html, aberta) {
+    return '<details class="recolhido secao-recolhida"' + (aberta ? ' open' : '') + '><summary class="secao-titulo">' + titulo + '</summary><div class="recolhido-corpo">' + html + '</div></details>';
   };
   /* custo em selos; marca em vermelho o que falta no reino todo (o material vem sozinho dos locais) e diz quando dá */
   RP.custoHTML = function (custo, mult, local, semFalta) {

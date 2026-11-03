@@ -53,9 +53,6 @@
     return ids.map(function (u) { return RP.unidade && RP.unidade(u) ? RP.unidade(u).nome.toLowerCase() : u; }).join(', ');
   }
   function eraAtualNome(d) { var e = (d.eras || []).filter(function (x) { return x.id === d.era; })[0]; return e ? e.nome : ERA_FERRO.nome; }
-  function nota() {
-    return '<p class="fraco fer-nota">O material vem sozinho para a ferraria: o que faltar sai dos locais mais próximos, e o ouro, do armazém.</p>';
-  }
 
   function filaHTML(d) {
     var f = d.fila || [];
@@ -138,12 +135,20 @@
     RP.$('.topo-titulos small', el).textContent = d.ferraria ? d.ferraria.nome + ' · nível ' + d.ferraria.nivel + ' · ' + eraAtualNome(d) : eraAtualNome(d);
     box.innerHTML = (d.ferraria ? '' : '<div class="nota-regra">' + RP.icone('ferraria', 'ico-p') + '<span>Seu reino ainda não tem ferraria. Funde uma em planície ou colina para pesquisar eras e forjar.</span></div>' +
         '<a class="btn btn-p btn-primario fer-fundar" href="#/mapa?fundar=ferraria">' + RP.icone('alvo') + 'Fundar ferraria</a>') +
-      filaHTML(d) + nota() +
-      '<div class="secao-titulo">Eras</div><div class="pilha">' + [ERA_FERRO].concat(d.eras).map(cardEra).join('') + '</div>' +
-      '<div class="secao-titulo">Armas e armaduras</div><p class="fraco fer-nota">+' + pct(d.bonusNivel) + '% por nível, até o nível ' + d.niveisMax + ', para cada família. Armas dão ataque; armaduras, defesa. O bônus não ocupa população.</p>' +
-      '<div class="pilha">' + d.familias.map(function (f) { return cardFamilia(d, f); }).join('') + '</div>' +
-      '<div class="secao-titulo">Lendário</div>' + cardLendario(d) +
-      '<div class="secao-titulo">Bônus de combate</div>' + cardTeto(d) + '<div style="height:var(--esp-8)"></div>';
+      ((d.fila || []).length ? filaHTML(d) : '') +
+      (function () {
+        /* camadas: a próxima era fica à vista; as já feitas e as seguintes, um toque adiante */
+        var eras = [ERA_FERRO].concat(d.eras), prox = eras.filter(function (e) { return !e.feita; })[0];
+        return '<div class="secao-titulo">Próxima era</div>' + (prox ? cardEra(prox) : '<p class="fraco">Todas as eras pesquisadas.</p>') +
+          RP.secaoRecolhida('Todas as eras', '<div class="pilha">' + eras.filter(function (e) { return e !== prox; }).map(cardEra).join('') + '</div>');
+      })() +
+      /* sem ferraria, armas e armaduras ficam recolhidas: a ação de agora é fundar */
+      RP.secaoRecolhida('Armas e armaduras', '<div class="pilha">' + d.familias.map(function (f) { return cardFamilia(d, f); }).join('') + '</div>', !!d.ferraria) +
+      RP.secaoRecolhida('Lendário', cardLendario(d)) +
+      RP.secaoRecolhida('Bônus de combate', cardTeto(d)) +
+      RP.comoFunciona('<p>Armas e armaduras: +' + pct(d.bonusNivel) + '% por nível, até o nível ' + d.niveisMax + ', para cada família. Armas dão ataque; armaduras, defesa. O bônus não ocupa população.</p>' +
+        '<p>A ferraria tem fila própria, separada das obras: uma pesquisa ou forja por vez.</p>' +
+        '<p>O material vem sozinho para a ferraria: o que faltar sai dos locais mais próximos, e o ouro, do armazém.</p>') + '<div style="height:var(--esp-8)"></div>';
   }
 
   /* ---------------------------------------------------------------- ações */

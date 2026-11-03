@@ -267,8 +267,8 @@
     }).join('') + '</div>' +
       '<div class="card rend-card"><span class="rotulo">Rendimento por bando · ' + A.nome.toLowerCase() + '</span><div class="linha" style="flex-wrap:wrap;margin-top:6px">' +
       ['comida', 'couro', 'peles'].map(function (k) { return '<span class="selo selo-g">' + RP.icone(k, 'r-' + k) + RP.NOMES_REC[k] + ' <b class="num">' + RP.num(rend[k] || 0) + '</b></span>'; }).join('') + '</div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">' + RP.fmtDuracao(d.regras.cacaMin * 60) + ' no local; o grupo traz o que couber na carga. O bando volta em ' + d.regras.voltaH + ' h: caçar não limpa a região para sempre.' +
-      (b.vivo ? '' : ' Última posição conhecida ' + RP.fmtHa(b.idadeMin / 60) + ': o bando pode ter saído da área.') + '</p></div>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">' + RP.fmtDuracao(d.regras.cacaMin * 60) + ' no local' +
+      (b.vivo ? '' : ' · visto ' + RP.fmtHa(b.idadeMin / 60) + ': pode ter saído da área') + '.</p></div>' +
       '<div class="secao-titulo">Grupo de caça</div>' +
       (origens.length > 1 ? '<div class="abas abas-rolagem" role="group" aria-label="De onde saem">' + origens.map(function (x) {
         return '<button type="button" class="aba" data-caca-de="' + x.id + '" aria-pressed="' + (l && x.id === l.id) + '">' + RP.esc(x.nome) + '</button>';
@@ -284,7 +284,9 @@
       (!total ? '<p class="fraco">Escolha quem vai caçar.</p>' : !p ? '<p class="fraco">Calculando o caminho…</p>' : p.erro ? '<p class="txt-alerta">' + RP.esc(p.erro) + '</p>' : !p.curta.ok ? '<p class="fraco">Sem caminho possível.</p>' :
         '<div class="pilha">' + RP.opcaoCaminhoExp('curta', p.curta, caca.seguro) + (p.segura.ok && (p.segura.hexes !== p.curta.hexes || p.segura.min !== p.curta.min) ? RP.opcaoCaminhoExp('segura', p.segura, caca.seguro) : '') + '</div>' +
         RP.blocoRisco((caca.seguro && p.segura.ok ? p.segura : p.curta).risco, false)) +
-      '<p class="fraco" style="font-size:var(--fs-2);margin:var(--esp-3) 0 var(--esp-6)">O tempo de viagem segue a unidade mais lenta do grupo. Caçar não conta para a veterania.</p>';
+      RP.comoFunciona('<p>O grupo luta com o bando pela mesma regra de perdas; se sobra alguém, traz o que couber na carga.</p>' +
+        '<p>O bando volta em ' + d.regras.voltaH + ' h: caçar não limpa a região para sempre.</p>' +
+        '<p>O tempo de viagem segue a unidade mais lenta do grupo. Caçar não conta para a veterania.</p>') + '<div style="height:var(--esp-6)"></div>';
     alvoEl.innerHTML = h;
     var esc = p && p.curta && p.curta.ok ? (caca.seguro && p.segura.ok ? p.segura : p.curta) : null;
     RP.$('.rodape-resumo', el).innerHTML = esc && total ? '<div class="resumo-linha"><b>' + total + ' caçadores → ' + A.nome.toLowerCase() + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + 'chega em ' + RP.fmtDuracao(esc.min * 60) + '</span></div>' : '<div class="resumo-linha fraco">Monte o grupo de caça.</div>';

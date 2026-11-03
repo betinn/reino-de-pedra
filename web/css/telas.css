@@ -513,6 +513,11 @@ a.guia-item { color: inherit; text-decoration: none; }
 .resumo-linha { display: flex; justify-content: space-between; align-items: center; gap: var(--esp-2); font-size: var(--fs-2); }
 
 .escolhas { display: grid; grid-template-columns: 1fr 1fr; gap: var(--esp-2); }
+/* lista de escolhas de uma linha (telas longas: o detalhe fica só no escolhido) */
+.escolhas-linhas { grid-template-columns: 1fr; gap: 6px; }
+.escolhas-linhas .escolha { min-height: 52px; padding: 6px var(--esp-3); }
+.exp-detalhe { margin-top: var(--esp-2); gap: var(--esp-2); }
+.exp-detalhe .exp-treino { margin: 0; padding: 0; border: 0; background: none; }
 .escolhas-lista { grid-template-columns: 1fr; }
 .escolha {
   display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left;

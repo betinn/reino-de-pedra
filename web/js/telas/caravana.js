@@ -146,7 +146,7 @@
     var bId = baseId(), disp = V.guarnicao(bId);
     Object.keys(cv.escolta).forEach(function (k) { cv.escolta[k] = Math.min(cv.escolta[k] || 0, disp[k] || 0); });
     var recs = de ? recursos().filter(function (k) { return RP.qtdRecurso(k, de.id) >= 1 || cv.carga[k]; }) : [];
-    var h = '<div class="nota-regra">' + RP.icone('carroca', 'ico-p') + '<span>Recursos só servem <b>onde estão</b>. A caravana sai do castelo, busca a carga na origem e a leva ao destino. No caminho ela fica visível e <b>pode ser roubada</b>.</span></div>' +
+    var h = RP.comoFunciona('<p>Recursos só servem <b>onde estão</b>. A caravana sai do castelo, busca a carga na origem e a leva ao destino.</p><p>No caminho ela fica visível e <b>pode ser roubada</b>. Escolta protege e também carrega um pouco.</p>') +
       '<div class="secao-titulo">1. Para onde</div><div class="escolhas escolhas-lista">' + lista.filter(function (l) { return cv.abertoPara || l.id === cv.para; }).map(function (l) {
         return V.escolhaLocal(l, 'data-cv-para', l.id === cv.para, RP.nomeTipoLocal(l) + (V.deposito(l) ? ' · guarda valiosos' : ''));
       }).join('') + '</div>' + (!cv.abertoPara ? '<button type="button" class="btn btn-p btn-fantasma trocar-alvo" data-cv-trocar="para">' + RP.icone('menu') + 'Trocar destino (' + lista.length + ' opções)</button>' : '') +
