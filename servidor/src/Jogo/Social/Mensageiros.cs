@@ -45,17 +45,19 @@ namespace ReinoDePedra.Jogo.Social
     }
 
     /// <summary>Item da fila de recrutamento que treina mensageiros no castelo (Qtd).</summary>
-    public sealed class ItemMensageiro : ITipoItemFila
+    public sealed class ItemMensageiro : ITipoItemPorUnidade
     {
         public const string Id = "mensageiro";
         public string Tipo => Id;
-        public void Concluir(Mundo m, Reino r, ItemFila item)
+        public void Entregar(Mundo m, Reino r, ItemFila item, int n)
         {
-            r.MensageirosLivres += item.Qtd;
+            if (n <= 0) return;
+            r.MensageirosLivres += n;
             m.Sujar(r);
-            Registros.Notificar(m, r.Id, "mensagens", item.Qtd > 1 ? "Mensageiros prontos" : "Mensageiro pronto", item.Rotulo, "mensagens");
         }
-        public void Cancelado(Mundo m, Reino r, ItemFila item) { r.Pop += item.Qtd * m.P.Mensageiro.Pop; m.Sujar(r); }
+        public void Concluir(Mundo m, Reino r, ItemFila item) =>
+            Registros.Notificar(m, r.Id, "mensagens", item.Qtd > 1 ? "Mensageiros prontos" : "Mensageiro pronto", item.Rotulo, "mensagens");
+        public void Cancelado(Mundo m, Reino r, ItemFila item) { r.Pop += item.Restantes * m.P.Mensageiro.Pop; m.Sujar(r); }
     }
 
     public static class Mensageiros
@@ -67,7 +69,7 @@ namespace ReinoDePedra.Jogo.Social
         public static IEnumerable<Mensageiro> EmCampo(Mundo m, long reinoId) => m.Marchas.OfType<Mensageiro>().Where(x => x.ReinoId == reinoId);
 
         /// <summary>Mensageiros livres e em treino ocupam o teto (os em campo contam pela marcha).</summary>
-        public static int Ocupantes(Mundo m, Reino r) => (r.MensageirosLivres + EmTreino(r).Sum(i => i.Qtd)) * m.P.Mensageiro.Pop;
+        public static int Ocupantes(Mundo m, Reino r) => (r.MensageirosLivres + EmTreino(r).Sum(i => i.Restantes)) * m.P.Mensageiro.Pop;
 
         /// <summary>Treina mensageiros no castelo (fila de recrutamento). A população sai na hora; volta se cancelar.</summary>
         public static ItemFila Treinar(Mundo m, Reino r, int qtd)

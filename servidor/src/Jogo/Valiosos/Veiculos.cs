@@ -48,17 +48,18 @@ namespace ReinoDePedra.Jogo.Valiosos
             string.Join(", ", v.Where(kv => kv.Value > 0).Select(kv => kv.Value + " " + Nome(kv.Key, kv.Value)));
     }
 
-    /// <summary>Item da fila de obras que faz veículos: Param = tipo, Qtd = quantos. Ao terminar, ficam livres no castelo.</summary>
-    public sealed class ObraVeiculo : ITipoItemFila
+    /// <summary>Item da fila de obras que faz veículos: Param = tipo, Qtd = quantos. Cada um fica livre no castelo ao ficar pronto.</summary>
+    public sealed class ObraVeiculo : ITipoItemPorUnidade
     {
         public const string Id = "veiculo";
         public string Tipo => Id;
-        public void Concluir(Mundo m, Reino r, ItemFila item)
+        public void Entregar(Mundo m, Reino r, ItemFila item, int n)
         {
-            if (item.Param == null || !m.B.VEICULOS.ContainsKey(item.Param)) return;
-            r.Veiculos[item.Param] = r.Veiculos.GetValueOrDefault(item.Param) + item.Qtd;
+            if (n <= 0 || item.Param == null || !m.B.VEICULOS.ContainsKey(item.Param)) return;
+            r.Veiculos[item.Param] = r.Veiculos.GetValueOrDefault(item.Param) + n;
             m.Sujar(r);
-            Registros.Notificar(m, r.Id, "obras", "Veículo pronto", item.Rotulo, "construcao?aba=transporte");
         }
+        public void Concluir(Mundo m, Reino r, ItemFila item) =>
+            Registros.Notificar(m, r.Id, "obras", item.Qtd > 1 ? "Veículos prontos" : "Veículo pronto", item.Rotulo, "construcao?aba=transporte");
     }
 }

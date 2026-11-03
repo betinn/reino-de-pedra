@@ -40,6 +40,37 @@ public class PersistenciaTestes
         finally { try { Directory.Delete(dir, true); } catch { } }
     }
     [Fact]
+    public void Recrutamento_por_unidade_continua_depois_de_recarregar()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "rp-teste-" + Guid.NewGuid().ToString("N"));
+        var arq = Path.Combine(dir, "t.db");
+        try
+        {
+            var t = new MundoTeste();
+            var r = t.NovoReino();
+            t.DarRecursos(r);
+            var item = Recrutamento.Recrutar(t.M, r, r.CasteloId, "milicia", 4);
+            t.Avancar(TimeSpan.FromMilliseconds(item.FimDaUnidade(1)!.Value - t.M.Agora + 500));
+            Assert.Equal(1, t.M.Locais[r.CasteloId].Guarnicao["milicia"]);
+            using (var db = new Banco(arq)) db.Salvar(t.M);
+            using var db2 = new Banco(arq);
+            var m2 = new Mundo(Balanceamento.Padrao, t.Relogio);
+            db2.Carregar(m2);
+            m2.PrepararMapa();
+            foreach (var e in m2.Eventos) m2.Agenda.Inserir(e);
+            Assert.Equal(1, m2.Reinos[r.Id].Fila(Recrutamento.Fila).Itens[0].Prontos);
+            t.Relogio.Agora = item.FimDaUnidade(2)!.Value;
+            m2.ProcessarAte(t.Relogio.Agora);
+            Assert.Equal(2, m2.Locais[r.CasteloId].Guarnicao["milicia"]);
+            t.Relogio.Agora = item.Fim!.Value;
+            m2.ProcessarAte(t.Relogio.Agora);
+            Assert.Equal(4, m2.Locais[r.CasteloId].Guarnicao["milicia"]);
+            Assert.Empty(m2.Reinos[r.Id].Fila(Recrutamento.Fila).Itens);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
     public void Falha_na_gravacao_nao_perde_remocoes_nem_sujos()
     {
         var dir = Path.Combine(Path.GetTempPath(), "rp-teste-" + Guid.NewGuid().ToString("N"));

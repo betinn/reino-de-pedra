@@ -27,6 +27,7 @@ public static class VisaoTropas
         {
             i.Id, unidade = i.Param, i.Qtd, i.LocalId, local = i.LocalId is long id ? m.Locais.Obter(id)?.Nome : null,
             i.Rotulo, i.Inicio, i.Fim, duracao = i.DuracaoSeg, materialCompleto = i.MaterialCompleto,
+            prontos = i.Prontos, proximoFim = i.Restantes > 0 ? i.FimDaUnidade(i.Prontos + 1) : null,
             materialChegaEm = i.MaterialCompleto ? null : MaterialChegaEm(m, i),
         }).ToList();
         var unidades = m.B.U.Values.Select(u => new

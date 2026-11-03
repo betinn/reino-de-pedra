@@ -62,19 +62,20 @@ namespace ReinoDePedra.Jogo.Exploracao
         public string NomeTipo(Mundo m) => Exploradores.NomeTipo(m, TipoExp);
     }
 
-    /// <summary>Item da fila de recrutamento que treina exploradores no castelo (Param = tipo, Qtd).</summary>
-    public sealed class ItemExplorador : ITipoItemFila
+    /// <summary>Item da fila de recrutamento que treina exploradores no castelo (Param = tipo, Qtd). Cada um fica livre ao ficar pronto.</summary>
+    public sealed class ItemExplorador : ITipoItemPorUnidade
     {
         public const string Id = "explorador";
         public string Tipo => Id;
-        public void Concluir(Mundo m, Reino r, ItemFila item)
+        public void Entregar(Mundo m, Reino r, ItemFila item, int n)
         {
-            if (item.Param == null) return;
-            r.ExploradoresLivres[item.Param] = r.ExploradoresLivres.GetValueOrDefault(item.Param) + item.Qtd;
+            if (item.Param == null || n <= 0) return;
+            r.ExploradoresLivres[item.Param] = r.ExploradoresLivres.GetValueOrDefault(item.Param) + n;
             m.Sujar(r);
-            Registros.Notificar(m, r.Id, "exploracao", "Explorador pronto", item.Rotulo, "exploradores");
         }
-        public void Cancelado(Mundo m, Reino r, ItemFila item) { r.Pop += item.Qtd; m.Sujar(r); }
+        public void Concluir(Mundo m, Reino r, ItemFila item) =>
+            Registros.Notificar(m, r.Id, "exploracao", item.Qtd > 1 ? "Exploradores prontos" : "Explorador pronto", item.Rotulo, "exploradores");
+        public void Cancelado(Mundo m, Reino r, ItemFila item) { r.Pop += item.Restantes; m.Sujar(r); }
     }
 
     [Sistema]
@@ -91,7 +92,7 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         /// <summary>Exploradores livres no castelo e em treino (ocupam o teto; os em campo contam pela marcha).</summary>
         public static int Ocupantes(Mundo m, Reino r) =>
-            r.ExploradoresLivres.Values.Sum() + EmTreino(r).Sum(i => i.Qtd);
+            r.ExploradoresLivres.Values.Sum() + EmTreino(r).Sum(i => i.Restantes);
 
         public static IEnumerable<ItemFila> EmTreino(Reino r) =>
             r.Filas.TryGetValue(Recrutamento.Fila, out var f) ? f.Itens.Where(i => i.Tipo == ItemExplorador.Id) : [];

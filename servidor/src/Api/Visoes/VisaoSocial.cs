@@ -156,7 +156,7 @@ public static class VisaoSocial
             }
         return new
         {
-            agora = m.Agora, livres = r.MensageirosLivres, emTreino = Mensageiros.EmTreino(r).Sum(i => i.Qtd),
+            agora = m.Agora, livres = r.MensageirosLivres, emTreino = Mensageiros.EmTreino(r).Sum(i => i.Restantes),
             emCampo = Mensageiros.EmCampo(m, r.Id).Select(x => new { x.Id, x.Chegada, x.Retornando, mensagem = x.MensagemId }).ToList(),
             custo = m.P.Mensageiro.Custo, tempo = m.P.Mensageiro.Tempo, pop = m.P.Mensageiro.Pop, vel = m.P.Mensageiro.Vel, max = m.P.Mensageiro.Caracteres,
             recebidas = Mensageiros.Recebidas(m, r.Id).OrderByDescending(x => x.Entregue).Select(x => new { x.Id, de = Id(m, x.DeId), x.Texto, quando = x.Entregue, x.Lida, x.RespondeA }).ToList(),

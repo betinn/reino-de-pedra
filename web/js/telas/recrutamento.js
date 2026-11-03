@@ -76,7 +76,7 @@
     var f = filaRecrut();
     return '<div class="card pilha fila-card"><div class="card-titulo" style="margin:0">' + RP.icone('tropas') + '<h3>Fila de recrutamento</h3><span class="selo">' + f.length + ' de 10</span></div>' +
       (f.length ? f.map(function (i) { i.fila = 'recrutamento'; return RP.itemFilaServidor(i); }).join('') : '<p class="fraco">Nada sendo recrutado.</p>') +
-      '<p class="fraco" style="font-size:var(--fs-2)">Um item por vez; cada unidade escolhida vira um item. O treino começa quando o material chega ao local.</p></div>';
+      '<p class="fraco" style="font-size:var(--fs-2)">Um item por vez; cada unidade escolhida vira um item. O treino começa quando o material chega ao local, e cada tropa entra no local assim que fica pronta.</p></div>';
   }
 
   function desenhar(el) {

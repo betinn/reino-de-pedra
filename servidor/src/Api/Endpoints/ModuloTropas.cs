@@ -108,7 +108,7 @@ public static class ExtrasTropas
             {
                 guarnicoes = mm.LocaisDe(r.Id).Sum(l => GT.Total(l.Guarnicao)),
                 emCampo = exs.Sum(e => GT.Total(e.Tropas)), exercitos = exs.Count,
-                emTreino = Recrutamento.Itens(r).Sum(i => i.Qtd),
+                emTreino = Recrutamento.Itens(r).Sum(i => i.Restantes),
             };
         });
         VisaoReino.ExtrasLocal.Add((mm, r, l, d) => d["recruta"] = Recrutamento.Recruta(l));

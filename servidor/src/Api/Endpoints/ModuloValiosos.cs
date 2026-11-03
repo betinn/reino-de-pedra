@@ -154,7 +154,7 @@ public static class ExtrasValiosos
             d["veiculos"] = mm.B.VEICULOS.ToDictionary(kv => kv.Key, kv => new
             {
                 nome = kv.Key == "carrocao" ? "Carroção" : "Carroça", livres = Veiculos.Livres(r, kv.Key), emUso = Veiculos.EmUso(mm, r, kv.Key),
-                naFila = naFila.Where(i => i.Param == kv.Key).Sum(i => i.Qtd), carga = kv.Value.Carga, vel = kv.Value.Vel, custo = kv.Value.Custo,
+                naFila = naFila.Where(i => i.Param == kv.Key).Sum(i => i.Restantes), carga = kv.Value.Carga, vel = kv.Value.Vel, custo = kv.Value.Custo,
                 seg = mm.P.Veiculo.Tempo.GetValueOrDefault(kv.Key),
             });
             d["valiosos"] = new

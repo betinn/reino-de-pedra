@@ -29,7 +29,7 @@ public static class VisaoExploracao
                 id = kv.Key, nome = Exploradores.NomeTipo(m, kv.Key), curto = kv.Value.Nome, kv.Value.Custo, kv.Value.Tempo, kv.Value.Vel,
                 kv.Value.Visao, kv.Value.Forca, kv.Value.Jazidas,
                 livres = r.ExploradoresLivres.GetValueOrDefault(kv.Key),
-                emTreino = emTreino.Where(i => i.Param == kv.Key).Sum(i => i.Qtd),
+                emTreino = emTreino.Where(i => i.Param == kv.Key).Sum(i => i.Restantes),
                 emCampo = Exploradores.De(m, r.Id).Count(e => e.TipoExp == kv.Key),
             }).ToList(),
             exploradores = Exploradores.De(m, r.Id).OrderBy(e => e.Id).Select(e => Explorador(m, e)).ToList(),

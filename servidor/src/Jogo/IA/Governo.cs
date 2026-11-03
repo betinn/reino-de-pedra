@@ -269,7 +269,7 @@ public static class Governo
 
     private static int Ocupados(Mundo m, Reino r, string tipo) =>
         r.ExploradoresLivres.GetValueOrDefault(tipo) + Exploradores.De(m, r.Id).Count(e => e.TipoExp == tipo)
-        + Exploradores.EmTreino(r).Where(i => i.Param == tipo).Sum(i => i.Qtd);
+        + Exploradores.EmTreino(r).Where(i => i.Param == tipo).Sum(i => i.Restantes);
 
     /// <summary>Hexágono ainda não visto a uma distância sorteada do castelo (ou null).</summary>
     private static int? NaoVisto(Mundo m, Reino r, Local castelo)

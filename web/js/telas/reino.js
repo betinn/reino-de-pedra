@@ -15,6 +15,14 @@
     var aguarda = !it.materialCompleto ? (it.materialChegaEm || 0) : 0;
     var rot = RP.esc(it.rotulo);
     var cancelar = '<button type="button" class="btn btn-fantasma btn-icone btn-mini" data-cancelar="' + it.id + '" data-fila="' + (it.fila || 'obras') + '" aria-label="Cancelar ' + rot + '">' + RP.icone('fechar') + '</button>';
+    if (ini && fim && (it.qtd || 1) > 1 && it.proximoFim) {
+      /* várias unidades: cada uma fica pronta no seu tempo; a barra anda por unidade */
+      var q = it.qtd, porUn = (fim - ini) / q, pf = it.proximoFim, iu = pf - porUn, ag = RP.agora();
+      var pct = Math.max(0, Math.min(100, (100 * (ag - iu)) / porUn));
+      return '<div class="item-fila"><div class="timer"><div class="timer-topo"><b>' + rot + '</b><span class="timer-resta" data-fim="' + pf + '">' + RP.fmtResta(pf - ag) + '</span></div>' +
+        '<div class="barra" role="progressbar" aria-label="Progresso da próxima unidade: ' + rot + '"><i data-ini="' + iu + '" data-barra-fim="' + pf + '" style="width:' + pct.toFixed(1) + '%"></i></div>' +
+        '<small class="fraco fila-prontos">' + (it.prontos || 0) + ' de ' + q + ' prontos · todos em <span data-fim="' + fim + '">' + RP.fmtResta(fim - ag) + '</span></small></div>' + cancelar + '</div>';
+    }
     if (ini && fim) return '<div class="item-fila">' + RP.timerHTML(rot, 0, (fim - ini) / 1000, '', fim) + cancelar + '</div>';
     var estado = !it.materialCompleto
       ? '<span class="selo selo-antigo selo-material">' + RP.icone('carroca') + (aguarda ? 'material chega em <span data-fim="' + aguarda + '">' + RP.fmtResta(aguarda - RP.agora()) + '</span>' : 'esperando material') + '</span>'
@@ -25,6 +33,7 @@
   RP.textoFilaItem = function (it) {
     if (!it) return '';
     if (!it.materialCompleto) return 'O material está a caminho; começa quando chegar.';
+    if (it.inicio && it.fim && (it.qtd || 1) > 1 && it.proximoFim) return 'A primeira fica pronta ' + RP.fmtEm(it.proximoFim) + '; todas ' + RP.fmtEm(it.fim) + '.';
     if (it.inicio && it.fim) return 'Pronto ' + RP.fmtEm(it.fim) + '.';
     return 'Na fila: começa quando o item anterior terminar.';
   };
@@ -33,7 +42,7 @@
     if (!b) return;
     RP.modal({
       titulo: 'Cancelar este item?',
-      corpo: '<p class="suave">O material que já chegou fica no local da obra. O que está a caminho chega e fica lá também.</p>',
+      corpo: '<p class="suave">O material que já chegou fica no local da obra. O que está a caminho chega e fica lá também. Num item de várias unidades, as que já ficaram prontas continuam suas.</p>',
       acoes: [
         { rotulo: 'Cancelar item', classe: 'btn-perigo', acao: function () { RP.tentar(RP.del('/filas/' + b.getAttribute('data-fila') + '/' + b.getAttribute('data-cancelar'))).then(RP.recarregarReino); } },
         { rotulo: 'Manter' }

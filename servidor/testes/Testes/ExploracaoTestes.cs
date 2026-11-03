@@ -49,6 +49,26 @@ public class ExploracaoTestes
 
     // ---------------------------------------------------------------- exploradores
 
+    [Fact]
+    public void Exploradores_em_lote_ficam_prontos_um_por_vez()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        t.DarRecursos(r);
+        var x = t.B.P.Exploradores["pe"];
+        var item = Exploradores.Treinar(t.M, r, "pe", 3);
+        Assert.Equal(3, Exploradores.Ocupantes(t.M, r));
+        t.Avancar(TimeSpan.FromSeconds(x.Tempo + 1));
+        Assert.Equal(1, r.ExploradoresLivres.GetValueOrDefault("pe"));   // o primeiro já pode sair
+        Assert.Equal(3, Exploradores.Ocupantes(t.M, r));
+        Economia.Atualizar(t.M, r);
+        var pop = r.Pop;
+        Filas.Cancelar(t.M, r, Recrutamento.Fila, item.Id);
+        Assert.Equal(1, r.ExploradoresLivres["pe"]);
+        Assert.Equal(pop + 2, r.Pop, 6);   // só os 2 que faltavam voltam à população
+        Assert.Equal(1, Exploradores.Ocupantes(t.M, r));
+    }
+
     [Theory]
     [InlineData("pe")]
     [InlineData("cavalo")]

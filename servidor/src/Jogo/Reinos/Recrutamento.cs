@@ -7,7 +7,8 @@ namespace ReinoDePedra.Jogo.Reinos;
 /// <summary>
 /// Recrutamento: fila "recrutamento" do reino (até 10 itens, um por vez). O material vem pela requisição
 /// automática até o local; a população civil sai na hora de enfileirar (volta se cancelar) e as tropas
-/// em treino ocupam o teto. O castelo recruta as unidades de <c>P.recrutaCastelo</c>; o quartel, todas.
+/// em treino ocupam o teto. Cada unidade fica pronta ao fim do seu próprio tempo e entra na guarnição na hora
+/// (<see cref="ITipoItemPorUnidade"/>). O castelo recruta as unidades de <c>P.recrutaCastelo</c>; o quartel, todas.
 /// </summary>
 [Sistema]
 public static class Recrutamento
@@ -33,7 +34,7 @@ public static class Recrutamento
     /// <summary>Pessoas em treino (já saíram da população civil e ocupam o teto).</summary>
     public static int EmTreino(Mundo m, Reino r) =>
         r.Filas.TryGetValue(Fila, out var f)
-            ? f.Itens.Where(i => i.Tipo == ItemRecrutar.Id && i.Param != null && m.B.U.ContainsKey(i.Param)).Sum(i => m.B.U[i.Param!].Pop * i.Qtd)
+            ? f.Itens.Where(i => i.Tipo == ItemRecrutar.Id && i.Param != null && m.B.U.ContainsKey(i.Param)).Sum(i => m.B.U[i.Param!].Pop * i.Restantes)
             : 0;
 
     /// <summary>Itens de recrutamento na fila (sem criar a fila se não existir).</summary>
@@ -92,27 +93,32 @@ public static class Recrutamento
     }
 }
 
-/// <summary>Item da fila de recrutamento: Param = unidade, Qtd = quantidade. Ao terminar, as tropas entram na guarnição.</summary>
-public sealed class ItemRecrutar : ITipoItemFila
+/// <summary>
+/// Item da fila de recrutamento: Param = unidade, Qtd = quantidade. Cada unidade entra na guarnição ao ficar pronta;
+/// o aviso de concluído sai com a última.
+/// </summary>
+public sealed class ItemRecrutar : ITipoItemPorUnidade
 {
     public const string Id = "recrutar";
     public string Tipo => Id;
 
-    public void Concluir(Mundo m, Reino r, ItemFila item)
+    public void Entregar(Mundo m, Reino r, ItemFila item, int n)
     {
-        if (item.Param == null || !m.B.U.TryGetValue(item.Param, out var u)) return;
+        if (n <= 0 || item.Param == null || !m.B.U.TryGetValue(item.Param, out var u)) return;
         var l = item.LocalId is long id ? m.Locais.Obter(id) : null;
         if (l == null || l.ReinoId != r.Id || l.Ruina) l = m.Locais.Obter(r.CasteloId);
         if (l == null || l.ReinoId != r.Id) l = m.LocaisDe(r.Id).FirstOrDefault(x => !x.Ruina);
-        if (l == null) { r.Pop += u.Pop * item.Qtd; m.Sujar(r); return; }   // sem onde morar: voltam à população
-        Tropas.Devolver(m, l, new Dictionary<string, int> { [u.Id] = item.Qtd });
-        Registros.Notificar(m, r.Id, "tropas", "Recrutamento concluído", item.Rotulo, "tropas");
+        if (l == null) { r.Pop += u.Pop * n; m.Sujar(r); return; }   // sem onde morar: voltam à população
+        Tropas.Devolver(m, l, new Dictionary<string, int> { [u.Id] = n });
     }
+
+    public void Concluir(Mundo m, Reino r, ItemFila item) =>
+        Registros.Notificar(m, r.Id, "tropas", "Recrutamento concluído", item.Rotulo, "tropas");
 
     public void Cancelado(Mundo m, Reino r, ItemFila item)
     {
         if (item.Param == null || !m.B.U.TryGetValue(item.Param, out var u)) return;
-        r.Pop += u.Pop * item.Qtd;
+        r.Pop += u.Pop * item.Restantes;
         m.Sujar(r);
     }
 }

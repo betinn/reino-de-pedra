@@ -161,7 +161,7 @@ public static class ExtrasSocial
                 pactos = Comercio.PactosDe(mm, r.Id).Count(),
                 resgates = Capturas.PresosDe(mm, r.Id).Count(p => p.Estado == Capturas.ResgatePedido && !r.ResgatesRecusados.Contains(p.Id)),
                 mensagensNovas = Mensageiros.Recebidas(mm, r.Id).Count(x => !x.Lida),
-                mensageiros = new { livres = r.MensageirosLivres, emCampo = Mensageiros.EmCampo(mm, r.Id).Count(), emTreino = Mensageiros.EmTreino(r).Sum(i => i.Qtd) },
+                mensageiros = new { livres = r.MensageirosLivres, emCampo = Mensageiros.EmCampo(mm, r.Id).Count(), emTreino = Mensageiros.EmTreino(r).Sum(i => i.Restantes) },
                 bandeiras = Bandeiras.De(mm, r.Id).Count(),
             };
         });

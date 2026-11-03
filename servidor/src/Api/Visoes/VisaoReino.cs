@@ -74,6 +74,7 @@ public static class VisaoReino
     /// <summary>
     /// Item de fila. <c>inicio</c> e <c>fim</c> só existem depois que o item começa; antes disso <c>estado</c> diz por quê:
     /// "andamento" (começou), "material" (espera o material chegar) ou "fila" (espera o item anterior). <c>posicao</c>: 1 = primeiro da fila.
+    /// <c>prontos</c>/<c>proximoFim</c>: num item de várias unidades, quantas já ficaram prontas e quando fica a próxima.
     /// </summary>
     public static object Item(Mundo m, Reino r, ItemFila i)
     {
@@ -87,6 +88,8 @@ public static class VisaoReino
             materialChegaEm = i.MaterialCompleto ? (long?)null : chegada > 0 ? chegada : null,
             estado = i.Iniciado ? "andamento" : !i.MaterialCompleto ? "material" : "fila",
             posicao = pos >= 0 ? pos + 1 : (int?)null,
+            // por unidade (tropas, exploradores...): quantas já ficaram prontas e quando fica a próxima
+            prontos = i.Prontos, proximoFim = i.Restantes > 0 ? i.FimDaUnidade(i.Prontos + 1) : null,
         };
     }
 }

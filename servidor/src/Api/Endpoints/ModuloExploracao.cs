@@ -138,7 +138,7 @@ public static class ExtrasExploracao
             {
                 livres = r.ExploradoresLivres.Values.Sum(),
                 emCampo = Exploradores.De(mm, r.Id).Count(),
-                emTreino = Exploradores.EmTreino(r).Sum(i => i.Qtd),
+                emTreino = Exploradores.EmTreino(r).Sum(i => i.Restantes),
                 presos = Capturas.PresosPor(mm, r.Id).Count(),
                 capturados = Capturas.PresosDe(mm, r.Id).Count(),
                 conhecidos = r.ReinosConhecidos.Count,

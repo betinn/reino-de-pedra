@@ -51,7 +51,7 @@ public class TropasTestes
         Assert.True(item.Iniciado);   // o castelo já tinha o material
         Assert.Equal(10, Economia.Tropas(t.M, r));   // em treino ocupam o teto
         t.Avancar(TimeSpan.FromSeconds(u.Tempo * 10 - 5));
-        Assert.Equal(0, c.Guarnicao.GetValueOrDefault("lanceiro"));
+        Assert.Equal(9, c.Guarnicao.GetValueOrDefault("lanceiro"));   // uma por vez: a 10ª ainda não
         t.Avancar(TimeSpan.FromSeconds(10));
         Assert.Equal(10, c.Guarnicao["lanceiro"]);
         Assert.Empty(r.Fila(Recrutamento.Fila).Itens);
@@ -69,6 +69,59 @@ public class TropasTestes
         Filas.Cancelar(t.M, r, Recrutamento.Fila, item.Id);
         Assert.Equal(pop0, r.Pop, 6);
         Assert.Equal(0, Economia.Tropas(t.M, r));
+    }
+
+    [Fact]
+    public void Recrutamento_entrega_uma_unidade_por_vez_e_ela_ja_pode_sair()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        t.DarRecursos(r);
+        var c = Castelo(t, r);
+        var u = t.B.U["lanceiro"];
+        var item = Recrutamento.Recrutar(t.M, r, c.Id, "lanceiro", 5);
+        Assert.Single(r.Fila(Recrutamento.Fila).Itens);   // o item continua único na fila
+        Assert.Equal(item.Inicio + T.DeSegundos(u.Tempo), item.FimDaUnidade(1));
+        for (var n = 1; n <= 4; n++)
+        {
+            AvancarAte(t, item.FimDaUnidade(n)!.Value - 1000);
+            Assert.Equal(n - 1, c.Guarnicao.GetValueOrDefault("lanceiro"));
+            AvancarAte(t, item.FimDaUnidade(n)!.Value);
+            Assert.Equal(n, c.Guarnicao.GetValueOrDefault("lanceiro"));
+            Assert.Equal(n, item.Prontos);
+            Assert.Equal(5, Economia.Tropas(t.M, r));   // prontas + em treino: o teto não muda
+        }
+        // as prontas já saem enquanto a última treina
+        Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, HexLivre(t, r, 2), OrdemMover.Id);
+        Assert.Equal(2, c.Guarnicao["lanceiro"]);
+        AvancarAte(t, item.Fim!.Value);
+        Assert.Equal(3, c.Guarnicao["lanceiro"]);
+        Assert.Empty(r.Fila(Recrutamento.Fila).Itens);
+        Assert.Equal(5, Economia.Tropas(t.M, r));
+        Assert.Single(t.M.Notificacoes, x => x.ReinoId == r.Id && x.Titulo == "Recrutamento concluído");
+    }
+
+    [Fact]
+    public void Cancelar_no_meio_devolve_so_o_que_nao_ficou_pronto()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        t.DarRecursos(r);
+        var c = Castelo(t, r);
+        var u = t.B.U["lanceiro"];
+        var item = Recrutamento.Recrutar(t.M, r, c.Id, "lanceiro", 5);
+        AvancarAte(t, item.FimDaUnidade(2)!.Value + 1000);
+        Assert.Equal(2, c.Guarnicao["lanceiro"]);
+        Economia.Atualizar(t.M, r);
+        var popAntes = r.Pop;
+        var estoqueAntes = c.Estoque.Copia();
+        Filas.Cancelar(t.M, r, Recrutamento.Fila, item.Id);
+        Assert.Equal(2, c.Guarnicao["lanceiro"]);   // as prontas ficam
+        Assert.Equal(popAntes + 3 * u.Pop, r.Pop, 6);   // só as 3 que faltavam voltam à população
+        foreach (var (k, v) in u.Custo) Assert.Equal(estoqueAntes.Qtd(k) + v * 3, c.Estoque.Qtd(k), 3);   // material de 3
+        Assert.Equal(2, Economia.Tropas(t.M, r));
+        t.AvancarHoras(1);
+        Assert.Equal(2, c.Guarnicao["lanceiro"]);   // nada chega depois de cancelar
     }
 
     [Fact]

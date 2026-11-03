@@ -157,6 +157,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Recursos e construções mais fortes ou valiosos: **tempos mais altos**.
 - O equilíbrio entre tempos, custos e rendimento é ponto central de balanceamento e deve ser ajustado com testes.
 - **Filas de construção e de recrutamento aceitam até 10 itens**, executados um por vez, para o jogador planejar horas ou a noite inteira.
+- Num item com várias unidades (tropas, exploradores, mensageiros, carroças), **cada unidade fica pronta ao fim do seu próprio tempo** (a 1ª em um tempo, a 2ª em dois...) e já pode ser usada antes das seguintes. O item continua um só na fila; cancelar devolve material e população só das que ainda não ficaram prontas.
 - **Deslocamento não deve demorar excessivamente.** Viagens de muitas horas, sem outras ações para o jogador cuidar enquanto espera, afastam o jogador e quebram a imersão.
 
 ---

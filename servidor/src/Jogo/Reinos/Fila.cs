@@ -33,9 +33,17 @@ public sealed class ItemFila
     public long? Inicio { get; set; }
     public long? Fim { get; set; }
     public long? EventoId { get; set; }
+    /// <summary>Unidades já entregues de um item por unidade (tropas, exploradores, mensageiros, veículos).</summary>
+    public int Prontos { get; set; }
+    /// <summary>Evento da próxima unidade pronta (itens por unidade com mais de uma unidade).</summary>
+    public long? EventoUnidadeId { get; set; }
 
     public bool MaterialCompleto => Entregue.Cobre(Custo);
     public bool Iniciado => Inicio != null;
+    /// <summary>Unidades que ainda não ficaram prontas.</summary>
+    public int Restantes => Math.Max(0, Qtd - Prontos);
+    /// <summary>Quando fica pronta a unidade de número <paramref name="n"/> (1 = a primeira); a última, em <see cref="Fim"/>. Null se não começou.</summary>
+    public long? FimDaUnidade(int n) => Fim is long f ? f - T.DeSegundos(DuracaoSeg * Math.Max(0, Qtd - n) / Math.Max(1, Qtd)) : null;
 }
 
 /// <summary>Comportamento de um tipo de item de fila. Implementações são achadas por reflexão (construtor sem parâmetros).</summary>
@@ -46,6 +54,17 @@ public interface ITipoItemFila
     void Concluir(Mundo m, Reino r, ItemFila item);
     /// <summary>Desfaz o que o item reservou além do material (ex.: população do recrutamento). Chamado ao cancelar.</summary>
     void Cancelado(Mundo m, Reino r, ItemFila item) { }
+}
+
+/// <summary>
+/// Tipo de item em que cada unidade fica pronta ao fim do seu próprio tempo (a 1ª em DuracaoSeg/Qtd, a 2ª no dobro...)
+/// e já pode ser usada antes das seguintes. O item continua único na fila. <see cref="ITipoItemFila.Concluir"/> é
+/// chamado depois que a última unidade foi entregue (só avisa); cancelar devolve material e população só das que faltam.
+/// </summary>
+public interface ITipoItemPorUnidade : ITipoItemFila
+{
+    /// <summary>Entrega <paramref name="n"/> unidades prontas (entram na guarnição, ficam livres no castelo...).</summary>
+    void Entregar(Mundo m, Reino r, ItemFila item, int n);
 }
 
 public static class Filas
@@ -84,7 +103,32 @@ public static class Filas
         it.Fim = m.Agora + T.DeSegundos(it.DuracaoSeg);
         var ev = m.Agendar(new FimItemFilaEvento { ReinoId = r.Id, Fila = nomeFila, ItemId = it.Id, Quando = it.Fim.Value });
         it.EventoId = ev.Id;
+        AgendarUnidade(m, r, nomeFila, it);
         m.Sujar(r);
+    }
+
+    /// <summary>Agenda a próxima unidade pronta de um item por unidade; a última sai com o fim do item.</summary>
+    private static void AgendarUnidade(Mundo m, Reino r, string nomeFila, ItemFila it)
+    {
+        it.EventoUnidadeId = null;
+        if (!it.Iniciado || TiposRegistrados.GetValueOrDefault(it.Tipo) is not ITipoItemPorUnidade) return;
+        var n = it.Prontos + 1;
+        if (n >= it.Qtd) return;
+        var quando = it.FimDaUnidade(n)!.Value;
+        it.EventoUnidadeId = m.Agendar(new UnidadeProntaEvento { ReinoId = r.Id, Fila = nomeFila, ItemId = it.Id, Quando = Math.Max(m.Agora, quando) }).Id;
+    }
+
+    /// <summary>Uma unidade do item ficou pronta antes do fim: entra em uso na hora.</summary>
+    public static void UnidadePronta(Mundo m, Reino r, string nomeFila, long itemId)
+    {
+        var it = r.FilaSe(nomeFila)?.Itens.FirstOrDefault(i => i.Id == itemId);
+        if (it == null || it.Restantes <= 1 || TiposRegistrados.GetValueOrDefault(it.Tipo) is not ITipoItemPorUnidade tipo) return;
+        Economia.Atualizar(m, r);
+        it.Prontos++;
+        tipo.Entregar(m, r, it, 1);
+        AgendarUnidade(m, r, nomeFila, it);
+        m.Sujar(r);
+        m.Avisar(r.Id, "reino");
     }
 
     /// <summary>Material entregue por carregadores ou caravana a um item da fila.</summary>
@@ -108,7 +152,14 @@ public static class Filas
         var it = fila?.Itens.FirstOrDefault(i => i.Id == itemId);
         if (fila == null || it == null) return;
         fila.Itens.Remove(it);
+        m.Cancelar(it.EventoUnidadeId);
         Economia.Atualizar(m, r);
+        if (TiposRegistrados[it.Tipo] is ITipoItemPorUnidade pu && it.Restantes > 0)
+        {
+            var n = it.Restantes;
+            it.Prontos = it.Qtd;
+            pu.Entregar(m, r, it, n);
+        }
         TiposRegistrados[it.Tipo].Concluir(m, r, it);
         m.Sujar(r);
         TentarIniciar(m, r, nomeFila);
@@ -140,7 +191,11 @@ public static class Filas
         Economia.Atualizar(m, r);
         fila.Itens.Remove(it);
         m.Cancelar(it.EventoId);
+        m.Cancelar(it.EventoUnidadeId);
         if (TiposRegistrados.TryGetValue(it.Tipo, out var tipo)) tipo.Cancelado(m, r, it);
+        // item por unidade: o material das unidades já prontas foi usado; só o resto volta
+        if (tipo is ITipoItemPorUnidade && it.Prontos > 0 && it.Qtd > 0)
+            foreach (var (k, v) in it.Custo) it.Entregue.Retirar(k, v * it.Prontos / it.Qtd);
         var destino = DevolverMaterial(m, r, it, it.LocalId is long lid ? m.Locais.Obter(lid) : null);
         foreach (var mc in m.Marchas.Where(x => x is Carregadores c && c.ItemId == it.Id).Cast<Carregadores>())
         {
@@ -150,6 +205,20 @@ public static class Filas
         m.Sujar(r);
         TentarIniciar(m, r, nomeFila);
         m.Avisar(r.Id, "reino");
+    }
+}
+
+/// <summary>Uma unidade de um item por unidade ficou pronta (a última sai com <see cref="FimItemFilaEvento"/>).</summary>
+public sealed class UnidadeProntaEvento : Evento
+{
+    public long ReinoId { get; set; }
+    public string Fila { get; set; } = "";
+    public long ItemId { get; set; }
+    public override void Executar(Mundo m)
+    {
+        var r = m.Reinos.Obter(ReinoId);
+        if (r == null || !r.Ativo) return;
+        Filas.UnidadePronta(m, r, Fila, ItemId);
     }
 }
 
