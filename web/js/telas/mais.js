@@ -11,7 +11,7 @@
       var r = RP.reino;
       el.innerHTML = '<header class="topo"><h1>Mais</h1></header><div class="conteudo-tela pilha">' +
         '<div class="card linha">' + RP.iconeReino(r, 48) + '<div style="flex:1"><b>' + RP.esc(r.nome) + '</b><div class="fraco">' + RP.esc((RP.conta && RP.conta.email) || '') + '</div></div></div>' +
-        '<div class="lista">' + RP.itensMais.filter(function (i) { return !i.sistema || RP.sistema(i.sistema); }).map(function (i) {
+        '<div class="lista">' + [{ icone: 'relatorios', titulo: 'Relatórios', texto: 'Batalhas, caçadas, exploração', href: '#/relatorios' }, { icone: 'sino', titulo: 'Notificações', texto: 'O que avisar e quando', href: '#/notificacoes' }].concat(RP.itensMais).filter(function (i) { return !i.sistema || RP.sistema(i.sistema); }).map(function (i) {
           return '<a class="lista-item" href="' + i.href + '"><span class="ico-placa">' + RP.icone(i.icone) + '</span><div style="flex:1"><b>' + RP.esc(i.titulo) + '</b>' + (i.texto ? '<div class="fraco">' + RP.esc(i.texto) + '</div>' : '') + '</div>' + RP.icone('avancar', 'ico-p') + '</a>';
         }).join('') + '</div>' +
         '<button type="button" class="btn btn-bloco" data-sair>' + RP.icone('voltar') + 'Sair da conta</button>' +

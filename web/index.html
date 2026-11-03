@@ -22,9 +22,13 @@
   <link rel="stylesheet" href="css/ferraria.css">
   <link rel="stylesheet" href="css/social.css">
   <link rel="stylesheet" href="css/temporada.css">
+  <link rel="stylesheet" href="css/concha.css">
 </head>
 <body>
-  <main id="telas"></main>
+  <!-- o mundo fica atrás de tudo e nunca para; as telas são painéis que não o cobrem -->
+  <div id="mundo" class="mundo" hidden></div>
+  <main id="telas" class="painel"></main>
+  <button type="button" id="painel-barra" class="painel-barra" hidden><svg class="ico"><use href="#i-subir"></use></svg><span></span></button>
   <nav class="nav" id="nav" aria-label="Navegação principal" hidden></nav>
   <div class="avisos" id="avisos" aria-live="polite"></div>
 
@@ -34,13 +38,12 @@
   <script src="js/hex.js"></script>
   <script src="js/api.js"></script>
   <script src="js/nucleo.js"></script>
-  <!-- mundo: modelo, arte, Vista 2.5D, Mapa tático, tipos padrão de objetos e Vista de Meu reino -->
+  <!-- mundo: modelo, arte, Vista 2.5D, Mapa tático, tipos padrão de objetos -->
   <script src="js/vista/modelo.js"></script>
   <script src="js/vista/arte.js"></script>
   <script src="js/vista/cena.js"></script>
   <script src="js/vista/tatico.js"></script>
   <script src="js/vista/tipos.js"></script>
-  <script src="js/vista/reino.js"></script>
   <script src="js/telas/inicio.js"></script>
   <script src="js/telas/criar.js"></script>
   <script src="js/telas/reino.js"></script>

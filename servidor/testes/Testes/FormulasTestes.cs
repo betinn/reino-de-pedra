@@ -104,11 +104,12 @@ public class FormulasTestes
         string saida;
         try
         {
-            var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("node", [modelo, "--json"]) { RedirectStandardOutput = true, UseShellExecute = false })!;
+            var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("node", [modelo, "--json"]) { RedirectStandardOutput = true, UseShellExecute = false, StandardOutputEncoding = System.Text.Encoding.UTF8 })!;
             saida = p.StandardOutput.ReadToEnd(); p.WaitForExit();
         }
         catch (System.ComponentModel.Win32Exception) { return; }   // sem node: pula
         var atual = File.ReadAllText(Balanceamento.Localizar());
-        Assert.True(saida.Trim() == atual.Trim(), "balanceamento/config.json desatualizado: rode node balanceamento/modelo.js --json > balanceamento/config.json");
+        static string Normal(string s) => s.Replace("\r\n", "\n").Trim();   // o git pode trocar o fim de linha no Windows
+        Assert.True(Normal(saida) == Normal(atual), "balanceamento/config.json desatualizado: rode node balanceamento/modelo.js --json > balanceamento/config.json");
     }
 }

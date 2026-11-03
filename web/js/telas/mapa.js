@@ -70,7 +70,6 @@
   function abrirFolhaMapa(o, h) {
     selecionar(h);
     tela.classList.add('com-folha');
-    o.sobreNav = true;
     var depois = o.aoFechar;
     o.aoFechar = function (troca) { if (!troca) { selecionar(null); tela.classList.remove('com-folha'); } if (depois) depois(troca); };
     RP.abrirFolha(o);
@@ -174,13 +173,14 @@
     }, h);
   }
   function folhaMarcha(o) {
+    if (o.dono === 'meu') { folhaMarchaPropria(o); return; }
     var ag = RP.agora(), pos = M.posMarcha(o, ag), cheg = M.chegada(o), rev = RP.mapaTatico.revelada(o), def = MAPA.tiposMarcha[o.marcha] || {};
-    var nome = def.nome || NOME_MARCHA[o.marcha] || (o.dono === 'meu' ? 'Sua marcha' : 'Tropas');
+    var nome = def.nome || NOME_MARCHA[o.marcha] || 'Tropas';
     var titulo = rev ? nome : 'Forças desconhecidas';
-    var corpo = '<div class="info">' + linhaInfo('Quem', o.dono === 'meu' ? 'Seu reino' : o.dono === 'aliado' ? 'Aliado' : rev ? 'Identificado pelo estandarte' : 'Desconhecido · sem estandarte') +
+    var corpo = '<div class="info">' + linhaInfo('Quem', o.dono === 'aliado' ? 'Aliado' : rev ? 'Identificado pelo estandarte' : 'Desconhecido · sem estandarte') +
       (o.tamanho ? linhaInfo('Tamanho', RP.esc(o.tamanho)) : '') +
       (cheg && fimConhecido(o) ? linhaInfo('Chegada', '<span data-fim="' + cheg + '">' + RP.fmtResta(cheg - ag) + '</span>') : '') +
-      (o.dono !== 'meu' && o.caminho ? linhaInfo('Rumo', destinoTxt(o)) : '') + '</div>' +
+      (o.caminho ? linhaInfo('Rumo', destinoTxt(o)) : '') + '</div>' +
       (rev ? '' : '<p class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Ser atacado não revela o atacante. Só o estandarte ou a espionagem mostram quem é.</span></p>');
     abrirFolhaMapa({
       titulo: titulo, subtitulo: '<div class="linha">' + seloEstado(M.estado(pos.hex)) + coordTxt(pos.hex) + '</div>',
@@ -188,6 +188,71 @@
       corpo: corpo, acoes: ''
     }, pos.hex);
   }
+  /* Marcha própria: sempre controlável pelo mapa, em qualquer ponto do caminho. Mostra o que é, destino, chegada e
+     carga (o servidor manda carga/cargaMax/tropas/estado em GET /mapa; GET /tropas completa para exércitos), com
+     até 3 ações: mandar para outro lugar, voltar ao castelo e parar aqui. Exploradores usam as ordens deles. */
+  var ESTADO_MARCHA = { marchando: 'em marcha', parado: 'parada', retornando: 'voltando', trabalhando: 'trabalhando' };
+  function ehExplorador(tipo) { return /explor|batedor|prospector/.test(String(tipo || '')); }
+  function folhaMarchaPropria(o) {
+    var ag = RP.agora(), pos = M.posMarcha(o, ag), cheg = M.chegada(o), def = MAPA.tiposMarcha[o.marcha] || {};
+    var ex = o.marcha === 'exercito' ? RP.exercito(o.id) : null, d = ex || o;
+    var nome = def.nome || NOME_MARCHA[o.marcha] || 'Sua marcha';
+    var estado = d.estado || (cheg && cheg > ag ? 'marchando' : 'parado');
+    var destino = d.alvo || (o.caminho && o.caminho.length ? nomeDestino(o.caminho[o.caminho.length - 1]) : null);
+    var tropas = d.tropas && RP.somaGrupo(d.tropas) ? RP.selosGrupo(d.tropas) : (o.pessoas ? o.pessoas + ' pessoas' : (d.resumo ? RP.esc(d.resumo) : ''));
+    var corpo = '<div class="info">' +
+      (tropas ? linhaInfo('Quem', tropas) : '') +
+      linhaInfo('Estado', (ESTADO_MARCHA[estado] || estado) + (d.ordem && d.ordem !== 'mover' && d.ordem !== 'retornar' && RP.ORDENS_NOMES && RP.ORDENS_NOMES[d.ordem] ? ' · ' + RP.esc(RP.ORDENS_NOMES[d.ordem].toLowerCase()) : '')) +
+      (destino ? linhaInfo(estado === 'retornando' ? 'Volta para' : 'Destino', RP.esc(destino)) : '') +
+      (cheg && cheg > ag ? linhaInfo(estado === 'retornando' ? 'Chega em casa' : 'Chegada', '<b class="num" data-fim="' + cheg + '">' + RP.fmtResta(cheg - ag) + '</b>') : '') +
+      (d.trabalho ? linhaInfo(d.trabalho.tipo === 'caca' ? 'Caçando' : d.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo', (d.trabalho.coletado && RP.cargaUsada(d.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(d.trabalho.coletado)) : 'começando') + (d.trabalho.destino ? ' · leva para ' + RP.esc(d.trabalho.destino) : '')) : '') +
+      '</div>' +
+      (d.cargaMax != null || (d.carga && RP.cargaUsada(d.carga)) ? '<div style="margin-top:var(--esp-3)">' + RP.cargaHTML(d.carga, d.cargaMax) + '</div>' : '') +
+      (d.bloqueio ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p') + RP.esc(d.bloqueio) + '</p>' : '');
+    var acoes = '';
+    if (ehExplorador(o.marcha)) {
+      acoes = '<a class="btn btn-p btn-primario" href="#/exploradores?ativo=' + o.id + '">' + RP.icone('seta') + 'Novo destino</a>' +
+        (estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-marcha-voltar-exp="' + o.id + '">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '');
+    } else if (o.marcha === 'exercito' || ex) {
+      var pode = !d.bloqueio && d.podeOrdem !== false;
+      acoes = (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
+        (pode && estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + o.id + '">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
+        (pode && estado !== 'parado' ? '<button type="button" class="btn btn-p" data-exercito-parar="' + o.id + '" data-hex="' + pos.hex + '">' + RP.icone('alvo') + 'Parar aqui</button>' : '') +
+        (!pode && d.bloqueio && RP.telas.batalha ? '<a class="btn btn-p btn-perigo" href="#/tropas">' + RP.icone('escudo') + 'Recuar</a>' : '') +
+        '<button type="button" class="btn btn-p" data-exercito="' + o.id + '">' + RP.icone('info') + 'Detalhes</button>' +
+        '<a class="btn btn-p" href="#/posturas?marcha=' + o.id + '">' + RP.icone('escudo') + 'Comportamento</a>';
+    } else if (o.marcha === 'caravana' && RP.telas.caravana) {
+      acoes = '<a class="btn btn-p" href="#/caravana">' + RP.icone('carroca') + 'Caravanas</a>';
+    }
+    abrirFolhaMapa({
+      titulo: RP.esc(nome), subtitulo: '<div class="linha"><span class="selo selo-visivel">' + RP.icone('olho') + 'Sua tropa</span>' + coordTxt(pos.hex) + '</div>',
+      icone: '<span class="ico-placa folha-ico marcha-ico dono-meu">' + RP.icone(RP.mapaTatico.iconeMarcha(o)) + '</span>',
+      corpo: corpo, acoes: acoes
+    }, pos.hex);
+    /* exércitos: completa com GET /tropas (carga, bloqueio) se ainda não veio */
+    if (o.marcha === 'exercito' && !ex) RP.carregarTropas().then(function () { if (RP.folhaAberta() && RP.exercito(o.id)) folhaMarchaPropria(o); }, function () { /* offline */ });
+  }
+  function nomeDestino(h) {
+    var l = RP.reino && (RP.reino.locais || []).filter(function (x) { return x.hex === h; })[0];
+    if (l) return l.nome;
+    var o = M.objetosEm(h).filter(function (x) { return x.tipo === 'local'; })[0];
+    return o ? (o.nome || RP.TIPOS_LOCAL[o.local] || 'local') + ' (' + H.c(h) + ', ' + H.l(h) + ')' : 'hexágono ' + H.c(h) + ', ' + H.l(h);
+  }
+  document.addEventListener('click', function (e) {
+    var b;
+    if ((b = e.target.closest('[data-exercito-parar]'))) {
+      var id = +b.getAttribute('data-exercito-parar'), hx = +b.getAttribute('data-hex');
+      RP.tentar(RP.post('/tropas/' + id + '/ordem', { ordem: 'mover', destinoHex: hx })).then(function () {
+        RP.fecharFolha(); RP.aviso({ titulo: 'Tropas param aqui', texto: 'Ficam no lugar e atacam só quem atacar.', icone: 'alvo', tipo: 'sucesso' });
+        M.carregar().catch(function () { /* offline */ }); RP.recarregarTropas();
+      });
+    } else if ((b = e.target.closest('[data-marcha-voltar-exp]'))) {
+      RP.tentar(RP.post('/exploradores/' + b.getAttribute('data-marcha-voltar-exp') + '/ordem', { ordem: 'retornar' })).then(function () {
+        RP.fecharFolha(); RP.aviso({ titulo: 'Explorador voltando', icone: 'voltar', tipo: 'sucesso' });
+        M.carregar().catch(function () { /* offline */ }); if (RP.exploracao && RP.exploracao.carregar) RP.exploracao.carregar();
+      });
+    }
+  });
   /* de marcha alheia, o servidor manda só o trecho à vista: o fim dos tempos é a chegada só quando ela vem a um local seu */
   function fimConhecido(o) { return o.dono === 'meu' || o.dono === 'aliado' || !!o.paraMim; }
   function destinoTxt(o) {
@@ -367,6 +432,7 @@
       '<button type="button" class="btn btn-icone" data-zoom="1.5" aria-label="Aproximar">' + RP.icone('mais') + '</button>' +
       '<button type="button" class="btn btn-icone" data-zoom="0.6667" aria-label="Afastar">' + RP.icone('menos') + '</button>' +
       '<button type="button" class="btn btn-icone" data-centrar-castelo aria-label="Centralizar no castelo">' + RP.icone('alvo') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-inclinar aria-label="Inclinação da câmera: toque para voltar ao padrão. Arraste com o botão do meio ou com dois dedos para inclinar." title="Inclinação: botão do meio ou dois dedos; toque para voltar ao padrão">' + RP.icone('vista') + '</button>' +
       '<button type="button" class="btn btn-icone" data-camadas aria-label="Camadas e legenda">' + RP.icone('camadas') + '</button></div>' +
       '<div class="modo-mapa abas" role="group" aria-label="Tipo de visão">' +
       '<button type="button" class="aba" data-modo-btn="cena" aria-pressed="true">' + RP.icone('vista') + 'Vista</button>' +
@@ -400,6 +466,11 @@
         if (m) { folhaMarcha(m); var p = M.posMarcha(m, RP.agora()); visao().centrar(p.x, p.y, null, 0.3); }
       } else if ((b = e.target.closest('[data-zoom]'))) visao().zoomBotao(+b.getAttribute('data-zoom'));
       else if (e.target.closest('[data-centrar-castelo]')) irCastelo(true);
+      else if (e.target.closest('[data-inclinar]')) {
+        if (modo !== 'cena') { definirModo('cena'); return; }
+        var padrao = cena.inclinar(null);
+        RP.aviso({ titulo: padrao ? 'Câmera no padrão' : 'Inclinação', texto: 'Arraste com o botão do meio ou com dois dedos para inclinar.', icone: 'vista', ms: 2200 });
+      }
       else if (e.target.closest('[data-camadas]')) abrirCamadas();
       else if ((b = e.target.closest('[data-modo-btn]'))) { var md = b.getAttribute('data-modo-btn'); if (md !== modo) definirModo(md); }
       else if (e.target.closest('[data-cancelar-fundar]')) { alvoFundar = null; atualizarFaixaFundar(); RP.fecharFolha(); }
@@ -418,8 +489,10 @@
   document.addEventListener('rp:reino', function () { if (ativa() && modo === 'tatico') tat.atualizarSvg(); });
   document.addEventListener('rp:tique', function () { if (ativa() && M.dados && RP.agora() % 10000 < 1000) atualizarFaixas(); });
 
+  /* O mundo é a tela de fundo: montado uma vez, nunca escondido enquanto há reino (os painéis ficam por cima).
+     `entrar` roda na montagem e a cada #/mapa (foco, centro, fundar, modo); `sair` só ao sair da conta. */
   RP.registrarTela('mapa', {
-    nav: true, fixa: true,
+    nav: true, fixa: true, fundo: true,
     montar: montar,
     entrar: function (el, p) {
       M.ativar('mapa');
@@ -432,11 +505,10 @@
         var foco = p.get('foco'), centro = p.get('centro'), alvo = foco !== null && foco !== '' ? +foco : centro !== null && centro !== '' ? +centro : null;
         var c = RP.castelo(), pc = alvo != null && alvo >= 0 ? H.centroH(alvo) : c ? H.centroH(c.hex) : { x: H.LARGURA / 2, y: H.ALTURA / 2 };
         if (!posicionado || alvo != null || p.get('modo')) {
-          cena.cam.s = 1.7; tat.cam.s = 0.75;
-          cena.invalidar(); tat.invalidar();
+          if (!posicionado) { cena.cam.s = 1.7; tat.cam.s = 0.75; cena.invalidar(); tat.invalidar(); }
           if (pedido !== modo) visao().parar();
           modo = pedido;
-          definirModo(pedido, { x: pc.x, y: pc.y, s: pedido === 'cena' ? 1.7 : 0.75 });
+          definirModo(pedido, { x: pc.x, y: pc.y, s: posicionado ? null : (pedido === 'cena' ? 1.7 : 0.75) });
           posicionado = true;
         } else definirModo(modo);
         desenharMinimapa(); atualizarFaixas();
@@ -452,8 +524,11 @@
       selecionar(null); if (tela) tela.classList.remove('com-folha');
       if (cena) cena.parar();
       if (tat) tat.parar();
+      posicionado = false;
     }
   });
+  /* ao voltar a #/mapa sem parâmetros, a câmera fica onde estava; a folha aberta fecha com a troca de rota */
+  document.addEventListener('rp:tela', function (ev) { if (ev.detail !== 'mapa' && tela) { selecionar(null); tela.classList.remove('com-folha'); } });
 
   /* ---------------------------------------------------------------- API pública */
   MAPA.recarregar = function () { return M.carregar(); };

@@ -250,7 +250,7 @@
     var req = ativo ? RP.post('/exploradores/' + ativo.id + '/ordem', corpo)
       : RP.post('/exploradores/enviar', Object.assign({ tipo: ex.tipo, escolta: ex.comEscolta ? ex.escolta : null }, corpo));
     RP.tentar(req).then(function (e) {
-      RP.aviso({ titulo: ativo ? 'Nova ordem dada' : 'Explorador enviado', texto: e && e.chegada ? 'Chega ' + RP.fmtHora(e.chegada) + '.' : '', icone: RP.ICONE_EXPLORADOR[ex.tipo] || 'explorador', tipo: 'sucesso' });
+      RP.aviso({ titulo: ativo ? 'Nova ordem dada' : 'Explorador enviado', texto: e && e.chegada ? 'Chega ' + RP.fmtEm(e.chegada) + '.' : '', icone: RP.ICONE_EXPLORADOR[ex.tipo] || 'explorador', tipo: 'sucesso' });
       ex.ativo = null; ex.escolta = {}; ex.comEscolta = false; ex.chave = '';
       RP.exploracao.carregar().then(function () { desenhar(el); }, function () { /* offline */ });
       RP.recarregarReino();
@@ -282,7 +282,7 @@
         }
         if ((b = e.target.closest('[data-exp-treinar]'))) {
           RP.tentar(RP.post('/exploradores/treinar', { tipo: b.getAttribute('data-exp-treinar'), qtd: 1 })).then(function (it) {
-            RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: it.materialCompleto ? 'Pronto ' + RP.fmtHora(it.fim) + '.' : 'O material está a caminho do castelo.', icone: 'explorador', tipo: 'sucesso' });
+            RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoFilaItem(it), icone: 'explorador', tipo: 'sucesso' });
             RP.exploracao.carregar(); RP.recarregarReino();
           });
           return;

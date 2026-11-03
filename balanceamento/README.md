@@ -13,14 +13,14 @@ Números de tempos, custos, rendimentos e combate para o Reino de Pedra. Saem de
 | Tema | Valor |
 |---|---|
 | Temporada | **70 dias** (10 semanas) |
-| Mundo | 30 reinos num mapa de **60 × 48 hexágonos** (≈ 96 por reino) |
+| Mundo | 30 reinos num mapa de **104 × 80 hexágonos** (≈ 277 por reino) |
 | Escudo de novato | **72 h**; escudo de exílio **24 h**; regência após **48 h** sem entrar |
 | Produção de um local | 30/h no nível 1 → **318/h no nível 10** (+30% por nível) |
 | Obras | Nível 2 em **2 min**; nível 6 em 32 min; nível 10 em **8 h 32 min** (o castelo leva o dobro) |
 | Retorno de uma melhoria | Primeira em **≈ 6 h**; a do nível 10 em **≈ 13 dias** (investimento de fim de temporada) |
 | Exército | Jogador médio: **≈ 100 tropas** no fim do escudo, **≈ 670** no dia 35. Ativo: ≈ 2,8× isso |
 | Unidade básica | Lanceiro: 90 recursos, 3 min, carga 40 |
-| Viagem (tropa lenta) | Vizinho do reino **10 min**; reino vizinho **45 min**; travessia do mapa **3 h 14 min** |
+| Viagem (tropa lenta) | Vizinho do reino (3 hex.) **2 min**; reino vizinho (24 hex.) **16 min**; travessia do mapa (104 hex.) **1 h 10 min** |
 | Combate | Para tomar um local, cerca de **1,5× a força da defesa**; um castelo médio exige cerca de **2×** |
 | Torre | Nível 1: 6 arqueiros no alto, alcance 2, 600 recursos; com ela, o mesmo ataque que tomaria o local perde |
 | Relíquias | Ataque +15%, produção +15%, resistência +20%; escavação de 12 h com 1 unidade, mínimo 4 h |
@@ -43,7 +43,7 @@ Cada meta vem das regras do `CLAUDE.md` ou de prática do gênero. O modelo conf
 | M1 | O kit inicial recruta 10 lanceiros na primeira sessão | "O reino base já gera recursos para tropas básicas" | ✓ |
 | M2 | Primeira melhoria se paga em até 6 h; a do nível 10 em 1 a 2 semanas | Começo rápido; fim de temporada com escolhas de longo prazo | 5,6 h · 13 dias |
 | M3 | Obra do nível 2 em até 2 min; do nível 10 em 6 a 10 h; 10 obras de nível médio cobrem a noite | "Básico rápido, forte demorado"; fila de 10 para a noite | 2 min · 8 h 32 min · 12 h 27 min |
-| M4 | Vizinho do reino em até 15 min; reino vizinho em 30 a 60 min; travessia em até 3 h 30 min | "Deslocamento não deve demorar excessivamente" | 10 min · 45 min · 3 h 14 min |
+| M4 | Vizinho do reino (3 hex.) em até 3 min; reino vizinho (24 hex.) em 10 a 20 min; travessia (104 hex.) em até 90 min | "Deslocamento não deve demorar excessivamente"; curtas distâncias em poucos minutos, sem perder a escala entre reinos ([decisão 0022](../docs/decisoes/0022-velocidade-e-mapa-maior.md)) | 2 min · 16 min · 1 h 10 min |
 | M5 | Médio com 60–150 tropas no dia 3 e 400–900 no dia 35; ativo com 1,5–3× isso | Exército que pesa sem virar só números | 104 · 672 · 2,8× |
 | M5 | Recrutar não derruba a economia do médio (eficiência ≥ 90%) | Tropas e economia em equilíbrio | 100% |
 | M5 | Sem guerra, o ativo maximiza a economia entre os dias 30 e 50; o médio, depois do dia 40 | Saques e sabotagens atrasam os jogadores de verdade; a temporada não acaba antes da hora | dia 46 · não chega |
@@ -61,7 +61,7 @@ O custo cresce mais rápido que a produção: cada nível rende menos por recurs
 
 **População**: o castelo dá teto de 300; cada moradia, +60, custando `400 + 120 × (moradias já feitas)`. Cresce `5%/h × população × (1 − população/teto livre)`, +30% com sobra de comida. Recrutar tira da população; as tropas ocupam o teto.
 
-**Deslocamento**: `hexágonos × terreno médio 1,35 × minutos por velocidade` (lenta 2,4; média 1,6; rápida 1,0). Rota pública: ×0,55.
+**Deslocamento**: `hexágonos × terreno médio 1,35 × minutos por velocidade` (lenta 0,5; média 0,33; rápida 0,2). Rota pública: ×0,55. Tropas ~5× mais rápidas que na primeira versão, num mapa ~3× maior em hexágonos (104 × 80): 3 hexágonos em 2 min, reino vizinho em 16 min, travessia em 1 h 10 min. Carregadores da requisição andam na velocidade lenta (só o material que já está no local da obra entra na hora). **Visão em marcha**: um exército revela a névoa com a maior visão do grupo (milícia, lanceiro e cerco 1; arqueiro, cavalaria e elite 2).
 
 **Combate**:
 - Ataque = soma de `ataque × quantidade`. Defesa = soma de `defesa × quantidade` + milícia + arqueiros no alto.
@@ -73,19 +73,19 @@ O custo cresce mais rápido que a produção: cada nível rende menos por recurs
 
 ## Unidades
 
-| Unidade | Ataque | Defesa | Vence | Velocidade | Carga | Custo | Tempo |
-|---|---|---|---|---|---|---|---|
-| Milícia | 5 | 15 | — | lenta | 20 | 20 comida, 10 madeira | 30 s |
-| Lanceiro | 25 | 40 | cavalaria | lenta | 40 | 30 comida, 30 madeira, 30 ferro | 3 min |
-| Arqueiro | 35 | 25 | infantaria | média | 40 | 30 comida, 50 madeira, 10 couro | 3 min 30 s |
-| Cavalaria | 45 | 30 | arqueiros | rápida | 80 | 60 comida, 50 ferro, 30 couro | 6 min |
-| Cavaleiro de elite | 60 | 40 | arqueiros | rápida | 80 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 8 min |
-| Aríete | 10 | 10 | 40 de estrutura por combate | lenta | 0 | 300 madeira, 60 ferro (4 pop.) | 15 min |
-| Trebuchet | 5 | 5 | 90 de estrutura, à distância | lenta | 0 | 600 madeira, 200 pedra, 150 ferro (6 pop.) | 30 min |
+| Unidade | Ataque | Defesa | Vence | Velocidade | Carga | Visão | Custo | Tempo |
+|---|---|---|---|---|---|---|---|---|
+| Milícia | 5 | 15 | — | lenta | 20 | 1 | 20 comida, 10 madeira | 30 s |
+| Lanceiro | 25 | 40 | cavalaria | lenta | 40 | 1 | 30 comida, 30 madeira, 30 ferro | 3 min |
+| Arqueiro | 35 | 25 | infantaria | média | 40 | 2 | 30 comida, 50 madeira, 10 couro | 3 min 30 s |
+| Cavalaria | 45 | 30 | arqueiros | rápida | 80 | 2 | 60 comida, 50 ferro, 30 couro | 6 min |
+| Cavaleiro de elite | 60 | 40 | arqueiros | rápida | 80 | 2 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 8 min |
+| Aríete | 10 | 10 | 40 de estrutura por combate | lenta | 0 | 1 | 300 madeira, 60 ferro (4 pop.) | 15 min |
+| Trebuchet | 5 | 5 | 90 de estrutura, à distância | lenta | 0 | 1 | 600 madeira, 200 pedra, 150 ferro (6 pop.) | 30 min |
 
 As vantagens valem por **família**: a lança vence a cavalaria (inclusive a de elite), o arqueiro vence a infantaria e a cavalaria vence os arqueiros.
 
-Papéis: o lanceiro é a melhor **defesa por recurso** (44 por 100 de valor); o arqueiro, o melhor **ataque por recurso** (35 por 100); a cavalaria é cara, mas rápida e carrega o dobro: a unidade de **saque**. Os custos por 100 usam o valor de referência (couro vale 2). Veículos: carroça 500 de carga (150 madeira, 20 ferro); carroção 1.500 (400 madeira, 80 ferro, 2 cavalos de raça). Carregador da requisição: 50, a pé. Mensageiro: 30 comida, 1 de população, 1 min, rápido (reino vizinho em ≈ 19 min); mensagem de até 200 caracteres, recado de proposta até 120.
+Papéis: o lanceiro é a melhor **defesa por recurso** (44 por 100 de valor); o arqueiro, o melhor **ataque por recurso** (35 por 100); a cavalaria é cara, mas rápida e carrega o dobro: a unidade de **saque**. Os custos por 100 usam o valor de referência (couro vale 2). Veículos: carroça 500 de carga (150 madeira, 20 ferro); carroção 1.500 (400 madeira, 80 ferro, 2 cavalos de raça). Carregador da requisição: 50, a pé. Mensageiro: 30 comida, 1 de população, 1 min, rápido (reino vizinho em ≈ 6 min); mensagem de até 200 caracteres, recado de proposta até 120.
 
 ## Torres e cerco
 

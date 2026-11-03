@@ -446,19 +446,8 @@ html.tela-fixa, html.tela-fixa body { overflow: hidden; height: 100%; overscroll
 .regras-lista li { display: flex; gap: var(--esp-2); align-items: flex-start; }
 .regras-lista .ico { flex: none; margin-top: 1px; color: var(--cor-texto-3); }
 
-/* ================================================================ Meu reino: vista no topo */
-.reino-vista { position: relative; height: 46vh; height: 46dvh; min-height: 300px; max-height: 460px; background: #232830; border-bottom: 1px solid var(--barra-borda); }
-.reino-cena { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
-.reino-vista-dica {
-  position: absolute; left: 50%; top: var(--esp-2); transform: translateX(-50%);
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
-  border-radius: var(--raio-pill); background: rgba(13, 15, 18, .72); color: var(--cor-texto-2);
-  font-size: var(--fs-1); font-weight: 600; white-space: nowrap; pointer-events: none;
-  animation: some-dica 1s ease 5s forwards;
-}
-@keyframes some-dica { to { opacity: 0; } }
-.reino-vista-abrir { position: absolute; right: var(--esp-3); bottom: var(--esp-6); background: rgba(13, 15, 18, .78); }
-.conteudo-reino { position: relative; margin-top: -28px; }
+/* (a Vista no topo de Meu reino saiu: o mundo fica atrás de tudo) */
+
 
 /* ================================================================ Retorno após regência */
 .regencia-topo { display: flex; gap: var(--esp-4); align-items: center; }

@@ -34,7 +34,8 @@ public sealed class OrdemCacar : IOrdemExercito
         {
             Registros.Relatar(m, ex.ReinoId, "caca", "Caçada sem presa", new JsonObject
             {
-                ["resumo"] = "Os caçadores não acharam o bando: ele já tinha sido abatido ou saiu da área.", ["hex"] = hex,
+                ["resumo"] = "Os caçadores não acharam o bando: ele já tinha sido abatido ou saiu da área. Não trouxeram nada e voltam.", ["hex"] = hex,
+                ["linhas"] = new JsonArray { Fauna.Linha("Trazem", "nada (o bando sumiu)") }, ["ganho"] = Capturas.Json(new Recursos()),
             }, "exploracao");
             ex.Retornar(m);
             return;
@@ -75,8 +76,9 @@ public static class Caca
         {
             Registros.Relatar(m, ex.ReinoId, "caca", "Caçada perdida", new JsonObject
             {
-                ["resumo"] = "Os " + animal + " venceram o grupo de caça. Tropas mortas não voltam.", ["hex"] = ex.Destino,
-                ["linhas"] = new JsonArray { Fauna.Linha("Baixas", GT.Partes(m, mortos)), Fauna.Linha("Força do grupo", Math.Round(forca) + " de " + 2 * limite) },
+                ["resumo"] = "Os " + animal + " venceram o grupo de caça: ninguém sobrou e nada foi trazido. Tropas mortas não voltam.", ["hex"] = ex.Destino,
+                ["linhas"] = new JsonArray { Fauna.Linha("Baixas", GT.Partes(m, mortos)), Fauna.Linha("Trazem", "nada (o grupo perdeu a luta)"), Fauna.Linha("Força do grupo", Math.Round(forca) + " de " + 2 * limite) },
+                ["ganho"] = Capturas.Json(new Recursos()),
             }, "exploracao");
             ex.Encerrar(m);
             return;
@@ -119,9 +121,12 @@ public static class Caca
         };
         if (f < 1) linhas.Add(Fauna.Linha("Carga", "o grupo só levou o que cabia"));
         ex.Dados.Remove("mortos"); ex.Dados.Remove("cacaAte"); ex.Dados.Remove("regiao");
+        var trouxe = levado.Count > 0
+            ? "O grupo traz " + string.Join(", ", levado.Arredondado().Select(kv => kv.Value + " " + Logistica.NomeRecurso(kv.Key))) + "."
+            : "O grupo não trouxe nada: não havia carga livre.";
         Registros.Relatar(m, ex.ReinoId, "caca", "Caçada: " + animal.ToLowerInvariant(), new JsonObject
         {
-            ["resumo"] = "Bando abatido. Ele volta à região em " + m.P.FaunaVoltaH + " h.", ["linhas"] = linhas, ["hex"] = ex.Destino,
+            ["resumo"] = "Bando abatido. " + trouxe + " Ele volta à região em " + m.P.FaunaVoltaH + " h.", ["linhas"] = linhas, ["hex"] = ex.Destino,
             ["ganho"] = Capturas.Json(levado),
         }, "exploracao");
         ex.Retornar(m);

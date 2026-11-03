@@ -54,7 +54,7 @@
     /* relíquias da temporada */
     var vale = t.vale, cheio = t.soma > t.teto;
     h += '<div class="secao-titulo">Relíquias da temporada</div><div class="card pilha">' +
-      '<div class="linha-entre"><span><b>Equipadas: ' + eq.length + ' de ' + t.equipadasMax + '</b><br><small class="fraco">' + pct(t.soma) + ' somados · teto de ' + pct(t.teto) + (cheio ? ' (vale ' + pct(t.teto) + ')' : '') + '</small></span><b class="num">+' + pct(vale) + '</b></div>' +
+      '<div class="linha-entre"><span><b>Equipadas: ' + eq.length + ' de ' + t.equipadasMax + '</b><br><small class="fraco">' + pct(t.soma) + ' somados · limite de ' + pct(t.teto) + (cheio ? ' (vale ' + pct(t.teto) + ')' : '') + '</small></span><b class="num">+' + pct(vale) + '</b></div>' +
       '<div class="barra"><i style="width:' + Math.min(100, (100 * t.soma) / t.teto).toFixed(0) + '%"></i></div>' +
       (t.reliquias.length ? '<div class="reliquias">' + t.reliquias.map(function (r) {
         return '<div class="card reliquia ganha' + (r.equipada ? ' equipada' : '') + '"><span class="reliquia-ico">' + RP.icone('lendario', 'r-lendario') + '</span><b>' + RP.esc(r.nome) + '</b><span class="selo selo-destaque">+' + pct(r.bonus) + ' ' + TIPO_LEG[r.tipo] + '</span>' +
@@ -63,7 +63,7 @@
     if (t.conquistas) h += '<div class="secao-titulo">Como ganhar nesta temporada</div><div class="card lista">' + t.conquistas.map(function (c) {
       return '<div class="lista-item"><span class="ico-placa">' + RP.icone(c.ok ? 'check' : 'lendario', c.ok ? 'r-ervas' : 'r-lendario') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(c.nome) + '</b><br><small class="fraco">' + RP.esc(c.como) + ' · ' + RP.esc(c.agora) + '</small></span>' + (c.ok ? '<span class="selo selo-visivel">No caminho</span>' : '') + '</div>';
     }).join('') + '</div>';
-    h += '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Entregues no fim da temporada. Cada uma dá de +' + pct(t.relMin) + ' a +' + pct(t.relMax) + ' (produção, ataque, defesa ou crescimento da população), e o teto também conta no teto de bônus de combate (+' + pct(t.tetoBonus) + '). Não confundir com as relíquias lendárias do mapa, que ficam na temporada.</p>';
+    h += '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Entregues no fim da temporada. Cada uma dá de +' + pct(t.relMin) + ' a +' + pct(t.relMax) + ' (produção, ataque, defesa ou crescimento da população), e esse limite também conta no limite de bônus de combate (+' + pct(t.tetoBonus) + '). Não confundir com as relíquias lendárias do mapa, que ficam na temporada.</p>';
 
     /* títulos */
     h += '<div class="secao-titulo">Títulos</div><div class="card lista">' + t.titulos.map(function (ti) {
@@ -165,11 +165,11 @@
   }
   RP.agoraItemHTML = itemHTML;
   RP.registrarTela('agora', {
-    secao: 'reino', nav: true,
-    montar: function (el) { el.innerHTML = topo('Precisa de você', 'reino', 'Nada aqui é obrigatório') + '<div class="conteudo-tela ag-conteudo"><p class="fraco">Carregando…</p></div>'; },
+    nav: true,
+    montar: function (el) { el.innerHTML = '<header class="topo"><h1>Atenção</h1><small class="fraco" style="margin-left:auto">Nada aqui é obrigatório</small></header><div class="conteudo-tela ag-conteudo"><p class="fraco">Carregando…</p></div>'; },
     entrar: function (el) {
       RP.get('/agora').then(function (a) {
-        RP.$('.ag-conteudo', el).innerHTML = '<p class="fraco" style="font-size:var(--fs-2)">O que pede atenção agora, o que está à vista e como anda o reino. Você decide o que fazer.</p>' +
+        RP.$('.ag-conteudo', el).innerHTML = '<div class="acoes-tela" style="margin-top:0"><a class="btn btn-p" href="#/relatorios">' + RP.icone('relatorios') + 'Relatórios</a><a class="btn btn-p" href="#/notificacoes">' + RP.icone('sino') + 'Notificações' + (RP.naoLidas ? ' <span class="contador contador-inline">' + RP.naoLidas + '</span>' : '') + '</a></div>' +
           GRUPOS.map(function (g) {
             var it = a.itens.filter(function (p) { return p.grupo === g[0]; });
             return it.length ? '<div class="secao-titulo">' + g[1] + '</div><div class="pilha">' + it.map(itemHTML).join('') + '</div>' : '';
@@ -223,7 +223,7 @@
         '<div class="regencia-numeros">' +
         '<div><span class="fraco">Desde</span><b class="num">' + new Date(g.ativaDesde).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) + '</b><small>' + (g.terminouEm ? 'até ' + new Date(g.terminouEm).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : 'ainda ativa') + '</small></div>' +
         '<div><span class="fraco">Locais</span><b class="num">' + r.locais.length + '</b><small>' + (g.perdas.length ? g.perdas.length + (g.perdas.length > 1 ? ' perdas' : ' perda') : 'nenhuma perda') + '</small></div>' +
-        '<div><span class="fraco">População</span><b class="num">' + RP.num(r.pop) + '</b><small>de ' + RP.num(r.teto) + '</small></div>' +
+        '<div><span class="fraco">População</span><b class="num">' + RP.num(r.pop) + '</b><small>de ' + RP.num(r.teto) + ' moradores</small></div>' +
         '</div></div>' +
         g.perdas.map(function (p) { return '<div class="faixa-alerta">' + RP.icone('alerta') + '<span class="txt">' + RP.esc(p) + '</span></div>'; }).join('') +
         '<div class="card"><div class="card-titulo">' + RP.icone('relatorios') + '<h3>Diário do regente</h3></div>' +

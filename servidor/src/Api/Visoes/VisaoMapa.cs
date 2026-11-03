@@ -2,6 +2,8 @@ using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Reinos;
+using ReinoDePedra.Jogo.Valiosos;
+using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
 namespace ReinoDePedra.Api.Visoes;
 
@@ -40,7 +42,7 @@ public static class VisaoMapa
         }
         foreach (var x in m.Marchas)
         {
-            if (x.ReinoId == r.Id) { objetos.Add(new { tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "meu", hex = x.HexEm(agora), caminho = x.Caminho, tempos = x.Tempos }); continue; }
+            if (x.ReinoId == r.Id) { objetos.Add(MarchaPropria(m, r, x, agora)); continue; }
             var h = x.HexEm(agora);
             var aliada = Aliado(m, r, x.ReinoId);   // aliados veem as marchas uns dos outros
             if (!aliada && (!vis.Contains(h) || x.Furtiva)) continue;
@@ -69,6 +71,38 @@ public static class VisaoMapa
             cols = g.Cols, lins = g.Lins, agora, terreno = new string(ter), idade,
             rotas = vias.Rotas.Where(h => nevoa.MinutoVisto(h) > 0), pontes = vias.Pontes.Where(h => nevoa.MinutoVisto(h) > 0),
             objetos,
+        };
+    }
+
+    /// <summary>
+    /// Marcha do próprio reino no mapa: sempre vai, esteja onde estiver (névoa, parada, caçando, extraindo), com estado, ordem,
+    /// carga (o que leva, quanto usa e quanto cabe), tropas e alvo. Parada: <c>parado = true</c> e <c>chegada = null</c>
+    /// (os <c>tempos</c> de uma marcha parada são só o instante em que parou; não é uma chegada). Nada disto vai para marchas alheias.
+    /// </summary>
+    public static object MarchaPropria(Mundo m, Reino r, Marcha x, long agora)
+    {
+        var parado = x.EventoId == null && x.Caminho.Count <= 1;
+        var cargaMax = x switch
+        {
+            Exercito e => e.CargaMax(m), Caravana c => c.CargaMax(m), Carregadores c => c.Pessoas * m.P.Carregador.Carga,
+            _ => GT.Carga(m, x.Tropas),
+        };
+        long? alvoId = x switch
+        {
+            Exercito e => e.AlvoLocalId, Carregadores c => c.DestinoLocalId,
+            Caravana c => c.Fase == Caravana.Buscar ? c.OrigemLocalId : c.Fase == Caravana.Levar ? c.DestinoLocalId : c.BaseLocalId,
+            _ => null,
+        };
+        return new
+        {
+            tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = "meu", hex = x.HexEm(agora), caminho = x.Caminho, tempos = x.Tempos,
+            parado, chegada = parado ? (long?)null : x.Chegada, x.Retornando,
+            estado = VisaoTropas.Estado(m, x),
+            ordem = x switch { Exercito e => e.Ordem, Explorador ex => ex.Ordem, Caravana c => c.Fase, _ => null },
+            carga = x.Carga.Arredondado(), cargaMax, cargaUsada = Math.Floor(x.Carga.Total),
+            tropas = x.Tropas, resumo = GT.Partes(m, x.Tropas), pessoas = x is Carregadores cg ? cg.Pessoas : (int?)null,
+            alvo = VisaoTropas.NomeLocal(m, r, alvoId), destinoNome = VisaoTropas.NomeLocal(m, r, m.LocalNoHex(x.Destino)?.Id),
+            reliquias = x.Reliquias.Count, x.Estandarte,
         };
     }
 

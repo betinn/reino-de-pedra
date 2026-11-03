@@ -4,7 +4,7 @@
   var RP = window.RP;
 
   function atualizarContador() {
-    RP.$$('.btn-sino .contador, .btn-sino-topo .contador').forEach(function (c) { c.textContent = RP.naoLidas; c.hidden = !RP.naoLidas; });
+    RP.$$('.btn-sino .contador, .btn-sino-topo .contador, [data-nav-contador]').forEach(function (c) { c.textContent = RP.naoLidas; c.hidden = !RP.naoLidas; });
   }
   RP.carregarContador = function () {
     return RP.get('/notificacoes').then(function (n) { RP.naoLidas = n.naoLidas; atualizarContador(); return n; });
@@ -22,7 +22,7 @@
   });
 
   RP.registrarTela('notificacoes', {
-    nav: true, secao: 'reino',
+    nav: true, secao: 'agora',
     montar: function (el) {
       el.addEventListener('change', function (e) {
         var c = e.target.closest('[data-categoria]');
@@ -41,7 +41,7 @@
     Promise.all([RP.get('/notificacoes'), RP.get('/notificacoes/preferencias')]).then(function (r) {
       var n = r[0], pref = r[1];
       var perm = window.Notification ? Notification.permission : 'denied';
-      el.innerHTML = '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/reino" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Notificações</h1></header>' +
+      el.innerHTML = '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/agora" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Notificações</h1></header>' +
         '<div class="conteudo-tela pilha"><div class="lista">' + (n.itens.length ? n.itens.map(function (x) {
           return '<a class="lista-item' + (x.lida ? '' : ' nao-lido') + '" href="#/' + RP.esc(x.link || 'reino') + '"><span class="ico-placa">' + RP.icone('sino') + '</span><div style="flex:1;min-width:0"><b>' + RP.esc(x.titulo) + '</b>' +
             (x.texto ? '<div class="fraco">' + RP.esc(x.texto) + '</div>' : '') + '<small class="fraco">' + RP.fmtHora(x.quando) + '</small></div></a>';

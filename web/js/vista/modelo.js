@@ -149,6 +149,8 @@
      manda só o trecho à vista, e o fim é quando ela sai da vista (some do mapa) */
   M.chegada = function (o) { return o.tempos && o.tempos.length ? o.tempos[o.tempos.length - 1] : 0; };
   M.chegadaConhecida = function (o) { return o.dono === 'meu' || o.dono === 'aliado' || o.paraMim ? M.chegada(o) : 0; };
+  /* marcha alheia que já chegou some do mapa 5 s depois; a própria (e a de aliado) nunca some: o servidor a tira quando acaba */
+  M.sumiu = function (o, t) { var c = M.chegada(o); return !!(c && t > c + 5000 && o.dono !== 'meu' && o.dono !== 'aliado'); };
   /* marchas alheias só aparecem enquanto estão onde o reino vê agora */
   M.marchaVisivel = function (o, pos) { return o.dono === 'meu' || o.dono === 'aliado' || M.estado(pos.hex).v === 'visivel'; };
 

@@ -93,11 +93,9 @@
         return '<button type="button" class="escolha escolha-linha" data-recrut-local="' + x.id + '" aria-pressed="' + (x.id === l.id) + '"><span class="ico-placa">' + RP.icone(RP.iconeLocal(x)) + '</span>' +
           '<span class="escolha-txt"><b>' + RP.esc(x.nome) + '</b><small class="fraco">' + (x.tipo === 'castelo' ? 'Milícia, lanceiro e arqueiro' : 'Todas as unidades') + '</small></span></button>';
       }).join('') + '</div>' : '') +
-      '<div class="card pop-mini"><div class="linha-entre"><span class="linha">' + RP.icone('populacao', 'r-populacao') + '<b class="num" data-pop>' + RP.num(r.pop) + '</b><span class="fraco">/ ' + RP.num(r.teto) + '</span></span><span class="fraco">' + RP.num(r.tropas) + ' tropas</span></div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:6px">Recrutar consome população civil na hora. Tropas mortas não retornam.</p></div>' +
-      '<div class="card pilha"><div class="linha">' + RP.icone(RP.iconeLocal(l)) + '<b>Estoque de ' + RP.esc(l.nome) + '</b></div>' + RP.estoqueHTML(l.id) +
-      '<p class="fraco" style="font-size:var(--fs-2)">O que faltar aqui vem sozinho dos locais mais próximos, levado por carregadores.</p></div>' +
-      filaHTML() + '<div class="secao-titulo">Unidades</div><div class="pilha">' + unidades.map(function (u) { return cartaoUnidade(u, l, maxes); }).join('') + '</div>';
+      '<div class="card pop-mini">' + (RP.popSomaHTML ? RP.popSomaHTML(r) : '') +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:6px">Recrutar transforma população em tropas na hora. Tropas mortas não voltam.</p></div>' +
+      (filaRecrut().length ? filaHTML() : '') + '<div class="secao-titulo">Unidades</div><div class="pilha">' + unidades.map(function (u) { return cartaoUnidade(u, l, maxes); }).join('') + '</div>';
     var rs = resumo(), falta = RP.faltas(rs.custo, 1, '*');
     RP.$('.rodape-resumo', el).innerHTML = rs.pop
       ? '<div class="resumo-linha"><b>' + RP.esc(rs.txt) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(rs.tempo) + '</span></div>' + RP.custoHTML(rs.custo, 1, '*')
@@ -119,6 +117,7 @@
     }, Promise.resolve()).then(function () {
       var chega = itens.reduce(function (m, it) { return Math.max(m, it.materialChegaEm || 0); }, 0);
       RP.aviso({ titulo: 'Recrutamento na fila', texto: rs.txt + '. População −' + RP.num(rs.pop) + '.' + (chega ? ' O material chega em ' + RP.fmtResta(chega - RP.agora()) + '.' : ''), icone: chega ? 'carroca' : 'tropas', tipo: 'sucesso', ms: 4200 });
+      if (RP.painel && window.matchMedia('(max-width: 899px)').matches) RP.ir('tropas');
     }, function (e) {
       RP.aviso({ titulo: e.message, texto: itens.length ? 'Parte do pedido entrou na fila.' : '', icone: 'alerta', tipo: 'perigo' });
     }).then(function () {

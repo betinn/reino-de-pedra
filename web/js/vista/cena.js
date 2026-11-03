@@ -17,6 +17,10 @@
   document.addEventListener('visibilitychange', function () {
     ativas.forEach(function (c) { if (document.hidden) c.pausar(); else c.continuar(); });
   });
+  /* inclinação da câmera: K vem da arte e muda quando o jogador inclina (lembrada no aparelho) */
+  A.aoMudarK.push(function (k) { K = k; ativas.forEach(function (c) { c.invalidar(); }); });
+  var kSalvo = parseFloat(RP.pref('inclinacao'));
+  if (isFinite(kSalvo) && kSalvo > 0) A.definirK(kSalvo);
 
   function Cena(cv, opt) {
     this.cv = cv; this.ctx = cv.getContext('2d'); this.opt = opt || {};
@@ -78,11 +82,20 @@
     if (ns < SMIN * 0.95 && this.opt.aoAfastarDemais) { this.opt.aoAfastarDemais(); return; }
     this.animarPara({ x: this.cam.x, y: this.cam.y, s: Math.max(SMIN, Math.min(SMAX, ns)) }, 240);
   };
+  /* inclina a câmera (k = achatamento do chão; null volta ao padrão). Devolve true se ficou no padrão. */
+  C.inclinar = function (k) {
+    var novo = k == null ? A.K_PADRAO : Math.max(A.K_MIN, Math.min(A.K_MAX, k));
+    if (Math.abs(novo - A.K) > 1e-4) { A.definirK(novo); RP.pref('inclinacao', String(novo)); }
+    if (!this.rodando) this.quadro(performance.now());
+    return Math.abs(novo - A.K_PADRAO) < 1e-4;
+  };
+  C.inclinarPor = function (dyPx) { this.inclinar(A.K - dyPx * 0.0028); };
   C.ligarGestos = function () {
     var self = this, p0 = null, avisado = false;
     RP.gestos(this.cv, {
       inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; },
       inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; },
+      inclinar: function (dy) { self.inclinarPor(dy); },
       arrasto: function (dx, dy) { self.cam.x -= dx / self.cam.s; self.cam.y -= dy / (K * self.cam.s); self.mudou(); },
       pinca: function (f, mx, my, mx0, my0) {
         var wx = (mx0 - self.w / 2) / p0.s + p0.x, wy = (my0 - self.h / 2) / (K * p0.s) + p0.y, ns = p0.s * f;
@@ -531,7 +544,7 @@
     /* marchas */
     if (camadas.marchas !== false) d.marchas.forEach(function (m) {
       var pos = M.posMarcha(m, ag), cheg = M.chegada(m);
-      if (cheg && ag > cheg + 5000) return;
+      if (M.sumiu(m, ag)) return;
       if (!M.marchaVisivel(m, pos) || !naTela(pos.x, pos.y)) return;
       self.desenharMarcha(c, V, m, pos, t, ag, itens, rot);
       self.alvos.push(alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.id], m));
@@ -634,7 +647,8 @@
     }
     if (m.reliquia) { var pb = pt(12, 0); add({ x: pb.x, y: pb.y + 1 }, function () { A.bauReliquia(c, t, P, m.reliquia.tipo || 'desconhecido'); }); prefixo = 'Relíquia · '; }
     var desconhecida = !revelado && tipo !== 'mensageiro';
-    rot(pos.x, pos.y, -40, (desconhecida ? '? ' : '') + prefixo + (cheg ? RP.fmtResta(cheg - ag) : ''), desconhecida ? 'perigo' : 'marcha', desconhecida ? Cs.perigo : cor);
+    var tempo = !cheg ? '' : cheg > ag ? RP.fmtResta(cheg - ag) : (propria ? 'parada' : '');
+    rot(pos.x, pos.y, -40, (desconhecida ? '? ' : '') + prefixo + tempo, desconhecida ? 'perigo' : 'marcha', desconhecida ? Cs.perigo : cor);
   };
 
   function alvoTela(cena, x, y, w, h, ent, o) {

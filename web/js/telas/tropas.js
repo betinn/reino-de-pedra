@@ -100,11 +100,11 @@
     }
   };
   RP.POSTURAS_INFO = [
-    { id: 'atacarQualquer', curto: 'Qualquer ameaça', icone: 'tropas', txt: 'Sai para combater qualquer força hostil que entrar no alcance, mesmo sem ser atacada.' },
+    { id: 'atacarQualquer', curto: 'Qualquer ameaça', icone: 'tropas', txt: 'Sai para combater qualquer força hostil que chegar perto, mesmo sem ser atacada.' },
     { id: 'apenasDefender', curto: 'Só defender', icone: 'escudo', txt: 'Nunca sai do lugar. Luta só quando o próprio local é atacado.' },
-    { id: 'atacarQuemAtacar', curto: 'Quem atacar', icone: 'alvo', txt: 'Defende e revida: persegue quem atacou este local ou os vizinhos.' }
+    { id: 'atacarQuemAtacar', curto: 'Revidar', icone: 'alvo', txt: 'Defende e revida: sai atrás de quem atacou você na última hora.' }
   ];
-  RP.ORDENS_NOMES = { mover: 'Mover', reforcar: 'Reforçar', retornar: 'Retornar' };
+  RP.ORDENS_NOMES = { mover: 'Mover', reforcar: 'Reforçar', retornar: 'Voltar' };
 
   /* exército em campo: título curto e linha de estado */
   RP.tituloExercito = function (e) {
@@ -115,9 +115,9 @@
     return (RP.ORDENS_NOMES[e.ordem] || e.ordem) + (e.alvo ? ': ' + e.alvo : '');
   };
   RP.estadoExercito = function (e) {
-    var onde = e.destinoC + ', ' + e.destinoL;
-    if (e.estado === 'parado') return 'parado no hexágono ' + onde;
-    return (e.estado === 'retornando' ? 'volta' : 'chega') + ' ' + RP.fmtHora(e.chegada) + ' · destino ' + onde;
+    var onde = e.alvo ? e.alvo : 'hexágono ' + e.destinoC + ', ' + e.destinoL;
+    if (e.estado === 'parado') return 'parado em ' + onde;
+    return (e.estado === 'retornando' ? 'volta ' : 'chega ') + RP.fmtEm(e.chegada) + ' · ' + onde;
   };
   RP.exercito = function (id) { return RP.tropas && RP.tropas.exercitos.filter(function (e) { return e.id === id; })[0]; };
 
@@ -125,26 +125,27 @@
     var abrir = function () {
       var e = RP.exercito(id);
       if (!e) { RP.aviso({ titulo: 'Este exército não está mais em campo', icone: 'info' }); return; }
-      var carga = Object.keys(e.carga || {});
+      var pode = !e.bloqueio && e.podeOrdem !== false;
       var corpo = '<div class="info">' +
         '<div class="info-linha"><span class="fraco">Tropas</span><span>' + RP.selosGrupo(e.tropas) + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Ordem</span><span>' + RP.esc(RP.ORDENS_NOMES[e.ordem] || e.ordem) + '</span></div>' +
-        '<div class="info-linha"><span class="fraco">' + (e.estado === 'parado' ? 'Onde' : 'Chegada') + '</span><span>' + (e.estado === 'parado' ? 'hexágono ' + e.destinoC + ', ' + e.destinoL : '<b class="num" data-fim="' + e.chegada + '">' + RP.fmtResta(e.chegada - RP.agora()) + '</b>') + '</span></div>' +
+        '<div class="info-linha"><span class="fraco">' + (e.estado === 'parado' ? 'Onde' : e.estado === 'retornando' ? 'Chega em casa' : 'Chegada') + '</span><span>' + (e.estado === 'parado' ? (e.alvo || 'hexágono ' + e.destinoC + ', ' + e.destinoL) : '<b class="num" data-fim="' + e.chegada + '">' + RP.fmtResta(e.chegada - RP.agora()) + '</b>' + (e.alvo ? ' · ' + RP.esc(e.alvo) : '')) + '</span></div>' +
+        (e.trabalho ? '<div class="info-linha"><span class="fraco">' + (e.trabalho.tipo === 'caca' ? 'Caçando' : e.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo') + '</span><span>' + (e.trabalho.coletado && RP.cargaUsada(e.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(e.trabalho.coletado)) : 'começando') + (e.trabalho.destino ? ' · leva para ' + RP.esc(e.trabalho.destino) : '') + '</span></div>' : '') +
         '<div class="info-linha"><span class="fraco">Saíram de</span><span>' + RP.esc(e.origem || '—') + '</span></div>' +
-        '<div class="info-linha"><span class="fraco">Carga</span><span>' + (carga.length ? RP.custoHTML(e.carga) : 'vazia') + ' <small class="fraco">até ' + RP.num(e.cargaMax) + '</small></span></div>' +
-        '<div class="info-linha"><span class="fraco">Velocidade</span><span>' + RP.esc(e.vel) + (e.seguro ? ' · rota segura' : ' · rota curta') + '</span></div>' +
-        '<div class="info-linha"><span class="fraco">Postura</span><span class="selo selo-info">' + RP.esc(RP.POSTURAS[e.postura] || '') + '</span></div>' +
+        '<div class="info-linha"><span class="fraco">Velocidade</span><span>' + RP.esc(RP.VELOCIDADES[e.vel] || e.vel) + (e.seguro ? ' · rota segura' : ' · rota curta') + '</span></div>' +
+        '<div class="info-linha"><span class="fraco">Comportamento</span><span class="selo selo-info">' + RP.esc(RP.POSTURAS[e.postura] || '') + '</span></div>' +
         (RP.extrasFolhaExercito || []).map(function (f) { return f(e) || ''; }).join('') +
-        '</div>';
+        '</div><div style="margin-top:var(--esp-3)">' + RP.cargaHTML(e.carga, e.cargaMax) + '</div>' +
+        (e.bloqueio ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p') + RP.esc(e.bloqueio) + '</p>' : '');
       RP.abrirFolha({
-        titulo: RP.esc(RP.tituloExercito(e)), veu: true,
+        titulo: RP.esc(RP.tituloExercito(e)),
         subtitulo: '<span class="fraco">' + RP.esc(e.resumo) + '</span>',
         icone: '<span class="ico-placa folha-ico dono-meu">' + RP.icone('tropas') + '</span>',
         corpo: corpo,
-        acoes: (e.estado !== 'retornando' ? '<button type="button" class="btn btn-p btn-primario" data-exercito-voltar="' + e.id + '">' + RP.icone('voltar') + 'Voltar</button>' : '') +
-          '<button type="button" class="btn btn-p" data-exercito-mover="' + e.id + '">' + RP.icone('seta') + 'Mover</button>' +
-          '<a class="btn btn-p" href="#/posturas?marcha=' + e.id + '">' + RP.icone('escudo') + 'Postura</a>' +
-          '<a class="btn btn-p" href="#/mapa?foco=' + e.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a>'
+        acoes: (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + e.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
+          (pode && e.estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + e.id + '">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
+          '<a class="btn btn-p" href="#/mapa?foco=' + e.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a>' +
+          '<a class="btn btn-p" href="#/posturas?marcha=' + e.id + '">' + RP.icone('escudo') + 'Comportamento</a>'
       });
     };
     if (RP.exercito(id)) abrir(); else RP.carregarTropas().then(abrir, function () { /* aviso já mostrado */ });
@@ -153,7 +154,7 @@
   RP.voltarExercito = function (id) {
     return RP.tentar(RP.post('/tropas/' + id + '/ordem', { ordem: 'retornar' })).then(function (e) {
       RP.fecharFolha();
-      RP.aviso({ titulo: 'Retorno ordenado', texto: e && e.chegada ? 'Chegam ' + RP.fmtHora(e.chegada) + '.' : 'As tropas voltaram.', icone: 'voltar', tipo: 'sucesso' });
+      RP.aviso({ titulo: 'Tropas voltando', texto: e && e.chegada ? 'Chegam ' + RP.fmtEm(e.chegada) + '.' : 'As tropas voltaram.', icone: 'voltar', tipo: 'sucesso' });
       RP.recarregarTropas(); RP.recarregarReino();
       if (RP.mapa && RP.mapa.recarregar && document.documentElement.getAttribute('data-tela') === 'mapa') RP.mapa.recarregar();
     });
@@ -191,10 +192,8 @@
         '<span class="ico-placa dono-meu">' + RP.icone('tropas') + '</span>' +
         '<span class="emcampo-corpo"><b>' + RP.esc(RP.tituloExercito(e)) + '</b><small class="fraco">' + RP.esc(e.resumo) + '</small>' +
         '<small class="fraco">' + RP.esc(RP.estadoExercito(e)) + '</small>' +
-        (RP.extrasExercito || []).map(function (f) { return f(e) || ''; }).join('') +
-        '<span class="exercito-acoes">' +
-        (e.estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + e.id + '">' + RP.icone('voltar') + 'Voltar</button>' : '') +
-        '<button type="button" class="btn btn-p" data-exercito-mover="' + e.id + '">' + RP.icone('seta') + 'Mover</button></span></span>' +
+        '<small class="fraco">' + RP.icone('carroca', 'ico-p') + ' ' + RP.esc(RP.cargaTexto(e.carga)) + (e.cargaMax ? ' · ' + RP.num(Math.max(0, e.cargaMax - RP.cargaUsada(e.carga))) + ' livres' : '') + '</small>' +
+        (RP.extrasExercito || []).map(function (f) { return f(e) || ''; }).join('') + '</span>' +
         '<span class="emcampo-tempo">' + (e.estado === 'parado' ? '<span class="selo">Parado</span>' : '<b class="num" data-fim="' + e.chegada + '">' + RP.fmtResta(e.chegada - RP.agora()) + '</b><small class="fraco">' + (e.estado === 'retornando' ? 'volta' : 'chega') + '</small>') + '</span></div>';
     }).join('');
   }
@@ -207,7 +206,7 @@
         (RP.extrasGuarnicao || []).map(function (f) { return f(l) || ''; }).join('') +
         '<div class="linha"><a class="btn btn-p" href="#/mapa?enviar=' + l.id + '">' + RP.icone('tropas') + 'Enviar tropas</a>' +
         (l.recruta ? '<a class="btn btn-p btn-fantasma" href="#/recrutamento?local=' + l.id + '">' + RP.icone('mais') + 'Recrutar</a>' : '') + '</div></div>';
-    }).join('') : '<p class="fraco">Nenhuma tropa nas guarnições. A população defende cada local como milícia.</p>') +
+    }).join('') : '<p class="fraco">Nenhuma tropa nos locais. A população defende cada local como milícia.</p>') +
       (sem.length ? '<p class="fraco guarnicao-sem">Sem tropas: ' + sem.map(function (l) { return RP.esc(l.nome); }).join(', ') + '.</p>' : '');
   }
   function treinoHTML(t) {
@@ -218,21 +217,23 @@
   function desenharTropas(el) {
     var t = RP.tropas, r = RP.reino;
     if (!t || !r) { RP.$('.tropas-conteudo', el).innerHTML = '<p class="fraco">Carregando…</p>'; return; }
-    var acoes = [['recrutamento', 'tropas', 'Recrutar', 'Milícia, lanceiro e arqueiro no castelo; todas no quartel'],
-      ['mapa?enviar=' + (primeiroComTropas(t) || r.casteloId), 'alvo', 'Enviar tropas', 'Toque no destino no mapa: mover ou reforçar'],
-      ['posturas', 'escudo', 'Posturas', 'Como cada tropa reage sem você']]
+    var acoes = [['mapa?enviar=' + (primeiroComTropas(t) || r.casteloId), 'alvo', 'Enviar tropas', 'Toque no destino no mapa: mover ou reforçar'],
+      ['recrutamento', 'tropas', 'Recrutar', 'Milícia, lanceiro e arqueiro no castelo; todas no quartel'],
+      ['posturas', 'escudo', 'Comportamento', 'Como cada tropa reage sem você']]
       .map(function (a) { return { href: '#/' + a[0], icone: a[1], titulo: a[2], texto: a[3] }; }).concat(RP.acoesTropas);
     RP.$('.tropas-conteudo', el).innerHTML =
       RP.extrasTropas.map(function (f) { return f(t) || ''; }).join('') +
-      '<div class="card pop-mini"><div class="linha-entre"><span class="linha">' + RP.icone('populacao', 'r-populacao') + '<b class="num" data-pop>' + RP.num(r.pop) + '</b><span class="fraco">civis livres</span></span>' +
-      '<span class="fraco">' + RP.num(t.ocupando) + ' tropas · teto ' + RP.num(t.teto) + '</span></div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:6px">Tropas moram no reino: em guarnição, em campo ou em treino, ocupam o teto. Cada soldado é um trabalhador a menos.</p></div>' +
+      '<div class="acoes-tela">' + acoes.slice(0, 3).map(function (a, i) {
+        return '<a class="btn btn-p' + (i ? '' : ' btn-primario') + '" href="' + a.href + '">' + RP.icone(a.icone) + RP.esc(a.titulo) + '</a>';
+      }).join('') + '</div>' +
+      '<div class="card pop-mini">' + (RP.popSomaHTML ? RP.popSomaHTML(r) : '') +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:6px">Soldados também moram no reino e não trabalham nas construções.</p></div>' +
       '<div class="secao-titulo">Em campo</div><div class="pilha">' + emCampoHTML(t) + '</div>' +
-      '<div class="secao-titulo">Em treino</div>' + treinoHTML(t) +
-      '<div class="secao-titulo">Guarnições</div><div class="pilha">' + guarnicoesHTML(t) + '</div>' +
-      '<div class="secao-titulo">Ordens</div><div class="grade-acoes">' + acoes.map(function (a) {
+      (((RP.reino && RP.reino.filas && RP.reino.filas.recrutamento) || []).length ? '<div class="secao-titulo">Em treino</div>' + treinoHTML(t) : '') +
+      '<div class="secao-titulo">Nos locais</div><div class="pilha">' + guarnicoesHTML(t) + '</div>' +
+      (acoes.length > 3 ? '<details class="detalhe"><summary>Mais ordens</summary><div class="grade-acoes">' + acoes.slice(3).map(function (a) {
         return '<a class="card acao-card" href="' + a.href + '"><span class="ico-placa ico-placa-g">' + RP.icone(a.icone) + '</span><b>' + RP.esc(a.titulo) + '</b><small class="fraco">' + RP.esc(a.texto || '') + '</small></a>';
-      }).join('') + '</div><div style="height:var(--esp-6)"></div>';
+      }).join('') + '</div></details>' : '') + '<div style="height:var(--esp-4)"></div>';
   }
   function primeiroComTropas(t) {
     var c = t.locais.filter(function (l) { return RP.somaGrupo(l.guarnicao) > 0; });
@@ -254,7 +255,7 @@
 
   /* ---------------------------------------------------------------- Posturas */
   function seletorPostura(alvo, atual) {
-    return '<div class="abas abas-postura" role="radiogroup" aria-label="Postura">' + RP.POSTURAS_INFO.map(function (p) {
+    return '<div class="abas abas-postura" role="radiogroup" aria-label="Comportamento">' + RP.POSTURAS_INFO.map(function (p) {
       return '<button type="button" class="aba" role="radio" data-postura="' + alvo + '" data-valor="' + p.id + '" aria-checked="' + (atual === p.id) + '" aria-label="' + RP.esc(RP.POSTURAS[p.id]) + '">' + p.curto + '</button>';
     }).join('') + '</div>';
   }
@@ -263,9 +264,9 @@
     if (!t) { RP.$('.post-conteudo', el).innerHTML = '<p class="fraco">Carregando…</p>'; return; }
     RP.$('.post-conteudo', el).innerHTML =
       '<div class="pilha">' + RP.POSTURAS_INFO.map(function (p) { return '<div class="postura-exp">' + RP.icone(p.icone) + '<span><b>' + RP.esc(RP.POSTURAS[p.id]) + '</b><br><small class="fraco">' + p.txt + '</small></span></div>'; }).join('') + '</div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">A postura vale com você offline. A população sempre defende o próprio local como milícia. Padrão: guarnições só defendem; exércitos em campo atacam apenas quem atacar.</p>' +
-      '<div class="secao-titulo">Guarnições</div>' +
-      '<div class="card linha-entre aplicar-todos"><span><b>Aplicar a todas</b><br><small class="fraco">Muda todas as guarnições de uma vez</small></span>' + seletorPostura('*', null) + '</div>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Vale com você offline. A população sempre defende o próprio local como milícia. Padrão: tropas nos locais só defendem; tropas em campo revidam quem atacar.</p>' +
+      '<div class="secao-titulo">Tropas nos locais</div>' +
+      '<div class="card linha-entre aplicar-todos"><span><b>Aplicar a todos</b><br><small class="fraco">Muda todos os locais de uma vez</small></span>' + seletorPostura('*', null) + '</div>' +
       '<div class="pilha" style="margin-top:var(--esp-3)">' + t.locais.map(function (l) {
         return '<div class="card postura-item' + (foco === 'l' + l.id ? ' foco' : '') + '" id="post-l' + l.id + '"><div class="linha"><span class="ico-placa dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(l.nome) + '</b><br><small class="fraco">' + (RP.somaGrupo(l.guarnicao) ? RP.esc(RP.partesGrupo(l.guarnicao)) : 'sem tropas, só a milícia') + '</small></span></div>' + seletorPostura('l' + l.id, l.postura) + '</div>';
       }).join('') + '</div>' +
@@ -279,7 +280,7 @@
   RP.registrarTela('posturas', {
     secao: 'tropas',
     montar: function (el) {
-      el.innerHTML = RP.topoVoltar('Posturas', 'tropas', 'Como cada tropa reage sem você') + '<div class="conteudo-tela post-conteudo"></div>';
+      el.innerHTML = RP.topoVoltar('Comportamento', 'tropas', 'Como cada tropa reage sem você') + '<div class="conteudo-tela post-conteudo"></div>';
       document.addEventListener('rp:tropas', function () { if (!el.hidden) desenharPosturas(el); });
       el.addEventListener('click', function (e) {
         var b = e.target.closest('[data-postura]');
@@ -290,7 +291,7 @@
         else if (alvo[0] === 'm') corpo.marchaId = +alvo.slice(1);
         else corpo.localId = +alvo.slice(1);
         RP.tentar(RP.put('/tropas/postura', corpo)).then(function () {
-          RP.aviso({ titulo: 'Postura salva', texto: (alvo === '*' ? 'Todas as guarnições' : alvo === '*m' ? 'Todos os exércitos' : 'Agora') + ': ' + RP.POSTURAS[v].toLowerCase() + '.', icone: 'escudo', tipo: 'sucesso', ms: 1800 });
+          RP.aviso({ titulo: 'Comportamento salvo', texto: (alvo === '*' ? 'Todos os locais' : alvo === '*m' ? 'Todos os exércitos' : 'Agora') + ': ' + RP.POSTURAS[v].toLowerCase() + '.', icone: 'escudo', tipo: 'sucesso', ms: 1800 });
           RP.carregarTropas(); RP.recarregarReino();
         });
       });

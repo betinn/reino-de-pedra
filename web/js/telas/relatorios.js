@@ -18,7 +18,7 @@
   }
 
   RP.registrarTela('relatorios', {
-    nav: true,
+    nav: true, secao: 'agora',
     montar: function (el) {
       RP.ouvir('relatorio', function () { if (!el.hidden) carregar(el); });
     },
@@ -28,7 +28,7 @@
   function carregar(el) {
     var f = el.getAttribute('data-filtro') || '';
     RP.get('/relatorios' + (f ? '?tipo=' + encodeURIComponent(f) : '')).then(function (lista) {
-      el.innerHTML = '<header class="topo"><h1>Relatórios</h1></header>' +
+      el.innerHTML = '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/agora" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Relatórios</h1></header>' +
         (RP.FILTROS_RELATORIO.length > 1 ? '<div class="abas" role="tablist">' + RP.FILTROS_RELATORIO.map(function (x) {
           return '<a class="aba" role="tab" href="#/relatorios' + (x[0] ? '?tipo=' + x[0] : '') + '" aria-selected="' + (x[0] === f) + '">' + x[1] + '</a>';
         }).join('') + '</div>' : '') +
@@ -41,7 +41,7 @@
   }
 
   RP.registrarTela('relatorio', {
-    nav: true, secao: 'relatorios',
+    nav: true, secao: 'agora',
     montar: function () { /* o conteúdo é montado em entrar */ },
     entrar: function (el, p) {
       el.innerHTML = '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/relatorios" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Relatório</h1></header><div class="conteudo-tela"><p class="fraco">Carregando…</p></div>';

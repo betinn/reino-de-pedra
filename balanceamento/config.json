@@ -60,9 +60,9 @@
   "novoLocalCresc": 1.22,
   "tempoNovoLocal": 5400,
   "minPor": {
-   "Lenta": 2.4,
-   "Média": 1.6,
-   "Rápida": 1
+   "Lenta": 0.5,
+   "Média": 0.33,
+   "Rápida": 0.2
   },
   "terreno": {
    "planicie": 1,
@@ -75,9 +75,10 @@
   "rotaFator": 0.55,
   "reinos": 30,
   "mapa": {
-   "cols": 60,
-   "lins": 48
+   "cols": 104,
+   "lins": 80
   },
+  "vizinhoHex": 24,
   "expPerdas": 1.5,
   "vantagem": 1.5,
   "miliciaPorPop": 0.05,
@@ -812,7 +813,7 @@
    "ataque": {
     "castelo": 3,
     "espionagemH": 24,
-    "alcance": 16,
+    "alcance": 28,
     "porte": 0.6,
     "forca": 2.5,
     "fracTropas": 0.6,
@@ -821,28 +822,28 @@
    },
    "espionagem": {
     "castelo": 4,
-    "alcance": 16,
+    "alcance": 28,
     "refazerH": 24
    },
    "ocupacao": {
-    "alcance": 8,
+    "alcance": 14,
     "tropas": 10
    },
    "exploracao": {
     "distancia": [
      4,
-     9
+     16
     ],
     "tentativas": 6
    },
    "caca": {
     "couroMin": 100,
-    "alcance": 6,
+    "alcance": 10,
     "tropas": 20
    },
    "extracao": {
     "castelo": 5,
-    "alcance": 10,
+    "alcance": 17,
     "tropas": 10
    },
    "defesa": {
@@ -877,6 +878,7 @@
    "def": 15,
    "vel": "Lenta",
    "carga": 20,
+   "visao": 1,
    "custo": {
     "comida": 20,
     "madeira": 10
@@ -892,6 +894,7 @@
    "def": 40,
    "vel": "Lenta",
    "carga": 40,
+   "visao": 1,
    "custo": {
     "comida": 30,
     "madeira": 30,
@@ -908,6 +911,7 @@
    "def": 25,
    "vel": "Média",
    "carga": 40,
+   "visao": 2,
    "custo": {
     "comida": 30,
     "madeira": 50,
@@ -924,6 +928,7 @@
    "def": 30,
    "vel": "Rápida",
    "carga": 80,
+   "visao": 2,
    "custo": {
     "comida": 60,
     "ferro": 50,
@@ -940,6 +945,7 @@
    "def": 40,
    "vel": "Rápida",
    "carga": 80,
+   "visao": 2,
    "custo": {
     "comida": 70,
     "ferro": 60,
@@ -958,6 +964,7 @@
    "def": 10,
    "vel": "Lenta",
    "carga": 0,
+   "visao": 1,
    "custo": {
     "madeira": 300,
     "ferro": 60
@@ -973,6 +980,7 @@
    "def": 5,
    "vel": "Lenta",
    "carga": 0,
+   "visao": 1,
    "custo": {
     "madeira": 600,
     "pedra": 200,
@@ -1012,7 +1020,7 @@
    85.68300000000002,
    111.38790000000002,
    144.80427000000003,
-   188.24555100000003,
+   188.24555100000006,
    244.71921630000008,
    318.1349811900001
   ],
@@ -1179,31 +1187,31 @@
     "hexes": 4,
     "vel": "Lenta",
     "rota": false,
-    "min": 12.96
+    "min": 2.7
    },
    {
-    "hexes": 14,
+    "hexes": 24,
     "vel": "Lenta",
     "rota": false,
-    "min": 45.36000000000001
+    "min": 16.200000000000003
    },
    {
-    "hexes": 60,
+    "hexes": 104,
     "vel": "Lenta",
     "rota": false,
-    "min": 194.4
+    "min": 70.2
    },
    {
     "hexes": 10,
     "vel": "Rápida",
     "rota": true,
-    "min": 7.425000000000001
+    "min": 1.4850000000000003
    },
    {
     "hexes": 10,
     "vel": "Média",
     "rota": false,
-    "min": 21.6
+    "min": 4.455
    }
   ],
   "batalhas": [
@@ -1435,7 +1443,7 @@
      "A": 2100,
      "D": 1200,
      "venceA": true,
-     "perdaA": 0.43195939772483105,
+     "perdaA": 0.4319593977248311,
      "perdaD": 1,
      "recuou": false,
      "razao": 1.75

@@ -216,8 +216,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             foreach (var id in mc.EventosCaminho) m.Cancelar(id);
             mc.EventosCaminho.Clear();
             mc.TrocarCaminhoVisto(m, m.Agora);
-            if (mc.ReinoId != 0 && mc is not Carregadores && mc is not Explorador && mc.Caminho.Count > 1)
-                mc.EventosCaminho.Add(m.Agendar(new RevelarCaminhoEvento { MarchaId = mc.Id, Partida = mc.Partida, Quando = mc.Chegada - 1 }).Id);
+            mc.AgendarRevelacao(m);   // toda marcha revela a névoa por onde passa (exércitos, exploradores, carregadores, caravanas)
             if (mc.ReinoId != 0 && mc.AlvoDeFauna && mc.Caminho.Count > 1) SortearAtaques(m, mc);
             Exploradores.SortearCaptura(m, mc);
             m.Sujar(mc);

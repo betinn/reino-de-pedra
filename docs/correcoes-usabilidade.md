@@ -7,6 +7,26 @@ Regras desta etapa:
 - Mudança de regra de jogo (velocidade, tamanho do mapa) entra também no `CLAUDE.md`; número novo, em `balanceamento/modelo.js`, depois regenerar `tabelas.md` e `config.json` (ver README). Decisão técnica nova vai para `docs/decisoes/`.
 - Cada item termina com um critério de pronto que dá para conferir jogando.
 
+## Estado (novembro de 2026)
+
+Feito nesta etapa, para conferir jogando (`REINO_ACELERACAO=60 scripts/rodar-local.sh`):
+
+| Item | Estado | Onde |
+|---|---|---|
+| 14, 8, 2, 4 | **Feito.** Concha nova: o mundo é a tela de fundo e nunca some; as outras telas são painel baixo (celular) ou coluna (computador); folha de seleção sem véu com até 3 ações e "Mais ações"; confirmação curta no lugar do modal; avisos pequenos num canto (máx. 3); navegação com 5 destinos distintos (Mapa, Reino, Exército, Atenção, Mais). | [decisão 0023](decisoes/0023-concha-jogo-sempre-visivel.md), `web/css/concha.css`, `web/js/nucleo.js` |
+| 1 | **Feito.** População como soma ("População 120 + Tropas 16 = 136 de 160 moradores"); "teto" → moradores / limite de bônus; "guarnição" → tropas no local; "postura" → comportamento; "requisição" → o material vem sozinho. | `reino.js`, `tropas.js`, `recrutamento.js`, `temporada.js`, `ferraria.js` |
+| 3 | **Feito.** "Minhas construções" em lista de uma linha (ícone, nome, nível, +/h, guardado de capacidade); folha "Recursos e produção" (estoque, por hora, por minuto, quando enche, "quando terei X"); todo custo mostra "faltam X · pronto em Y". | `reino.js`, `RP.producaoHTML`, `RP.faltaHTML` |
+| 5 | **Feito.** Tropas ~5× mais rápidas, mapa 104 × 80; metas M4 revistas; carregadores a pé na mesma escala. | `balanceamento/modelo.js`, [decisão 0022](decisoes/0022-velocidade-e-mapa-maior.md), `CLAUDE.md` |
+| 6 | **Feito.** Inclinação da câmera com botão do meio (arrastar) e dois dedos (subir/descer juntos), limites, botão de voltar ao padrão, lembrada no aparelho. | `vista/arte.js`, `vista/cena.js`, `RP.gestos` |
+| 7 | Nota de plano futuro. | [`proximos-passos.md`](proximos-passos.md) |
+| 9 | **Feito.** Em toda ordem para hexágono com animais conhecidos: força do bando × força do grupo, veredito ("vai perder", "vai perder parte", "vence com perdas", "vence sem perdas") e "mande pelo menos N"; folha do hexágono e tela de caça dizem a força do bando. Números do servidor (`previa.fauna`, `forcaFauna`). | `envio.js` (`RP.faunaVereditoHTML`), `fauna.js`, `VisaoTropas.Previa` |
+| 10 | **Feito.** Cliente: marcha própria nunca some (a Vista e o Mapa escondiam qualquer marcha 5 s depois da chegada); rótulo "parada". Servidor: toda tropa revela a névoa por onde passa e onde fica, com raio por unidade. | `vista/modelo.js` (`M.sumiu`), servidor (ver relatório do agente) |
+| 11 | **Feito.** Carga com a mesma peça em todo lugar (`RP.cargaHTML`: o que leva, quanto, quanto cabe, barra); "Carga: vazia · 300 livres"; marchas próprias no `/mapa` levam carga. | `tropas.js`, `mapa.js`, `VisaoMapa`, `VisaoTropas` |
+| 12 | **Feito.** `fmtHora`/`fmtDuracao`/`fmtResta` protegidos; aviso ao enfileirar usa `RP.textoFilaItem` (hora só quando já começou; "na fila" ou "material a caminho" nos outros casos). | `nucleo.js`, `reino.js`, `exploracao.js` |
+| 13 | **Feito.** Tocar em marcha própria no mapa abre painel com estado, destino, chegada, carga e ações "Novo destino", "Voltar ao castelo", "Parar aqui" (exércitos) ou "Novo destino"/"Voltar" (exploradores); a nova rota sai da posição atual; `podeOrdem`/`bloqueio` vêm do servidor. | `mapa.js` (`folhaMarchaPropria`), `Exercito.DarOrdem` |
+
+Pendente: a revisão com alguém de fora (regra 6) a cada tela refeita; as telas de ação longas (caça, exploradores, caravana, ferraria, social) ainda têm o desenho antigo dentro do painel novo e merecem a mesma dieta de informação.
+
 ## Princípios de design novos
 
 Estes princípios guiam todos os itens abaixo. Entram em `docs/arquitetura.md`.

@@ -172,7 +172,8 @@ public class VisibilidadeTestes
         Assert.Equal("O hexágono não está livre.", ReinoDePedra.Jogo.Combate.Defesas.MotivoTorre(t.M, a, h2));
 
         // explorado e fora da vista: um local novo de outro reino não aparece no motivo
-        var longe = HexLonge(t, ca.Hex, 8);
+        var longe = Enumerable.Range(0, 60).Select(p => HexLonge(t, ca.Hex, 8, p))
+            .First(h => Obras.Fundaveis.Any(kv => kv.Value.terrenos.Contains(t.M.Mapa.Terrenos[h])));   // terreno em que se funda algo
         Nevoas.RevelarArea(t.M, a.Id, longe, 0);
         Assert.DoesNotContain(longe, Nevoas.VisiveisAgora(t.M, a.Id));
         var tipo = Obras.Fundaveis.First(kv => kv.Value.terrenos.Contains(t.M.Mapa.Terrenos[longe])).Key;

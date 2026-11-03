@@ -48,6 +48,9 @@ public sealed class Exercito : Marcha
 
     public double CargaMax(Mundo m) => GT.Carga(m, Tropas);
 
+    /// <summary>Enxerga (e revela a névoa) com a maior visão entre as unidades do grupo.</summary>
+    public override int RaioVisao(Mundo m) => GT.Visao(m, Tropas);
+
     public override void Chegou(Mundo m)
     {
         m.Sujar(this);
@@ -66,6 +69,23 @@ public sealed class Exercito : Marcha
         EventoId = null;
         Caminho = [h]; Tempos = [m.Agora]; Origem = Destino = h;
         Retornando = false;
+        m.Sujar(this);
+        m.Avisar(ReinoId, "marchas");
+    }
+
+    /// <summary>
+    /// Ordem "parar aqui": fica onde está, com a ordem "mover" e a postura padrão de campo. É uma nova ordem como qualquer
+    /// outra: cancela o caminho antigo e os eventos dele, interrompe caça, extração e escavação (ganchos de <see cref="Marcha.AoPartir"/>),
+    /// sem evento de chegada (não entra em local nem avisa "Tropas no destino").
+    /// </summary>
+    public void PararAqui(Mundo m)
+    {
+        var h = HexEm(m.Agora);
+        m.Cancelar(EventoId);
+        EventoId = null;
+        Caminho = [h]; Tempos = [m.Agora]; Origem = Destino = h;
+        Ordem = OrdemMover.Id; AlvoLocalId = null; Retornando = false; Postura = Postura.AtacarQuemAtacar;
+        foreach (var f in AoPartir) f(m, this);
         m.Sujar(this);
         m.Avisar(ReinoId, "marchas");
     }
@@ -97,6 +117,13 @@ public static class Exercitos
 
     /// <summary>Motivos que impedem uma nova ordem a um exército (ex.: o combate devolve "Em batalha.").</summary>
     public static List<Func<Mundo, Exercito, string?>> BloqueiosOrdem { get; } = new();
+
+    /// <summary>Primeiro motivo que impede uma nova ordem ao exército agora, ou null se ele aceita ordem (a API mostra no painel).</summary>
+    public static string? Bloqueio(Mundo m, Exercito ex)
+    {
+        foreach (var f in BloqueiosOrdem) { var mo = f(m, ex); if (mo != null) return mo; }
+        return null;
+    }
 
     /// <summary>Tropas de um exército entraram num local (relíquias carregadas, por exemplo, ficam lá).</summary>
     public static event Action<Mundo, Exercito, Local>? AoEntrarNoLocal;
@@ -150,12 +177,19 @@ public static class Exercitos
     public static void DarOrdem(Mundo m, Reino r, long marchaId, string ordem, int? destino, bool? seguro = null, JsonObject? dados = null)
     {
         var ex = Do(m, r, marchaId);
-        foreach (var f in BloqueiosOrdem) { var mo = f(m, ex); if (mo != null) throw new RegraException(mo); }
+        if (Bloqueio(m, ex) is { } motivo) throw new RegraException(motivo);
         if (ordem == OrdemRetornar.Id) { Retornar(m, ex, seguro); return; }
         var o = OrdemOuNulo(ordem) ?? throw new RegraException("Ordem desconhecida.");
         if (destino is not int d || !m.G.Valido(d)) throw new RegraException("Escolha o destino.");
-        var de = ex.HexEm(m.Agora);
-        if (d == de) throw new RegraException("As tropas já estão aqui.");
+        var de = ex.HexEm(m.Agora);   // a nova rota sai de onde as tropas estão agora, não da origem
+        if (d == de)
+        {
+            // "mover" para o próprio hexágono é "parar aqui" (andando, caçando ou trabalhando); outra ordem não tem o que fazer
+            if (o.Ordem != OrdemMover.Id) throw new RegraException("As tropas já estão aqui.");
+            if (seguro != null) ex.Seguro = seguro.Value;
+            ex.PararAqui(m);
+            return;
+        }
         var antes = (ex.Ordem, ex.AlvoLocalId, ex.Dados, ex.Seguro);
         ex.Ordem = o.Ordem; ex.AlvoLocalId = m.LocalNoHex(d)?.Id;
         if (dados != null) ex.Dados = dados;

@@ -94,7 +94,7 @@
 
   function ondeTxt(o) {
     if (!o) return 'em lugar desconhecido';
-    return o.tipo === 'local' ? 'na guarnição de ' + o.nome : 'com o exército em campo (' + o.nome + ')';
+    return o.tipo === 'local' ? 'guardado em ' + o.nome : 'com o exército em campo (' + o.nome + ')';
   }
   function cardMeu(d, e) {
     var lend = d.lendario, o = e.onde, fator = o ? o.fator : 1;
@@ -123,12 +123,12 @@
 
   function cardTeto(d) {
     var ex = d.exemplos || [];
-    return '<div class="card pilha"><div class="card-titulo" style="margin:0">' + RP.icone('escudo') + '<h3>Teto de bônus: +' + pct(d.teto) + '%</h3></div>' +
-      '<p class="suave fer-nota">Armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo +' + pct(d.teto) + '%. Torres e portões ficam fora do teto.</p>' +
+    return '<div class="card pilha"><div class="card-titulo" style="margin:0">' + RP.icone('escudo') + '<h3>Limite de bônus: +' + pct(d.teto) + '%</h3></div>' +
+      '<p class="suave fer-nota">Armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo +' + pct(d.teto) + '%. Torres e portões ficam fora desse limite.</p>' +
       '<p class="fraco fer-nota">Armas e armaduras valem para as tropas da família: num exército misto, contam na proporção da força de cada família. A milícia é infantaria; os arqueiros no alto das torres usam as armaduras dos arqueiros.</p>' +
       (ex.length ? '<div class="lista">' + ex.map(function (x) {
         var partes = x.partes.length ? x.partes.map(function (p) { return p.nome.toLowerCase() + ' +' + pct(p.v) + '%'; }).join(' · ') : 'sem bônus';
-        return '<div class="lista-item"><span style="flex:1;min-width:0"><b>' + RP.esc(x.titulo) + '</b><br><small class="fraco">' + RP.esc(x.tropas) + '</small><br><small class="fraco">' + RP.esc(partes) + (x.noTeto ? ' (no teto)' : '') + '</small></span><b class="num">+' + pct(x.total) + '%</b></div>';
+        return '<div class="lista-item"><span style="flex:1;min-width:0"><b>' + RP.esc(x.titulo) + '</b><br><small class="fraco">' + RP.esc(x.tropas) + '</small><br><small class="fraco">' + RP.esc(partes) + (x.noTeto ? ' (no limite)' : '') + '</small></span><b class="num">+' + pct(x.total) + '%</b></div>';
       }).join('') + '</div>' : '<p class="fraco">Sem tropas nas guarnições para dar exemplos.</p>') + '</div>';
   }
 

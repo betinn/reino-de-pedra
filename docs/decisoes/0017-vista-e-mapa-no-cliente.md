@@ -4,7 +4,7 @@
 
 - **Vista** (`vista/cena.js` + `vista/arte.js`): cena 2.5D em Canvas 2D com a arte procedural do protótipo. Chão, rios, rotas, vegetação e névoa vão para um cache que só é refeito ao sair da área coberta, ao mudar o zoom ou quando chegam dados novos; construções, pessoas, marchas e rótulos são redesenhados no máximo a 30 quadros/s. Afastar além do zoom mínimo passa ao Mapa.
 - **Mapa tático** (`vista/tatico.js`): terreno, rios, rotas, perigo, véu de explorado e névoa em Canvas com o mesmo tipo de cache; marcadores numa camada SVG por cima, com as classes e ícones do protótipo (zoom semântico, contraescala, anéis de ameaça). O toque acha o marcador pelo elemento.
-- **Meu reino** usa a mesma Vista enquadrada nos seus locais (`vista/reino.js`, `RP.vistaReino`).
+- **Meu reino** não tem mais Vista própria: desde a [decisão 0023](0023-concha-jogo-sempre-visivel.md) o mundo fica atrás de todos os painéis (`vista/reino.js` saiu).
 
 Regras do desenho:
 

@@ -92,6 +92,15 @@ public static class Tropas
     public static double Carga(Mundo m, IReadOnlyDictionary<string, int> g) =>
         g.Sum(kv => kv.Value > 0 && m.B.U.TryGetValue(kv.Key, out var u) ? kv.Value * u.Carga : 0);
 
+    /// <summary>Raio de visão do grupo em marcha: a maior <c>U.visao</c> entre as unidades (ou a visão de tropa padrão, sem tropas).</summary>
+    public static int Visao(Mundo m, IReadOnlyDictionary<string, int> g)
+    {
+        var v = 0;
+        foreach (var (k, n) in g)
+            if (n > 0 && m.B.U.TryGetValue(k, out var u)) v = Math.Max(v, u.Visao);
+        return v > 0 ? v : m.P.Visao.Tropa;
+    }
+
     /// <summary>Força contra fauna (soma de (ataque + defesa)/2).</summary>
     public static double ForcaFauna(Mundo m, IReadOnlyDictionary<string, int> g) => m.F.ForcaFauna(Limpo(g));
 

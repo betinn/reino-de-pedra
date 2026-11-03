@@ -14,7 +14,12 @@ namespace ReinoDePedra.Jogo.Exploracao
         public byte[] Visto { get; set; } = [];
 
         public int MinutoVisto(int h) => Visto.Length >= (h + 1) * 4 ? BitConverter.ToInt32(Visto, h * 4) : 0;
-        public void Marcar(int h, int minuto) => BitConverter.TryWriteBytes(Visto.AsSpan(h * 4, 4), minuto);
+        /// <summary>Banco de um mapa menor (tamanho mudou no balanceamento): o vetor cresce em vez de estourar.</summary>
+        public void Marcar(int h, int minuto)
+        {
+            if (Visto.Length < (h + 1) * 4) { var v = Visto; Array.Resize(ref v, (h + 1) * 4); Visto = v; }
+            BitConverter.TryWriteBytes(Visto.AsSpan(h * 4, 4), minuto);
+        }
     }
 
     public static class Nevoas

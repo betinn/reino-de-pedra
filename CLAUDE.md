@@ -16,6 +16,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Configurações sensíveis devem vir de variáveis de ambiente ou arquivos ignorados pelo git; exemplos commitados usam apenas valores fictícios.
 - Antes de cada commit, revisar o diff procurando segredos e caminhos locais.
 - Mudanças de regra de jogo devem ser refletidas neste documento.
+- **Nome de branch diz o que ela entrega.** Em português, kebab-case, 2 a 5 palavras, sem id, hash, data ou nome de sessão: `correcoes-usabilidade-paineis`, `marcha-revela-nevoa`, `mapa-maior-tropas-rapidas`, `docs-decisao-ia`. Um prefixo fixo da ferramenta (ex.: `claude/`) pode ficar antes do nome. Sessão que começa numa branch com nome automático (`claude/abc123`, `ccr-…`) a renomeia com `git branch -m` antes do primeiro commit; se a branch já foi publicada, cria a nova com o nome certo e abandona a antiga. A mensagem do primeiro commit e o título do PR dizem a mesma coisa que o nome da branch.
 
 ---
 
@@ -35,7 +36,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Mapa e exploração
 
-- Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: cerca de **60 × 48 hexágonos**; a travessia com tropa lenta leva pouco mais de 3 h (menos com rota ou cavalaria). Um reino pode não encontrar todos os outros na temporada.
+- Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: cerca de **104 × 80 hexágonos**; a travessia com tropa lenta leva pouco mais de 1 h (menos com rota ou cavalaria), o reino vizinho fica a 10 a 20 min e as curtas distâncias (3 a 5 hexágonos) levam 2 a 4 min. Um reino pode não encontrar todos os outros na temporada.
 - Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido.
 - Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
   - Planície: deslocamento rápido, comida, cavalos de raça e sal.
@@ -189,6 +190,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Equipamento lendário**: forjado com minério raro, dá **+25% de ataque ou de defesa** a um exército de até 50 tropas (num exército maior, o bônus se dilui). Cada reino forja um por temporada (o capturado não conta). Fica sempre com um grupo: nasce na guarnição da ferraria, vai com o próximo exército que sair do local quando o jogador marca "levar" e fica na guarnição do local onde o exército entrar. Vale para a guarnição (defesa) e para o exército (ataque ou defesa em campo); conta um de cada tipo por grupo, e na guarnição a milícia e os arqueiros no alto também diluem. O grupo que perde a batalha, mesmo recuando, ou que é vencido no caminho, deixa o equipamento no campo e o vencedor o leva (na ocupação, ele fica no local tomado). A espionagem do local mostra o equipamento na guarnição, sem revelar quem o forjou.
 - **Teto de bônus**: armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo **+50%**. Torres e portões ficam fora do teto.
 - Exércitos em marcha são visíveis no mapa; o tempo de viagem depende de distância, terreno, rotas e da unidade mais lenta.
+- **Toda tropa revela a névoa** por onde passa e onde fica (parada, caçando ou extraindo), com o raio de visão da unidade de maior visão do grupo: milícia, lanceiro e máquinas de cerco 1 hexágono; arqueiro, cavalaria e cavaleiro de elite 2 (exploradores têm a visão própria). Uma marcha do próprio reino nunca some do mapa do dono.
 
 ---
 

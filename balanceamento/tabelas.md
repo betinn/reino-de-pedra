@@ -25,17 +25,17 @@ Castelo: produz 25/h de cada recurso básico no nível 1 e 69/h no nível 10. Ne
 
 Valor: custo em valor de referência (couro vale 2, cavalo de raça 40). Por 100: ataque e defesa por 100 de valor.
 
-| Unidade | Família | Ataque | Defesa | Vence | Velocidade | Carga | Custo | Valor | Tempo | Pop. | Ataque/100 | Defesa/100 | Requisito |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Milícia | Infantaria | 5 | 15 | — | Lenta | 20 | 20 comida, 10 madeira | 30 | 1 min | 1 | 16.7 | 50 | — |
-| Lanceiro | Infantaria | 25 | 40 | Cavalaria | Lenta | 40 | 30 comida, 30 madeira, 30 ferro | 90 | 3 min | 1 | 27.8 | 44.4 | — |
-| Arqueiro | Arqueiros | 35 | 25 | Infantaria | Média | 40 | 30 comida, 50 madeira, 10 couro | 100 | 4 min | 1 | 35 | 25 | — |
-| Cavalaria | Cavalaria | 45 | 30 | Arqueiros | Rápida | 80 | 60 comida, 50 ferro, 30 couro | 170 | 6 min | 1 | 26.5 | 17.6 | — |
-| Cavaleiro de elite | Cavalaria | 60 | 40 | Arqueiros | Rápida | 80 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 250 | 8 min | 1 | 24 | 16 | Era do Aço |
-| Aríete | Cerco | 10 | 10 | torres e portões (40) | Lenta | 0 | 300 madeira, 60 ferro | 360 | 15 min | 4 | 2.8 | 2.8 | — |
-| Trebuchet | Cerco | 5 | 5 | torres e portões (90) | Lenta | 0 | 600 madeira, 200 pedra, 150 ferro | 950 | 30 min | 6 | 0.5 | 0.5 | Era do Cerco Avançado |
+| Unidade | Família | Ataque | Defesa | Vence | Velocidade | Carga | Visão | Custo | Valor | Tempo | Pop. | Ataque/100 | Defesa/100 | Requisito |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Milícia | Infantaria | 5 | 15 | — | Lenta | 20 | 1 | 20 comida, 10 madeira | 30 | 1 min | 1 | 16.7 | 50 | — |
+| Lanceiro | Infantaria | 25 | 40 | Cavalaria | Lenta | 40 | 1 | 30 comida, 30 madeira, 30 ferro | 90 | 3 min | 1 | 27.8 | 44.4 | — |
+| Arqueiro | Arqueiros | 35 | 25 | Infantaria | Média | 40 | 2 | 30 comida, 50 madeira, 10 couro | 100 | 4 min | 1 | 35 | 25 | — |
+| Cavalaria | Cavalaria | 45 | 30 | Arqueiros | Rápida | 80 | 2 | 60 comida, 50 ferro, 30 couro | 170 | 6 min | 1 | 26.5 | 17.6 | — |
+| Cavaleiro de elite | Cavalaria | 60 | 40 | Arqueiros | Rápida | 80 | 2 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 250 | 8 min | 1 | 24 | 16 | Era do Aço |
+| Aríete | Cerco | 10 | 10 | torres e portões (40) | Lenta | 0 | 1 | 300 madeira, 60 ferro | 360 | 15 min | 4 | 2.8 | 2.8 | — |
+| Trebuchet | Cerco | 5 | 5 | torres e portões (90) | Lenta | 0 | 1 | 600 madeira, 200 pedra, 150 ferro | 950 | 30 min | 6 | 0.5 | 0.5 | Era do Cerco Avançado |
 
-Mensageiro: 30 comida, 1 de população, 1 min, velocidade rápida (reino vizinho em 19 min). Mensagem de até 200 caracteres; recado de proposta, até 120.
+Mensageiro: 30 comida, 1 de população, 1 min, velocidade rápida (reino vizinho em 6 min). Mensagem de até 200 caracteres; recado de proposta, até 120.
 
 Veículos: carroça 500 (lenta, 150 madeira, 20 ferro); carroção 1500 (média, 400 madeira, 80 ferro, 2 cavalos de raça). Carregador da requisição: 50, a pé.
 
@@ -43,13 +43,13 @@ Veículos: carroça 500 (lenta, 150 madeira, 20 ferro); carroção 1500 (média,
 
 | Distância | Exemplo | Lenta | Média | Rápida | Lenta em rota |
 |---|---|---|---|---|---|
-| 3 hex. | local vizinho do próprio reino | 10 min | 6 min | 4 min | 5 min |
-| 6 hex. | outro lado do próprio reino | 19 min | 13 min | 8 min | 11 min |
-| 14 hex. | reino vizinho | 45 min | 30 min | 19 min | 25 min |
-| 30 hex. | meio mapa | 1 h 37 min | 1 h 5 min | 41 min | 53 min |
-| 60 hex. | travessia do mapa | 3 h 14 min | 2 h 10 min | 1 h 21 min | 1 h 47 min |
+| 3 hex. | local vizinho do próprio reino | 2 min | 1 min | 1 min | 1 min |
+| 10 hex. | outro lado do próprio reino | 7 min | 4 min | 3 min | 4 min |
+| 24 hex. | reino vizinho | 16 min | 11 min | 6 min | 9 min |
+| 52 hex. | meio mapa | 35 min | 23 min | 14 min | 19 min |
+| 104 hex. | travessia do mapa | 1 h 10 min | 46 min | 28 min | 39 min |
 
-Mapa para 30 reinos: 60 × 48 hexágonos (≈ 96 por reino). Terreno médio 1.35; rota pública multiplica por 0.55.
+Mapa para 30 reinos: 104 × 80 hexágonos (≈ 277 por reino). Terreno médio 1.35; rota pública multiplica por 0.55.
 
 ## Combates de referência
 
@@ -257,9 +257,9 @@ Couro: 3 caçadas por dia rendem ≈ 165; o médio usa ≈ 160 por dia para recr
 | M3a | Obra para o nível 2 leva até 2 min | 2 min | ✓ |
 | M3b | Obra para o nível 10 leva de 6 a 10 h | 8 h 32 min | ✓ |
 | M3c | 10 obras de nível 6 a 8 cobrem a noite (7 a 14 h) | 12 h 27 min | ✓ |
-| M4a | Vizinho do próprio reino (3 hex.) em até 15 min, tropa lenta | 10 min | ✓ |
-| M4b | Reino vizinho (14 hex.) entre 30 e 60 min, tropa lenta | 45 min | ✓ |
-| M4c | Travessia do mapa em até 3 h 30 min, tropa lenta | 3 h 14 min | ✓ |
+| M4a | Vizinho do próprio reino (3 hex.) em até 3 min, tropa lenta | 2 min | ✓ |
+| M4b | Reino vizinho (24 hex.) entre 10 e 20 min, tropa lenta | 16 min | ✓ |
+| M4c | Travessia do mapa (104 hex.) em até 90 min, tropa lenta | 1 h 10 min | ✓ |
 | M5a | Jogador médio com 60 a 150 tropas no fim do escudo (dia 3) | 104 | ✓ |
 | M5b | Jogador médio com 400 a 900 tropas no dia 35 | 672 | ✓ |
 | M5c | Jogador ativo com 2 a 3× as tropas do médio no dia 35 | 2.8× | ✓ |

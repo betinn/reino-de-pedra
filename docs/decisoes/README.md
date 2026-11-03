@@ -24,5 +24,7 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0019](0019-social.md) | Social: aliança como documento, reforço na guarnição com reserva, cargas entre reinos, propostas, pactos, mensageiros e bandeiras |
 | [0020](0020-temporada.md) | Temporada: fim como evento, reset dentro do motor (limpa coleções, mundo novo, apaga e grava o banco), legado por conta em tabela própria, ranking por ganchos de batalha, "precisa de você" sob demanda |
 | [0021](0021-ia.md) | IA: uma sessão agendada por reino, só os serviços da API e a informação de um jogador; meta de ocupação com abdicação; ids sorteados de uma reserva; regência por evento no último acesso; margens da IA comerciante |
+| [0022](0022-velocidade-e-mapa-maior.md) | Tropas 5× mais rápidas num mapa de 104 × 80; visão por unidade e revelação da névoa ao vivo por eventos; alcances da IA na mesma escala |
+| [0023](0023-concha-jogo-sempre-visivel.md) | Concha do cliente: mundo sempre à vista como tela de fundo, painel baixo/coluna, folha sem véu com até 3 ações, navegação por destinos, câmera inclinável, formatação de tempo segura |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

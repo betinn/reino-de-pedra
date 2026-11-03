@@ -126,15 +126,17 @@
     if (mesma || !p.segura.ok) est.seguro = false;
     var esc = est.seguro ? p.segura : p.curta;
     var dados = RP.mapa.dados(), obj = objetos(h, dados), local = obj.filter(function (o) { return o.tipo === 'local'; })[0];
+    var ex = exercitoDe();
     var corpo = '<div class="info">' + linha('Tropas', RP.selosGrupo(g)) +
       (d.descricao ? d.descricao(h, dados, est) : '') +
-      linha('Carga', 'até ' + RP.num(p.carga)) +
-      linha('Chegada', esc && esc.ok ? 'em ' + RP.fmtDuracao(esc.min * 60) + ' · ' + RP.fmtHora(RP.agora() + esc.min * 60000) : '—') + '</div>' +
+      linha('Chegada', esc && esc.ok ? '<b>em ' + RP.fmtDuracao(esc.min * 60) + '</b>' : '—') + '</div>' +
+      '<div style="margin-top:var(--esp-2)">' + RP.cargaHTML(ex ? ex.carga : {}, p.carga) + '</div>' +
+      RP.faunaVereditoHTML(p, h, g) +
       (p.curta.ok ? '<div class="secao-titulo">Caminho</div><div class="pilha">' + opcaoCaminho('curta', p.curta) + (mesma ? '' : opcaoCaminho('segura', p.segura)) + '</div>' +
         (mesma ? '<p class="fraco" style="font-size:var(--fs-2)">A rota curta já é a mais segura que se conhece.</p>' : '')
         : '<p class="txt-alerta">Não há caminho até o destino.</p>');
     RP.abrirFolha({
-      titulo: RP.esc(local ? d.titulo + ' ' + local.nome : d.titulo || d.rotulo), sobreNav: false,
+      titulo: RP.esc(local ? d.titulo + ' ' + local.nome : d.titulo || d.rotulo),
       subtitulo: '<span class="fraco">Hexágono ' + H.c(h) + ', ' + H.l(h) + ' · velocidade ' + RP.esc((RP.VELOCIDADES[p.vel] || p.vel)) + ' (a unidade mais lenta)</span>',
       icone: '<span class="ico-placa folha-ico">' + RP.icone(d.icone || 'seta') + '</span>',
       corpo: corpo,
@@ -151,18 +153,60 @@
       : RP.post('/tropas/enviar', { deLocalId: e.de, tropas: e.grupo, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra });
     RP.tentar(p).then(function (ex) {
       RP.fecharFolha(); cancelar();
-      RP.aviso({ titulo: e.marchaId ? 'Nova ordem dada' : 'Tropas a caminho', texto: ex && ex.chegada ? (RP.partesGrupo(ex.tropas) + ' · chegam ' + RP.fmtHora(ex.chegada) + '.') : '', icone: d.icone || 'seta', tipo: 'sucesso' });
+      RP.aviso({ titulo: e.marchaId ? 'Nova ordem dada' : 'Tropas a caminho', texto: ex && ex.chegada ? (RP.partesGrupo(ex.tropas) + ' · chegam ' + RP.fmtEm(ex.chegada) + '.') : '', icone: d.icone || 'seta', tipo: 'sucesso' });
       if (RP.mapa.recarregar) RP.mapa.recarregar();
       RP.recarregarReino(); RP.carregarTropas().catch(function () { /* offline */ });
     });
   }
+
+  /* ---------------------------------------------------------------- força da fauna × força do grupo
+     Toda ordem para um hexágono com animais conhecidos mostra as duas forças lado a lado e um veredito simples.
+     Os números vêm do servidor (previa.fauna, previa.forcaFauna, unidades[].forcaFauna); aqui só se desenha.
+     Regra: com o dobro da força do bando passa ileso; acima do limite vence com perdas; abaixo, perde parte. */
+  RP.VEREDITO_FAUNA = {
+    perde: ['Vai perder', 'Grupo fraco demais para esse bando. Tropas mortas não voltam.', 'alerta'],
+    perdeParte: ['Vai perder parte', 'Mais fraco que o bando: perde uma parte das tropas na luta.', 'alerta'],
+    venceComPerdas: ['Vence com perdas', 'Mais forte que o bando, mas sai ferido.', 'escudo'],
+    ileso: ['Vence sem perdas', 'Com o dobro da força do bando, ninguém se fere.', 'check']
+  };
+  function faunaConhecida(h) {
+    var dados = RP.mapa.dados && RP.mapa.dados(), obj = objetos(h, dados);
+    var f = obj.filter(function (o) { return o.tipo === 'fauna'; })[0] || obj.filter(function (o) { return o.tipo === 'perigo'; })[0];
+    if (!f) return null;
+    var regras = RP.exploracao && RP.exploracao.dados && RP.exploracao.dados.regras, lim = regras && regras.limites ? regras.limites[f.nivel] : null;
+    if (!lim) return null;
+    var idade = RP.mapaModelo ? RP.mapaModelo.estado(h) : null;
+    return { animal: f.animal, qtd: f.qtd, nivel: f.nivel, forca: lim, vistoHaMin: idade && idade.v === 'explorado' ? Math.round(idade.horas * 60) : 0 };
+  }
+  function vereditoDe(forca, lim) { return forca >= 2 * lim ? 'ileso' : forca >= lim ? 'venceComPerdas' : forca > 0 ? 'perdeParte' : 'perde'; }
+  /* quantas unidades do tipo mais forte do grupo (ou milícia) bastam para vencer e para passar ileso */
+  function minimos(grupo, lim) {
+    var ids = Object.keys(grupo || {}).filter(function (k) { return grupo[k] > 0; });
+    var id = ids.sort(function (a, b) { var ua = RP.unidade(a), ub = RP.unidade(b); return ((ub && ub.forcaFauna) || 0) - ((ua && ua.forcaFauna) || 0); })[0] || 'milicia';
+    var u = RP.unidade(id); if (!u || !u.forcaFauna) return null;
+    return { nome: RP.nomeUnidade(id, 2), vencer: Math.ceil(lim / u.forcaFauna), ileso: Math.ceil(2 * lim / u.forcaFauna) };
+  }
+  RP.faunaVereditoHTML = function (previa, h, grupo) {
+    var f = (previa && previa.fauna) || faunaConhecida(h);
+    if (!f || !f.forca) return '';
+    var forca = (previa && previa.forcaFauna) || 0, lim = f.forca, v = f.veredito || vereditoDe(forca, lim), V = RP.VEREDITO_FAUNA[v];
+    var A = (RP.ANIMAIS || {})[f.animal] || { nome: f.animal || 'animais', icone: 'pata' }, mins = minimos(grupo, lim), topo = Math.max(2 * lim, forca) || 1;
+    var nivel = (RP.NOME_NIVEL || {})[f.nivel] || f.nivel || '';
+    return '<div class="card pilha" style="gap:6px;margin-top:var(--esp-3)"><div class="linha-entre"><span class="linha">' + RP.icone(A.icone, 'ico-p') + '<b>' + RP.esc(A.nome) + (f.qtd ? ' (≈ ' + f.qtd + ')' : '') + '</b></span>' +
+      '<span class="selo selo-perigo-' + RP.esc(f.nivel || 'medio') + '">perigo ' + RP.esc(String(nivel).toLowerCase()) + '</span></div>' +
+      (f.vistoHaMin ? '<small class="fraco">Visto ' + RP.fmtHa(f.vistoHaMin / 60) + ': o bando pode ter se movido.</small>' : '') +
+      '<div class="forca-duas"><div class="fd-linha"><span class="fraco">Bando</span><div class="barra fd-bando"><i style="width:' + (100 * lim / topo).toFixed(0) + '%"></i></div><b class="num">' + RP.num(lim) + '</b></div>' +
+      '<div class="fd-linha"><span class="fraco">Seu grupo</span><div class="barra fd-grupo"><i style="width:' + (100 * forca / topo).toFixed(0) + '%"></i></div><b class="num">' + RP.num(forca) + '</b></div></div>' +
+      '<div class="veredito ' + v + '">' + RP.icone(V[2]) + '<span>' + V[0] + '<small>' + V[1] + '</small></span></div>' +
+      (mins ? '<small class="fraco">Mande pelo menos <b>' + mins.vencer + ' ' + RP.esc(mins.nome) + '</b> para vencer e <b>' + mins.ileso + '</b> para passar ileso.</small>' : '') + '</div>';
+  };
 
   /* ---------------------------------------------------------------- escolher tropas (e de onde saem) */
   function folhaGrupo() {
     var t = RP.tropas, l = localDe();
     var origens = t.locais.filter(function (x) { return RP.somaGrupo(x.guarnicao) > 0; });
     RP.abrirFolha({
-      titulo: 'Tropas do envio', sobreNav: true,
+      titulo: 'Tropas do envio',
       subtitulo: '<span class="fraco">Saem de ' + RP.esc(l ? l.nome : '—') + '. O resto fica defendendo.</span>',
       corpo: (origens.length > 1 ? '<div class="abas abas-rolagem envio-origens" role="group" aria-label="De onde saem">' + origens.map(function (x) {
         return '<button type="button" class="aba" data-envio-de="' + x.id + '" aria-pressed="' + (x.id === est.de) + '">' + RP.esc(x.nome) + '</button>';

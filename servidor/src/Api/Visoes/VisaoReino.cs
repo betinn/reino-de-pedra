@@ -71,15 +71,22 @@ public static class VisaoReino
     }
     public static List<Action<Mundo, Reino, Local, Dictionary<string, object?>>> ExtrasLocal { get; } = new();
 
+    /// <summary>
+    /// Item de fila. <c>inicio</c> e <c>fim</c> só existem depois que o item começa; antes disso <c>estado</c> diz por quê:
+    /// "andamento" (começou), "material" (espera o material chegar) ou "fila" (espera o item anterior). <c>posicao</c>: 1 = primeiro da fila.
+    /// </summary>
     public static object Item(Mundo m, Reino r, ItemFila i)
     {
         var chegada = m.Marchas.OfType<Carregadores>().Where(c => c.ItemId == i.Id).Select(c => c.Chegada).DefaultIfEmpty(0).Max();
+        var pos = r.Filas.Values.Select(f => f.Itens.IndexOf(i)).FirstOrDefault(p => p >= 0, -1);
         return new
         {
             i.Id, i.Tipo, i.Rotulo, i.LocalId, i.Hex, i.NivelAlvo, i.Param, i.Qtd,
             custo = i.Custo, entregue = i.Entregue.ToDictionary(kv => kv.Key, kv => Math.Floor(kv.Value)),
             duracao = i.DuracaoSeg, i.Inicio, i.Fim, materialCompleto = i.MaterialCompleto,
             materialChegaEm = i.MaterialCompleto ? (long?)null : chegada > 0 ? chegada : null,
+            estado = i.Iniciado ? "andamento" : !i.MaterialCompleto ? "material" : "fila",
+            posicao = pos >= 0 ? pos + 1 : (int?)null,
         };
     }
 }

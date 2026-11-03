@@ -22,4 +22,18 @@ Números medidos (máquina de desenvolvimento x86-64 de 2,1 GHz, um núcleo; det
 | Memória gerenciada viva no fim | 24 MB | 59 MB |
 | Banco | 5,2 MB | 11,8 MB |
 
+Com o mapa de 104 × 80 e as tropas 5× mais rápidas ([0022](decisoes/0022-velocidade-e-mapa-maior.md)), medido de novo em 10 dias (mesma máquina):
+
+| | 60 × 48 (antes) | 104 × 80 (depois) |
+|---|---|---|
+| Eventos por dia de jogo | 2 453 | 3 619 |
+| CPU por dia de jogo | 1,24 s | 2,46 s |
+| CPU por evento | 506 µs | 679 µs |
+| Sessão de IA | 6,8 ms | 12,3 ms |
+| Fração de um núcleo em tempo real | 0,0014% | 0,0028% |
+| Pico de memória gerenciada | 38 MB | 116 MB |
+| Banco | 5,0 MB | 5,5 MB |
+
+O que cresceu: a revelação da névoa ao vivo (um evento por trecho de caminho que entra em névoa nunca vista) e os caminhos com mais hexágonos respondem pelos eventos a mais; A* e Dijkstra numa grade 2,9× maior, pelo custo da sessão de IA. Tudo segue duas ordens de grandeza abaixo do orçamento.
+
 Limites afirmados no teste: menos de 43 s de CPU por dia de jogo (0,05% de um núcleo), pico de memória gerenciada abaixo de 400 MB e banco abaixo de 64 MB.

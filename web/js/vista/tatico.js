@@ -397,7 +397,7 @@
       (rev ? '' : '<g class="mc-selo" transform="translate(12 -12)"><circle r="8"/><text y="4.5">?</text></g>') +
       (o.estandarte && o.dono !== 'meu' ? '<g class="mc-estandarte" transform="translate(13 -15)"><use href="#i-estandarte" x="-8" y="-8" width="16" height="16"/></g>' : '') +
       (o.reliquia ? '<g class="relq-badge tipo-' + (o.reliquia.tipo || 'desconhecido') + '" transform="translate(-14 13)"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>' : '') +
-      (cheg ? '<g class="mc-eta" transform="translate(0 ' + (r + 13) + ')"><rect x="-26" y="-10" width="52" height="20" rx="10"/><text y="4.5" data-fim="' + cheg + '">' + RP.fmtResta(cheg - agora) + '</text></g>' : '') +
+      (cheg && cheg > agora ? '<g class="mc-eta" transform="translate(0 ' + (r + 13) + ')"><rect x="-26" y="-10" width="52" height="20" rx="10"/><text y="4.5" data-fim="' + cheg + '">' + RP.fmtResta(cheg - agora) + '</text></g>' : '') +
       '</g></g>';
   }
 
@@ -432,7 +432,7 @@
     });
     if (cam.marchas !== false) d.marchas.forEach(function (m) {
       var pos = M.posMarcha(m, agora), cheg = M.chegada(m);
-      if (cheg && agora > cheg + 5000) return;
+      if (M.sumiu(m, agora)) return;
       if (!M.marchaVisivel(m, pos)) return;
       var cls = classeDono(m.dono) + (revelada(m) ? '' : ' hostil'), fim = m.caminho && m.caminho.length ? H.centroH(m.caminho[m.caminho.length - 1]) : pos;
       rotas += '<path class="marcha-rota ' + cls + '" data-rota="' + m._k + '" d="' + restoCaminho(m, pos) + '"/><circle class="marcha-destino ' + cls + '" cx="' + n1(fim.x) + '" cy="' + n1(fim.y) + '" r="7"/>';
@@ -479,7 +479,7 @@
     d.marchas.forEach(function (m) {
       var el = g.querySelector('[data-marcha="' + m._k + '"]');
       if (!el) return;
-      var pos = M.posMarcha(m, agora), vis = M.marchaVisivel(m, pos) && !(M.chegada(m) && agora > M.chegada(m) + 5000);
+      var pos = M.posMarcha(m, agora), vis = M.marchaVisivel(m, pos) && !M.sumiu(m, agora);
       el.style.display = vis ? '' : 'none';
       el.setAttribute('transform', 'translate(' + n1(pos.x) + ' ' + n1(pos.y) + ')');
       var rt = g.querySelector('[data-rota="' + m._k + '"]');

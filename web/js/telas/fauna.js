@@ -130,7 +130,15 @@
     var vivo = o.tipo === 'fauna';
     return '<div class="perigo-linha nivel-' + o.nivel + '">' + RP.icone(A.icone) + '<span><b>' + A.nome + (o.qtd ? ' (≈ ' + o.qtd + ')' : '') + ' · perigo ' + RP.NOME_NIVEL[o.nivel].toLowerCase() + '</b>' +
       (vivo ? ' <span class="selo selo-visivel">à vista</span>' : ' <span class="fraco">(visto ' + haTxt(o.visto) + ')</span>') +
-      '<br><small>Ameaça exploradores sozinhos, grupos pequenos e caravanas. Rotas reduzem a presença; um bando abatido volta em 24 h.</small></span></div>';
+      (limite(o.nivel) ? '<br><small>Força do bando <b>' + RP.num(limite(o.nivel)) + '</b>: ' + minimosTxt(limite(o.nivel)) + '</small>' : '') +
+      '<br><small>Ameaça exploradores sozinhos, grupos pequenos e caravanas. Um bando abatido volta em 24 h.</small></span></div>';
+  }
+  /* limite de força de um nível (vem de GET /exploracao, regras.limites) e quantos milicianos/lanceiros bastam */
+  function limite(nivel) { var d = RP.exploracao && RP.exploracao.dados; return d && d.regras && d.regras.limites ? d.regras.limites[nivel] : 0; }
+  function minimosTxt(lim) {
+    var u = RP.unidade('milicia'), l = RP.unidade('lanceiro');
+    if (!u || !u.forcaFauna) return 'leve tropa com pelo menos essa força para vencer, o dobro para passar ileso.';
+    return 'pelo menos ' + Math.ceil(lim / u.forcaFauna) + ' milicianos' + (l && l.forcaFauna ? ' ou ' + Math.ceil(lim / l.forcaFauna) + ' lanceiros' : '') + ' para vencer; o dobro para passar ileso.';
   }
   RP.mapa.extrasFolhaHex.push(function (h, dados) {
     var obj = objetosHex(h, dados), html = '';
@@ -268,7 +276,8 @@
       '<div class="card pilha" data-caca-grupo>' + RP.grupoTropas.linhas(caca.grupo, disp) +
       '<div class="forca"><div class="linha-entre"><span class="rotulo">Força do grupo: ' + RP.num(forca) + ' de ' + RP.num(lim * 2) + '</span><span class="fraco">' + total + ' ' + (total === 1 ? 'unidade' : 'unidades') + '</span></div>' +
       '<div class="barra barra-grossa forca-' + risco + '"><i style="width:' + Math.min(100, (100 * forca) / (lim * 2)).toFixed(0) + '%"></i></div>' +
-      '<div class="forca-marcas"><span>Grupo pequeno</span><span>Passa ileso</span></div></div></div>' +
+      '<div class="forca-marcas"><span>Grupo pequeno</span><span>Vence: ' + RP.num(lim) + '</span><span>Passa ileso: ' + RP.num(lim * 2) + '</span></div>' +
+      '<small class="fraco">' + minimosTxt(lim).replace(/^pelo/, 'Mande pelo') + '</small></div></div>' +
       (!total ? '' : risco === 'nenhum' ? '<div class="risco-linha ok">' + RP.icone('escudo') + '<span><b>Grupo forte o bastante</b><br><small>Com o dobro da força dos animais, ninguém se fere.</small></span></div>'
         : '<div class="perigo-linha nivel-' + risco + '">' + RP.icone(A.icone) + '<span><b>Risco ' + RP.NOME_NIVEL[risco].toLowerCase() + ' na caçada</b><br><small>O grupo perde ' + Math.round(100 * (forca >= lim ? d.regras.perda.acima : d.regras.perda.abaixo)) + '% na luta. Tropas mortas não voltam; se ninguém sobrar, não há caça.</small></span></div>') +
       '<div class="secao-titulo">Caminho</div>' +
@@ -301,7 +310,7 @@
           if (!RP.somaGrupo(caca.grupo)) { RP.aviso({ titulo: 'Grupo vazio', texto: 'Escolha quem vai caçar.', icone: 'info', tipo: 'alerta' }); return; }
           if (!bd || !l || !p || !p.curta || !p.curta.ok) return;
           RP.tentar(RP.post('/tropas/enviar', { deLocalId: l.id, tropas: caca.grupo, destinoHex: bd.hex, ordem: 'cacar', seguro: !!(caca.seguro && p.segura.ok) })).then(function (ex) {
-            RP.aviso({ titulo: 'Caçadores a caminho', texto: 'Chegam ' + RP.fmtHora(ex.chegada) + '.', icone: 'lobo', tipo: 'sucesso' });
+            RP.aviso({ titulo: 'Caçadores a caminho', texto: 'Chegam ' + RP.fmtEm(ex.chegada) + '.', icone: 'lobo', tipo: 'sucesso' });
             caca.grupo = {}; caca.chave = '';
             RP.carregarTropas().catch(function () { /* offline */ }); RP.recarregarReino();
             RP.ir('mapa?foco=' + bd.hex);

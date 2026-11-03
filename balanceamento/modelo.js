@@ -30,16 +30,18 @@ const P = {
   estoqueMinimo: 2000, armazem: { capN1: 2000, capCresc: 1.35 }, kitExtra: { couro: 200 },
   /* servidor: carregadores da requisição (a pé, sem escolta); rio sem ponte se atravessa pelo vau (× custo do terreno) */
   carregador: { carga: 50, vel: 'Lenta' }, rio: { vau: 2.0 },
-  /* servidor: raio de visão (hexágonos) do castelo, dos locais e de tropas em campo; avistamentos somem depois de 10 h */
+  /* servidor: raio de visão (hexágonos) do castelo, dos locais e de marchas sem tropa (carregadores, caravana sem escolta);
+     um exército enxerga com a maior U.visao do grupo e revela a névoa por onde passa e onde fica. Avistamentos somem depois de 10 h */
   visao: { castelo: 3, local: 2, tropa: 1 }, avistamentoH: 10,
   /* novos locais: custo e quando o jogador funda (médio) */
   custoNovoLocal: 1500, novoLocalCresc: 1.22, tempoNovoLocal: 90 * 60,
-  /* deslocamento: minutos por unidade de custo de terreno */
-  minPor: { Lenta: 2.4, 'Média': 1.6, 'Rápida': 1.0 },
+  /* deslocamento: minutos por unidade de custo de terreno (tropa lenta ≈ 0,7 min por hexágono médio: 3 hexágonos em 2 min,
+     reino vizinho em ≈ 16 min, travessia do mapa em ≈ 70 min). Ver docs/decisoes/0022 */
+  minPor: { Lenta: 0.5, 'Média': 0.33, 'Rápida': 0.2 },
   terreno: { planicie: 1, colina: 1.25, floresta: 1.8, montanha: 2.3, pantano: 2.8 },
   terrenoMedio: 1.35, rotaFator: 0.55,
-  /* mundo */
-  reinos: 30, mapa: { cols: 60, lins: 48 },
+  /* mundo: ≈ 277 hexágonos por reino; a célula de cada reino tem ≈ 17 de lado, e o castelo vizinho fica a ≈ 17 a 24 hexágonos */
+  reinos: 30, mapa: { cols: 104, lins: 80 }, vizinhoHex: 24,
   /* combate */
   expPerdas: 1.5, vantagem: 1.5, miliciaPorPop: 0.05, defMilicia: 15,
   portoes: [0, 1.15, 1.3, 1.45, 1.6, 1.75],               /* multiplicador de defesa do castelo por nível de portões */
@@ -282,20 +284,21 @@ const P = {
       saqueador: { peso: 0.25, locais: 0.9, militar: 1.25, ataca: true, ocupa: false, espiona: true, torres: 0, prospecta: false, comercia: false },
       comerciante: { peso: 0.2, locais: 1.0, militar: 0.85, ataca: false, ocupa: false, espiona: false, torres: 1, prospecta: true, comercia: true }
     },
-    /* ataque: só com castelo 3+, contra local espionado há até 24 h, a até 16 hexágonos, cujo dono não está sob escudo e não é
+    /* ataque: só com castelo 3+, contra local espionado há até 24 h, a até 28 hexágonos (os alcances em hexágonos da IA cresceram
+       ×1,75 com o mapa de 104 × 80, a mesma escala linear: ver docs/decisoes/0022), cujo dono não está sob escudo e não é
        muito menor (maior nível conhecido dele ≥ 60% do nosso castelo); vai com 60% das tropas de ataque do castelo (ficam pelo
        menos 20) se a força de ataque passar de 2,5× a defesa estimada (guarnição como lanceiros, torres e milícia); um ataque por vez */
-    ataque: { castelo: 3, espionagemH: 24, alcance: 16, porte: 0.6, forca: 2.5, fracTropas: 0.6, reserva: 20, tatica: 'conservadora' },
-    /* espionagem: batedor a partir do castelo 4, alvo a até 16 hexágonos, cada local de novo só depois de 24 h */
-    espionagem: { castelo: 4, alcance: 16, refazerH: 24 },
-    /* ocupação de ruína ou terra livre à vista, a até 8 hexágonos, com 10 lanceiros */
-    ocupacao: { alcance: 8, tropas: 10 },
-    /* exploração: um explorador a pé, mandado a um hexágono ainda não visto a 4 a 9 hexágonos do castelo (6 tentativas de sorteio) */
-    exploracao: { distancia: [4, 9], tentativas: 6 },
-    /* caça quando o couro guardado cai abaixo de 100: 20 lanceiros, região conhecida a até 6 hexágonos, só se passam ilesos */
-    caca: { couroMin: 100, alcance: 6, tropas: 20 },
-    /* extração: prospector a partir do castelo 5; 10 lanceiros numa jazida conhecida a até 10 hexágonos */
-    extracao: { castelo: 5, alcance: 10, tropas: 10 },
+    ataque: { castelo: 3, espionagemH: 24, alcance: 28, porte: 0.6, forca: 2.5, fracTropas: 0.6, reserva: 20, tatica: 'conservadora' },
+    /* espionagem: batedor a partir do castelo 4, alvo a até 28 hexágonos, cada local de novo só depois de 24 h */
+    espionagem: { castelo: 4, alcance: 28, refazerH: 24 },
+    /* ocupação de ruína ou terra livre à vista, a até 14 hexágonos, com 10 lanceiros */
+    ocupacao: { alcance: 14, tropas: 10 },
+    /* exploração: um explorador a pé, mandado a um hexágono ainda não visto a 4 a 16 hexágonos do castelo (6 tentativas de sorteio) */
+    exploracao: { distancia: [4, 16], tentativas: 6 },
+    /* caça quando o couro guardado cai abaixo de 100: 20 lanceiros, região conhecida a até 10 hexágonos, só se passam ilesos */
+    caca: { couroMin: 100, alcance: 10, tropas: 20 },
+    /* extração: prospector a partir do castelo 5; 10 lanceiros numa jazida conhecida a até 17 hexágonos */
+    extracao: { castelo: 5, alcance: 17, tropas: 10 },
     /* defesa durante a sessão: reforça um local em batalha com metade das tropas livres do castelo; a defesa recua se a força
        dela cair abaixo de metade da do ataque */
     defesa: { reforco: 0.5, recuo: 0.5 },
@@ -307,16 +310,16 @@ const P = {
   }
 };
 
-/* unidades: atk, def, velocidade, carga (recursos), custo, tempo (s), população */
+/* unidades: atk, def, velocidade, carga (recursos), visão (raio de névoa que revela em marcha), custo, tempo (s), população */
 /* fam: família para armas, armaduras e vantagens; vence: família que a unidade domina */
 const U = {
-  milicia:   { nome: 'Milícia',   fam: 'infantaria', atk: 5,  def: 15, vel: 'Lenta',  carga: 20,  custo: { comida: 20, madeira: 10 }, tempo: 30, pop: 1, so: 'defesa' },
-  lanceiro:  { nome: 'Lanceiro',  fam: 'infantaria', atk: 25, def: 40, vel: 'Lenta',  carga: 40,  custo: { comida: 30, madeira: 30, ferro: 30 }, tempo: 180, pop: 1, vence: 'cavalaria' },
-  arqueiro:  { nome: 'Arqueiro',  fam: 'arqueiros',  atk: 35, def: 25, vel: 'Média',  carga: 40,  custo: { comida: 30, madeira: 50, couro: 10 }, tempo: 210, pop: 1, vence: 'infantaria' },
-  cavalaria: { nome: 'Cavalaria', fam: 'cavalaria',  atk: 45, def: 30, vel: 'Rápida', carga: 80,  custo: { comida: 60, ferro: 50, couro: 30 }, tempo: 360, pop: 1, vence: 'arqueiros' },
-  elite:     { nome: 'Cavaleiro de elite', fam: 'cavalaria', atk: 60, def: 40, vel: 'Rápida', carga: 80, custo: { comida: 70, ferro: 60, couro: 40, cavalo: 1 }, tempo: 480, pop: 1, vence: 'arqueiros', req: 'Era do Aço' },
-  ariete:    { nome: 'Aríete',    fam: 'cerco', atk: 10, def: 10, vel: 'Lenta',  carga: 0,   custo: { madeira: 300, ferro: 60 }, tempo: 900, pop: 4, cerco: 40 },
-  trebuchet: { nome: 'Trebuchet', fam: 'cerco', atk: 5,  def: 5,  vel: 'Lenta',  carga: 0,   custo: { madeira: 600, pedra: 200, ferro: 150 }, tempo: 1800, pop: 6, cerco: 90, req: 'Era do Cerco Avançado' }
+  milicia:   { nome: 'Milícia',   fam: 'infantaria', atk: 5,  def: 15, vel: 'Lenta',  carga: 20,  visao: 1, custo: { comida: 20, madeira: 10 }, tempo: 30, pop: 1, so: 'defesa' },
+  lanceiro:  { nome: 'Lanceiro',  fam: 'infantaria', atk: 25, def: 40, vel: 'Lenta',  carga: 40,  visao: 1, custo: { comida: 30, madeira: 30, ferro: 30 }, tempo: 180, pop: 1, vence: 'cavalaria' },
+  arqueiro:  { nome: 'Arqueiro',  fam: 'arqueiros',  atk: 35, def: 25, vel: 'Média',  carga: 40,  visao: 2, custo: { comida: 30, madeira: 50, couro: 10 }, tempo: 210, pop: 1, vence: 'infantaria' },
+  cavalaria: { nome: 'Cavalaria', fam: 'cavalaria',  atk: 45, def: 30, vel: 'Rápida', carga: 80,  visao: 2, custo: { comida: 60, ferro: 50, couro: 30 }, tempo: 360, pop: 1, vence: 'arqueiros' },
+  elite:     { nome: 'Cavaleiro de elite', fam: 'cavalaria', atk: 60, def: 40, vel: 'Rápida', carga: 80, visao: 2, custo: { comida: 70, ferro: 60, couro: 40, cavalo: 1 }, tempo: 480, pop: 1, vence: 'arqueiros', req: 'Era do Aço' },
+  ariete:    { nome: 'Aríete',    fam: 'cerco', atk: 10, def: 10, vel: 'Lenta',  carga: 0,   visao: 1, custo: { madeira: 300, ferro: 60 }, tempo: 900, pop: 4, cerco: 40 },
+  trebuchet: { nome: 'Trebuchet', fam: 'cerco', atk: 5,  def: 5,  vel: 'Lenta',  carga: 0,   visao: 1, custo: { madeira: 600, pedra: 200, ferro: 150 }, tempo: 1800, pop: 6, cerco: 90, req: 'Era do Cerco Avançado' }
 };
 const NOME_FAM = { infantaria: 'Infantaria', arqueiros: 'Arqueiros', cavalaria: 'Cavalaria', cerco: 'Cerco' };
 const VEICULOS = { carroca: { carga: 500, vel: 'Lenta', custo: { madeira: 150, ferro: 20 } }, carrocao: { carga: 1500, vel: 'Média', custo: { madeira: 400, ferro: 80, cavalo: 2 } } };
@@ -500,20 +503,20 @@ out('Castelo: produz ' + r0(castelo(1)) + '/h de cada recurso básico no nível 
 
 out('## Unidades\n');
 out('Valor: custo em valor de referência (couro vale 2, cavalo de raça 40). Por 100: ataque e defesa por 100 de valor.\n');
-out('| Unidade | Família | Ataque | Defesa | Vence | Velocidade | Carga | Custo | Valor | Tempo | Pop. | Ataque/100 | Defesa/100 | Requisito |');
-out('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+out('| Unidade | Família | Ataque | Defesa | Vence | Velocidade | Carga | Visão | Custo | Valor | Tempo | Pop. | Ataque/100 | Defesa/100 | Requisito |');
+out('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
 Object.values(U).forEach(u => {
   const t = valorDe(u.custo);
-  out('| ' + u.nome + ' | ' + NOME_FAM[u.fam] + ' | ' + u.atk + ' | ' + u.def + ' | ' + (u.vence ? NOME_FAM[u.vence] : u.cerco ? 'torres e portões (' + u.cerco + ')' : '—') + ' | ' + u.vel + ' | ' + u.carga + ' | ' + fmtC(u.custo) + ' | ' + t + ' | ' + fmtT(u.tempo) + ' | ' + u.pop + ' | ' +
+  out('| ' + u.nome + ' | ' + NOME_FAM[u.fam] + ' | ' + u.atk + ' | ' + u.def + ' | ' + (u.vence ? NOME_FAM[u.vence] : u.cerco ? 'torres e portões (' + u.cerco + ')' : '—') + ' | ' + u.vel + ' | ' + u.carga + ' | ' + u.visao + ' | ' + fmtC(u.custo) + ' | ' + t + ' | ' + fmtT(u.tempo) + ' | ' + u.pop + ' | ' +
     r1(100 * u.atk / t) + ' | ' + r1(100 * u.def / t) + ' | ' + (u.req || '—') + ' |');
 });
-out('\nMensageiro: ' + fmtC(P.mensageiro.custo) + ', ' + P.mensageiro.pop + ' de população, ' + fmtT(P.mensageiro.tempo) + ', velocidade ' + P.mensageiro.vel.toLowerCase() + ' (reino vizinho em ' + fmtT(viagemMin(14, P.mensageiro.vel) * 60) + '). Mensagem de até ' + P.mensageiro.caracteres + ' caracteres; recado de proposta, até ' + P.mensageiro.recadoProposta + '.\n');
+out('\nMensageiro: ' + fmtC(P.mensageiro.custo) + ', ' + P.mensageiro.pop + ' de população, ' + fmtT(P.mensageiro.tempo) + ', velocidade ' + P.mensageiro.vel.toLowerCase() + ' (reino vizinho em ' + fmtT(viagemMin(P.vizinhoHex, P.mensageiro.vel) * 60) + '). Mensagem de até ' + P.mensageiro.caracteres + ' caracteres; recado de proposta, até ' + P.mensageiro.recadoProposta + '.\n');
 out('Veículos: carroça ' + VEICULOS.carroca.carga + ' (lenta, ' + fmtC(VEICULOS.carroca.custo) + '); carroção ' + VEICULOS.carrocao.carga + ' (média, ' + fmtC(VEICULOS.carrocao.custo) + '). Carregador da requisição: 50, a pé.\n');
 
 out('## Deslocamento\n');
 out('| Distância | Exemplo | Lenta | Média | Rápida | Lenta em rota |');
 out('|---|---|---|---|---|---|');
-[[3, 'local vizinho do próprio reino'], [6, 'outro lado do próprio reino'], [14, 'reino vizinho'], [30, 'meio mapa'], [P.mapa.cols, 'travessia do mapa']].forEach(([h, ex]) => {
+[[3, 'local vizinho do próprio reino'], [10, 'outro lado do próprio reino'], [P.vizinhoHex, 'reino vizinho'], [P.mapa.cols / 2, 'meio mapa'], [P.mapa.cols, 'travessia do mapa']].forEach(([h, ex]) => {
   out('| ' + h + ' hex. | ' + ex + ' | ' + fmtT(viagemMin(h, 'Lenta') * 60) + ' | ' + fmtT(viagemMin(h, 'Média') * 60) + ' | ' + fmtT(viagemMin(h, 'Rápida') * 60) + ' | ' + fmtT(viagemMin(h, 'Lenta', true) * 60) + ' |');
 });
 out('\nMapa para ' + P.reinos + ' reinos: ' + P.mapa.cols + ' × ' + P.mapa.lins + ' hexágonos (≈ ' + r0(P.mapa.cols * P.mapa.lins / P.reinos) + ' por reino). Terreno médio ' + P.terrenoMedio + '; rota pública multiplica por ' + P.rotaFator + '.\n');
@@ -703,9 +706,9 @@ const metas = [
   ['M3a', 'Obra para o nível 2 leva até 2 min', fmtT(tempoObra(2)), tempoObra(2) <= 120],
   ['M3b', 'Obra para o nível 10 leva de 6 a 10 h', fmtT(tempoObra(10)), tempoObra(10) >= 6 * 3600 && tempoObra(10) <= 10 * 3600],
   ['M3c', '10 obras de nível 6 a 8 cobrem a noite (7 a 14 h)', fmtT((tempoObra(6) + tempoObra(7) + tempoObra(8)) / 3 * 10), (tempoObra(6) + tempoObra(7) + tempoObra(8)) / 3 * 10 >= 7 * 3600 && (tempoObra(6) + tempoObra(7) + tempoObra(8)) / 3 * 10 <= 14 * 3600],
-  ['M4a', 'Vizinho do próprio reino (3 hex.) em até 15 min, tropa lenta', fmtT(viagemMin(3, 'Lenta') * 60), viagemMin(3, 'Lenta') <= 15],
-  ['M4b', 'Reino vizinho (14 hex.) entre 30 e 60 min, tropa lenta', fmtT(viagemMin(14, 'Lenta') * 60), viagemMin(14, 'Lenta') >= 30 && viagemMin(14, 'Lenta') <= 60],
-  ['M4c', 'Travessia do mapa em até 3 h 30 min, tropa lenta', fmtT(viagemMin(P.mapa.cols, 'Lenta') * 60), viagemMin(P.mapa.cols, 'Lenta') <= 210],
+  ['M4a', 'Vizinho do próprio reino (3 hex.) em até 3 min, tropa lenta', fmtT(viagemMin(3, 'Lenta') * 60), viagemMin(3, 'Lenta') <= 3],
+  ['M4b', 'Reino vizinho (' + P.vizinhoHex + ' hex.) entre 10 e 20 min, tropa lenta', fmtT(viagemMin(P.vizinhoHex, 'Lenta') * 60), viagemMin(P.vizinhoHex, 'Lenta') >= 10 && viagemMin(P.vizinhoHex, 'Lenta') <= 20],
+  ['M4c', 'Travessia do mapa (' + P.mapa.cols + ' hex.) em até 90 min, tropa lenta', fmtT(viagemMin(P.mapa.cols, 'Lenta') * 60), viagemMin(P.mapa.cols, 'Lenta') <= 90],
   ['M5a', 'Jogador médio com 60 a 150 tropas no fim do escudo (dia 3)', sims.medio.log[3].tropas, sims.medio.log[3].tropas >= 60 && sims.medio.log[3].tropas <= 150],
   ['M5b', 'Jogador médio com 400 a 900 tropas no dia 35', sims.medio.log[35].tropas, sims.medio.log[35].tropas >= 400 && sims.medio.log[35].tropas <= 900],
   ['M5c', 'Jogador ativo com 2 a 3× as tropas do médio no dia 35', r1(sims.ativo.log[35].tropas / sims.medio.log[35].tropas) + '×', sims.ativo.log[35].tropas / sims.medio.log[35].tropas >= 1.5 && sims.ativo.log[35].tropas / sims.medio.log[35].tropas <= 3],
@@ -758,7 +761,7 @@ if (process.argv.includes('--json')) {
     tempoObra: niveis.map(n => n > 1 ? tempoObra(n) : 0),
     moradia: [0, 1, 2, 5, 10].map(n => ({ n, custo: custoMoradia(n), tempo: tempoMoradia(n) })),
     novoLocal: [0, 1, 2, 5].map(n => ({ n, custo: receita(P.custoNovoLocal * Math.pow(P.novoLocalCresc, n)) })),
-    viagem: [[4, 'Lenta', false], [14, 'Lenta', false], [60, 'Lenta', false], [10, 'Rápida', true], [10, 'Média', false]]
+    viagem: [[4, 'Lenta', false], [P.vizinhoHex, 'Lenta', false], [P.mapa.cols, 'Lenta', false], [10, 'Rápida', true], [10, 'Média', false]]
       .map(([h, v, r]) => ({ hexes: h, vel: v, rota: r, min: viagemMin(h, v, r) })),
     batalhas: casos.map(([rot, a, d, x, lim], i) => ({ rot, atk: a, def: d, extra: x, limite: lim == null ? null : lim, res: resCasos[i] })),
     extracao: [[{ lanceiro: 1 }, false, false], [{ lanceiro: 10 }, false, false], [{ lanceiro: 20 }, false, false], [{ lanceiro: 40 }, true, false],

@@ -81,7 +81,10 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Marcha.AoPerderNoCaminho` | Quem perde no caminho, antes de ser esvaziado (perdedor, vencedor): o equipamento lendário vai ao vencedor. |
 | `Sistemas.Revelavel/Revelar/Estado/Gatilhos`, `Reino.SistemasVistos` | Sistemas apresentados aos poucos: registre a chave em AoIniciar, chame `Revelar` no gatilho (notifica "Novo: ..."); GET /reino leva `sistemas` com as chaves registradas; `Gatilhos` conferem antes de mostrar (ex.: ferraria ocupada). |
 | `Forja.Ferrarias`, `Forja.BonusFerraria`, `Forja.Lendarios` (`m.Lendarios`) | Eras feitas (`Ferrarias.EraFeita`, `EraAtual`), níveis de armas e armaduras, maior local de um tipo; bônus por família; onde está cada equipamento lendário e o bônus dele. |
-| `Reinos.Tropas` | Ajudantes de grupo de tropas: validar, retirar, devolver, somar, velocidade, carga, força contra fauna, população. Dentro de uma `Marcha`, a propriedade `Tropas` esconde a classe: use um alias (`using GT = ReinoDePedra.Jogo.Reinos.Tropas;`). |
+| `Reinos.Tropas` | Ajudantes de grupo de tropas: validar, retirar, devolver, somar, velocidade, carga, visão (`Visao`: a maior `U.visao` do grupo), força contra fauna, população. Dentro de uma `Marcha`, a propriedade `Tropas` esconde a classe: use um alias (`using GT = ReinoDePedra.Jogo.Reinos.Tropas;`). |
+| `Marcha.AgendarRevelacao`, `RevelarCaminhoEvento` | Revelação da névoa ao vivo: eventos nos trechos do caminho que entram em névoa nunca vista (no máximo um por minuto) e um antes da chegada; avisam `"mapa"` ao dono quando revelam algo. Chamado em `Fauna.AoPartir` para toda marcha. |
+| `Exercitos.Bloqueio`, `Exercito.PararAqui` | Motivo que impede nova ordem agora (o mesmo de `DarOrdem`; a API manda `podeOrdem`/`bloqueio`); "parar aqui" (`mover` para o próprio hexágono): fica onde está, com a postura padrão de campo, passando pelos ganchos de `AoPartir` (interrompe caça, extração e escavação). |
+| `VisaoTropas.Estado/Trabalho/FaunaNoDestino`, `VisaoMapa.MarchaPropria` (Api) | Estado único de marcha própria ("marchando", "parado", "retornando", "trabalhando"), o trabalho de um exército parado (`{ tipo, recurso, coletado, destino, fim }`), a fauna conhecida num hexágono com o veredito da regra de perdas; o objeto de marcha própria do mapa (carga, tropas, estado, alvo). |
 | `VisaoReino.Extras`, `VisaoReino.ExtrasLocal`, `VisaoMarcha.ExtrasPropria`, `VisaoMapa.Extras` (Api) | Acrescentar dados ao que o cliente recebe. |
 | `Fotos.Fotografos` | Objetos do sistema que ficam na foto da névoa (último estado conhecido fora da visão: torres, bandeiras...). |
 | `Marcha.AlvoDeFauna`, `Marcha.Furtiva`, `Marcha.ForcaContraFauna`, `Marcha.SofrerFauna`, `Marcha.AoPassar` | Fauna e visibilidade por tipo de marcha (mensageiro fora da fauna, batedor furtivo, caravana perde carga...). |
@@ -145,12 +148,29 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 
 ## Cliente web
 
+### Princípios de interface
+
+Valem para toda tela nova ou refeita (ver [decisão 0023](decisoes/0023-concha-jogo-sempre-visivel.md)):
+
+1. **O jogo nunca fica escondido.** O mundo ocupa a tela o tempo todo e anda em tempo real. Tocar em local, botão ou ação não abre tela cheia nem menu que cubra o jogo; avisos também não cobrem a área de jogo.
+2. **Pouca informação por vez.** A tela mostra só o que importa agora; o resto fica um toque adiante, nunca ao mesmo tempo. Orçamento por tela: 1 ação principal, até 3 secundárias, no máximo 5 informações fixas.
+3. **Ações só do que está selecionado.** Sem seleção, a tela tem só o jogo, os recursos e a navegação. Ao tocar em algo aparece um painel pequeno com no máximo 3 ações; o resto fica em "Mais ações".
+4. **Uma ação principal por contexto**, destacada (`btn-primario`); as outras em segundo plano.
+5. **Cada informação em um lugar só.** Se o mesmo dado aparece em três telas, uma é a dona e as outras ligam a ela por um toque.
+6. **Regra de teste:** quem nunca viu o jogo olha a tela por 5 segundos e diz o que ela mostra e qual é a próxima coisa a fazer.
+7. **Linguagem do jogador.** Termo interno (teto, guarnição, postura, requisição) não aparece na tela: "moradores", "tropas no local", "comportamento", "o material vem sozinho". Chaves da API não mudam.
+8. **Tempo sempre como duração** ("pronto em 5 min", `RP.fmtEm`) e nunca `NaN` ou `Invalid Date`: as formatações aceitam valor vazio.
+
+### Convenções
+
 - Sem framework e sem build: scripts com o namespace global `RP`, carregados em ordem por `web/index.html`.
-- Base: `icones.js`, `brasao.js`, `hex.js`, `api.js` (`RP.get/post/put/del`, `RP.ouvir` para SSE), `nucleo.js` (folha, modal, aviso, timers, barra de recursos, rotas, estado `RP.reino`).
-- Cada tela num arquivo de `web/js/telas/`, registrada com `RP.registrarTela(nome, { montar, entrar, sair, nav, secao, fixa })`. Rotas em hash: `#/nome?param=1`.
+- Base: `icones.js`, `brasao.js`, `hex.js`, `api.js` (`RP.get/post/put/del`, `RP.ouvir` para SSE), `nucleo.js` (concha: painel, folha, confirmação, avisos, navegação; timers, barra de recursos, produção, carga, rotas, estado `RP.reino`).
+- Concha (`web/css/concha.css`): a tela `mapa` é a tela de fundo (`fundo: true`), montada em `#mundo` e nunca escondida enquanto há reino. As outras telas do jogo são montadas em `#telas`, o painel (baixo no celular, coluna à direita no computador; `RP.painel`). A folha de seleção (`RP.abrirFolha`) fica por cima do painel, sem véu, com até 3 ações. Telas públicas (`publica: true`) ocupam a tela toda.
+- Cada tela num arquivo de `web/js/telas/`, registrada com `RP.registrarTela(nome, { montar, entrar, sair, nav, secao, fundo, publica })`. Rotas em hash: `#/nome?param=1`. `nav: true` marca um destino de `RP.NAV`; `secao` liga uma sub-tela ao seu destino.
+- Peças comuns: `RP.custoHTML` (custo com "faltam X · pronto em Y"), `RP.cargaHTML` (carga com barra), `RP.popSomaHTML` (população + tropas = moradores), `RP.producaoHTML` / `RP.contaRecursoHTML` (produção e "quando terei X"), `RP.faunaVereditoHTML` (força do bando × força do grupo), `RP.textoFilaItem` (aviso ao enfileirar).
 - Siga `prototipo/design-system.md` e reaproveite CSS, ícones e arte do protótipo. Estilos novos em `web/css/jogo.css` (ou arquivo próprio do sistema), sempre com os tokens.
 - Tempo no cliente: `RP.agora()` (relógio do servidor). Estoques andam sozinhos entre atualizações (`RP.qtdRecurso`).
-- Mundo: `web/js/vista/` (modelo do `/mapa`, arte, Vista 2.5D, Mapa tático, Vista de Meu reino). Objetos novos no mapa ganham desenho registrando `RP.mapa.tiposObjeto[tipo]` (e `RP.mapa.tiposMarcha`, `RP.mapa.perigoHex`, `extrasFolhaHex`...) no arquivo do próprio sistema; ver [decisão 0017](decisoes/0017-vista-e-mapa-no-cliente.md).
+- Mundo: `web/js/vista/` (modelo do `/mapa`, arte, Vista 2.5D, Mapa tático). Objetos novos no mapa ganham desenho registrando `RP.mapa.tiposObjeto[tipo]` (e `RP.mapa.tiposMarcha`, `RP.mapa.perigoHex`, `extrasFolhaHex`...) no arquivo do próprio sistema; ver [decisão 0017](decisoes/0017-vista-e-mapa-no-cliente.md). A inclinação da câmera é do jogador (`RP.arte.definirK`, `Cena.inclinar`).
 
 ## Testes
 

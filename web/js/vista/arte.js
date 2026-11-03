@@ -5,7 +5,8 @@
   'use strict';
   var RP = window.RP;
 
-  var K = 0.62;      /* achatamento do chão: inclinação da câmera */
+  var K = 0.62;      /* achatamento do chão: inclinação da câmera (padrão; o jogador inclina entre K_MIN e K_MAX) */
+  var K_PADRAO = 0.62, K_MIN = 0.42, K_MAX = 0.92;
   var OB = 0.45;     /* deslocamento oblíquo do topo das construções (mostra a lateral direita) */
 
   /* ================================================================ paleta */
@@ -574,6 +575,12 @@
     bandeira: bandeira, arvoreConifera: arvoreConifera, arvoreFolhosa: arvoreFolhosa, arbusto: arbusto, rocha: rocha, monte: monte, pico: pico,
     junco: junco, fumaca: fumaca, brilho: brilho, pedestalReliquia: pedestalReliquia, bauReliquia: bauReliquia, pessoa: pessoa, cavalo: cavalo,
     carroca: carroca, animal: animal, local: local, ruina: ruina, jazida: jazida, placaPerigo: placaPerigo, marco: marco, andaime: andaime,
-    materiais: materiais, cerca: cerca, pilula: pilula
+    materiais: materiais, cerca: cerca, pilula: pilula,
+    K_PADRAO: K_PADRAO, K_MIN: K_MIN, K_MAX: K_MAX, aoMudarK: []
+  };
+  /* inclinação da câmera: muda o achatamento do chão para toda a arte; quem desenha ouve em aoMudarK */
+  RP.arte.definirK = function (k) {
+    K = Math.max(K_MIN, Math.min(K_MAX, k)); RP.arte.K = K;
+    RP.arte.aoMudarK.forEach(function (f) { try { f(K); } catch (e) { console.error(e); } });
   };
 })();

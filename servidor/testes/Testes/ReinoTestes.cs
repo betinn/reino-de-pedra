@@ -12,7 +12,7 @@ public class ReinoTestes
     {
         var t = new MundoTeste();
         Assert.Equal(30, t.M.Mapa.Vagas.Count);
-        Assert.Equal(60 * 48, t.M.G.Total);
+        Assert.Equal(t.B.P.Mapa.Cols * t.B.P.Mapa.Lins, t.M.G.Total);   // 104 × 80 (decisão 0022)
         Assert.Equal(30, t.M.Ruinas.Count);
         Assert.Equal(75, t.M.Jazidas.Count);   // 7 valiosos × 10 + minério raro 5
         var vs = t.M.Mapa.Vagas.Select(v => v.Castelo).ToList();

@@ -26,7 +26,7 @@ public sealed record OpcoesCaminho
 /// <summary>
 /// Deslocamento: minutos para entrar num hexágono = fator do terreno (vau no rio sem ponte)
 /// × fator de rota (0,55) × minutos por velocidade. Com fatores médios (1,35) isso reproduz
-/// <c>viagemMin</c> do modelo. Dijkstra sobre a grade (2.880 hexágonos): custa microssegundos.
+/// <c>viagemMin</c> do modelo. A* sobre a grade (8.320 hexágonos): custa dezenas de microssegundos.
 /// </summary>
 public static class Caminhos
 {

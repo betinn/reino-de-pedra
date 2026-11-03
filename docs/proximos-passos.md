@@ -27,6 +27,10 @@ O que ficou pendente na primeira etapa de implementação e como testar o jogo. 
 5. **Ranking** mostra nome e brasão de todos os reinos, inclusive os que o jogador ainda não conhece (como no protótipo). Confirmar se é a regra desejada; se não, mostrar "Reino desconhecido" para quem não é conhecido.
 6. **Avistamento de ataque** usa a visão do defensor no instante em que o atacante parte. Considerar avistar quando a marcha entra na visão (evento no instante da entrada, sem tique).
 
+## Plano futuro: gráficos e animações
+
+As animações atuais (pessoas trabalhando, marchas, fumaça, névoa à deriva) servem para o MVP. A melhoria gráfica (sprites com mais detalhe, transições de terreno, luz do dia, água animada) fica para depois das correções de usabilidade ([`correcoes-usabilidade.md`](correcoes-usabilidade.md), item 7). Ao mexer, manter o cache estático da Vista ([decisão 0017](decisoes/0017-vista-e-mapa-no-cliente.md)) e o limite de 30 quadros/s.
+
 ## Funcionalidades fora desta etapa
 
 1. **App de celular.** A API já serve: login com `"app": true` devolve o token para `Authorization: Bearer`. Falta o app.

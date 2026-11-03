@@ -96,6 +96,8 @@ public sealed class ParametrosP
     public double RotaFator { get; init; }
     public int Reinos { get; init; }
     public MapaP Mapa { get; init; } = new();
+    /// <summary>Distância típica (hexágonos) até o castelo do reino vizinho, para prévias e metas.</summary>
+    public int VizinhoHex { get; init; }
     public double ExpPerdas { get; init; }
     public double Vantagem { get; init; }
     public double MiliciaPorPop { get; init; }
@@ -413,6 +415,8 @@ public sealed class Unidade
     public double Def { get; init; }
     public string Vel { get; init; } = "";
     public double Carga { get; init; }
+    /// <summary>Raio de visão em marcha (hexágonos): um exército enxerga com a maior do grupo.</summary>
+    public int Visao { get; init; }
     public Dictionary<string, double> Custo { get; init; } = new();
     public double Tempo { get; init; }
     public int Pop { get; init; }
