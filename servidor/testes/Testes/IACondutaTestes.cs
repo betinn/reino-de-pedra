@@ -16,6 +16,47 @@ public class IACondutaTestes
 
     private static Dictionary<string, double> R(params (string k, double n)[] g) => g.ToDictionary(x => x.k, x => x.n);
 
+    // ---------------------------------------------------------------- feridos e prisioneiros
+
+    [Fact]
+    public void IA_cura_feridos_com_as_ervas_que_tem()
+    {
+        var t = MundoIA.Novo(criar: false);
+        var ia = MundoIA.Criar(t, "defensivo", vaga: 1);
+        Feridos.Adicionar(t.M, ia, new Dictionary<string, int> { ["lanceiro"] = 4 }, "teste");
+        Governo.Curar(t.M, ia);
+        Assert.Equal(0, Feridos.EmCura(ia));   // sem ervas, não cura
+        t.M.Locais[ia.CasteloId].Estoque.Somar("ervas", t.M.P.Feridos.Ervas * 4);
+        Governo.Curar(t.M, ia);
+        Assert.Equal(4, Feridos.EmCura(ia));
+        Governo.Curar(t.M, ia);   // já curando: não repete
+        Assert.Single(ia.Fila(Feridos.Fila).Itens);
+    }
+
+    [Theory]
+    [InlineData("saqueador", "executado")]
+    [InlineData("comerciante", "resgate")]
+    [InlineData("defensivo", "libertado")]
+    public void IA_decide_o_destino_do_explorador_capturado(string perfil, string esperado)
+    {
+        var t = MundoIA.Novo(criar: false);
+        var dono = MundoIA.Jogador(t, 0);
+        var ia = MundoIA.Criar(t, perfil, vaga: 1);
+        var cc = t.M.Locais[ia.CasteloId];
+        var p = t.M.Prisioneiros.Adicionar(new Prisioneiro { CaptorId = ia.Id, DonoId = dono.Id, TipoExp = "pe", Hex = cc.Hex, Ate = t.M.Agora + T.Hora });
+        Governo.Prisioneiros(t.M, ia);
+        if (esperado == "resgate")
+        {
+            Assert.Equal(Capturas.ResgatePedido, p.Estado);
+            Assert.NotEmpty(p.Resgate);
+        }
+        else
+        {
+            Assert.Null(t.M.Prisioneiros.Obter(p.Id));
+            Assert.Equal(esperado == "libertado", Exploradores.De(t.M, dono.Id).Any());
+        }
+    }
+
     // ---------------------------------------------------------------- guerra: escudo e porte
 
     private static (MundoTeste t, Reino ia, Reino alvo, Local local) CenarioAtaque()

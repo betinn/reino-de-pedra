@@ -42,7 +42,9 @@ public static class Governo
         if (!c.Regencia) Tentar(() => Comerciante.Responder(m, r, c));
         Tentar(() => Construir(m, r, c, castelo));
         Tentar(() => Recrutar(m, r, c, castelo));
+        Tentar(() => Curar(m, r));   // a regência também cura: guarda o reino para quem volta
         if (c.Regencia) return;
+        Tentar(() => Prisioneiros(m, r));
         Tentar(() => Explorar(m, r, castelo));
         Tentar(() => Cacar(m, r, castelo));
         if (c.Perfil is { } p)
@@ -57,6 +59,34 @@ public static class Governo
 
     /// <summary>Uma decisão que esbarra numa regra (fila cheia, falta recurso...) só deixa de acontecer, como para o jogador.</summary>
     private static void Tentar(Action a) { try { a(); } catch (RegraException) { } }
+
+    // ---------------------------------------------------------------- feridos e prisioneiros
+
+    /// <summary>Feridos no castelo: põe na fila de cura os que as ervas pagam (um item por vez, como o jogador faria).</summary>
+    public static void Curar(Mundo m, Reino r)
+    {
+        if (Feridos.Total(r) == 0 || Feridos.EmCura(r) > 0 || Feridos.Podem(m, r) <= 0) return;
+        Feridos.Curar(m, r);
+    }
+
+    /// <summary>
+    /// Exploradores que o reino capturou: o saqueador executa, o comerciante pede resgate (o custo do explorador, com margem),
+    /// os outros libertam. Decide na primeira sessão depois da captura, dentro do prazo de 24 h.
+    /// </summary>
+    public static void Prisioneiros(Mundo m, Reino r)
+    {
+        foreach (var p in Capturas.PresosPor(m, r.Id).Where(x => x.Estado == Capturas.Preso).ToList())
+        {
+            if (r.PerfilIA == "saqueador") { Tentar(() => Capturas.Decidir(m, r, p.Id, "executar")); continue; }
+            if (r.PerfilIA == "comerciante" && m.P.Exploradores.TryGetValue(p.TipoExp, out var x))
+            {
+                var pedido = x.Custo.ToDictionary(kv => kv.Key, kv => Math.Ceiling(kv.Value * (1 + m.P.Comercio.MargemIA)));
+                Tentar(() => Capturas.Decidir(m, r, p.Id, "resgate", pedido));
+                continue;
+            }
+            Tentar(() => Capturas.Decidir(m, r, p.Id, "libertar"));
+        }
+    }
 
     // ---------------------------------------------------------------- obras
 
