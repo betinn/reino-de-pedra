@@ -103,12 +103,24 @@
   };
   C.inclinarPor = function (dyPx) { this.inclinar(A.K - dyPx * 0.0028); };
   C.ligarGestos = function () {
-    var self = this, p0 = null, avisado = false;
+    var self = this, p0 = null, avisado = false, lacando = false, ponto = null;
+    function modoSel() { return !!(self.opt.modoSelecao && self.opt.modoSelecao()); }
     RP.gestos(this.cv, {
-      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; },
-      inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; },
+      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; lacando = modoSel(); ponto = null; },
+      inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; lacando = false; self.laco = null; },
       inclinar: function (dy) { self.inclinarPor(dy); },
-      arrasto: function (dx, dy) { self.cam.x -= dx / self.cam.s; self.cam.y -= dy / (K * self.cam.s); self.mudou(); },
+      /* no modo seleção (ou com Shift), arrastar desenha um laço em vez de mover a câmera */
+      arrasto: function (dx, dy) {
+        if (lacando) {
+          ponto = ponto ? { x: ponto.x + dx, y: ponto.y + dy } : null;
+          if (!ponto) { ponto = self.ultimoToque || { x: self.w / 2, y: self.h / 2 }; ponto = { x: ponto.x + dx, y: ponto.y + dy }; }
+          (self.laco = self.laco || []).push({ x: ponto.x, y: ponto.y });
+          if (!self.rodando) self.quadro(performance.now());
+          return;
+        }
+        self.cam.x -= dx / self.cam.s; self.cam.y -= dy / (K * self.cam.s); self.mudou();
+      },
+      toqueLongo: function (x, y) { if (self.opt.aoToqueLongo) self.opt.aoToqueLongo(x, y); },
       pinca: function (f, mx, my, mx0, my0) {
         var wx = (mx0 - self.w / 2) / p0.s + p0.x, wy = (my0 - self.h / 2) / (K * p0.s) + p0.y, ns = p0.s * f;
         if (ns < SMIN * 0.8 && self.opt.aoAfastarDemais) { if (!avisado) { avisado = true; self.opt.aoAfastarDemais(); } return; }
@@ -125,8 +137,14 @@
         self.mudou();
       },
       toque: function (x, y) { self.tocar(x, y); },
-      fim: function () { self.gesto = false; self.ultimaMudanca = performance.now(); }
+      fim: function () {
+        self.gesto = false; self.ultimaMudanca = performance.now();
+        if (self.laco && self.laco.length > 2 && self.opt.aoLaco) self.opt.aoLaco(self.laco);
+        self.laco = null; lacando = false;
+      }
     });
+    /* o laço começa onde o dedo pousou */
+    this.cv.addEventListener('pointerdown', function (e) { var r = self.cv.getBoundingClientRect(); self.ultimoToque = { x: e.clientX - r.left, y: e.clientY - r.top }; });
   };
   C.ligarToqueSimples = function () {
     var self = this;
@@ -371,33 +389,13 @@
     var tr = [];
     function ida(a, b, o) { if (a && b) tr.push(Object.assign({ a: a, b: b, vel: 11 }, o)); }
     function off(p, dx, dz) { return { x: p.x + dx, y: p.y + dz }; }
-    locais.forEach(function (x, i) {
+    /* as pessoas de verdade vêm da camada de pessoas (vista/pessoas.js); aqui ficam só os cavalos do pasto e o alvo de palha do quartel */
+    locais.forEach(function (x) {
       var p = pos[x.id];
-      if (x.tipo === 'vila') {
-        ida(off(p, -18, 12), off(p, 24, -10), { roupa: P.roupa[i % 5], fase: 0.3 });
-        tr.push({ fixo: off(p, -18, 12), roupa: P.roupa[(i + 2) % 5], trabalho: 'picareta', dir: 1, fase: 2.1 });
-        ida(p, cas, { roupa: P.roupa[(i + 1) % 5], fase: 1.2, carga: 'saco' });
-      } else if (x.tipo === 'mina') {
-        tr.push({ fixo: off(p, -9, 9), roupa: P.roupa[3], trabalho: 'picareta', dir: 1, fase: i });
-        ida(off(p, 0, 16), arm, { roupa: P.roupa[0], carga: 'minerio', corCarga: x.produz === 'pedra' ? P.minerioPedra : P.minerioFerro, fase: i * 0.7 });
-      } else if (x.tipo === 'serraria') {
-        tr.push({ fixo: off(p, -4, 10), roupa: P.roupa[2], trabalho: 'picareta', dir: 1, fase: 1 });
-        ida(off(p, -16, 14), arm, { roupa: P.roupa[1], carga: 'tronco', fase: 0.4 });
-      } else if (x.tipo === 'ferraria') {
-        tr.push({ fixo: off(p, 7, 12), roupa: '#5a4636', trabalho: 'martelo', dir: 1, fase: 0 });
-      } else if (x.tipo === 'quartel') {
-        [-10, -2, 6].forEach(function (dx, j) { tr.push({ fixo: off(p, dx, 22), soldado: true, estocada: true, dir: 1, fase: j * 0.6 }); });
-        [0, 1].forEach(function (j) { tr.push({ fixo: off(p, -26 + j * 7, -2 + j * 6), arqueiro: true, alvoTiro: off(p, 26, -14), dir: 1, fase: j * 1.7, soRecrutando: true }); });
-        tr.push({ alvoPalha: off(p, 26, -14), soRecrutando: true });
-      } else if (x.tipo === 'castelo') {
-        ida(off(p, -16, 26), off(p, 16, 26), { soldado: true, vel: 5, fase: 0 });
-        ida(off(p, 18, 30), off(p, -14, 30), { soldado: true, vel: 5, fase: 1.4 });
-      } else if (x.tipo === 'pasto') {
-        for (var k2 = 0; k2 < 4; k2++) tr.push({ cavaloPasto: true, centro: p, fase: k2 * 1.7, cor: P.cavalo[k2 % 4] });
-      } else if (x.tipo === 'armazem') {
-        tr.push({ fixo: off(p, 12, 16), roupa: P.roupa[4], trabalho: 'picareta', dir: -1, fase: 2.5 });
-      }
+      if (x.tipo === 'pasto') { for (var k2 = 0; k2 < 4; k2++) tr.push({ cavaloPasto: true, centro: p, fase: k2 * 1.7, cor: P.cavalo[k2 % 4] }); }
+      else if (x.tipo === 'quartel') tr.push({ alvoPalha: off(p, 26, -14), soRecrutando: true });
     });
+    void cas; void arm; void ida;
     return tr;
   }
   function itensFila(nome) { return (RP.reino && RP.reino.filas && RP.reino.filas[nome]) || []; }
@@ -575,6 +573,12 @@
       } });
     });
 
+    /* pessoas do reino (e as de outros reinos à vista), onde estão */
+    if (RP.pessoasVista) RP.pessoasVista.desenhar({
+      c: c, V: V, cena: self, itens: itens, rot: rot, t: t, ag: ag, s: s, naTela: naTela, cor: corMeu,
+      obj: function (x, y) { obj(c, V, x, y); }, alvo: alvo
+    });
+
     /* marchas */
     if (camadas.marchas !== false) d.marchas.forEach(function (m) {
       var pos = M.posMarcha(m, ag), cheg = M.chegada(m);
@@ -628,6 +632,15 @@
         A.pilula(c, q.x, q.y, q.rt.txt, q.rt.cls, q.rt.cor);
       });
     }
+    /* laço da seleção (espaço de tela) */
+    if (this.laco && this.laco.length > 1) {
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.beginPath(); c.moveTo(this.laco[0].x, this.laco[0].y);
+      for (var li = 1; li < this.laco.length; li++) c.lineTo(this.laco[li].x, this.laco[li].y);
+      c.closePath();
+      c.fillStyle = Cs.selecao; c.globalAlpha = 0.12; c.fill(); c.globalAlpha = 1;
+      c.strokeStyle = Cs.selecao; c.lineWidth = 2; c.setLineDash([6, 4]); c.stroke(); c.setLineDash([]);
+    }
   };
 
   /* uma marcha na Vista: formação, carregadores, explorador... Forças sem estandarte: cinza, sem bandeira */
@@ -639,6 +652,11 @@
     var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
     function add(p, fn) { itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
+    /* pessoas selecionadas dentro desta marcha: anel no chão */
+    if (RP.selecao && RP.selecao.n() && m.pessoaIds && m.pessoaIds.some(function (id) { return RP.selecao.tem(id); })) {
+      itens.push({ y: pos.y - 0.1, d: function () { obj(c, V, pos.x, pos.y); c.strokeStyle = Cs.selecao; c.lineWidth = 1.6; c.beginPath(); c.ellipse(0, 1, 16, 16 * K * 0.55, 0, 0, 6.2832); c.stroke(); } });
+      prefixo = 'Selecionado · ';
+    }
     if (def && def.desenharCena) {
       add(pos, function () { try { def.desenharCena(c, m, { t: t, pal: P, A: A, dir: dir, ang: pos.ang, cor: cor, revelado: revelado }); } catch (er) { console.error(er); } });
       prefixo = def.nome ? def.nome + ' · ' : '';

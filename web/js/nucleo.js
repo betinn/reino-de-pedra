@@ -72,7 +72,7 @@
      h = { inicio(), arrasto(dx, dy), pinca(fator, mx, my, mx0, my0), roda(fator, x, y), toque(x, y), fim() }
      Coordenadas relativas ao elemento. */
   RP.gestos = function (el, h) {
-    var pts = new Map(), arr = null, pin = null, toq = null, meio = null;
+    var pts = new Map(), arr = null, pin = null, toq = null, meio = null, longo = 0;
     function rel(e) { var r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     /* botão do meio do mouse: arrastar inclina a câmera (sem o rolar automático do navegador) */
     el.addEventListener('mousedown', function (e) { if (e.button === 1) e.preventDefault(); });
@@ -89,7 +89,11 @@
       try { el.setPointerCapture(e.pointerId); } catch (er) { /* ignora */ }
       pts.set(e.pointerId, rel(e));
       if (h.inicio) h.inicio();
-      if (pts.size === 1) { var p = rel(e); arr = p; toq = { x: p.x, y: p.y, cx: e.clientX, cy: e.clientY, t: performance.now(), movido: false }; }
+      if (pts.size === 1) {
+        var p = rel(e); arr = p; toq = { x: p.x, y: p.y, cx: e.clientX, cy: e.clientY, t: performance.now(), movido: false };
+        /* toque longo (sem mover): modo seleção na Vista */
+        if (h.toqueLongo) { clearTimeout(longo); longo = setTimeout(function () { if (toq && !toq.movido && pts.size === 1) { toq.longo = true; h.toqueLongo(toq.x, toq.y); } }, 550); }
+      }
       else if (pts.size === 2) {
         var a = Array.from(pts.values());
         pin = { d: Math.max(1, Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y)), mx: (a[0].x + a[1].x) / 2, my: (a[0].y + a[1].y) / 2, ultMy: (a[0].y + a[1].y) / 2, modo: null };
@@ -123,7 +127,8 @@
       if (meio && e.pointerId === meio.id) { meio = null; if (h.fim) h.fim(); return; }
       if (!pts.has(e.pointerId)) return;
       pts.delete(e.pointerId);
-      if (toq && !toq.movido && e.type === 'pointerup' && performance.now() - toq.t < 600 && h.toque) h.toque(toq.x, toq.y, toq.cx, toq.cy);
+      clearTimeout(longo);
+      if (toq && !toq.movido && !toq.longo && e.type === 'pointerup' && performance.now() - toq.t < 600 && h.toque) h.toque(toq.x, toq.y, toq.cx, toq.cy);
       toq = null;
       if (pts.size === 1) { arr = Array.from(pts.values())[0]; pin = null; }
       if (pts.size === 0) { arr = null; pin = null; if (h.fim) h.fim(); }

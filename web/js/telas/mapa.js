@@ -310,6 +310,12 @@
   function aoTocar(alvo) {
     var hh = alvo.hex != null ? alvo.hex : (alvo.obj && alvo.obj.hex);
     if (alvoFundar) { if (hh != null && hh >= 0) folhaFundar(hh); return; }
+    /* pessoas: toque único abre a folha; no modo seleção (ou com Shift) soma ou tira da seleção */
+    if (alvo.ent && alvo.ent[0] === 'pessoa' && !(RP.envio && RP.envio.ativo())) {
+      if (RP.selecao && (RP.selecao.modo || RP.shift)) RP.selecao.alternar(alvo.ent[1]); else RP.folhaPessoa(alvo.ent[1]);
+      return;
+    }
+    if (alvo.ent && alvo.ent[0] === 'pessoas' && !(RP.envio && RP.envio.ativo())) { RP.folhaPessoasDoHex(alvo.ent[1]); return; }
     /* escolhendo destino de tropas: o toque escolhe o hexágono (a folha dele traz as ordens), nunca abre o painel do local */
     if (RP.envio && RP.envio.ativo()) { if (hh != null && hh >= 0) folhaHex(hh); return; }
     if (alvo.obj) folhaObjeto(alvo.obj);
@@ -436,6 +442,7 @@
       '<button type="button" class="btn btn-icone" data-zoom="0.6667" aria-label="Afastar">' + RP.icone('menos') + '</button>' +
       '<button type="button" class="btn btn-icone" data-centrar-castelo aria-label="Centralizar no castelo">' + RP.icone('alvo') + '</button>' +
       '<button type="button" class="btn btn-icone" data-inclinar aria-label="Inclinação da câmera: toque para voltar ao padrão. Arraste com o botão do meio ou com dois dedos para inclinar." title="Inclinação: botão do meio ou dois dedos; toque para voltar ao padrão">' + RP.icone('vista') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-selecao aria-pressed="false" aria-label="Modo seleção: toque nas pessoas ou arraste um laço" title="Modo seleção (ou Shift)">' + RP.icone('populacao') + '</button>' +
       '<button type="button" class="btn btn-icone" data-camadas aria-label="Camadas e legenda">' + RP.icone('camadas') + '</button></div>' +
       '<div class="modo-mapa abas" role="group" aria-label="Tipo de visão">' +
       '<button type="button" class="aba" data-modo-btn="cena" aria-pressed="true">' + RP.icone('vista') + 'Vista</button>' +
@@ -447,6 +454,9 @@
       selecao: function () { return selecao; },
       escolhendoHex: function () { return !!alvoFundar || !!(RP.envio && RP.envio.ativo()); },
       aoTocar: aoTocar, aoMover: pedirMinimapa,
+      modoSelecao: function () { return !!(RP.selecao && (RP.selecao.modo || RP.shift)); },
+      aoLaco: function (pts) { if (RP.selecao) RP.selecao.lacar(pts); },
+      aoToqueLongo: function () { if (RP.selecao && !RP.selecao.modo && !alvoFundar && !(RP.envio && RP.envio.ativo())) RP.selecao.ativarModo(true); },
       aoAfastarDemais: function () {
         definirModo('tatico', { s: 0.75 });
         RP.aviso({ titulo: 'Mapa tático', texto: 'Afastou além da Vista. Aproxime ou toque em Vista para voltar.', icone: 'hexagonos', ms: 2200 });

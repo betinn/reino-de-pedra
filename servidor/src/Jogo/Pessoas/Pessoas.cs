@@ -225,7 +225,7 @@ public static partial class Pessoas
         {
             var of = Oficios.DoLocal(l);
             if (p.Oficio == of && of != null) { Ficar(m, p, l, of); return; }
-            if (p.Oficio == Oficios.Ocioso) { Ficar(m, p, l, Oficios.Ocioso); PreencherVagas(m, r); return; }
+            if (p.Oficio == Oficios.Ocioso) { Ficar(m, p, l, Oficios.Ocioso); return; }   // quem foi levado sem trabalho fica assim (a vaga que deixou é do jogador)
         }
         p.Oficio = Oficios.Ocioso; p.Estado = Estados.Ociosa;
         MudarLocal(m, p, l?.Id);

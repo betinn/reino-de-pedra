@@ -72,7 +72,34 @@ public static class VisaoMapa
             cols = g.Cols, lins = g.Lins, agora, terreno = new string(ter), idade,
             rotas = vias.Rotas.Where(h => nevoa.MinutoVisto(h) > 0), pontes = vias.Pontes.Where(h => nevoa.MinutoVisto(h) > 0),
             objetos,
+            pessoas = Pessoas(m, r), pessoasOutras = PessoasOutras(m, r, vis),
         };
+    }
+
+    /// <summary>
+    /// As pessoas do próprio reino, com nome e onde estão: <c>hex</c> do local em que estão (null para quem está numa marcha:
+    /// a marcha leva <c>pessoaIds</c>). A Vista desenha cada uma; a folha vem de GET /pessoas/{id}.
+    /// </summary>
+    public static List<object> Pessoas(Mundo m, Reino r) =>
+        m.PessoasDe(r.Id).OrderBy(p => p.Id).Select(p => (object)new
+        {
+            id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, estado = p.Estado, localId = p.LocalId, grupoId = p.GrupoId,
+            marcas = Math.Round(p.Marcas, 2),
+            hex = p.GrupoId is long gid && gid > 0 ? (int?)null : p.LocalId is long lid && m.Locais.Obter(lid) is { } l ? l.Hex : (int?)null,
+        }).ToList();
+
+    /// <summary>Pessoas de outros reinos nos locais à vista agora: só contagens por hexágono, sem nome nem dono (a foto da névoa não guarda pessoas).</summary>
+    public static List<object> PessoasOutras(Mundo m, Reino r, HashSet<int> vis)
+    {
+        var lista = new List<object>();
+        foreach (var l in m.Locais)
+        {
+            if (l.ReinoId == r.Id || l.ReinoId == 0 || !vis.Contains(l.Hex)) continue;
+            var civis = PS.Presentes(m, l).Count();
+            var soldados = PS.Guarnicao(m, l).Count();
+            if (civis + soldados > 0) lista.Add(new { hex = l.Hex, civis, soldados });
+        }
+        return lista;
     }
 
     /// <summary>
@@ -102,6 +129,7 @@ public static class VisaoMapa
             ordem = x switch { Exercito e => e.Ordem, Explorador ex => ex.Ordem, Caravana c => c.Fase, _ => null },
             carga = x.Carga.Arredondado(), cargaMax, cargaUsada = Math.Floor(x.Carga.Total),
             tropas = x.Tropas, resumo = GT.Partes(m, x.Tropas), pessoas = x is Carregadores cg ? cg.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento dp ? dp.PessoaIds.Count : (int?)null,
+            pessoaIds = x.PessoaIds,
             alvo = VisaoTropas.NomeLocal(m, r, alvoId), destinoNome = VisaoTropas.NomeLocal(m, r, m.LocalNoHex(x.Destino)?.Id),
             reliquias = x.Reliquias.Count, x.Estandarte,
         };
