@@ -2,7 +2,7 @@
 
 O que ficou pendente na primeira etapa de implementação e como testar o jogo. Cada item diz onde mexer. Decisões técnicas novas vão para `docs/decisoes/`; regra de jogo nova, para o `CLAUDE.md`; número novo, para `balanceamento/modelo.js`.
 
-> **Prioridade agora:** o refactor de [`plano-pessoas-no-mapa.md`](plano-pessoas-no-mapa.md) (pessoas com nome e ofício no mapa, números menores, visual mais realista). Ele absorve o "Plano futuro: gráficos e animações" abaixo. Os itens desta lista esperam o refactor, e os que dependem da escala ou da população abstrata serão revistos nele.
+> O refactor de [`plano-pessoas-no-mapa.md`](plano-pessoas-no-mapa.md) (pessoas com nome e ofício no mapa, números menores, visual mais realista) foi feito ([decisão 0024](decisoes/0024-pessoas.md)). O que ficou dele está em "Pessoas no mapa: pendências".
 
 ## Como testar
 
@@ -11,7 +11,7 @@ O que ficou pendente na primeira etapa de implementação e como testar o jogo. 
 - Temporada curta, para ver o fim e o reset: `REINO_TEMPORADA_MIN=<minutos>`.
 - Sem reinos de IA: `REINO_IA=0`. Mapa fixo: `REINO_SEMENTE=42`.
 - Dois jogadores: duas janelas anônimas com contas diferentes (o mesmo navegador compartilha o cookie).
-- Testes automáticos: `cd servidor && dotnet test` (304 testes, inclusive o de carga com 30 reinos). `CombateApiTestes.Previa_envio_batalha_anonima_recuo_relatorio_e_defesas_pela_api` falhou uma vez em três rodadas da suíte inteira e passa sozinho: investigar (provável dependência do mapa sorteado ou da IA no cenário).
+- Testes automáticos: `cd servidor && dotnet test` (326 testes, inclusive o de carga com 30 reinos). `CombateApiTestes.Previa_envio_batalha_anonima_recuo_relatorio_e_defesas_pela_api` falhou uma vez em três rodadas da suíte inteira e passa sozinho: investigar (provável dependência do mapa sorteado ou da IA no cenário).
 - Tempo acelerado: o cliente anda junto com o servidor (`aceleracao` em `GET /mundo`). Para julgar o ritmo, prefira 6× a 60× (ver a sessão de ritmo em [`correcoes-usabilidade.md`](correcoes-usabilidade.md)).
 - Saúde do servidor: `GET /api/v1/saude` (eventos na agenda, conexões, memória).
 
@@ -29,9 +29,16 @@ O que ficou pendente na primeira etapa de implementação e como testar o jogo. 
 5. **Ranking** mostra nome e brasão de todos os reinos, inclusive os que o jogador ainda não conhece (como no protótipo). Confirmar se é a regra desejada; se não, mostrar "Reino desconhecido" para quem não é conhecido.
 6. **Avistamento de ataque** usa a visão do defensor no instante em que o atacante parte. Considerar avistar quando a marcha entra na visão (evento no instante da entrada, sem tique).
 
-## Plano futuro: gráficos e animações
+## Pessoas no mapa: pendências
 
-As animações atuais (pessoas trabalhando, marchas, fumaça, névoa à deriva) servem para o MVP. A melhoria gráfica (sprites com mais detalhe, transições de terreno, luz do dia, água animada) fica para depois das correções de usabilidade ([`correcoes-usabilidade.md`](correcoes-usabilidade.md), item 7). Ao mexer, manter o cache estático da Vista ([decisão 0017](decisoes/0017-vista-e-mapa-no-cliente.md)) e o limite de 30 quadros/s.
+O refactor (decisão 0024) entregou pessoas civis e soldados como documentos, a Vista com cada pessoa, a folha, a tela Pessoas, a seleção com laço e missão, sprites por ofício em cache, transição de terreno, grade opcional e a batalha animada. Ficou para depois:
+
+1. **Atacar pelo laço no navegador.** A missão de atacar usa o mesmo envio que mover e caçar (testados no navegador), mas não houve local inimigo à vista no teste local; conferir com dois reinos vizinhos.
+2. **Remessas entre reinos** (troca, ajuda, pacto, resgate) ainda usam carregadores anônimos; as caravanas sem carroça usam as tropas da escolta, que já são pessoas.
+3. **Ícone da missão sobre a cabeça** de quem está em missão, com o zoom aproximado; e as construções com mais detalhe na escala nova (as pessoas cresceram 30%; as construções são as do protótipo).
+4. **Toque longo** para o modo seleção não dispara dentro de um gesto de pinça; a pinça e o laço não foram testados em aparelho real.
+5. **IA**: usa os serviços por quantidade e a atribuição automática; não reatribui pessoas pela folha nem escolhe soldados pelo nome.
+6. **Luz do dia e água animada** continuam fora. Ao mexer, manter o cache estático da Vista ([decisão 0017](decisoes/0017-vista-e-mapa-no-cliente.md)) e o limite de 30 quadros/s.
 
 ## Funcionalidades fora desta etapa
 

@@ -19,7 +19,7 @@ Em relação à primeira versão do modelo (castelo com teto 300, exércitos de 
 | Custo de uma unidade | 20 a 90 por recurso | o mesmo: 1 ou 2 dígitos por recurso (cada pessoa vale mais) |
 | Tempo de treino por pessoa | 30 s a 8 min | **× 4** (lanceiro 12 min, arqueiro 14 min, cavalaria 24 min) |
 | Tempos de obra e de deslocamento | | iguais ([decisão 0022](../docs/decisoes/0022-velocidade-e-mapa-maior.md)) |
-| Trabalhadores por local | 10 por nível | **vagas**: 1 até o nível 4, 2 do 5 ao 8, 3 no 9 e 10 (`max(1, round(nível × 0,4))`) |
+| Trabalhadores por local | 10 por nível | **vagas**: 1 até o nível 4, 2 do 5 ao 8, 3 no 9 e 10 (`max(1, round(nível × 0,3))`) |
 | Milícia | 5% da população | **cada civil presente no local** luta (defesa 15); quando a defesa perde, 25% deles morrem e os outros fogem |
 
 ## Resumo em 1 minuto

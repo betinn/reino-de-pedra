@@ -14,6 +14,8 @@ namespace ReinoDePedra.Jogo.Exploracao
         public long Quando { get; set; }
         public int Tropas { get; set; }
         public int Torres { get; set; }
+        /// <summary>Civis presentes no local na hora (a milícia que a IA estima).</summary>
+        public int Milicia { get; set; }
     }
 
     /// <summary>
@@ -102,7 +104,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                 ["visto"] = visto, ["chance"] = Math.Round(chance, 3), ["hex"] = l.Hex, ["linhas"] = linhas,
             };
             foreach (var f in ExtrasRelatorio) f(m, dono, l, dados);
-            r.LocaisEspionados[l.Id] = new LocalEspionado { DonoId = dono.Id, Nivel = l.Nivel, Quando = m.Agora, Tropas = l.TropasNaGuarnicao, Torres = torres };
+            r.LocaisEspionados[l.Id] = new LocalEspionado { DonoId = dono.Id, Nivel = l.Nivel, Quando = m.Agora, Tropas = l.TropasNaGuarnicao, Torres = torres, Milicia = (int)Math.Round(milicia) };
             m.Sujar(r);
             Conhecimento.Conhecer(m, r, dono, "espionagem");
             m.Avisar(r.Id, "mapa");

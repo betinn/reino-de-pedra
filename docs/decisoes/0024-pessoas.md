@@ -64,3 +64,19 @@
 **Mapa tático**: o marcador de cada local próprio ganha o número de pessoas que estão nele (`.lc-pessoas`).
 
 **Fora desta fase.** O ícone da missão sobre a cabeça e os sprites por ofício e pose (fase 5); o toque longo não dispara dentro de um gesto de pinça.
+
+## Fase 5 — visual
+
+**Sprites em cache** (`web/js/vista/sprites.js`): cada combinação de ofício, pose, direção e quadro de animação é desenhada uma vez com `RP.arte.pessoa` (mais roupa, chapéu, ferramenta e armadura do ofício) num canvas fora da tela e reaproveitada com `drawImage`; a animação é quantizada em 6 quadros por ciclo e o cache tem teto (600). As figuras saem 30% mais altas: é a escala das pessoas; as construções ficaram as do protótipo (redesenhá-las em escala foi deixado para depois). Ferramentas por ofício: enxada e chapéu de palha (agricultor), machado (lenhador), picareta (pedreiro e mineiro, este de capacete escuro); soldados com lança e escudo, arco ou cavalo, e a armadura pelo nível de armaduras da família na ferraria (`RP.reino.ferraria.forja`). Marchas e obras usam os mesmos sprites. Medido no teste local: cerca de 0,5 ms por quadro no computador e 0,3 ms a 390 px com dpr 2, bem dentro dos 33 ms de um quadro a 30/s.
+
+**Chão**: transição suave entre terrenos vizinhos (uma mancha da cor de cada lado sobre a aresta compartilhada) e grade de hexágonos opcional (camada "Grade" em Camadas e legenda), as duas dentro do cache estático da Vista.
+
+**Batalha animada** (`web/js/vista/batalha.js`): no hexágono de uma batalha em andamento (objeto `batalha` do mapa), duas fileiras de figuras lutam até o fim previsto, com flechas, poeira e quem cai; só animação, sobre o resultado do servidor. O combate continua dono da folha e do marcador do Mapa tático.
+
+## Fase 6 — IA, carga e documentação
+
+**IA.** Continua usando os serviços por quantidade; a atribuição automática cuida das vagas dela. Dois ajustes: a estimativa de defesa de um local espionado usa a milícia que o batedor viu (`LocalEspionado.Milicia`, os civis presentes) em vez das vagas do nível; e a IA caça enquanto tem menos de 40 de couro (`P.ia.caca.couroMin`, antes 10), porque um batedor de elite custa 30 e, sem couro, nunca espionava nem atacava (o teste de carga tinha 0 batalhas em 10 dias; agora 6, 2 delas de IA).
+
+**Carga** (10 dias, 30 reinos): 4 136 eventos por dia, 2,06 s de CPU por dia de jogo, pico de 30 MB de memória gerenciada, 8 330 documentos; números em `docs/desempenho.md`.
+
+**Documentação.** `CLAUDE.md` reescrito em População, Tropas e evolução, Extração, Combate (milícia, massacre, feridos, queda), Exploradores, Recursos (carregadores) e Experiência do jogador, sem o aviso de refactor; `balanceamento/README.md` e `tabelas.md` na escala nova; `docs/arquitetura.md`, `docs/proximos-passos.md` (pendências do refactor) e `docs/desempenho.md` atualizados.

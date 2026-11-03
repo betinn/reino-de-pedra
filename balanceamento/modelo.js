@@ -309,8 +309,9 @@ const P = {
     ocupacao: { alcance: 14, tropas: 3 },
     /* exploração: um explorador a pé, mandado a um hexágono ainda não visto a 4 a 16 hexágonos do castelo (6 tentativas de sorteio) */
     exploracao: { distancia: [4, 16], tentativas: 6 },
-    /* caça quando o couro guardado cai abaixo de 10: 4 lanceiros, região conhecida a até 10 hexágonos, só se passam ilesos */
-    caca: { couroMin: 10, alcance: 10, tropas: 4 },
+    /* caça enquanto o couro guardado está abaixo de 40 (um batedor de elite custa 30; com o teto antigo de 10 a IA nunca juntava couro
+       para espionar, e sem espionagem não atacava): 4 lanceiros, região conhecida a até 10 hexágonos, só se passam ilesos */
+    caca: { couroMin: 40, alcance: 10, tropas: 4 },
     /* extração: prospector a partir do castelo 5; 4 lanceiros numa jazida conhecida a até 17 hexágonos */
     extracao: { castelo: 5, alcance: 17, tropas: 4 },
     /* defesa durante a sessão: reforça um local em batalha com metade das tropas livres do castelo; a defesa recua se a força

@@ -845,7 +845,7 @@
     "tentativas": 6
    },
    "caca": {
-    "couroMin": 10,
+    "couroMin": 40,
     "alcance": 10,
     "tropas": 4
    },

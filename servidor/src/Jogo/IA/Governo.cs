@@ -419,11 +419,11 @@ public static class Governo
         if (alvo is int h) Exploradores.Enviar(m, r, Exploradores.Batedor, Exploradores.Espionar, h, seguro: true);
     }
 
-    /// <summary>Defesa estimada de um local espionado: guarnição (como lanceiros), arqueiros das torres e milícia do nível.</summary>
+    /// <summary>Defesa estimada de um local espionado: guarnição (como lanceiros), arqueiros das torres e a milícia vista (civis presentes; sem ela, as vagas do nível).</summary>
     public static double DefesaEstimada(Mundo m, LocalEspionado e)
     {
         var lan = m.B.U["lanceiro"]; var arq = m.B.U["arqueiro"];
-        var milicia = m.F.Trabalhadores(e.Nivel) * m.P.MiliciaPorPop * m.P.DefMilicia;
+        var milicia = (e.Milicia > 0 ? e.Milicia : m.F.Trabalhadores(e.Nivel)) * m.P.MiliciaPorPop * m.P.DefMilicia;
         return e.Tropas * lan.Def + e.Torres * m.P.Torre.ArqPorNivel * arq.Def * m.P.Torre.BonusAlto + milicia;
     }
 
