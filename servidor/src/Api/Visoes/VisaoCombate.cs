@@ -70,7 +70,7 @@ public static class VisaoCombate
         }
         string? bloqueio = null;
         try { Ataques.ValidarTropas(m, grupo); } catch (RegraException e) { bloqueio = e.Message; }
-        if (!Ataques.SemDono(m, alvo)) bloqueio ??= Permissoes.MotivoEnvio(m, r, m.Reinos.Obter(alvo.ReinoId)!);
+        if (!Ataques.SemDono(m, alvo) && m.Reinos.Obter(alvo.ReinoId) is { } donoAlvo) bloqueio ??= Permissoes.MotivoEnvio(m, r, donoAlvo);
         var plano = Ataques.Normalizar(m, alvo, grupo, PlanoAtaque.Ler(Dados(p)));
         var carga = GT.Carga(m, grupo);
         var vel = GT.Velocidade(m, grupo);

@@ -230,6 +230,26 @@ public class CombateTestes
     }
 
     [Fact]
+    public void Local_conhecido_que_sumiu_na_nevoa_so_e_descoberto_na_chegada()
+    {
+        var s = new CombateCenario();
+        var mina = s.Alvo(TipoLocal.Mina, G(), 100, dist: 8);
+        s.Guarnecer(s.CasteloAtk, G(("lanceiro", 5)));
+        s.Conhecer(s.Atk, mina);
+        Assert.DoesNotContain(mina.Hex, ReinoDePedra.Jogo.Exploracao.Nevoas.VisiveisAgora(s.M, s.Atk.Id));
+        s.M.RemoverLocal(mina);   // some de verdade; a foto do atacante ainda guarda a mina
+        var alvo = Ataques.Alvo(s.M, s.Atk, mina.Hex);
+        Assert.True(alvo.Fantasma);
+        Assert.Contains(Ataques.Saque, Ataques.TiposPara(s.M, alvo));   // planeja como local com dono, igual à foto
+        var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, G(("lanceiro", 5)), mina.Hex, OrdemAtacar.Id, false, CombateCenario.Plano());
+        s.T.Avancar(TimeSpan.FromMilliseconds(ex.Chegada - s.M.Agora + 1000));
+        var rel = s.M.Relatorios.Where(x => x.ReinoId == s.Atk.Id).OrderByDescending(x => x.Id).First();
+        Assert.Contains("não existe mais", rel.Dados["porQueVoltaram"]!.GetValue<string>());
+        s.T.AvancarHoras(2);
+        Assert.Equal(5, s.CasteloAtk.Guarnicao["lanceiro"]);
+    }
+
+    [Fact]
     public void Bloqueio_conhecido_recusa_antes_de_enviar()
     {
         var s = new CombateCenario();

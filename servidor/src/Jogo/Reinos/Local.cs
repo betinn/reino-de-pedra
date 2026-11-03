@@ -29,6 +29,11 @@ public sealed partial class Local : Documento
     public Postura Postura { get; set; } = Postura.ApenasDefender;
     /// <summary>Local destruído (castelo caído, abandono): pode ser ocupado ou reconstruído.</summary>
     public bool Ruina { get; set; }
+    /// <summary>
+    /// Local que só existe na foto da névoa de quem ataca (sumiu de verdade). Nunca entra no mundo: serve para planejar o
+    /// ataque como se ainda estivesse lá; as tropas descobrem na chegada. Não é gravado.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore] public bool Fantasma { get; init; }
 
     public bool EhProducao => Produz != null && Tipo != TipoLocal.Castelo;
     public int TropasNaGuarnicao => Guarnicao.Values.Sum();

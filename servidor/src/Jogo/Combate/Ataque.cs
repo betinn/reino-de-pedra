@@ -86,7 +86,7 @@ public static class Ataques
     public static bool LevaCarga(string tipo) => tipo is Saque or Cerco;
 
     /// <summary>Local é alvo sem dono (ruína ou terra livre): só pode ser ocupado.</summary>
-    public static bool SemDono(Mundo m, Local l) => l.Ruina || l.ReinoId == 0 || m.Reinos.Obter(l.ReinoId) is not { Ativo: true };
+    public static bool SemDono(Mundo m, Local l) => l.Ruina || l.ReinoId == 0 || (!l.Fantasma && m.Reinos.Obter(l.ReinoId) is not { Ativo: true });
 
     /// <summary>Tipos de ataque possíveis contra o local.</summary>
     public static List<string> TiposPara(Mundo m, Local l)
@@ -206,11 +206,25 @@ public static class Ataques
         var l = m.LocalNoHex(hex);
         if (!vis.Contains(hex))
         {
-            if (FotoDoLocal(m, r, hex) == null || l == null) throw new RegraException(SemAlvoConhecido);
+            var foto = FotoDoLocal(m, r, hex) ?? throw new RegraException(SemAlvoConhecido);
+            // o local da foto sumiu (ou outro tomou o lugar): recusar agora revelaria a mudança. O ataque segue contra o
+            // que a foto guarda e as tropas descobrem na chegada, como o escudo.
+            if (l == null || l.Id != (long?)foto["id"]) return Fantasma(hex, foto);
         }
         else if (l == null) throw new RegraException("Não há local neste hexágono para atacar.");
         if (l.ReinoId == r.Id && !l.Ruina) throw new RegraException("Esse local é seu.");
         return l;
+    }
+
+    /// <summary>O local como a foto o guarda; o dono fica desconhecido (-1) a não ser que a foto diga ruína ou terra livre.</summary>
+    private static Local Fantasma(int hex, JsonObject foto)
+    {
+        var ruina = foto["ruina"]?.GetValue<bool>() == true;
+        return new Local
+        {
+            Id = (long?)foto["id"] ?? 0, Hex = hex, Tipo = TiposLocal.DeChave((string?)foto["local"]) ?? TipoLocal.Vila, Ruina = ruina,
+            ReinoId = ruina || (string?)foto["dono"] == "livre" ? 0 : -1, Nivel = 1, Nome = (string?)foto["nome"] ?? "", Fantasma = true,
+        };
     }
 
     /// <summary>O local que a foto da névoa do reino guarda no hexágono (último estado conhecido), ou null.</summary>
@@ -288,9 +302,8 @@ public sealed class OrdemAtacar : IOrdemExercito
     {
         Ataques.ValidarTropas(m, ex.Tropas);
         var alvo = Ataques.Alvo(m, r, destino);
-        if (!Ataques.SemDono(m, alvo))
+        if (!Ataques.SemDono(m, alvo) && m.Reinos.Obter(alvo.ReinoId) is { } dono)
         {
-            var dono = m.Reinos.Obter(alvo.ReinoId)!;
             var motivo = Permissoes.MotivoEnvio(m, r, dono, alvo);
             if (motivo != null) throw new RegraException(motivo);
         }
