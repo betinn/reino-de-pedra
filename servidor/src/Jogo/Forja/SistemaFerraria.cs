@@ -195,7 +195,8 @@ public static class Lendarios
 
     /// <summary>
     /// Arruma o que mudou por fora dos ganchos: equipamento num local que trocou de dono passa ao novo dono (ou fica sem dono na
-    /// ruína); o de um exército que sumiu do mapa sem batalha (fauna) ou de um local que deixou de existir se perde.
+    /// ruína); o de um exército que sumiu do mapa sem batalha (fauna) ou de um local que deixou de existir volta à guarnição do
+    /// castelo do dono (só se perde quando não há castelo).
     /// </summary>
     public static void Conferir(Mundo m)
     {
@@ -204,10 +205,10 @@ public static class Lendarios
             if (eq.MarchaId is long mid)
             {
                 if (m.Marchas.Obter(mid) is Exercito ex) { if (ex.ReinoId != eq.DonoId) { eq.DonoId = ex.ReinoId; m.Sujar(eq); } continue; }
-                Perder(m, eq); continue;
+                Recolher(m, eq); continue;
             }
             var l = eq.LocalId is long lid ? m.Locais.Obter(lid) : null;
-            if (l == null) { Perder(m, eq); continue; }
+            if (l == null) { Recolher(m, eq); continue; }
             var novo = l.Ruina ? 0 : l.ReinoId;
             if (novo == eq.DonoId) continue;
             var antigo = eq.DonoId;
@@ -215,6 +216,17 @@ public static class Lendarios
             if (antigo != 0) Avisar(m, antigo, eq, "Equipamento lendário perdido", eq.Nome + " ficou em " + l.Nome + ", que não é mais seu.");
             if (novo != 0) Avisar(m, novo, eq, "Equipamento lendário encontrado", eq.Nome + " (+" + Math.Round(m.P.Lendario.Bonus * 100) + "% de " + eq.Tipo + ") estava em " + l.Nome + ".");
         }
+    }
+
+    /// <summary>O grupo que levava o equipamento sumiu sem batalha: ele volta à guarnição do castelo do dono.</summary>
+    private static void Recolher(Mundo m, EquipamentoLendario eq)
+    {
+        var dono = eq.DonoId != 0 ? m.Reinos.Obter(eq.DonoId) : null;
+        var castelo = dono is { Ativo: true } ? m.Locais.Obter(dono.CasteloId) : null;
+        if (castelo == null || castelo.ReinoId != dono!.Id || castelo.Ruina) { Perder(m, eq); return; }
+        eq.MarchaId = null; eq.LocalId = castelo.Id; eq.Levar = false;
+        m.Sujar(eq);
+        Avisar(m, dono.Id, eq, "Equipamento lendário de volta", eq.Nome + " voltou à guarnição de " + castelo.Nome + ": as tropas que o levavam não existem mais.");
     }
 
     private static void Perder(Mundo m, EquipamentoLendario eq)

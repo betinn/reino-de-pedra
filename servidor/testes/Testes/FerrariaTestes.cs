@@ -378,16 +378,27 @@ public class FerrariaTestes
     }
 
     [Fact]
-    public void Exercito_que_some_sem_batalha_perde_o_lendario_e_local_tomado_passa_ao_novo_dono()
+    public void Exercito_que_some_sem_batalha_devolve_o_lendario_ao_castelo_e_local_tomado_passa_ao_novo_dono()
     {
         var (t, r) = Reino();
         var m = t.M;
         var ex = new Exercito { ReinoId = r.Id, Tropas = G(("lanceiro", 1)) };
         m.Marchas.Adicionar(ex);
-        var eq = m.Lendarios.Adicionar(new EquipamentoLendario { DonoId = r.Id, Tipo = Ferrarias.Ataque, Nome = "x", MarchaId = ex.Id });
-        ex.Encerrar(m);
+        var eq = m.Lendarios.Adicionar(new EquipamentoLendario { DonoId = r.Id, Tipo = Ferrarias.Ataque, Nome = "x", MarchaId = ex.Id, Levar = true });
+        ex.Encerrar(m);   // morto pela fauna, por exemplo: sem batalha, ninguém leva
         Lendarios.Conferir(m);
-        Assert.Null(m.Lendarios.Obter(eq.Id));
+        Assert.Same(eq, m.Lendarios.Obter(eq.Id));
+        Assert.Equal(r.CasteloId, eq.LocalId);
+        Assert.Null(eq.MarchaId);
+        Assert.False(eq.Levar);
+        Assert.Contains(m.Notificacoes, n => n.ReinoId == r.Id && n.Titulo == "Equipamento lendário de volta");
+        // sem castelo (reino que saiu do mundo), se perde
+        var ex2 = new Exercito { ReinoId = r.Id, Tropas = G(("lanceiro", 1)) };
+        m.Marchas.Adicionar(ex2);
+        var eq3 = m.Lendarios.Adicionar(new EquipamentoLendario { DonoId = 999_999, Tipo = Ferrarias.Ataque, Nome = "z", MarchaId = ex2.Id });
+        ex2.Encerrar(m);
+        Lendarios.Conferir(m);
+        Assert.Null(m.Lendarios.Obter(eq3.Id));
         var outro = t.NovoReino();
         var vila = m.LocaisDe(r.Id).First(l => l.Tipo == TipoLocal.Vila);
         var eq2 = m.Lendarios.Adicionar(new EquipamentoLendario { DonoId = r.Id, Tipo = Ferrarias.Defesa, Nome = "y", LocalId = vila.Id });
