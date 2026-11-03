@@ -42,7 +42,7 @@
   MAPA.tiposMarcha = MAPA.tiposMarcha || {};
   /* camada Perigo: o sistema de fauna define RP.mapa.perigoHex = function (hex, dados) → 'baixo' | 'medio' | 'alto' | null */
   if (!('perigoHex' in MAPA)) MAPA.perigoHex = null;
-  MAPA.camadas = MAPA.camadas || { perigo: false, fauna: true, rotas: true, marchas: true, recursos: true, bandeiras: true, rotulos: true };
+  MAPA.camadas = MAPA.camadas || { perigo: false, fauna: true, rotas: true, marchas: true, recursos: true, bandeiras: true, rotulos: true, grade: false };
 
   /* ---------------------------------------------------------------- modelo */
   var M = { dados: null, versao: 0 };

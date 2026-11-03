@@ -341,13 +341,13 @@
   function abrirCamadas() {
     var cam = MAPA.camadas, d = M.dados;
     var temFauna = !!MAPA.perigoHex || !!(d && d.objs.some(function (o) { return o.tipo === 'fauna'; }));
-    var tog = function (k, rot, ic) { return '<button type="button" class="alternar" data-camada="' + k + '" aria-pressed="' + (cam[k] !== false && (k !== 'perigo' || cam.perigo)) + '">' + RP.icone(ic) + '<span>' + rot + '</span><i aria-hidden="true"></i></button>'; };
+    var tog = function (k, rot, ic) { return '<button type="button" class="alternar" data-camada="' + k + '" aria-pressed="' + (k === 'perigo' || k === 'grade' ? !!cam[k] : cam[k] !== false) + '">' + RP.icone(ic) + '<span>' + rot + '</span><i aria-hidden="true"></i></button>'; };
     var terr = Object.keys(TERRENOS).map(function (t) { return '<div class="legenda-item"><span class="amostra-hex t-' + t + '"></span><span><b>' + TERRENOS[t][0] + '</b><small>' + TERRENOS[t][1] + '</small></span></div>'; }).join('') +
       '<div class="legenda-item"><span class="amostra-hex t-rio"></span><span><b>Rio</b><small>Exige ponte ou vau. Sem ponte, a travessia é mais lenta.</small></span></div>';
     RP.abrirFolha({
       titulo: 'Camadas e legenda', veu: true,
       corpo: '<div class="alternar-grade">' + (MAPA.perigoHex ? tog('perigo', 'Perigo', 'pata') : '') + (temFauna ? tog('fauna', 'Animais', 'lobo') : '') +
-        tog('rotas', 'Rotas', 'rota') + tog('marchas', 'Marchas', 'tropas') + tog('recursos', 'Jazidas', 'ouro') + tog('bandeiras', 'Bandeiras', 'bandeira') + tog('rotulos', 'Nomes', 'info') + '</div>' +
+        tog('rotas', 'Rotas', 'rota') + tog('marchas', 'Marchas', 'tropas') + tog('recursos', 'Jazidas', 'ouro') + tog('bandeiras', 'Bandeiras', 'bandeira') + tog('rotulos', 'Nomes', 'info') + tog('grade', 'Grade', 'hexagonos') + '</div>' +
         (MAPA.perigoHex ? '<p class="fraco legenda-nota">A camada Perigo pinta as áreas conhecidas com fauna hostil, para escolher entre rota curta e perigosa ou longa e segura. Vale no Mapa; na Vista os animais aparecem desenhados.</p>' : '') +
         '<div class="secao-titulo">Névoa</div>' +
         '<div class="legenda-item"><span class="amostra-hex t-planicie"></span><span><b>Visível</b><small>Dentro da visão de locais, tropas e exploradores. Tudo ao vivo.</small></span></div>' +
@@ -370,9 +370,10 @@
     var b = e.target.closest('[data-camada]');
     if (!b) return;
     var k = b.getAttribute('data-camada'), cam = MAPA.camadas;
-    cam[k] = k === 'perigo' ? !cam.perigo : cam[k] === false;
-    b.setAttribute('aria-pressed', String(k === 'perigo' ? cam.perigo : cam[k] !== false));
+    cam[k] = k === 'perigo' || k === 'grade' ? !cam[k] : cam[k] === false;
+    b.setAttribute('aria-pressed', String(k === 'perigo' || k === 'grade' ? !!cam[k] : cam[k] !== false));
     if (tat) { tat.ci = null; tat.atualizarSvg(); tat.pedirQuadro(); }
+    if (cena) cena.invalidar();
   });
 
   /* ---------------------------------------------------------------- minimapa */
