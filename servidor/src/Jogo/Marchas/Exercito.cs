@@ -98,7 +98,7 @@ public sealed class Exercito : Marcha
     {
         var r = m.Reinos.Obter(ReinoId);
         if (r != null) Economia.Atualizar(m, r);
-        GT.Devolver(m, l, Tropas);
+        Pessoas.Pessoas.Desembarcar(m, this, l);
         if (Carga.Count > 0) { l.Estoque.Somar(Carga); m.Sujar(l); }
         Exercitos.EntrouNoLocal(m, this, l);
         Tropas = new(); Carga = new();

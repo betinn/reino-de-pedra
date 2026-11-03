@@ -329,6 +329,13 @@
   });
   RP.ORDENS_NOMES = RP.ORDENS_NOMES || {};
   RP.ORDENS_NOMES.cacar = 'Caçar';
+  /* missão de um grupo selecionado no mapa: caçar o bando conhecido no hexágono tocado (mesmo envio da tela de caça) */
+  RP.ordensEnvio = RP.ordensEnvio || [];
+  RP.ordensEnvio.push({
+    ordem: 'cacar', rotulo: 'Caçar aqui', verbo: 'Caçar', icone: 'lobo', titulo: 'Caçar em',
+    quando: function (h, dados) { return !!((dados && dados.porHex && dados.porHex[h]) || []).some(function (o) { return o.tipo === 'fauna' || o.tipo === 'perigo'; }); },
+    descricao: function () { return '<div class="info-linha"><span class="fraco">Ordem</span><span>Lutam com o bando; se sobra alguém, trazem comida, couro e peles</span></div>'; }
+  });
   RP.acoesTropas = RP.acoesTropas || [];
   RP.acoesTropas.push({ href: '#/caca', icone: 'lobo', titulo: 'Caça', texto: 'Comida, couro e peles' });
   RP.itensMais = RP.itensMais || [];

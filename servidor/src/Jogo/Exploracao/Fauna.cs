@@ -266,6 +266,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             var perda = forca >= limite ? m.P.PerdaFauna.Acima : m.P.PerdaFauna.Abaixo;
             mc.RevelarPercorrido(m, m.Agora);
             var r = m.Reinos.Obter(mc.ReinoId);
+            var quem = mc is Explorador ex0 && m.Pessoas.Obter(ex0.PessoaId) is { } px ? px.Nome : null;
             var p = mc.SofrerFauna(m, perda);
             var animal = NomeAnimal.GetValueOrDefault(rg.Animal, rg.Animal);
             var linhas = new JsonArray
@@ -276,8 +277,9 @@ namespace ReinoDePedra.Jogo.Exploracao
             string titulo, resumo;
             if (mc is Explorador e && p.Acabou)
             {
-                titulo = e.NomeTipo(m) + " morto por " + animal.ToLowerInvariant();
+                titulo = e.NomeTipo(m) + (quem != null ? " " + quem : "") + " morto por " + animal.ToLowerInvariant();
                 resumo = "Um explorador sozinho atacado por animais não volta. Prefira a rota segura ou leve escolta.";
+                if (quem != null) linhas.Add(Linha("Quem", quem));
             }
             else
             {
@@ -288,7 +290,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                 if (cg.Count > 0) partes.Add("perdeu " + string.Join(", ", cg.Select(kv => kv.Value + " " + Logistica.NomeRecurso(kv.Key))));
                 resumo = (mc is Carregadores ? "Os carregadores" : "O grupo") + " foi atacado" + (partes.Count > 0 ? " e " + string.Join(" e ", partes) : "") + ".";
                 if (p.Acabou) resumo += " Ninguém sobrou.";
-                if (p.Mortos.Count > 0) linhas.Add(Linha("Baixas", Reinos.Tropas.Partes(m, p.Mortos)));
+                if (p.Mortos.Count > 0) linhas.Add(Linha("Baixas", Reinos.Tropas.Partes(m, p.Mortos) + (p.Nomes is { Count: > 0 } ? ": " + Pessoas.Pessoas.Nomear(p.Nomes) : "")));
             }
             if (mc is Carregadores c && r != null && c.ItemId is long item && p.Carga.Count > 0)
                 Logistica.Repor(m, r, c.Fila, item, p.Carga);

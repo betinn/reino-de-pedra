@@ -54,20 +54,16 @@ public static class Tropas
     public static Dictionary<string, int> Retirar(Mundo m, Local l, IReadOnlyDictionary<string, int>? grupo)
     {
         var g = Validar(m, l, grupo);
-        foreach (var (k, n) in g)
-        {
-            var resto = l.Guarnicao.GetValueOrDefault(k) - n;
-            if (resto > 0) l.Guarnicao[k] = resto; else l.Guarnicao.Remove(k);
-        }
-        m.Sujar(l);
+        Pessoas.Pessoas.Sair(m, l, g, null);   // as pessoas ficam "saindo" até a marcha partir e reclamá-las
         return g;
     }
 
-    /// <summary>Põe o grupo na guarnição do local.</summary>
+    /// <summary>Põe o grupo na guarnição do local como contagem; as pessoas que faltam nascem (kit do exílio, cenários).</summary>
     public static void Devolver(Mundo m, Local l, IReadOnlyDictionary<string, int> grupo)
     {
         Somar(l.Guarnicao, grupo);
         m.Sujar(l);
+        Pessoas.Pessoas.Sincronizar(m, l);
     }
 
     /// <summary>Soma <paramref name="b"/> em <paramref name="a"/>.</summary>

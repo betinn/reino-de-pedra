@@ -20,12 +20,6 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ---
 
-## Refactor em andamento: pessoas no mapa
-
-Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada soldado é uma pessoa com nome e ofício, visível no mapa, que o jogador toca para ver o que faz e atribuir trabalho ou missão (sozinha ou em grupo), com números bem menores e visual mais realista. As regras e as metas estão em [`docs/plano-pessoas-no-mapa.md`](docs/plano-pessoas-no-mapa.md). Onde aquele plano e este documento divergem (população abstrata, trabalhadores por nível, milícia por porcentagem, tetos de 50 tropas, números de escala), vale o plano até este documento ser reescrito.
-
----
-
 ## Visão do jogo
 
 - Gênero: MMO de estratégia persistente (4X), com construção e ações por **tempo real** (timers), **sem turnos**.
@@ -61,8 +55,8 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
 | Prospector | Lenta | Baixa | Caro | Único que revela jazidas valiosas e lendárias |
 | Batedor de elite | Rápida | Alta | Caro | Furtivo; espiona exércitos e reinos inimigos |
 
-- Exploradores ocupam **1 de população** cada. Podem ser capturados ou mortos.
-- Quem captura um explorador vê o **reino de origem** e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado.
+- Cada explorador é **uma pessoa do reino, com nome** (treinada no castelo a partir de um civil). Pode ser capturado ou morto; o relatório diz quem.
+- Quem captura um explorador vê o **reino de origem** e o **nome** da pessoa, e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado e a mesma pessoa volta para casa.
 - Só explorador **sem escolta** é capturado, ao passar à vista de tropas de outro reino; o batedor de elite só é pego espionando. Resgate pedido e não pago no prazo também liberta.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
 
@@ -102,7 +96,8 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
 - Cada local **acumula a própria produção** e guarda até **10 h** dela; o excedente vai para o armazém, onde também ficam os recursos valiosos. O estoque do local é o que um saque pode levar.
 - **Nenhum local passa do nível do castelo.** Melhorar o castelo custa e demora mais que um local do mesmo nível.
 - **Novos locais podem ser fundados em qualquer hexágono livre**, sem limite de distância, de vizinhança ou de quantidade. O custo crescente de cada novo local e o transporte do material até lá são os únicos freios.
-- A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição vão a pé e sem escolta.
+- A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição são **pessoas do local de origem** (quem está sem trabalho primeiro, depois trabalhadores, que deixam a vaga vazia enquanto carregam), vão a pé e sem escolta, cada uma com um carrinho de mão (30 de carga, contra 5 na mochila de um soldado) e fazem mais viagens quando falta gente; depois da última entrega voltam para casa. Roubados no caminho, perdem a carga e fogem para casa. Sem ninguém livre na origem, a carga ainda viaja: a requisição nunca trava.
+- Civis a caminho dentro do reino (troca de trabalho, carregadores) não são alvo da fauna nem de interceptação: gente desarmada foge.
 - Se o local de uma obra deixa de ser seu (ocupado ou destruído), o material dela volta ao castelo ao cancelar ou ao terminar; nunca fica com o novo dono.
 - Carroças ficam no castelo: saem, buscam a carga na origem e a levam. Escolta é opcional; caravana pouco protegida recebe aviso.
 - A carga da caravana só sai da origem quando ela chega lá; depois de entregar, carroças e escolta voltam. Sem carroças, as próprias tropas carregam. Roubada no caminho, a carga vai ao vencedor e as carroças se perdem.
@@ -131,7 +126,7 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
 - **Nada é obrigatório.** Qualquer tropa pode coletar um recurso descoberto, inclusive uma única unidade sem preparo.
 - Posto de extração, mais tropas, unidades adequadas e rotas são **opcionais** e aumentam velocidade e rendimento da extração.
 - Unidades adequadas são as de **maior capacidade de carga**: rendem mais por viagem.
-- Até **50 tropas por jazida**; juntar tropas demais rende cada vez menos por tropa.
+- Até **6 tropas por jazida**; juntar tropas demais rende cada vez menos por tropa.
 - O grupo extrai até a carga encher (ou a jazida acabar), leva ao armazém ou castelo mais próximo e, se pedido, volta. Grupos na mesma jazida dividem o que resta. Nova ordem interrompe e leva o que já tirou.
 - O posto vira um local do reino no hexágono da jazida ou ruína; enquanto existir, outro reino não extrai nem escava ali.
 
@@ -170,20 +165,24 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
 
 ## População
 
-- População é um **número abstrato** do reino, sem divisão por gênero ou profissão.
+- **Toda pessoa do reino é um indivíduo**: nome próprio, ofício, onde mora, onde está e o que faz. A população civil é a contagem das pessoas civis; o reino novo começa com 8. A escala é de dezenas, não de centenas (valores em `balanceamento/`).
+- **Ofícios civis** ligados aos locais: agricultor (vila e pasto), lenhador (serraria), pedreiro (pedreira), mineiro (mina) e sem ofício (quem fica no castelo sem vaga). Soldados têm o ofício da unidade; explorador, prospector, batedor e mensageiro também são ofícios.
+- **Cada nível de local de produção abre vagas de trabalho** (1 vaga até o nível 4, 2 até o 8, 3 nos níveis 9 e 10). Uma vaga vazia produz menos: a produção do local é proporcional às vagas ocupadas por quem está presente. Castelo, quartel, armazém, ferraria e posto não têm vagas.
+- **Atribuição automática por padrão.** Uma pessoa nova vai para a vaga mais necessária (o ofício anterior, se tem vaga; senão o local com mais vagas livres, o mais perto). Subir de nível, fundar ou ocupar um local chama quem está sem trabalho. O jogador pode reatribuir qualquer pessoa: tocar nela e escolher outro trabalho ou outro local; ela caminha até lá, visível no mapa. Quem é levado ao castelo sem trabalho fica assim: a vaga que deixou é do jogador. Nada obriga a microgerenciar.
 - **Teto** definido por moradias (e pelo castelo). Cresce construindo moradias, cada uma mais cara que a anterior.
 - **Tropas ocupam o teto**: soldados também moram no reino. População civil + tropas ≤ teto.
-- Cada nível de local precisa de **trabalhadores** (10 por nível). Sem população civil suficiente, o local produz menos. Cada soldado é um trabalhador a menos.
-- **Crescimento** por tempo, mais rápido com excedente de comida. Abaixo de um mínimo (20), cresce devagar e em linha até ele: recrutar todos não trava o reino.
-- **Recrutar consome população**; tropas mortas não retornam. Feridos curados com ervas voltam (ver Combate).
-- A população sustenta a produção de recursos e atua como **milícia** na defesa.
-- Objetivo: criar a decisão central entre **tropas e economia**.
-- Moral, profissões e migração ficam para depois, apenas se o balanceamento pedir.
+- **Nascimento com nome.** O crescimento é por tempo (mais rápido com excedente de comida; abaixo de 3 pessoas, em linha, para recrutar todos não travar o reino) e cria pessoas inteiras, uma por vez, no castelo; cada uma caminha até a vaga mais necessária.
+- **Morte com nome.** Batalha, fauna, massacre, ferimento sem ervas e execução matam pessoas específicas, e o relatório diz quem.
+- **Recrutar converte uma pessoa**: o treino tira um civil (quem está sem trabalho primeiro; senão, um trabalhador do local de nível mais baixo) e o devolve como soldado com o mesmo nome. Cancelar devolve o civil ao ofício anterior. Tropas mortas não retornam; feridos curados com ervas voltam (ver Combate).
+- **Carregadores são pessoas** (ver Recursos). **Milícia são as pessoas presentes** (ver Combate).
+- Objetivo: criar a decisão central entre **tropas e economia**, agora com rostos.
+- Moral e migração ficam para depois, apenas se o balanceamento pedir.
 
 ---
 
 ## Tropas e evolução
 
+- **Toda tropa é uma pessoa** com nome e ofício da unidade: está na guarnição de um local, em marcha, caçando, extraindo ou parada num hexágono. Cada unidade (inclusive aríete e trebuchet) é uma pessoa.
 - Tipos de unidade: milícia, lanceiro, arqueiro, cavalaria, cavaleiro de elite e máquinas de cerco (aríete, trebuchet).
 - O castelo recruta milícia, lanceiro e arqueiro; o quartel recruta todas as unidades.
 - Vantagens por **família**: lança vence cavalaria (inclusive a de elite), cavalaria vence arqueiros, arqueiro vence infantaria.
@@ -193,9 +192,10 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
   - Era do Cerco Avançado: trebuchet e portões dos níveis 4 e 5.
 - **Armas e armaduras** na ferraria, por família (infantaria, arqueiros, cavalaria): armas dão ataque, armaduras dão defesa, **+8% por nível, até o nível 3**. O nível 1 usa ferro e couro; os níveis 2 e 3 pedem aço de qualidade, e o 3 também ouro. A ferraria tem fila própria de até 10 itens. Num grupo misto, cada família recebe o bônus dela (o do grupo é a média ponderada pela força de cada família). A milícia, inclusive a da população, é infantaria; os arqueiros no alto das torres usam as armaduras dos arqueiros. Os requisitos de nível olham a maior ferraria (e o maior quartel) do reino.
 - **Cavaleiro de elite**: mais forte por pessoa que a cavalaria e mais caro por força; cada um usa 1 cavalo de raça.
-- **Veterania**: o exército ganha 1 marca por vitória com perdas abaixo de 50% contra inimigo com pelo menos 30% da sua força. Com 2, 5 e 9 marcas: +5%, +10% e +15% de ataque e defesa. Recrutas novos diluem as marcas, cada derrota tira 1, e combate com fauna não conta.
-- **Equipamento lendário**: forjado com minério raro, dá **+25% de ataque ou de defesa** a um exército de até 50 tropas (num exército maior, o bônus se dilui). Cada reino forja um por temporada (o capturado não conta). Fica sempre com um grupo: nasce na guarnição da ferraria, vai com o próximo exército que sair do local quando o jogador marca "levar" e fica na guarnição do local onde o exército entrar. Vale para a guarnição (defesa) e para o exército (ataque ou defesa em campo); conta um de cada tipo por grupo, e na guarnição a milícia e os arqueiros no alto também diluem. O grupo que perde a batalha, mesmo recuando, ou que é vencido no caminho, deixa o equipamento no campo e o vencedor o leva (na ocupação, ele fica no local tomado). Se o grupo some sem batalha (morto pela fauna, por exemplo), ninguém o leva: o equipamento volta à guarnição do castelo do dono. A espionagem do local mostra o equipamento na guarnição, sem revelar quem o forjou.
+- **Veterania por pessoa**: cada soldado guarda as próprias marcas. Vitória com perdas abaixo de 50% contra inimigo com pelo menos 30% da força do grupo dá 1 marca a cada sobrevivente; cada derrota tira 1; combate com fauna não conta. O bônus do grupo (exército ou guarnição) é a média das marcas: com 2, 5 e 9, +5%, +10% e +15% de ataque e defesa. Recrutas novos diluem a média; ao enviar por quantidade, os mais veteranos saem primeiro.
+- **Equipamento lendário**: forjado com minério raro, dá **+25% de ataque ou de defesa** a um exército de até 8 tropas (num exército maior, o bônus se dilui). Cada reino forja um por temporada (o capturado não conta). Fica sempre com um grupo: nasce na guarnição da ferraria, vai com o próximo exército que sair do local quando o jogador marca "levar" e fica na guarnição do local onde o exército entrar. Vale para a guarnição (defesa) e para o exército (ataque ou defesa em campo); conta um de cada tipo por grupo, e na guarnição a milícia e os arqueiros no alto também diluem. O grupo que perde a batalha, mesmo recuando, ou que é vencido no caminho, deixa o equipamento no campo e o vencedor o leva (na ocupação, ele fica no local tomado). Se o grupo some sem batalha (morto pela fauna, por exemplo), ninguém o leva: o equipamento volta à guarnição do castelo do dono. A espionagem do local mostra o equipamento na guarnição, sem revelar quem o forjou.
 - **Teto de bônus**: armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo **+50%**. Torres e portões ficam fora do teto.
+- **Um exército é um grupo de pessoas.** O jogador forma o grupo tocando um soldado, juntando vários (modo de seleção ou laço) ou por atalho ("todos deste tipo aqui", "todo o grupo"), e dá a ele uma **missão**: mover, atacar, caçar, extrair, escavar, interceptar, guarnecer ou reforçar um aliado. Os serviços continuam aceitando quantidade por tipo (ataque rápido, modelos, IA): nesse caso o servidor escolhe as pessoas, as mais veteranas para atacar.
 - Exércitos em marcha são visíveis no mapa; o tempo de viagem depende de distância, terreno, rotas e da unidade mais lenta.
 - **Toda tropa revela a névoa** por onde passa e onde fica (parada, caçando ou extraindo), com o raio de visão da unidade de maior visão do grupo: milícia, lanceiro e máquinas de cerco 1 hexágono; arqueiro, cavalaria e cavaleiro de elite 2 (exploradores têm a visão própria). Uma marcha do próprio reino nunca some do mapa do dono.
 
@@ -227,7 +227,7 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
 - A tática define o limite de baixas para recuar: **conservadora 25%**, **média 40%**, **agressiva 60%** e **sem limite**.
 - Objetivos por tipo: saque (relíquia e recursos), sabotagem (construção do local e torres), massacre (população), ocupação (tomar o local e a relíquia), cerco (portões, torres, relíquia e recursos).
 - A batalha dura alguns minutos (mais com mais tropas), tempo para reforços e recuo; reforços que entram antes do fim lutam. Um segundo ataque do mesmo reino se junta; de outro reino, espera ela acabar.
-- A milícia e o massacre usam a população "do local": a do reino dividida entre onde se mora (castelo, moradias) e onde se trabalha.
+- A milícia e o massacre usam as **pessoas civis presentes no local**: quem trabalha ali e quem está no castelo sem trabalho. O massacre mata pessoas específicas, com nome no relatório.
 - Sabotagem tira níveis; um local (que não seja o castelo) que chega ao nível 0 vira ruína sem dono. Uma melhoria na fila sobe só um nível e não passa do castelo (parada, o material fica no local): não desfaz a sabotagem. Aríetes batem só na vitória; trebuchets, de longe, mesmo na derrota.
 - Ruína e terra livre sem defesa são ocupadas na chegada, sem batalha.
 - Torres ficam a até 2 hexágonos de um local próprio.
@@ -237,25 +237,26 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
 
 ### Defesa
 
-- Guarnição do local + **população como milícia** + **torres de arqueiros**.
+- Guarnição do local + **civis presentes como milícia** (cada um luta com a defesa de milícia do modelo; quando a defesa perde, 25% dos que lutaram morrem e os outros fogem) + **torres de arqueiros**.
 - **Não há muros.** A defesa construída são **torres de arqueiros**: construções próprias, com **alcance**, que protegem os locais em volta. Os arqueiros ficam no alto, protegidos, e o invasor precisa **derrubar a torre** para se livrar deles.
 - **Aríetes** derrubam torres e os portões do castelo.
 - O alcance e os arqueiros de uma torre crescem com o nível. O castelo tem portões e torres próprias.
 - Torres de outros reinos ficam visíveis quando a área já foi explorada.
 - O atacante chega apenas com as tropas enviadas, após a viagem; o defensor pode enviar reforços durante a batalha.
 - **Recuar** salva tropas e população, mas o local é saqueado.
+- As perdas de cada lado são pessoas sorteadas dentro de cada unidade (numa guarnição com reforço aliado, divididas na proporção de cada reino). O relatório diz quem morreu.
 - Destruir um reino inteiro deve ser **muito difícil e caro**, mesmo para um veterano contra um iniciante.
 
 ### Feridos
 
 - **30% das baixas** de quem vence, ou de quem recua pela tática, voltam como feridos. Quem perde sem recuar não tem feridos.
-- Cada ferido é curado no castelo com **5 ervas raras**. Sem ervas em **24 h**, morre.
-- Os feridos ficam no castelo e ocupam o teto. A cura entra numa fila própria, as ervas vêm pela requisição e cada cura leva 2 h; cancelada, os feridos voltam a esperar com o prazo de antes.
+- **Feridos são pessoas**: cada uma espera no castelo com o próprio nome e o seu prazo. Cada ferido é curado no castelo com **5 ervas raras**. Sem ervas em **24 h**, morre (o aviso diz quem).
+- Os feridos ficam no castelo e ocupam o teto. A cura entra numa fila própria, as ervas vêm pela requisição e cada cura leva 2 h; cancelada, os feridos voltam a esperar com o prazo de antes. Curados, voltam à guarnição do castelo.
 
 ### Queda do castelo
 
 - Se o reino ainda possui outros locais: o castelo vira ruína e a sede vai para o **local de maior nível**, que vira castelo com **metade do nível** do antigo. O reino perde **metade dos recursos guardados**, **30% da população civil** e as relíquias do castelo, que vão com o atacante, sem extinção. Locais acima do novo nível do castelo ficam como estão, mas só sobem quando o castelo passar deles.
-- Se perder tudo: o jogador recomeça **em exílio** em um novo ponto do mapa, com um kit de recomeço, mantendo linhagem e relíquias, e recebe **escudo temporário** contra ataques.
+- Se perder tudo: o jogador recomeça **em exílio** em um novo ponto do mapa, com um kit de recomeço (inclusive soldados novos, com nome), mantendo linhagem e relíquias, e recebe **escudo temporário** contra ataques. Seguem o reino as pessoas de recomeço (as presentes primeiro), quem está em marcha, os feridos e os presos; o resto fica para trás.
 - O ponto do exílio é **aleatório e longe de quem derrubou** o reino; escolher a região depende da linhagem.
 - O castelo caído vira ruína sem dono, que pode ser ocupada ou reconstruída como qualquer ruína. No exílio, o reino recomeça só com um castelo nível 1, o kit e a população de recomeço; exércitos em campo e o que carregam seguem com ele. O material das obras na fila e as carroças, exploradores e mensageiros parados no castelo se perdem.
 
@@ -303,7 +304,7 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
 - Cada temporada começa com mais reinos de IA, que vão saindo conforme a base de jogadores cresce.
 - Valores atuais: a temporada começa com 25 reinos de IA e o mundo nunca fica com menos de 20 reinos ativos; o reino de IA novo surge na vaga livre mais longe dos jogadores.
 - Abdica o reino de IA de menor porte: o castelo vira ruína e os outros locais, terra livre. Reino de IA que perde o último local não vai ao exílio: sai do mundo.
-- A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h.
+- A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h, estimando a milícia pelos civis que o batedor viu. Caça enquanto tem pouco couro, para treinar os batedores. Usa os mesmos serviços por quantidade; a atribuição automática cuida das vagas dela.
 - A regência não funda, não ataca, não espiona e não negocia. O jogador que volta vê o que ela fez e o que se perdeu.
 
 ---
@@ -351,6 +352,9 @@ Decidido em 2026-11-03 e com prioridade sobre o resto: cada cidadão e cada sold
 - **Atacar em 3 passos**: escolher a tropa, tocar no destino no mapa e confirmar. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**.
 - Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.
+- **Ver é jogar.** A Vista desenha cada pessoa do reino onde ela está (trabalhando com a ferramenta do ofício, em formação na guarnição, em coluna na marcha, treinando, ferida), com figuras pré-desenhadas por ofício e pose; com o zoom afastado, ou acima de 12 figuras no hexágono, vira uma pilha com contador. Pessoas de outros reinos aparecem só dentro da visão atual, em roupa sem cor de dono e sem nome. A foto da névoa guarda construções, não pessoas. Uma batalha em andamento aparece animada; o resultado continua vindo da fórmula.
+- **Tocar numa pessoa** abre a folha dela: nome, ofício, o que faz e onde, com o tempo que falta, veterania para soldados, e até 3 ações: civil "Trocar trabalho" (vagas da mais necessária à menos), "Levar para…" e "Recrutar"; soldado "Missão", "Selecionar o grupo" e "Voltar". A tela **Pessoas** lista todo mundo, com filtro por ofício e por local, e é a alternativa acessível ao toque no mapa.
+- **Selecionar um grupo**: toque único num soldado abre a folha; no modo seleção (botão, toque longo ou, no computador, Shift) cada toque soma ou tira uma pessoa e arrastar desenha um laço. A barra mostra "7 selecionados · 4 lanceiros, 3 arqueiros" e o botão **Missão**, que entra no envio de sempre: tocar no destino e confirmar. Quem está selecionado ganha um anel no chão.
 - Opções e sistemas só aparecem **quando fazem sentido** para o jogador; nada é bloqueado. Antes do gatilho, somem os menus e botões do sistema; o mundo continua igual. Ao aparecer, um aviso curto apresenta o sistema. Gatilhos:
   - Transporte manual de recursos: ao fundar o primeiro local longe do castelo (fora da vista dele).
   - Espionagem: ao ver o primeiro espião ou sofrer o primeiro ataque.

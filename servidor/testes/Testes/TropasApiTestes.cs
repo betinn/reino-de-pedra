@@ -13,21 +13,21 @@ public class TropasApiTestes
         var reino = await c.ContaComReino("eva@exemplo.com", "Fenda");
         var castelo = reino.GetProperty("casteloId").GetInt64();
 
-        var (st, item) = await c.Post("recrutamento", new { localId = castelo, unidade = "lanceiro", qtd = 5 });
+        var (st, item) = await c.Post("recrutamento", new { localId = castelo, unidade = "lanceiro", qtd = 3 });   // o kit recruta 3
         Assert.Equal(HttpStatusCode.Created, st);
         Assert.Equal("recrutar", item.GetProperty("tipo").GetString());
         var (_, tropas) = await c.Get("tropas");
         Assert.Equal(1, tropas.GetProperty("emTreino").GetArrayLength());
-        Assert.Equal(5, tropas.GetProperty("emTreinoPop").GetInt32());
+        Assert.Equal(3, tropas.GetProperty("emTreinoPop").GetInt32());
         var elite = tropas.GetProperty("unidades").EnumerateArray().First(u => u.GetProperty("id").GetString() == "elite");
         Assert.False(string.IsNullOrEmpty(elite.GetProperty("bloqueio").GetString()));
         Assert.Equal(HttpStatusCode.BadRequest, (await c.Post("recrutamento", new { localId = castelo, unidade = "cavalaria", qtd = 1 })).status);
 
-        await s.Avancar(TimeSpan.FromMinutes(16));
+        await s.Avancar(TimeSpan.FromMinutes(40));   // 3 × 12 min
         var (_, r) = await c.Get("reino");
         var guarn = r.GetProperty("locais").EnumerateArray().First(l => l.GetProperty("id").GetInt64() == castelo).GetProperty("guarnicao");
-        Assert.Equal(5, guarn.GetProperty("lanceiro").GetInt32());
-        Assert.Equal(5, r.GetProperty("tropasResumo").GetProperty("guarnicoes").GetInt32());
+        Assert.Equal(3, guarn.GetProperty("lanceiro").GetInt32());
+        Assert.Equal(3, r.GetProperty("tropasResumo").GetProperty("guarnicoes").GetInt32());
 
         var hexCastelo = r.GetProperty("locais").EnumerateArray().First(l => l.GetProperty("id").GetInt64() == castelo).GetProperty("hex").GetInt32();
         var destino = hexCastelo + 3;   // três hexágonos a leste, na mesma linha
@@ -59,7 +59,7 @@ public class TropasApiTestes
         (_, tropas) = await c.Get("tropas");
         Assert.Equal(0, tropas.GetProperty("exercitos").GetArrayLength());
         var cast = tropas.GetProperty("locais").EnumerateArray().First(l => l.GetProperty("id").GetInt64() == castelo);
-        Assert.Equal(5, cast.GetProperty("guarnicao").GetProperty("lanceiro").GetInt32());
+        Assert.Equal(3, cast.GetProperty("guarnicao").GetProperty("lanceiro").GetInt32());
         Assert.Equal("atacarQualquer", cast.GetProperty("postura").GetString());
 
         // outro reino não manda no exército alheio

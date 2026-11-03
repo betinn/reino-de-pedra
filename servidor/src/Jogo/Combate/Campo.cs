@@ -6,6 +6,8 @@ using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
+
 namespace ReinoDePedra.Jogo.Combate;
 
 /// <summary>Resultado de um combate em campo (interceptação ou postura agressiva).</summary>
@@ -46,22 +48,24 @@ public static class Campo
         var res = m.F.Batalha(atkG, defG, extra, lim);
         var perdasA = Combates.Perdas(atkG, res.PerdaA);
         var perdasD = Combates.Perdas(defG, res.PerdaD);
-        Combates.Tirar(atacante.Tropas, perdasA);
-        Combates.Tirar(alvo.Tropas, perdasD);
+        var caidasA = PS.Baixas(m, atacante, perdasA);
+        var caidasD = PS.Baixas(m, alvo, perdasD);
         m.Sujar(atacante); m.Sujar(alvo);
         var resultado = res.VenceA ? "vitoria" : res.Recuou ? "recuo" : "derrota";
 
         // feridos: de quem vence ou recua pela tática (quem perde sem recuar não tem feridos)
         var feridosA = res.VenceA || res.Recuou ? Combates.Feridos(m, perdasA) : new();
         var feridosD = !res.VenceA ? Combates.Feridos(m, perdasD) : new();
-        if (atkR != null && feridosA.Count > 0) foreach (var f in Combates.AoFerir) f(m, atkR, feridosA, null);
-        if (defR != null && feridosD.Count > 0) foreach (var f in Combates.AoFerir) f(m, defR, feridosD, null);
+        var (_, feridasA) = PS.Enterrar(m, caidasA, feridosA);
+        var (_, feridasD) = PS.Enterrar(m, caidasD, feridosD);
+        if (atkR != null && feridosA.Count > 0) foreach (var f in Combates.AoFerir) f(m, atkR, feridosA, null, feridasA);
+        if (defR != null && feridosD.Count > 0) foreach (var f in Combates.AoFerir) f(m, defR, feridosD, null, feridasD);
 
         // veterania dos dois lados
         var fracA = GT.Total(atkG) > 0 ? GT.Total(perdasA) / (double)GT.Total(atkG) : 1;
         var fracD = GT.Total(defG) > 0 ? GT.Total(perdasD) / (double)GT.Total(defG) : 1;
-        atacante.Marcas = Veterania.Aplicar(m, atacante.Marcas, res.VenceA, fracA, res.A, res.D);
-        if (alvo is Exercito && GT.Total(defG) > 0) alvo.Marcas = Veterania.Aplicar(m, alvo.Marcas, !res.VenceA, fracD, res.D, res.A);
+        Veterania.Aplicar(m, PS.SoldadosDaMarcha(m, atacante), res.VenceA, fracA, res.A, res.D);
+        if (alvo is Exercito && GT.Total(defG) > 0) Veterania.Aplicar(m, PS.SoldadosDaMarcha(m, alvo), !res.VenceA, fracD, res.D, res.A);
 
         var levaram = new Recursos();
         var rels = new List<string>();

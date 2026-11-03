@@ -36,4 +36,19 @@ Com o mapa de 104 × 80 e as tropas 5× mais rápidas ([0022](decisoes/0022-velo
 
 O que cresceu: a revelação da névoa ao vivo (um evento por trecho de caminho que entra em névoa nunca vista) e os caminhos com mais hexágonos respondem pelos eventos a mais; A* e Dijkstra numa grade 2,9× maior, pelo custo da sessão de IA. Tudo segue duas ordens de grandeza abaixo do orçamento.
 
+Com as pessoas como documentos ([0024](decisoes/0024-pessoas.md): cada civil, soldado, explorador e mensageiro é um documento; a escala nova tem dezenas de pessoas por reino), medido de novo em 10 dias (mesma máquina):
+
+| | 104 × 80, tropas como contagem | 104 × 80, pessoas como documentos |
+|---|---|---|
+| Eventos por dia de jogo | 3 619 | 4 136 |
+| CPU por dia de jogo | 2,46 s | 2,06 s |
+| CPU por evento | 679 µs | 497 µs |
+| Sessão de IA | 12,3 ms | 9,5 ms |
+| Fração de um núcleo em tempo real | 0,0028% | 0,0024% |
+| Pico de memória gerenciada | 116 MB | 30 MB |
+| Documentos no fim | — | 8 330 |
+| Banco | 5,5 MB | 4,3 MB |
+
+Os eventos a mais são os deslocamentos de pessoas (nascimentos, trocas de vaga, carregadores que voltam); a memória caiu com a escala ÷10 dos recursos e a população em dezenas (menos tropas, menos marchas). Um reino de 120 pessoas e 30 reinos dão cerca de 3 600 documentos de pessoa, dentro do orçamento.
+
 Limites afirmados no teste: menos de 43 s de CPU por dia de jogo (0,05% de um núcleo), pico de memória gerenciada abaixo de 400 MB e banco abaixo de 64 MB.

@@ -7,11 +7,12 @@ using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 
 namespace ReinoDePedra.Api.Endpoints;
 
 public sealed record PedidoCurar(int? Qtd);
-public sealed record PedidoInterceptar(long MarchaId, long? DeLocalId, long? ExercitoId, Dictionary<string, int>? Tropas, string? Tatica, bool? Estandarte);
+public sealed record PedidoInterceptar(long MarchaId, long? DeLocalId, long? ExercitoId, Dictionary<string, int>? Tropas, string? Tatica, bool? Estandarte, List<long>? Pessoas = null);
 public sealed record PedidoModelo(string? Nome, string? Tipo, string? Tatica, bool? Estandarte, bool? Completar, Dictionary<string, int>? Tropas,
     List<VisaoCombate.PedidoObjetivo>? Objetivos);
 
@@ -50,18 +51,21 @@ public sealed class ModuloGuerra : IModuloApi
                 var r = Sessao.ReinoDa(m, id);
                 var alvo = Interceptacoes.Alvo(m, r, p.MarchaId);
                 var dados = new JsonObject { ["marchaId"] = p.MarchaId, ["tatica"] = p.Tatica, ["estandarte"] = p.Estandarte == true };
-                int de; IReadOnlyDictionary<string, int> grupo;
+                int de; IReadOnlyDictionary<string, int> grupo; Dictionary<string, int>? tropas = p.Tropas;
+                PS.Escolha? escolha = null;
                 if (p.ExercitoId is long eid) { var ex0 = Exercitos.Do(m, r, eid); de = ex0.HexEm(m.Agora); grupo = ex0.Tropas; }
                 else
                 {
                     var l = m.Locais.Obter(p.DeLocalId ?? 0);
                     if (l == null || l.ReinoId != r.Id) throw new RegraException("Local não é seu.", 404);
-                    de = l.Hex; grupo = GT.Validar(m, l, p.Tropas);
+                    (tropas, escolha) = EnvioPessoas.Ler(m, r, l.Id, p.Pessoas, p.Tropas);
+                    de = l.Hex; grupo = GT.Validar(m, l, tropas);
                 }
+                using var _ = escolha;
                 var e = Interceptacoes.Calcular(m, de, grupo, alvo) ?? throw new RegraException("Não alcançam a tempo: use tropas mais rápidas.");
                 Exercito ex;
                 if (p.ExercitoId is long mid) { Exercitos.DarOrdem(m, r, mid, OrdemInterceptar.Id, e.Hex, false, dados); ex = Exercitos.Do(m, r, mid); }
-                else ex = Exercitos.Enviar(m, r, p.DeLocalId ?? 0, p.Tropas, e.Hex, OrdemInterceptar.Id, false, dados);
+                else ex = Exercitos.Enviar(m, r, p.DeLocalId ?? 0, tropas, e.Hex, OrdemInterceptar.Id, false, dados);
                 return VisaoTropas.Exercito(m, ex);
             }), Json.Web, statusCode: 201);
         });
@@ -126,7 +130,7 @@ public static class ExtrasGuerra
             {
                 marcas = mm.P.Veterania.Marcas, bonus = mm.P.Veterania.Bonus,
                 locais = mm.LocaisDe(r.Id).ToDictionary(l => l.Id.ToString(), l => Math.Round(Veterania.DoLocal(mm, l), 2)),
-                exercitos = Exercitos.De(mm, r.Id).ToDictionary(e => e.Id.ToString(), e => Math.Round(e.Marcas, 2)),
+                exercitos = Exercitos.De(mm, r.Id).ToDictionary(e => e.Id.ToString(), e => Math.Round(Veterania.DaMarcha(mm, e), 2)),
             };
             var vistas = ForcasVistas.De(mm, r.Id).OrderByDescending(f => f.Quando).ToList();
             d["avistamentos"] = new { n = vistas.Count, hex = vistas.FirstOrDefault()?.Hex, quando = vistas.FirstOrDefault()?.Quando };
@@ -140,7 +144,7 @@ public static class ExtrasGuerra
             return ForcasVistas.De(mm, r.Id).Where(f => !vivas.Contains(f.MarchaId)).Select(f => (object)new
             {
                 tipo = "avistamento", id = f.Id, hex = f.Hex, avistado = "tropas", marcha = f.Marcha, quando = f.Quando, ate = f.Ate,
-                tamanho = VisaoMapa.Aproximado(f.Tropas), rumo = f.Rumo,
+                tamanho = VisaoMapa.Aproximado(m, f.Tropas), rumo = f.Rumo,
             }).ToList();
         });
     });
@@ -190,7 +194,7 @@ public static class VisaoGuerra
             agora,
             alvo = new
             {
-                id = alvo.Id, marcha = alvo.Tipo, nome = Campo.NomeMarcha(alvo.Tipo), hex = alvo.HexEm(agora), tamanho = VisaoMapa.Aproximado(GT.Total(alvo.Tropas)),
+                id = alvo.Id, marcha = alvo.Tipo, nome = Campo.NomeMarcha(alvo.Tipo), hex = alvo.HexEm(agora), tamanho = VisaoMapa.Aproximado(m, GT.Total(alvo.Tropas)),
                 some, chegada = VisaoMapa.ParaMim(m, r, alvo) ? alvo.Chegada : (long?)null, rumo = alvo.Caminho.Count > 1 ? m.G.Direcao(alvo.HexEm(agora), alvo.Destino) : null,
                 carga = alvo.Carga.Total >= 1, forcasDesconhecidas = true,
             },

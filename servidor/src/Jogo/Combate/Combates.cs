@@ -23,28 +23,11 @@ public static class Combates
     /// Feridos de um lado (P.feridos.frac das baixas de quem vence ou recua): (mundo, reino, unidades, local onde ficam).
     /// O sistema de feridos registra aqui. Sem ninguém registrado, não há feridos: as baixas são todas mortes.
     /// </summary>
-    public static List<Action<Mundo, Reino, Dictionary<string, int>, Local?>> AoFerir { get; } = new();
+    public static List<Action<Mundo, Reino, Dictionary<string, int>, Local?, List<Pessoas.Pessoa>>> AoFerir { get; } = new();
 
-    /// <summary>
-    /// Peso de um local na divisão da população civil do reino: onde há moradia (castelo e moradias) e onde há trabalho
-    /// (trabalhadores de um local de produção). Ruínas não abrigam ninguém.
-    /// </summary>
-    public static double PesoPopulacao(Mundo m, Local l)
-    {
-        if (l.Ruina) return 0;
-        double p = l.Moradias * m.P.TetoPorMoradia;
-        if (l.Tipo == TipoLocal.Castelo) p += m.P.TetoCastelo;
-        if (l.EhProducao) p += m.F.Trabalhadores(l.Nivel);
-        return p;
-    }
-
-    /// <summary>População civil "do local": a do reino dividida pelos pesos (base da milícia e do massacre).</summary>
-    public static double PopDoLocal(Mundo m, Reino r, Local l)
-    {
-        if (l.ReinoId != r.Id) return 0;
-        var total = m.LocaisDe(r.Id).Sum(x => PesoPopulacao(m, x));
-        return total > 0 ? Math.Max(0, r.Pop) * PesoPopulacao(m, l) / total : 0;
-    }
+    /// <summary>População civil do local: os civis presentes nele (base da milícia e do massacre).</summary>
+    public static double PopDoLocal(Mundo m, Reino r, Local l) =>
+        l.ReinoId != r.Id ? 0 : Pessoas.Pessoas.Presentes(m, l).Count();
 
     /// <summary>
     /// Divide uma fração de perdas entre as unidades do grupo, proporcionalmente (maior resto): o total é a fração do total

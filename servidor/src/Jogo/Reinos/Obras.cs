@@ -165,6 +165,7 @@ public sealed class ObraNivel : ITipoItemFila
         }
         l.Nivel = Math.Max(l.Nivel, alvo);
         m.Sujar(l);
+        Pessoas.Pessoas.PreencherVagas(m, r);   // o nível novo abre vagas: ociosos vêm trabalhar
     }
 }
 
@@ -203,6 +204,7 @@ public sealed class ObraFundar : ITipoItemFila
         });
         r.Fundados++;
         Nevoas.RevelarArea(m, r.Id, l.Hex, m.P.Visao.Local);
+        Pessoas.Pessoas.PreencherVagas(m, r);
         AoFundar?.Invoke(m, r, l);
     }
     public static event Action<Mundo, Reino, Local>? AoFundar;

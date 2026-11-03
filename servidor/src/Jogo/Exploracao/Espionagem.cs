@@ -14,6 +14,8 @@ namespace ReinoDePedra.Jogo.Exploracao
         public long Quando { get; set; }
         public int Tropas { get; set; }
         public int Torres { get; set; }
+        /// <summary>Civis presentes no local na hora (a milícia que a IA estima).</summary>
+        public int Milicia { get; set; }
     }
 
     /// <summary>
@@ -25,9 +27,9 @@ namespace ReinoDePedra.Jogo.Exploracao
     {
         /// <summary>Torres de arqueiros com alcance sobre o local (o sistema de torres registra aqui).</summary>
         public static List<Func<Mundo, Local, int>> TorresNoAlcance { get; } = new();
-        /// <summary>Milícia estimada do local; padrão: população civil do dono × <c>P.miliciaPorPop</c>. O combate pode trocar.</summary>
+        /// <summary>Milícia estimada do local: os civis presentes × <c>P.miliciaPorPop</c>. O combate pode trocar.</summary>
         public static Func<Mundo, Local, double> Milicia { get; set; } = (m, l) =>
-            m.Reinos.Obter(l.ReinoId) is { } r ? Math.Floor(r.Pop * m.P.MiliciaPorPop) : 0;
+            m.Reinos.Obter(l.ReinoId) is { } r ? Math.Floor(Combate.Combates.PopDoLocal(m, r, l) * m.P.MiliciaPorPop) : 0;
         /// <summary>Sistemas acrescentam dados ao relatório de espionagem (bônus, feridos...).</summary>
         public static List<Action<Mundo, Reino, Local, JsonObject>> ExtrasRelatorio { get; } = new();
 
@@ -102,7 +104,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                 ["visto"] = visto, ["chance"] = Math.Round(chance, 3), ["hex"] = l.Hex, ["linhas"] = linhas,
             };
             foreach (var f in ExtrasRelatorio) f(m, dono, l, dados);
-            r.LocaisEspionados[l.Id] = new LocalEspionado { DonoId = dono.Id, Nivel = l.Nivel, Quando = m.Agora, Tropas = l.TropasNaGuarnicao, Torres = torres };
+            r.LocaisEspionados[l.Id] = new LocalEspionado { DonoId = dono.Id, Nivel = l.Nivel, Quando = m.Agora, Tropas = l.TropasNaGuarnicao, Torres = torres, Milicia = (int)Math.Round(milicia) };
             m.Sujar(r);
             Conhecimento.Conhecer(m, r, dono, "espionagem");
             m.Avisar(r.Id, "mapa");

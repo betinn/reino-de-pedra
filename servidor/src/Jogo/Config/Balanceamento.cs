@@ -75,7 +75,8 @@ public sealed class ParametrosP
     public double MoradiaPasso { get; init; }
     public double CrescPop { get; init; }
     public double BonusComida { get; init; }
-    public int TrabPorNivel { get; init; }
+    /// <summary>Vagas de trabalho de um local de produção por nível: max(minimo, round(nível × porNivel)).</summary>
+    public VagasP Vagas { get; init; } = new();
     /// <summary>População civil abaixo disso cresce em linha (CrescPop × PopSemente por hora) até chegar a ela; daí, logística.</summary>
     public double PopSemente { get; init; }
     public Dictionary<string, double> Kit { get; init; } = new();
@@ -87,6 +88,8 @@ public sealed class ParametrosP
     public RioP Rio { get; init; } = new();
     public VisaoP Visao { get; init; } = new();
     public double AvistamentoH { get; init; }
+    /// <summary>Tamanho aproximado de uma força vista: "poucas" abaixo de Poucas; depois arredondado ao Passo.</summary>
+    public AproximadoP Aproximado { get; init; } = new();
     public double CustoNovoLocal { get; init; }
     public double NovoLocalCresc { get; init; }
     public double TempoNovoLocal { get; init; }
@@ -101,6 +104,8 @@ public sealed class ParametrosP
     public double ExpPerdas { get; init; }
     public double Vantagem { get; init; }
     public double MiliciaPorPop { get; init; }
+    /// <summary>Fração dos civis que lutaram como milícia que morre quando a defesa perde (na proporção das perdas); os outros fogem.</summary>
+    public double MiliciaBaixas { get; init; }
     public double DefMilicia { get; init; }
     public double[] Portoes { get; init; } = [];
     public TorreP Torre { get; init; } = new();
@@ -308,6 +313,8 @@ public sealed class CaravanaP { public double EscoltaMin { get; init; } }
 public sealed class ArmazemP { public double CapN1 { get; init; } public double CapCresc { get; init; } }
 public sealed class CarregadorP { public double Carga { get; init; } public string Vel { get; init; } = "Lenta"; }
 public sealed class RioP { public double Vau { get; init; } }
+public sealed class VagasP { public double PorNivel { get; init; } public int Minimo { get; init; } }
+public sealed class AproximadoP { public int Poucas { get; init; } public int Passo { get; init; } }
 public sealed class VisaoP { public int Castelo { get; init; } public int Local { get; init; } public int Tropa { get; init; } }
 public sealed class MapaP { public int Cols { get; init; } public int Lins { get; init; } }
 public sealed class TorreP

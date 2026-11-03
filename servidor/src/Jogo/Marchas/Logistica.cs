@@ -79,16 +79,35 @@ public static class Logistica
         }
     }
 
-    /// <summary>Despacha carregadores com uma carga. A pé, sem escolta, 50 por pessoa.</summary>
+    /// <summary>
+    /// Despacha carregadores com uma carga: pessoas do local de origem (sem trabalho primeiro), <c>P.carregador.carga</c> por
+    /// pessoa, a pé e sem escolta. Com menos gente que o necessário, o grupo faz mais viagens; sem ninguém livre, a carga vai
+    /// com carregadores anônimos.
+    /// </summary>
     public static Carregadores Enviar(Mundo m, Reino r, int de, int para, Recursos carga, long? itemId, string fila, long? destinoLocalId)
     {
-        var rota = Caminhos.Calcular(m, de, para, m.P.Carregador.Vel);
+        var vel = m.P.Carregador.Vel;
+        var rota = Caminhos.Calcular(m, de, para, vel);
+        var precisa = (int)Math.Max(1, Math.Ceiling(carga.Total / m.P.Carregador.Carga - 1e-9));
+        var origem = m.LocalNoHex(de);
         var mc = new Carregadores
         {
-            ReinoId = r.Id, Carga = carga, Vel = m.P.Carregador.Vel, ItemId = itemId, Fila = fila,
-            DestinoLocalId = destinoLocalId,
-            Pessoas = (int)Math.Max(1, Math.Ceiling(carga.Total / m.P.Carregador.Carga)),
+            ReinoId = r.Id, Vel = vel, ItemId = itemId, Fila = fila, DestinoLocalId = destinoLocalId,
+            OrigemLocalId = origem?.Id, OrigemHex = de, ParaHex = para,
         };
+        m.Marchas.Adicionar(mc);
+        var pessoas = origem != null && origem.ReinoId == r.Id ? Pessoas.Pessoas.Tomar(m, r, origem, precisa, mc.Id) : new();
+        mc.PessoaIds = pessoas.Select(p => p.Id).ToList();
+        mc.Pessoas = pessoas.Count > 0 ? pessoas.Count : precisa;
+        var cap = mc.CargaMax(m);
+        if (pessoas.Count > 0 && carga.Total > cap + 1e-9)
+        {
+            mc.Carga = Carregadores.Dividir(carga, cap);
+            var resto = carga.Copia();
+            foreach (var (k, v) in mc.Carga) resto.Retirar(k, v);
+            mc.Pendente = resto;
+        }
+        else mc.Carga = carga;
         mc.Partir(m, rota);
         return mc;
     }

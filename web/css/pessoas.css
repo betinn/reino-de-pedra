@@ -1,0 +1,19 @@
+/* Reino de Pedra — pessoas: barra de seleção no mapa, laço, lista de pessoas e contador no Mapa tático. */
+
+/* barra "N selecionados · Missão" (mesma peça da barra de ordem) */
+.selecao-barra { border-color: var(--selecao); }
+.selecao-barra .ordem-ico .ico { color: var(--selecao); animation: none; }
+.selecao-barra[hidden] { display: none; }
+.em-selecao .cena-cv { cursor: crosshair; }
+.mapa-controles [data-selecao][aria-pressed="true"] { background: var(--selecao); color: var(--cor-fundo); border-color: var(--selecao); }
+
+/* lista de pessoas (tela Pessoas e folha do hexágono) */
+.pessoas-lista .pessoa-item.selecionada { outline: 2px solid var(--selecao); outline-offset: -2px; }
+.pessoas-lista .lista-item .fraco { font-size: var(--fs-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pessoas-local { width: 100%; }
+.lista-item.atual { outline: 2px solid var(--cor-primaria); outline-offset: -2px; }
+
+/* contador de pessoas no marcador do local (Mapa tático) */
+.lc-pessoas circle { fill: var(--ent-fundo); stroke: var(--selecao); stroke-width: 1.4; }
+.lc-pessoas text { fill: var(--ent-texto); font: 700 9px var(--fonte-texto); text-anchor: middle; font-variant-numeric: tabular-nums; }
+[data-zoom="zoom-longe"] .lc-pessoas, [data-zoom="zoom-mundo"] .lc-pessoas { display: none; }

@@ -42,7 +42,7 @@
   MAPA.tiposMarcha = MAPA.tiposMarcha || {};
   /* camada Perigo: o sistema de fauna define RP.mapa.perigoHex = function (hex, dados) → 'baixo' | 'medio' | 'alto' | null */
   if (!('perigoHex' in MAPA)) MAPA.perigoHex = null;
-  MAPA.camadas = MAPA.camadas || { perigo: false, fauna: true, rotas: true, marchas: true, recursos: true, bandeiras: true, rotulos: true };
+  MAPA.camadas = MAPA.camadas || { perigo: false, fauna: true, rotas: true, marchas: true, recursos: true, bandeiras: true, rotulos: true, grade: false };
 
   /* ---------------------------------------------------------------- modelo */
   var M = { dados: null, versao: 0 };
@@ -68,6 +68,12 @@
       if (o.hex != null && o.hex >= 0) (d.porHex[o.hex] = d.porHex[o.hex] || []).push(o);
     });
     d.recebidoEm = RP.agora();
+    /* pessoas do reino: por hexágono (as que estão num local) e por id (as de marcha vão com a marcha) */
+    d.pessoasPorHex = {}; d.pessoaPorId = {};
+    (d.pessoas || []).forEach(function (p) {
+      d.pessoaPorId[p.id] = p;
+      if (p.hex != null && p.hex >= 0) (d.pessoasPorHex[p.hex] = d.pessoasPorHex[p.hex] || []).push(p);
+    });
     var rios = ligacoes(function (h) { return d.rio[h] && d.ter[h]; });
     d.curvaRios = curvas(rios);
     d.curvaRiosVivos = curvas(rios, function (h) { return d.idade[h] === 0; });
@@ -129,6 +135,7 @@
   M.rota = function (h) { return !!(M.dados && M.dados.rotaH[h]); };
   M.ponte = function (h) { return !!(M.dados && M.dados.ponteH[h]); };
   M.objetosEm = function (h) { return (M.dados && M.dados.porHex[h]) || []; };
+  M.pessoa = function (id) { return M.dados && M.dados.pessoaPorId ? M.dados.pessoaPorId[id] : null; };
   M.local = function (id) { return M.dados ? M.dados.objs.filter(function (o) { return o.tipo === 'local' && o.id === id; })[0] : null; };
 
   /* posição de uma marcha no instante t (ms do servidor), pelo caminho e pelos tempos de chegada a cada hexágono */

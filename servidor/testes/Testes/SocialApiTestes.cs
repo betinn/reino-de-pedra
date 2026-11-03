@@ -80,7 +80,7 @@ public class SocialApiTestes
         await using var s = await ServidorTeste.Iniciar();
         var (a, b, idA, idB) = await DoisReinos(s);
         using var _a = a; using var _b = b;
-        var (st, p) = await a.Post("comercio/troca", new { reinoId = idB, da = new { madeira = 200 }, quer = new { pedra = 100 }, recado = "pela estrada" });
+        var (st, p) = await a.Post("comercio/troca", new { reinoId = idB, da = new { madeira = 50 }, quer = new { pedra = 30 }, recado = "pela estrada" });
         Assert.True(st == HttpStatusCode.Created, p.ToString());
         var (_, cb) = await b.Get("comercio");
         var prop = Assert.Single(cb.GetProperty("paraMim").EnumerateArray());
@@ -111,7 +111,7 @@ public class SocialApiTestes
         var (a, b, idA, idB) = await DoisReinos(s);
         using var _a = a; using var _b = b;
         Assert.Equal(HttpStatusCode.Created, (await a.Post("mensageiros/treinar", new { qtd = 1 })).status);
-        await s.Avancar(TimeSpan.FromMinutes(2));
+        await s.Avancar(TimeSpan.FromMinutes(5));
         var (sm, msg) = await a.Post("mensagens", new { texto = "Saudações de Pedralva.", reinoId = idB });
         Assert.True(sm == HttpStatusCode.Created, msg.ToString());
         var (_, ma) = await a.Get("mensagens");

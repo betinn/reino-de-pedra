@@ -4,6 +4,7 @@ using ReinoDePedra.Jogo.Config;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Persistencia;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Testes;
@@ -27,7 +28,7 @@ public class TropasTestes
     {
         Economia.Atualizar(t.M, r);
         l.Guarnicao[unidade] = l.Guarnicao.GetValueOrDefault(unidade) + n;
-        r.Pop -= t.B.U[unidade].Pop * n;
+        Pessoas.RemoverCivis(t.M, r, t.B.U[unidade].Pop * n);
         t.M.Sujar(l); t.M.Sujar(r);
     }
 
@@ -44,18 +45,18 @@ public class TropasTestes
         var u = t.B.U["lanceiro"];
         var antes = c.Estoque.Copia();
         var pop0 = r.Pop;
-        var item = Recrutamento.Recrutar(t.M, r, c.Id, "lanceiro", 10);
-        Assert.Equal(pop0 - 10, r.Pop, 6);
-        Assert.Equal(u.Tempo * 10, item.DuracaoSeg);
-        foreach (var (k, v) in u.Custo) Assert.Equal(antes.Qtd(k) - v * 10, c.Estoque.Qtd(k), 6);
+        var item = Recrutamento.Recrutar(t.M, r, c.Id, "lanceiro", 3);   // o kit recruta 3 lanceiros (M1a)
+        Assert.Equal(pop0 - 3, r.Pop, 6);
+        Assert.Equal(u.Tempo * 3, item.DuracaoSeg);
+        foreach (var (k, v) in u.Custo) Assert.Equal(antes.Qtd(k) - v * 3, c.Estoque.Qtd(k), 6);
         Assert.True(item.Iniciado);   // o castelo já tinha o material
-        Assert.Equal(10, Economia.Tropas(t.M, r));   // em treino ocupam o teto
-        t.Avancar(TimeSpan.FromSeconds(u.Tempo * 10 - 5));
-        Assert.Equal(9, c.Guarnicao.GetValueOrDefault("lanceiro"));   // uma por vez: a 10ª ainda não
+        Assert.Equal(3, Economia.Tropas(t.M, r));   // em treino ocupam o teto
+        t.Avancar(TimeSpan.FromSeconds(u.Tempo * 3 - 5));
+        Assert.Equal(2, c.Guarnicao.GetValueOrDefault("lanceiro"));   // uma por vez: a 3ª ainda não
         t.Avancar(TimeSpan.FromSeconds(10));
-        Assert.Equal(10, c.Guarnicao["lanceiro"]);
+        Assert.Equal(3, c.Guarnicao["lanceiro"]);
         Assert.Empty(r.Fila(Recrutamento.Fila).Itens);
-        Assert.Equal(10, Economia.Tropas(t.M, r));
+        Assert.Equal(3, Economia.Tropas(t.M, r));
     }
 
     [Fact]
@@ -63,6 +64,7 @@ public class TropasTestes
     {
         var t = new MundoTeste();
         var r = t.NovoReino();
+        t.DarRecursos(r, 1e6, "comida", "madeira", "couro");
         var pop0 = r.Pop;
         var item = Recrutamento.Recrutar(t.M, r, r.CasteloId, "arqueiro", 5);
         Assert.Equal(pop0 - 5, r.Pop, 6);
@@ -130,6 +132,7 @@ public class TropasTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         t.DarRecursos(r);
+        Pessoas.Nascer(t.M, r, 12, andar: false);   // mais gente que o reino novo tem (8), para encher a fila
         for (var i = 0; i < 10; i++) Recrutamento.Recrutar(t.M, r, r.CasteloId, "milicia", 1);
         Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, r, r.CasteloId, "milicia", 1));
         var itens = r.Fila(Recrutamento.Fila).Itens;
@@ -144,7 +147,7 @@ public class TropasTestes
     {
         var t = new MundoTeste();
         var r = t.NovoReino();
-        t.DarRecursos(r);
+        t.DarRecursos(r, 1e6, "comida", "madeira", "pedra", "ferro", "couro");
         var vila = t.M.LocaisDe(r.Id).First(l => l.Tipo == TipoLocal.Vila);
         Assert.Contains("castelo e o quartel", Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, r, vila.Id, "lanceiro", 1)).Message);
         Assert.Contains("quartel", Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, r, r.CasteloId, "cavalaria", 1)).Message);
@@ -178,7 +181,7 @@ public class TropasTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        r.Pop = 3;
+        Pessoas.RemoverCivis(t.M, r, (int)r.Pop - 3);
         var antes = c.Estoque.Qtd("comida");
         Assert.Contains("população", Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, r, c.Id, "milicia", 5)).Message);
         Assert.Equal(antes, c.Estoque.Qtd("comida"));
@@ -471,6 +474,7 @@ public class TropasTestes
             var t = new MundoTeste();
             var r = t.NovoReino();
             var c = Castelo(t, r);
+            t.DarRecursos(r);
             using var db = new Banco(arq);
             db.Salvar(t.M);
             Recrutamento.Recrutar(t.M, r, c.Id, "lanceiro", 4);

@@ -36,17 +36,29 @@ public static class Economia
     public static int PopDeGrupo(Mundo m, IReadOnlyDictionary<string, int> g) =>
         g.Sum(kv => kv.Value * (m.B.U.TryGetValue(kv.Key, out var u) ? u.Pop : 1));
 
+    /// <summary>Vagas de trabalho do reino inteiro (soma dos locais de produção).</summary>
     public static int TrabalhadoresNecessarios(Mundo m, Reino r) =>
-        m.LocaisDe(r.Id).Where(l => l.EhProducao && !l.Ruina).Sum(l => m.F.Trabalhadores(l.Nivel));
+        m.LocaisDe(r.Id).Sum(l => Pessoas.Pessoas.Vagas(m, l));
 
+    /// <summary>Pessoas produzindo agora, no reino inteiro.</summary>
+    public static int Trabalhando(Mundo m, Reino r) => m.LocaisDe(r.Id).Sum(l => Pessoas.Pessoas.Trabalhando(m, l));
+
+    /// <summary>Eficiência do reino (vagas ocupadas / vagas), só para mostrar: a produção usa a de cada local.</summary>
     public static double Eficiencia(Mundo m, Reino r)
     {
         var nec = TrabalhadoresNecessarios(m, r);
-        return Math.Min(1, r.Pop / Math.Max(1, nec));
+        return nec == 0 ? 1 : Math.Min(1, Trabalhando(m, r) / (double)nec);
     }
 
-    /// <summary>Taxa por hora de cada recurso produzido pelo local (já com eficiência e modificadores).</summary>
-    public static Recursos TaxaLocal(Mundo m, Reino r, Local l, double eficiencia)
+    /// <summary>Eficiência do local: vagas ocupadas por quem está produzindo / vagas (1 para locais sem vagas).</summary>
+    public static double EficienciaLocal(Mundo m, Local l)
+    {
+        var vagas = Pessoas.Pessoas.Vagas(m, l);
+        return vagas == 0 ? 1 : Math.Min(1, Pessoas.Pessoas.Trabalhando(m, l) / (double)vagas);
+    }
+
+    /// <summary>Taxa por hora de cada recurso produzido pelo local (já com a eficiência do local e os modificadores).</summary>
+    public static Recursos TaxaLocal(Mundo m, Reino r, Local l)
     {
         var t = new Recursos();
         if (l.Ruina) return t;
@@ -56,7 +68,7 @@ public static class Economia
         }
         else if (l.Produz != null)
         {
-            t[l.Produz] = m.F.Producao(l.Nivel) * eficiencia;
+            t[l.Produz] = m.F.Producao(l.Nivel) * EficienciaLocal(m, l);
         }
         var mult = 1.0;
         foreach (var f in ModificadoresProducao) mult *= f(m, l);
@@ -97,12 +109,11 @@ public static class Economia
         if (dtMs <= 0) return;
         var dtH = dtMs / (double)T.Hora;
         var locais = m.LocaisDe(r.Id).ToList();
-        var ef = Eficiencia(m, r);
         var excedente = new Recursos();
         double comidaH = 0;
         foreach (var l in locais)
         {
-            var taxa = TaxaLocal(m, r, l, ef);
+            var taxa = TaxaLocal(m, r, l);
             foreach (var (k, v) in taxa)
             {
                 if (k == "comida") comidaH += v;
@@ -129,15 +140,23 @@ public static class Economia
                 m.Sujar(d);
                 if (excedente.Count == 0) break;
             }
-        // população: logística, fechada no intervalo; teto livre = teto − tropas
+        // população: logística, fechada no intervalo; teto livre = teto − tropas. A parte fracionária fica guardada
+        // (PopFracao) e cada vez que fecha 1 nasce uma pessoa com nome, que vai para a vaga mais necessária.
         var castelo = m.Locais.Obter(r.CasteloId);
         var sobra = castelo != null && comidaH > m.F.ProducaoCastelo(castelo.Nivel) * 2;
         var livreTeto = Math.Max(1, Teto(m, r) - Tropas(m, r));
         var taxaPop = m.P.CrescPop * (sobra ? 1 + m.P.BonusComida : 1);
         foreach (var f in ModificadoresCrescimento) taxaPop *= f(m, r);
-        r.Pop = Logistica(r.Pop, livreTeto, taxaPop, dtH, m.P.PopSemente);
+        var atual = r.Pop + r.PopFracao;
+        var depois = Logistica(atual, livreTeto, taxaPop, dtH, m.P.PopSemente);
         r.AtualizadoEm = agora;
         m.Sujar(r);
+        if (depois > atual)
+        {
+            var nascem = (int)Math.Floor(depois + 1e-9) - (int)Math.Floor(r.Pop + 1e-9);
+            r.PopFracao = Math.Max(0, depois - Math.Floor(depois + 1e-9));
+            if (nascem > 0) Pessoas.Pessoas.Nascer(m, r, nascem);
+        }
     }
 
     /// <summary>Multiplicadores da taxa de crescimento da população do reino (legado: relíquia de crescimento).</summary>
@@ -176,9 +195,8 @@ public static class Economia
     /// <summary>Taxa total por hora do reino, por recurso.</summary>
     public static Recursos TaxaTotal(Mundo m, Reino r)
     {
-        var ef = Eficiencia(m, r);
         var t = new Recursos();
-        foreach (var l in m.LocaisDe(r.Id)) t.Somar(TaxaLocal(m, r, l, ef));
+        foreach (var l in m.LocaisDe(r.Id)) t.Somar(TaxaLocal(m, r, l));
         return t;
     }
 

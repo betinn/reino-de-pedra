@@ -91,7 +91,8 @@
     var corpo = '<div class="info">' +
       (k && l.tipo !== 'castelo' ? '<div class="info-linha"><span class="fraco">Produz</span><span>' + RP.icone(k, 'ico-p r-' + k) + ' +' + RP.num(l.taxa[k]) + ' ' + RP.nomeRecurso(k) + ' por hora</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Guardado aqui</span><span>' + RP.estoqueHTML(l.id) + '</span></div>' +
-      (l.trabalhadores ? '<div class="info-linha"><span class="fraco">Pessoas trabalhando</span><span>' + l.trabalhadores + '</span></div>' : '') +
+      (l.vagas ? '<div class="info-linha"><span class="fraco">Trabalhando</span><span>' + l.ocupadas + ' de ' + l.vagas + (l.vagas === 1 ? ' vaga' : ' vagas') + (l.ocupadas < l.vagas ? ' · <span class="txt-alerta">produz ' + Math.round((l.eficiencia || 0) * 100) + '%</span>' : '') + '</span></div>' : '') +
+      (l.pessoas ? '<div class="info-linha"><span class="fraco">Pessoas aqui</span><span>' + l.pessoas + '</span></div>' : '') +
       (l.moradias ? '<div class="info-linha"><span class="fraco">Moradias</span><span>' + l.moradias + '</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Tropas aqui</span><span>' + (g.length ? RP.esc(RP.partesGrupo(l.guarnicao)) : 'nenhuma, só a população defende') + '</span></div>' +
       '<div class="info-linha"><span class="fraco">Comportamento</span><span class="selo selo-info">' + (RP.POSTURAS[l.postura] || '') + '</span></div>' +

@@ -103,12 +103,24 @@
   };
   C.inclinarPor = function (dyPx) { this.inclinar(A.K - dyPx * 0.0028); };
   C.ligarGestos = function () {
-    var self = this, p0 = null, avisado = false;
+    var self = this, p0 = null, avisado = false, lacando = false, ponto = null;
+    function modoSel() { return !!(self.opt.modoSelecao && self.opt.modoSelecao()); }
     RP.gestos(this.cv, {
-      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; },
-      inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; },
+      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; lacando = modoSel(); ponto = null; },
+      inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; lacando = false; self.laco = null; },
       inclinar: function (dy) { self.inclinarPor(dy); },
-      arrasto: function (dx, dy) { self.cam.x -= dx / self.cam.s; self.cam.y -= dy / (K * self.cam.s); self.mudou(); },
+      /* no modo seleção (ou com Shift), arrastar desenha um laço em vez de mover a câmera */
+      arrasto: function (dx, dy) {
+        if (lacando) {
+          ponto = ponto ? { x: ponto.x + dx, y: ponto.y + dy } : null;
+          if (!ponto) { ponto = self.ultimoToque || { x: self.w / 2, y: self.h / 2 }; ponto = { x: ponto.x + dx, y: ponto.y + dy }; }
+          (self.laco = self.laco || []).push({ x: ponto.x, y: ponto.y });
+          if (!self.rodando) self.quadro(performance.now());
+          return;
+        }
+        self.cam.x -= dx / self.cam.s; self.cam.y -= dy / (K * self.cam.s); self.mudou();
+      },
+      toqueLongo: function (x, y) { if (self.opt.aoToqueLongo) self.opt.aoToqueLongo(x, y); },
       pinca: function (f, mx, my, mx0, my0) {
         var wx = (mx0 - self.w / 2) / p0.s + p0.x, wy = (my0 - self.h / 2) / (K * p0.s) + p0.y, ns = p0.s * f;
         if (ns < SMIN * 0.8 && self.opt.aoAfastarDemais) { if (!avisado) { avisado = true; self.opt.aoAfastarDemais(); } return; }
@@ -125,8 +137,14 @@
         self.mudou();
       },
       toque: function (x, y) { self.tocar(x, y); },
-      fim: function () { self.gesto = false; self.ultimaMudanca = performance.now(); }
+      fim: function () {
+        self.gesto = false; self.ultimaMudanca = performance.now();
+        if (self.laco && self.laco.length > 2 && self.opt.aoLaco) self.opt.aoLaco(self.laco);
+        self.laco = null; lacando = false;
+      }
     });
+    /* o laço começa onde o dedo pousou */
+    this.cv.addEventListener('pointerdown', function (e) { var r = self.cv.getBoundingClientRect(); self.ultimoToque = { x: e.clientX - r.left, y: e.clientY - r.top }; });
   };
   C.ligarToqueSimples = function () {
     var self = this;
@@ -213,7 +231,7 @@
     var r = { x: this.cam.x - rw / 2, y: this.cam.y - rh / 2, w: rw, h: rh, s: s, cw: cw, ch: ch, versao: M.versao };
     this.ci = r;
     var S = s * dprC;
-    desenharEstatico(this.cctx, { S: S, ox: -r.x * S, oy: -r.y * S * K, pw: this.cache.width, ph: this.cache.height }, r);
+    desenharEstatico(this.cctx, { S: S, ox: -r.x * S, oy: -r.y * S * K, pw: this.cache.width, ph: this.cache.height }, r, this.opt.camadas || RP.mapa.camadas || {});
   };
 
   function chao(c, V) { c.setTransform(V.S, 0, 0, V.S * K, V.ox, V.oy); }
@@ -241,7 +259,7 @@
     return Math.atan2(b.y - a.y, b.x - a.x);
   }
 
-  function desenharEstatico(c, V, r) {
+  function desenharEstatico(c, V, r, camadas) {
     var d = M.dados;
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.fillStyle = P.nevoa; c.fillRect(0, 0, V.pw, V.ph);
@@ -263,6 +281,19 @@
         c.beginPath(); c.arc(x.ce.x + Math.cos(a) * dd, x.ce.y + Math.sin(a) * dd, H.R * (0.38 + A.hash(x.c, x.l, 60 + i) * 0.2), 0, 6.2832); c.fill();
       }
     });
+    /* transição entre terrenos: uma mancha da cor do vizinho sobre a aresta compartilhada, dos dois lados */
+    var porH = {}; conhecidos.forEach(function (x) { porH[x.h] = x; });
+    c.globalAlpha = 0.28;
+    conhecidos.forEach(function (x) {
+      if (x.rio) return;
+      H.vizinhos(x.h).forEach(function (v) {
+        var y = porH[v]; if (!y || y.rio || y.t === x.t || v < x.h) return;
+        var mx = (x.ce.x + y.ce.x) / 2, my = (x.ce.y + y.ce.y) / 2;
+        c.fillStyle = corChao(y.t, y.c, y.l, y.pal); c.beginPath(); c.ellipse(mx, my, H.R * 0.5, H.R * 0.42, 0, 0, 6.2832); c.fill();
+        c.fillStyle = corChao(x.t, x.c, x.l, x.pal); c.beginPath(); c.ellipse(mx, my, H.R * 0.34, H.R * 0.28, 0, 0, 6.2832); c.fill();
+      });
+    });
+    c.globalAlpha = 1;
     /* detalhes do chão */
     conhecidos.forEach(function (x) {
       var pal = x.pal, i, px, py;
@@ -283,6 +314,11 @@
         c.beginPath(); c.arc(x.ce.x, x.ce.y, H.R * 0.8, 0, 6.2832); c.fill(); c.globalAlpha = 1;
       }
     });
+    /* grade de hexágonos (camada opcional) */
+    if (camadas && camadas.grade) {
+      c.strokeStyle = 'rgba(16,20,26,.3)'; c.lineWidth = 1.1; c.lineJoin = 'round';
+      conhecidos.forEach(function (x) { hexagono(c, x.ce.x, x.ce.y, H.R - 0.5); c.stroke(); });
+    }
     /* rios e estradas (só sobre o que é conhecido) */
     c.lineCap = 'round'; c.lineJoin = 'round';
     c.strokeStyle = P.aguaMargem; c.lineWidth = 24; c.stroke(d.curvaRios);
@@ -371,33 +407,13 @@
     var tr = [];
     function ida(a, b, o) { if (a && b) tr.push(Object.assign({ a: a, b: b, vel: 11 }, o)); }
     function off(p, dx, dz) { return { x: p.x + dx, y: p.y + dz }; }
-    locais.forEach(function (x, i) {
+    /* as pessoas de verdade vêm da camada de pessoas (vista/pessoas.js); aqui ficam só os cavalos do pasto e o alvo de palha do quartel */
+    locais.forEach(function (x) {
       var p = pos[x.id];
-      if (x.tipo === 'vila') {
-        ida(off(p, -18, 12), off(p, 24, -10), { roupa: P.roupa[i % 5], fase: 0.3 });
-        tr.push({ fixo: off(p, -18, 12), roupa: P.roupa[(i + 2) % 5], trabalho: 'picareta', dir: 1, fase: 2.1 });
-        ida(p, cas, { roupa: P.roupa[(i + 1) % 5], fase: 1.2, carga: 'saco' });
-      } else if (x.tipo === 'mina') {
-        tr.push({ fixo: off(p, -9, 9), roupa: P.roupa[3], trabalho: 'picareta', dir: 1, fase: i });
-        ida(off(p, 0, 16), arm, { roupa: P.roupa[0], carga: 'minerio', corCarga: x.produz === 'pedra' ? P.minerioPedra : P.minerioFerro, fase: i * 0.7 });
-      } else if (x.tipo === 'serraria') {
-        tr.push({ fixo: off(p, -4, 10), roupa: P.roupa[2], trabalho: 'picareta', dir: 1, fase: 1 });
-        ida(off(p, -16, 14), arm, { roupa: P.roupa[1], carga: 'tronco', fase: 0.4 });
-      } else if (x.tipo === 'ferraria') {
-        tr.push({ fixo: off(p, 7, 12), roupa: '#5a4636', trabalho: 'martelo', dir: 1, fase: 0 });
-      } else if (x.tipo === 'quartel') {
-        [-10, -2, 6].forEach(function (dx, j) { tr.push({ fixo: off(p, dx, 22), soldado: true, estocada: true, dir: 1, fase: j * 0.6 }); });
-        [0, 1].forEach(function (j) { tr.push({ fixo: off(p, -26 + j * 7, -2 + j * 6), arqueiro: true, alvoTiro: off(p, 26, -14), dir: 1, fase: j * 1.7, soRecrutando: true }); });
-        tr.push({ alvoPalha: off(p, 26, -14), soRecrutando: true });
-      } else if (x.tipo === 'castelo') {
-        ida(off(p, -16, 26), off(p, 16, 26), { soldado: true, vel: 5, fase: 0 });
-        ida(off(p, 18, 30), off(p, -14, 30), { soldado: true, vel: 5, fase: 1.4 });
-      } else if (x.tipo === 'pasto') {
-        for (var k2 = 0; k2 < 4; k2++) tr.push({ cavaloPasto: true, centro: p, fase: k2 * 1.7, cor: P.cavalo[k2 % 4] });
-      } else if (x.tipo === 'armazem') {
-        tr.push({ fixo: off(p, 12, 16), roupa: P.roupa[4], trabalho: 'picareta', dir: -1, fase: 2.5 });
-      }
+      if (x.tipo === 'pasto') { for (var k2 = 0; k2 < 4; k2++) tr.push({ cavaloPasto: true, centro: p, fase: k2 * 1.7, cor: P.cavalo[k2 % 4] }); }
+      else if (x.tipo === 'quartel') tr.push({ alvoPalha: off(p, 26, -14), soRecrutando: true });
     });
+    void cas; void arm; void ida;
     return tr;
   }
   function itensFila(nome) { return (RP.reino && RP.reino.filas && RP.reino.filas[nome]) || []; }
@@ -476,7 +492,7 @@
           if (obra) { obj(c, V, p.x, p.y); if (obra.ativa) A.andaime(c, castelo ? 30 : 20, P); else A.materiais(c, P); }
         }, alvo: alvo(p.x, p.y, castelo ? 64 : 50, castelo ? 66 : 42, ['local', o.id], o) });
         if (obra && obra.ativa) {
-          itens.push({ y: p.y + 14, d: function () { obj(c, V, p.x + 16, p.y + 14); A.pessoa(c, 0, 0, t, P, { roupa: P.roupa[4], dir: -1, trabalho: 'martelo', fase: 0.5 }); } });
+          itens.push({ y: p.y + 14, d: function () { obj(c, V, p.x + 16, p.y + 14); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[4], dir: -1, trabalho: 'martelo', fase: 0.5 }); } });
           rot(p.x, p.y, -52, 'Obra · ' + RP.fmtResta(obra.fim - ag), 'obra', Cs.alerta);
         }
         if (o.local === 'pasto' && !antigo && !o.ruina) {
@@ -523,7 +539,7 @@
         obj(c, V, p.x, p.y); A.ruina(c, { ruina: false }, t, P);
         if (ativa) { A.andaime(c, 16, P); } else A.materiais(c, P, -36);
       }, alvo: alvo(p.x, p.y, 44, 34, ['hex', it.hex], null) });
-      if (ativa) itens.push({ y: p.y + 12, d: function () { obj(c, V, p.x + 14, p.y + 12); A.pessoa(c, 0, 0, t, P, { roupa: P.roupa[2], dir: -1, trabalho: 'martelo', fase: 0.2 }); } });
+      if (ativa) itens.push({ y: p.y + 12, d: function () { obj(c, V, p.x + 14, p.y + 12); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[2], dir: -1, trabalho: 'martelo', fase: 0.2 }); } });
       rot(p.x, p.y, -36, ativa ? 'Obra · ' + RP.fmtResta(it.fim - ag) : 'Aguardando material', 'obra', Cs.alerta);
     });
 
@@ -573,6 +589,12 @@
         if (o.soldado) A.pessoa(c, 0, 0, t, P, { roupa: corMeu, cinto: '#2b2520', dir: dir, andando: andando, fase: o.fase, capacete: P.metal, lanca: true, escudo: corMeu, estocada: o.estocada });
         else A.pessoa(c, 0, 0, t, P, { roupa: o.roupa, dir: dir, andando: andando, fase: o.fase, trabalho: o.trabalho, carga: carga, corCarga: o.corCarga });
       } });
+    });
+
+    /* pessoas do reino (e as de outros reinos à vista), onde estão */
+    if (RP.pessoasVista) RP.pessoasVista.desenhar({
+      c: c, V: V, cena: self, itens: itens, rot: rot, t: t, ag: ag, s: s, naTela: naTela, cor: corMeu,
+      obj: function (x, y) { obj(c, V, x, y); }, alvo: alvo
     });
 
     /* marchas */
@@ -628,6 +650,15 @@
         A.pilula(c, q.x, q.y, q.rt.txt, q.rt.cls, q.rt.cor);
       });
     }
+    /* laço da seleção (espaço de tela) */
+    if (this.laco && this.laco.length > 1) {
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.beginPath(); c.moveTo(this.laco[0].x, this.laco[0].y);
+      for (var li = 1; li < this.laco.length; li++) c.lineTo(this.laco[li].x, this.laco[li].y);
+      c.closePath();
+      c.fillStyle = Cs.selecao; c.globalAlpha = 0.12; c.fill(); c.globalAlpha = 1;
+      c.strokeStyle = Cs.selecao; c.lineWidth = 2; c.setLineDash([6, 4]); c.stroke(); c.setLineDash([]);
+    }
   };
 
   /* uma marcha na Vista: formação, carregadores, explorador... Forças sem estandarte: cinza, sem bandeira */
@@ -639,6 +670,11 @@
     var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
     function add(p, fn) { itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
+    /* pessoas selecionadas dentro desta marcha: anel no chão */
+    if (RP.selecao && RP.selecao.n() && m.pessoaIds && m.pessoaIds.some(function (id) { return RP.selecao.tem(id); })) {
+      itens.push({ y: pos.y - 0.1, d: function () { obj(c, V, pos.x, pos.y); c.strokeStyle = Cs.selecao; c.lineWidth = 1.6; c.beginPath(); c.ellipse(0, 1, 16, 16 * K * 0.55, 0, 0, 6.2832); c.stroke(); } });
+      prefixo = 'Selecionado · ';
+    }
     if (def && def.desenharCena) {
       add(pos, function () { try { def.desenharCena(c, m, { t: t, pal: P, A: A, dir: dir, ang: pos.ang, cor: cor, revelado: revelado }); } catch (er) { console.error(er); } });
       prefixo = def.nome ? def.nome + ' · ' : '';
@@ -646,14 +682,22 @@
       var mp = RP.reino && (RP.reino.marchas || []).filter(function (x) { return x.id === m.id; })[0];
       var n = Math.max(1, Math.min(5, (mp && mp.pessoas) || 3));
       for (var k = 0; k < n; k++) (function (k) {
-        add(pt(k * 8, ((k % 2) * 2 - 1) * 3), function () { A.pessoa(c, 0, 0, t, P, { roupa: P.roupa[k % 5], dir: dir, andando: true, fase: k * 0.9, carga: k % 3 === 1 ? 'tronco' : 'saco' }); });
+        add(pt(k * 8, ((k % 2) * 2 - 1) * 3), function () { RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[k % 5], dir: dir, andando: true, fase: k * 0.9, carga: k % 3 === 1 ? 'tronco' : 'saco' }); });
       })(k);
       prefixo = 'Material · ';
+    } else if (tipo === 'pessoas') {
+      /* civis andando entre locais do reino (troca de trabalho, volta para casa): sem carga, sem armas */
+      var mq = RP.reino && (RP.reino.marchas || []).filter(function (x) { return x.id === m.id; })[0];
+      var np = Math.max(1, Math.min(5, (mq && mq.pessoas) || 1));
+      for (var j = 0; j < np; j++) (function (j) {
+        add(pt(j * 8, ((j % 2) * 2 - 1) * 3), function () { RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[(j + 2) % 5], dir: dir, andando: true, fase: j * 0.7 }); });
+      })(j);
+      prefixo = (np === 1 ? 'Pessoa' : np + ' pessoas') + ' · ';
     } else if (/explor|batedor|prospector/.test(tipo)) {
       add(pos, function () {
         if (/cavalo/.test(tipo)) A.cavalo(c, 0, 0, t, P, { cor: P.cavalo[3], dir: dir, andando: true, galope: true, cavaleiro: cor });
-        else if (/batedor/.test(tipo)) A.pessoa(c, 0, 0, t, P, { roupa: '#2f3a2c', capuz: '#26301f', dir: dir, andando: true, fase: 0.3 });
-        else A.pessoa(c, 0, 0, t, P, { roupa: '#6b5a3a', dir: dir, andando: true, carga: /prospector/.test(tipo) ? 'picareta' : null });
+        else if (/batedor/.test(tipo)) RP.sprites.pessoa(c, 0, 0, t, { roupa: '#2f3a2c', capuz: '#26301f', dir: dir, andando: true, fase: 0.3 });
+        else RP.sprites.pessoa(c, 0, 0, t, { roupa: '#6b5a3a', dir: dir, andando: true, carga: /prospector/.test(tipo) ? 'picareta' : null });
       });
     } else if (tipo === 'mensageiro') {
       /* bandeira branca: evidente que não é ataque */
@@ -665,14 +709,14 @@
       prefixo = 'Caravana · ';
     } else if (/caca|extra|escava/.test(tipo)) {
       for (var z = 0; z < 4; z++) (function (z) {
-        add(pt(z * 9, ((z % 2) * 2 - 1) * 4), function () { A.pessoa(c, 0, 0, t, P, { roupa: revelado ? cor : P.hostil, cinto: P.cinto, dir: dir, andando: true, fase: z * 1.3, carga: z % 2 ? 'picareta' : 'saco', capacete: P.metal }); });
+        add(pt(z * 9, ((z % 2) * 2 - 1) * 4), function () { RP.sprites.pessoa(c, 0, 0, t, { roupa: revelado ? cor : P.hostil, cinto: P.cinto, dir: dir, andando: true, fase: z * 1.3, carga: z % 2 ? 'picareta' : 'saco', capacete: P.metal }); });
       })(z);
     } else {
       var hostil = !revelado, nf = hostil ? 9 : 7;
       for (var i = 0; i < nf; i++) (function (i) {
         var fila = Math.floor(i / 3), col = i % 3 - 1, av = Math.sin(t * 2 + i) * 0.8;
         add(pt(fila * 11 - av, col * 8), function () {
-          A.pessoa(c, 0, 0, t, P, { roupa: cor, cinto: P.cinto, dir: dir, andando: true, fase: i * 0.9, capacete: hostil ? P.hostilEsc : P.metal, lanca: i % 3 !== 1, escudo: hostil ? P.hostilEscudo : cor });
+          RP.sprites.pessoa(c, 0, 0, t, { roupa: cor, cinto: P.cinto, dir: dir, andando: true, fase: i * 0.9, capacete: hostil ? P.hostilEsc : P.metal, lanca: i % 3 !== 1, escudo: hostil ? P.hostilEscudo : cor });
           if (i === 1 && revelado) A.bandeira(c, -dir * 2, -12, 18, cor, t, 10, 7);
         });
       })(i);

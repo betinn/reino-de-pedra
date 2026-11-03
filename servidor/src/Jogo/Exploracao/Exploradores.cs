@@ -7,6 +7,8 @@ using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
+
 namespace ReinoDePedra.Jogo.Exploracao
 {
     /// <summary>
@@ -18,6 +20,8 @@ namespace ReinoDePedra.Jogo.Exploracao
     public sealed class Explorador : Marcha
     {
         public override string Tipo => "explorador";
+        /// <summary>A pessoa que explora (ofício do tipo; a escolta vai em <see cref="Marcha.PessoaIds"/> também).</summary>
+        public long PessoaId { get; set; }
         /// <summary>"pe", "cavalo", "prospector" ou "batedor" (chaves de <c>P.exploradores</c>).</summary>
         public string TipoExp { get; set; } = "pe";
         /// <summary>"explorar", "rota", "patrulhar", "espionar" ou "retornar".</summary>
@@ -70,12 +74,13 @@ namespace ReinoDePedra.Jogo.Exploracao
         public void Entregar(Mundo m, Reino r, ItemFila item, int n)
         {
             if (item.Param == null || n <= 0) return;
-            r.ExploradoresLivres[item.Param] = r.ExploradoresLivres.GetValueOrDefault(item.Param) + n;
-            m.Sujar(r);
+            var casa = m.Locais.Obter(r.CasteloId) ?? m.LocaisDe(r.Id).FirstOrDefault(x => !x.Ruina);
+            if (casa == null) { PS.DevolverDoTreino(m, r, item, n); return; }
+            PS.TreinoPronto(m, r, item, n, casa);
         }
         public void Concluir(Mundo m, Reino r, ItemFila item) =>
             Registros.Notificar(m, r.Id, "exploracao", item.Qtd > 1 ? "Exploradores prontos" : "Explorador pronto", item.Rotulo, "exploradores");
-        public void Cancelado(Mundo m, Reino r, ItemFila item) { r.Pop += item.Restantes; m.Sujar(r); }
+        public void Cancelado(Mundo m, Reino r, ItemFila item) => PS.TreinoCancelado(m, r, item);
     }
 
     [Sistema]
@@ -118,7 +123,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             var c = m.Locais.Obter(r.CasteloId);
             if (c == null || c.ReinoId != r.Id || c.Ruina) throw new RegraException("Exploradores são treinados no castelo.");
             Economia.Atualizar(m, r);
-            var livre = (long)Math.Floor(r.Pop);
+            var livre = PS.LivresParaTreino(m, r);
             if (livre < qtd) throw new RegraException($"Falta população civil livre: precisa de {qtd}, há {livre}.");
             var custo = new Recursos(); custo.Somar(x.Custo, qtd);
             var item = Filas.Enfileirar(m, r, Recrutamento.Fila, new ItemFila
@@ -126,7 +131,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                 Tipo = ItemExplorador.Id, LocalId = c.Id, Hex = c.Hex, Param = tipo, Qtd = qtd,
                 Rotulo = qtd + " × " + NomeTipo(m, tipo).ToLowerInvariant(), Custo = custo, DuracaoSeg = x.Tempo * qtd,
             });
-            r.Pop -= qtd;
+            PS.ParaTreino(m, r, qtd, Pessoas.Oficios.DeExplorador(tipo), item, c);
             m.Sujar(r);
             return item;
         }
@@ -181,6 +186,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             Tipo(m, tipo);
             var casa = m.Locais.Obter(r.CasteloId);
             if (casa == null || casa.ReinoId != r.Id || casa.Ruina) throw new RegraException("Exploradores saem do castelo.");
+            PS.SincronizarLivres(m, r);
             if (r.ExploradoresLivres.GetValueOrDefault(tipo) < 1)
                 throw new RegraException("Nenhum " + NomeTipo(m, tipo).ToLowerInvariant() + " livre. Treine um no castelo.");
             var grupo = GT.Limpo(escolta);
@@ -193,9 +199,11 @@ namespace ReinoDePedra.Jogo.Exploracao
             var primeiro = Preparar(m, r, e, ordem, destino, pontos, casa.Hex);
             var rota = Rota(m, e, casa.Hex, primeiro);
             Economia.Atualizar(m, r);
-            r.ExploradoresLivres[tipo] -= 1;
-            if (r.ExploradoresLivres[tipo] <= 0) r.ExploradoresLivres.Remove(tipo);
-            m.Sujar(r);
+            var pessoa = PS.Livre(m, r, Pessoas.Oficios.DeExplorador(tipo)) ?? throw new RegraException("Nenhum " + NomeTipo(m, tipo).ToLowerInvariant() + " livre. Treine um no castelo.");
+            m.Marchas.Adicionar(e);
+            e.PessoaId = pessoa.Id;
+            PS.Embarcar(m, e, [pessoa]);
+            PS.RecontarLivres(m, r);
             if (grupo.Count > 0) GT.Retirar(m, casa, grupo);
             e.Partir(m, rota);
             m.Avisar(r.Id, "reino");
@@ -335,9 +343,9 @@ namespace ReinoDePedra.Jogo.Exploracao
             var r = m.Reinos.Obter(e.ReinoId);
             if (r == null) { e.Encerrar(m); return; }
             Economia.Atualizar(m, r);
-            r.ExploradoresLivres[e.TipoExp] = r.ExploradoresLivres.GetValueOrDefault(e.TipoExp) + 1;
-            m.Sujar(r);
-            if (GT.Total(e.Tropas) > 0) GT.Devolver(m, casa, e.Tropas);
+            PS.Desembarcar(m, e, casa);
+            PS.Livrar(m, e, e.PessoaId, casa);   // o explorador volta a ficar livre no castelo
+            PS.RecontarLivres(m, r);
             if (e.HexesRevelados > 0 || e.JazidasAchadas > 0)
             {
                 var linhas = new JsonArray { Fauna.Linha("Hexágonos revelados", e.HexesRevelados.ToString()) };

@@ -6,6 +6,7 @@ using ReinoDePedra.Jogo.Mapa;
 using ReinoDePedra.Jogo.Persistencia;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Testes;
@@ -40,7 +41,7 @@ public class ExploracaoTestes
     {
         Economia.Atualizar(t.M, r);
         l.Guarnicao[unidade] = l.Guarnicao.GetValueOrDefault(unidade) + n;
-        r.Pop -= t.B.U[unidade].Pop * n;
+        Pessoas.RemoverCivis(t.M, r, t.B.U[unidade].Pop * n);
         t.M.Sujar(l); t.M.Sujar(r);
     }
 
@@ -79,6 +80,7 @@ public class ExploracaoTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
+        t.DarRecursos(r, 1e6, "comida", "ferro", "couro");
         var x = t.B.P.Exploradores[tipo];
         var pop0 = r.Pop;
         var item = Exploradores.Treinar(t.M, r, tipo, 1);
@@ -272,10 +274,10 @@ public class ExploracaoTestes
     {
         var (t, r, c, alvo) = MundoComRegiaoLonge();
         var rg = Regiao(t, alvo, "javalis", "medio");
-        var mc = Logistica.Enviar(t.M, r, c.Hex, alvo, Recursos.De(new Dictionary<string, double> { ["madeira"] = 100 }), null, "obras", null);
-        Assert.Equal(10, mc.ForcaContraFauna(t.M));   // 2 pessoas × 5
+        var mc = Logistica.Enviar(t.M, r, c.Hex, alvo, Recursos.De(new Dictionary<string, double> { ["madeira"] = 10 }), null, "obras", null);
+        Assert.Equal(5, mc.ForcaContraFauna(t.M));   // 1 pessoa (30 de carga) × 5
         Fauna.Atacar(t.M, mc, rg, alvo, 2);
-        Assert.Equal(75, mc.Carga.Qtd("madeira"), 6);
+        Assert.Equal(7.5, mc.Carga.Qtd("madeira"), 6);
         Assert.Contains(mc, t.M.Marchas);
     }
 
@@ -523,8 +525,8 @@ public class ExploracaoTestes
     [Fact]
     public void Espionagem_nao_vista_revela_dono_defesa_estoque_e_reliquias()
     {
-        var (t, a, b, cb, _) = DoisReinos(20);
-        Assert.Equal(t.M.F.ChanceEspiao(0, 20), Espionagem.Chance(t.M, cb), 9);
+        var (t, a, b, cb, _) = DoisReinos(4);
+        Assert.Equal(t.M.F.ChanceEspiao(0, 4), Espionagem.Chance(t.M, cb), 9);   // 25%: o sorteio abaixo (≥ 0,25) não vê o batedor
         var rel = t.M.Reliquias.Adicionar(new Reliquia { Nome = "Pedra do Vale", Tipo = "producao", ReinoId = b.Id, LocalId = cb.Id });
         Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 1);
         a.ExploradoresLivres["batedor"] = 1;
@@ -542,7 +544,7 @@ public class ExploracaoTestes
             t.AvancarMin(t.B.P.Espiao.TempoNoLocal / 60 + 1);
             var r = Assert.Single(t.M.Relatorios, x => x.ReinoId == a.Id && x.Tipo == "espionagem");
             Assert.Equal(b.Nome, r.Dados["dono"]!["nome"]!.GetValue<string>());
-            Assert.Equal(20, r.Dados["defesa"]!["guarnicao"]!["lanceiro"]!.GetValue<int>());
+            Assert.Equal(4, r.Dados["defesa"]!["guarnicao"]!["lanceiro"]!.GetValue<int>());
             Assert.True(r.Dados["estoque"]!.AsObject().Count > 0);
             Assert.Equal("Pedra do Vale", r.Dados["reliquias"]![0]!["nome"]!.GetValue<string>());
             Assert.False(r.Dados["visto"]!.GetValue<bool>());

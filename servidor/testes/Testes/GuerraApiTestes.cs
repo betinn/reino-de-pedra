@@ -125,7 +125,7 @@ public class GuerraApiTestes
         Assert.True(x.GetProperty("exilio").GetBoolean());
         Assert.Equal("Forças desconhecidas", x.GetProperty("atacante").GetString());
         Assert.DoesNotContain("Pedralva", x.ToString());
-        Assert.Equal(10, x.GetProperty("kitTropas").GetProperty("milicia").GetInt32());
+        Assert.Equal(2, x.GetProperty("kitTropas").GetProperty("milicia").GetInt32());
         Assert.Equal(HttpStatusCode.NoContent, (await d.Post("exilio/visto")).status);
         var (_, rd2) = await d.Get("reino");
         Assert.False(rd2.TryGetProperty("queda", out var q2) && q2.ValueKind != JsonValueKind.Null);

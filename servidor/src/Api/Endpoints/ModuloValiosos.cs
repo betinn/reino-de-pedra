@@ -13,9 +13,9 @@ public sealed record PedidoVeiculo(string Tipo, int? Qtd);
 public sealed record PedidoSalgadeira(long LocalId);
 public sealed record PedidoPosto(int? Hex, int? C, int? L);
 public sealed record PedidoCaravanaApi(long OrigemLocalId, long DestinoLocalId, Dictionary<string, double>? Carga, Dictionary<string, int>? Veiculos,
-    Dictionary<string, int>? Tropas, long? BaseLocalId, bool Seguro);
-public sealed record PedidoExtracao(long DeLocalId, Dictionary<string, int>? Tropas, int? Hex, int? C, int? L, bool Repetir, bool Seguro, long? DestinoLocalId);
-public sealed record PedidoMoverReliquia(long DeLocalId, Dictionary<string, int>? Tropas, long DestinoLocalId, bool Seguro);
+    Dictionary<string, int>? Tropas, long? BaseLocalId, bool Seguro, List<long>? Pessoas = null);
+public sealed record PedidoExtracao(long DeLocalId, Dictionary<string, int>? Tropas, int? Hex, int? C, int? L, bool Repetir, bool Seguro, long? DestinoLocalId, List<long>? Pessoas = null);
+public sealed record PedidoMoverReliquia(long DeLocalId, Dictionary<string, int>? Tropas, long DestinoLocalId, bool Seguro, List<long>? Pessoas = null);
 
 /// <summary>Veículos, caravanas, salgadeira, postos, extração, escavação e relíquias.</summary>
 public sealed class ModuloValiosos : IModuloApi
@@ -71,7 +71,9 @@ public sealed class ModuloValiosos : IModuloApi
             return Results.Json(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
-                var c = Caravanas.Enviar(m, r, Converter(p));
+                var (tropas, escolha) = EnvioPessoas.Ler(m, r, p.BaseLocalId ?? r.CasteloId, p.Pessoas, p.Tropas);
+                using var _ = escolha;
+                var c = Caravanas.Enviar(m, r, new PedidoCaravana(p.OrigemLocalId, p.DestinoLocalId, p.Carga, p.Veiculos, tropas, p.BaseLocalId, p.Seguro));
                 return new
                 {
                     c.Id, c.Fase, c.Chegada, carga = c.Pedido.Arredondado(), c.Veiculos, tropas = c.Tropas,
@@ -107,7 +109,9 @@ public sealed class ModuloValiosos : IModuloApi
                 var jazida = Extracoes.Conhecida(m, r.Id, hex) != null;
                 var dados = jazida ? new JsonObject { ["repetir"] = p.Repetir } : new JsonObject();
                 if (!jazida && p.DestinoLocalId is long d) dados["destinoLocalId"] = d;
-                var ex = Extracoes.Enviar(m, r, p.DeLocalId, p.Tropas, hex, jazida ? Extracoes.OrdemExtrair : Escavacoes.OrdemEscavar, p.Seguro, dados);
+                var (tropas, escolha) = EnvioPessoas.Ler(m, r, p.DeLocalId, p.Pessoas, p.Tropas);
+                using var _ = escolha;
+                var ex = Extracoes.Enviar(m, r, p.DeLocalId, tropas, hex, jazida ? Extracoes.OrdemExtrair : Escavacoes.OrdemEscavar, p.Seguro, dados);
                 return VisaoValiosos.Grupo(m, r, ex);
             }), Json.Web, statusCode: 201);
         });
@@ -130,7 +134,9 @@ public sealed class ModuloValiosos : IModuloApi
             return Results.Json(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
-                var ex = ReliquiasLendarias.Mover(m, r, rel, p.DeLocalId, p.Tropas, p.DestinoLocalId, p.Seguro);
+                var (tropas, escolha) = EnvioPessoas.Ler(m, r, p.DeLocalId, p.Pessoas, p.Tropas);
+                using var _ = escolha;
+                var ex = ReliquiasLendarias.Mover(m, r, rel, p.DeLocalId, tropas, p.DestinoLocalId, p.Seguro);
                 return new { exercito = VisaoTropas.Exercito(m, ex), poucoProtegida = Caravanas.PoucoProtegida(m, ex.Tropas) };
             }), Json.Web, statusCode: 201);
         });

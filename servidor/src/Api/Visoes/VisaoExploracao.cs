@@ -37,13 +37,13 @@ public static class VisaoExploracao
             castelo = castelo == null ? null : new { castelo.Id, castelo.Hex, castelo.Nome, guarnicao = castelo.Guarnicao },
             presos = Capturas.PresosPor(m, r.Id).OrderBy(p => p.Ate).Select(p => new
             {
-                p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
+                p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), pessoa = p.Nome, p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
                 resgate = p.Resgate.Arredondado(),
                 origem = m.Reinos.Obter(p.DonoId) is { } d ? Espionagem.Identidade(d) : null,
             }).ToList(),
             capturados = Capturas.PresosDe(m, r.Id).OrderBy(p => p.Ate).Select(p => new
             {
-                p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
+                p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), pessoa = p.Nome, p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
                 resgate = p.Estado == Capturas.ResgatePedido ? p.Resgate.Arredondado() : null,
                 // quem capturou só aparece se pediu resgate (o pedido revela quem pede)
                 captor = p.Estado == Capturas.ResgatePedido && m.Reinos.Obter(p.CaptorId) is { } c ? Espionagem.Identidade(c) : null,

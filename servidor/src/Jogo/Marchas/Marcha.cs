@@ -18,7 +18,10 @@ public abstract partial class Marcha : Documento
     public List<int> Caminho { get; set; } = new();
     /// <summary>Instante (ms) em que a marcha chega a cada hexágono do caminho; Tempos[0] = partida.</summary>
     public List<long> Tempos { get; set; } = new();
+    /// <summary>Tropas por unidade: contagem das pessoas soldados em <see cref="PessoaIds"/>, mantida por <c>Pessoas</c>.</summary>
     public Dictionary<string, int> Tropas { get; set; } = new();
+    /// <summary>Pessoas na marcha (soldados, explorador, mensageiro, civis).</summary>
+    public List<long> PessoaIds { get; set; } = new();
     public Recursos Carga { get; set; } = new();
     /// <summary>"Lenta", "Média" ou "Rápida" (a da unidade mais lenta).</summary>
     public string Vel { get; set; } = "Lenta";
@@ -80,9 +83,13 @@ public abstract partial class Marcha : Documento
     /// </summary>
     public static List<Action<Mundo, Marcha>> AoPartir { get; } = new();
 
+    /// <summary>Ganchos ao tirar a marcha do mapa (quem ainda estava nela some: desembarque antes).</summary>
+    public static List<Action<Mundo, Marcha>> AoEncerrar { get; } = new();
+
     /// <summary>Tira a marcha do mapa.</summary>
     public void Encerrar(Mundo m)
     {
+        foreach (var f in AoEncerrar) f(m, this);
         m.Cancelar(EventoId);
         m.Marchas.Remover(this);
         m.Avisar(ReinoId, "marchas");

@@ -16,7 +16,7 @@
     pantano: ['Pântano', 'Deslocamento muito lento · ervas raras']
   };
   var NOME_MARCHA = RP.NOMES_MARCHA = RP.NOMES_MARCHA || {};
-  ['carregadores:Carregadores', 'mensageiro:Mensageiro', 'caravana:Caravana', 'exercito:Exército'].forEach(function (x) { var p = x.split(':'); if (!NOME_MARCHA[p[0]]) NOME_MARCHA[p[0]] = p[1]; });
+  ['carregadores:Carregadores', 'pessoas:Pessoas', 'mensageiro:Mensageiro', 'caravana:Caravana', 'exercito:Exército'].forEach(function (x) { var p = x.split(':'); if (!NOME_MARCHA[p[0]]) NOME_MARCHA[p[0]] = p[1]; });
 
   var tela = null, cena = null, tat = null, modo = 'cena', selecao = -1, alvoFundar = null, posicionado = false;
   var mm = null, mmCtx = null, mmVista = null, mmVersao = -1, mmEscala = 1, rafMm = 0;
@@ -310,6 +310,12 @@
   function aoTocar(alvo) {
     var hh = alvo.hex != null ? alvo.hex : (alvo.obj && alvo.obj.hex);
     if (alvoFundar) { if (hh != null && hh >= 0) folhaFundar(hh); return; }
+    /* pessoas: toque único abre a folha; no modo seleção (ou com Shift) soma ou tira da seleção */
+    if (alvo.ent && alvo.ent[0] === 'pessoa' && !(RP.envio && RP.envio.ativo())) {
+      if (RP.selecao && (RP.selecao.modo || RP.shift)) RP.selecao.alternar(alvo.ent[1]); else RP.folhaPessoa(alvo.ent[1]);
+      return;
+    }
+    if (alvo.ent && alvo.ent[0] === 'pessoas' && !(RP.envio && RP.envio.ativo())) { RP.folhaPessoasDoHex(alvo.ent[1]); return; }
     /* escolhendo destino de tropas: o toque escolhe o hexágono (a folha dele traz as ordens), nunca abre o painel do local */
     if (RP.envio && RP.envio.ativo()) { if (hh != null && hh >= 0) folhaHex(hh); return; }
     if (alvo.obj) folhaObjeto(alvo.obj);
@@ -335,13 +341,13 @@
   function abrirCamadas() {
     var cam = MAPA.camadas, d = M.dados;
     var temFauna = !!MAPA.perigoHex || !!(d && d.objs.some(function (o) { return o.tipo === 'fauna'; }));
-    var tog = function (k, rot, ic) { return '<button type="button" class="alternar" data-camada="' + k + '" aria-pressed="' + (cam[k] !== false && (k !== 'perigo' || cam.perigo)) + '">' + RP.icone(ic) + '<span>' + rot + '</span><i aria-hidden="true"></i></button>'; };
+    var tog = function (k, rot, ic) { return '<button type="button" class="alternar" data-camada="' + k + '" aria-pressed="' + (k === 'perigo' || k === 'grade' ? !!cam[k] : cam[k] !== false) + '">' + RP.icone(ic) + '<span>' + rot + '</span><i aria-hidden="true"></i></button>'; };
     var terr = Object.keys(TERRENOS).map(function (t) { return '<div class="legenda-item"><span class="amostra-hex t-' + t + '"></span><span><b>' + TERRENOS[t][0] + '</b><small>' + TERRENOS[t][1] + '</small></span></div>'; }).join('') +
       '<div class="legenda-item"><span class="amostra-hex t-rio"></span><span><b>Rio</b><small>Exige ponte ou vau. Sem ponte, a travessia é mais lenta.</small></span></div>';
     RP.abrirFolha({
       titulo: 'Camadas e legenda', veu: true,
       corpo: '<div class="alternar-grade">' + (MAPA.perigoHex ? tog('perigo', 'Perigo', 'pata') : '') + (temFauna ? tog('fauna', 'Animais', 'lobo') : '') +
-        tog('rotas', 'Rotas', 'rota') + tog('marchas', 'Marchas', 'tropas') + tog('recursos', 'Jazidas', 'ouro') + tog('bandeiras', 'Bandeiras', 'bandeira') + tog('rotulos', 'Nomes', 'info') + '</div>' +
+        tog('rotas', 'Rotas', 'rota') + tog('marchas', 'Marchas', 'tropas') + tog('recursos', 'Jazidas', 'ouro') + tog('bandeiras', 'Bandeiras', 'bandeira') + tog('rotulos', 'Nomes', 'info') + tog('grade', 'Grade', 'hexagonos') + '</div>' +
         (MAPA.perigoHex ? '<p class="fraco legenda-nota">A camada Perigo pinta as áreas conhecidas com fauna hostil, para escolher entre rota curta e perigosa ou longa e segura. Vale no Mapa; na Vista os animais aparecem desenhados.</p>' : '') +
         '<div class="secao-titulo">Névoa</div>' +
         '<div class="legenda-item"><span class="amostra-hex t-planicie"></span><span><b>Visível</b><small>Dentro da visão de locais, tropas e exploradores. Tudo ao vivo.</small></span></div>' +
@@ -364,9 +370,10 @@
     var b = e.target.closest('[data-camada]');
     if (!b) return;
     var k = b.getAttribute('data-camada'), cam = MAPA.camadas;
-    cam[k] = k === 'perigo' ? !cam.perigo : cam[k] === false;
-    b.setAttribute('aria-pressed', String(k === 'perigo' ? cam.perigo : cam[k] !== false));
+    cam[k] = k === 'perigo' || k === 'grade' ? !cam[k] : cam[k] === false;
+    b.setAttribute('aria-pressed', String(k === 'perigo' || k === 'grade' ? !!cam[k] : cam[k] !== false));
     if (tat) { tat.ci = null; tat.atualizarSvg(); tat.pedirQuadro(); }
+    if (cena) cena.invalidar();
   });
 
   /* ---------------------------------------------------------------- minimapa */
@@ -436,6 +443,7 @@
       '<button type="button" class="btn btn-icone" data-zoom="0.6667" aria-label="Afastar">' + RP.icone('menos') + '</button>' +
       '<button type="button" class="btn btn-icone" data-centrar-castelo aria-label="Centralizar no castelo">' + RP.icone('alvo') + '</button>' +
       '<button type="button" class="btn btn-icone" data-inclinar aria-label="Inclinação da câmera: toque para voltar ao padrão. Arraste com o botão do meio ou com dois dedos para inclinar." title="Inclinação: botão do meio ou dois dedos; toque para voltar ao padrão">' + RP.icone('vista') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-selecao aria-pressed="false" aria-label="Modo seleção: toque nas pessoas ou arraste um laço" title="Modo seleção (ou Shift)">' + RP.icone('populacao') + '</button>' +
       '<button type="button" class="btn btn-icone" data-camadas aria-label="Camadas e legenda">' + RP.icone('camadas') + '</button></div>' +
       '<div class="modo-mapa abas" role="group" aria-label="Tipo de visão">' +
       '<button type="button" class="aba" data-modo-btn="cena" aria-pressed="true">' + RP.icone('vista') + 'Vista</button>' +
@@ -447,6 +455,9 @@
       selecao: function () { return selecao; },
       escolhendoHex: function () { return !!alvoFundar || !!(RP.envio && RP.envio.ativo()); },
       aoTocar: aoTocar, aoMover: pedirMinimapa,
+      modoSelecao: function () { return !!(RP.selecao && (RP.selecao.modo || RP.shift)); },
+      aoLaco: function (pts) { if (RP.selecao) RP.selecao.lacar(pts); },
+      aoToqueLongo: function () { if (RP.selecao && !RP.selecao.modo && !alvoFundar && !(RP.envio && RP.envio.ativo())) RP.selecao.ativarModo(true); },
       aoAfastarDemais: function () {
         definirModo('tatico', { s: 0.75 });
         RP.aviso({ titulo: 'Mapa tático', texto: 'Afastou além da Vista. Aproxime ou toque em Vista para voltar.', icone: 'hexagonos', ms: 2200 });

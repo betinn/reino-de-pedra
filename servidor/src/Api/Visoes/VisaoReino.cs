@@ -2,6 +2,7 @@ using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 
 namespace ReinoDePedra.Api.Visoes;
 
@@ -24,7 +25,8 @@ public static class VisaoReino
             ["agora"] = agora, ["escudoAte"] = r.EscudoAte > agora ? r.EscudoAte : null,
             ["casteloId"] = r.CasteloId, ["nivelCastelo"] = castelo?.Nivel ?? 0,
             ["pop"] = Math.Floor(r.Pop), ["teto"] = Economia.Teto(m, r), ["tropas"] = Economia.Tropas(m, r),
-            ["trabalhadores"] = Economia.TrabalhadoresNecessarios(m, r), ["eficiencia"] = Math.Round(ef, 3),
+            ["trabalhadores"] = Economia.TrabalhadoresNecessarios(m, r), ["trabalhando"] = Economia.Trabalhando(m, r), ["eficiencia"] = Math.Round(ef, 3),
+            ["pessoas"] = m.PessoasDe(r.Id).Count(),
             ["moradias"] = Economia.Moradias(m, r),
             ["locais"] = locais, ["filas"] = filas,
             ["marchas"] = m.Marchas.Where(x => x.ReinoId == r.Id).Select(x => VisaoMarcha.Propria(m, x)).ToList(),
@@ -44,7 +46,7 @@ public static class VisaoReino
 
     public static object Local(Mundo m, Reino r, Local l, double ef)
     {
-        var taxa = Economia.TaxaLocal(m, r, l, ef);
+        var taxa = Economia.TaxaLocal(m, r, l);
         var castelo = m.Locais.Obter(r.CasteloId);
         var alvo = l.Nivel + 1 + r.Fila(Obras.Fila).Itens.Count(i => i.Tipo == ObraNivel.Id && i.LocalId == l.Id);
         var ehCastelo = l.Tipo == TipoLocal.Castelo;
@@ -63,7 +65,8 @@ public static class VisaoReino
             ["estoque"] = l.Estoque.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value, 2)),
             ["taxa"] = taxa.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value, 3)), ["cap"] = cap,
             ["moradias"] = l.Moradias, ["guarnicao"] = l.Guarnicao, ["postura"] = l.Postura, ["ruina"] = l.Ruina,
-            ["trabalhadores"] = l.EhProducao ? m.F.Trabalhadores(l.Nivel) : 0,
+            ["trabalhadores"] = PS.Vagas(m, l), ["vagas"] = PS.Vagas(m, l), ["ocupadas"] = PS.Trabalhando(m, l),
+            ["pessoas"] = PS.Presentes(m, l).Count(), ["eficiencia"] = Math.Round(Economia.EficienciaLocal(m, l), 3),
             ["melhoria"] = melhoria,
         };
         foreach (var x in ExtrasLocal) x(m, r, l, d);
@@ -99,7 +102,7 @@ public static class VisaoMarcha
     public static object Propria(Mundo m, Marcha x) => new
     {
         x.Id, x.Tipo, x.Caminho, x.Tempos, x.Tropas, carga = x.Carga.Arredondado(), x.Vel, x.Retornando, x.Estandarte,
-        pessoas = x is Carregadores c ? c.Pessoas : (int?)null,
+        pessoas = x is Carregadores c ? c.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento d ? d.PessoaIds.Count : (int?)null,
         detalhe = Detalhes(m, x),
     };
     /// <summary>Sistemas acrescentam detalhes por tipo de marcha (objetivo do ataque, ordem do explorador...).</summary>

@@ -373,6 +373,9 @@
       h += '<circle class="lc-base" r="15"/><use href="#i-' + RP.iconeLocal({ tipo: o.local }) + '" x="-10" y="-10.5" width="20" height="20"/>' + rotuloSvg(o.nome || '', 30);
       if (o.nivel) h += '<g class="lc-nivel" transform="translate(12 -12)"><circle r="7.5"/><text y="3.5">' + o.nivel + '</text></g>';
     }
+    /* quantas pessoas suas estão aqui (um marcador por grupo, com o número) */
+    var np = meu && M.dados && M.dados.pessoasPorHex && M.dados.pessoasPorHex[o.hex] ? M.dados.pessoasPorHex[o.hex].length : 0;
+    if (np) h += '<g class="lc-pessoas" transform="translate(' + (castelo ? -18 : -12) + ' 12)"><circle r="7.5"/><text y="3.2">' + np + '</text></g>';
     if (o.reliquia) h += '<g class="relq-badge tipo-' + (o.reliquia.tipo || 'desconhecido') + '" transform="translate(' + (castelo ? -17 : -12) + ' ' + (castelo ? -15 : -11) + ')"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>';
     return h + '</g></g>';
   }

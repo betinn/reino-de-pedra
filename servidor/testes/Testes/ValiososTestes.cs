@@ -4,6 +4,7 @@ using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Mapa;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 using ReinoDePedra.Jogo.Valiosos;
@@ -28,7 +29,7 @@ public class ValiososTestes
     {
         Economia.Atualizar(t.M, r);
         l.Guarnicao[unidade] = l.Guarnicao.GetValueOrDefault(unidade) + n;
-        r.Pop = Math.Max(0, r.Pop - t.B.U[unidade].Pop * n);
+        Pessoas.RemoverCivis(t.M, r, t.B.U[unidade].Pop * n);
         t.M.Sujar(l); t.M.Sujar(r);
     }
 
@@ -98,7 +99,7 @@ public class ValiososTestes
         Economia.Atualizar(t.M, r);
         serraria.Estoque["madeira"] = Economia.Capacidade(t.M, serraria, "madeira");   // cheio: não cresce no caminho
         var madeiraVila = vila.Estoque.Qtd("madeira");
-        var c = Caravanas.Enviar(t.M, r, new PedidoCaravana(serraria.Id, vila.Id, new Dictionary<string, double> { ["madeira"] = 200 },
+        var c = Caravanas.Enviar(t.M, r, new PedidoCaravana(serraria.Id, vila.Id, new Dictionary<string, double> { ["madeira"] = 20 },
             new Dictionary<string, int> { ["carroca"] = 1 }, null));
         Assert.Equal(Caravana.Buscar, c.Fase);
         Assert.Equal(0, Veiculos.Livres(r, "carroca"));
@@ -112,13 +113,13 @@ public class ValiososTestes
         Assert.Equal(cheia, serraria.Estoque.Qtd("madeira"), 3);
         AvancarAte(t, c.Chegada);
         Assert.Equal(Caravana.Levar, c.Fase);
-        Assert.Equal(200, c.Carga.Qtd("madeira"), 6);
-        Assert.Equal(cheia - 200, serraria.Estoque.Qtd("madeira"), 3);
+        Assert.Equal(20, c.Carga.Qtd("madeira"), 6);
+        Assert.Equal(cheia - 20, serraria.Estoque.Qtd("madeira"), 3);
         Assert.Equal(vila.Hex, c.Destino);
         // perna 2: entrega no destino e volta ao castelo
         AvancarAte(t, c.Chegada);
         Economia.Atualizar(t.M, r);
-        Assert.Equal(madeiraVila + 200, vila.Estoque.Qtd("madeira"), 3);
+        Assert.Equal(madeiraVila + 20, vila.Estoque.Qtd("madeira"), 3);
         Assert.Equal(Caravana.Voltar, c.Fase);
         Assert.Equal(Castelo(t, r).Hex, c.Destino);
         AvancarAte(t, c.Chegada);
@@ -136,23 +137,23 @@ public class ValiososTestes
         var vila = LocalDe(t, r, TipoLocal.Vila);
         PedidoCaravana P(double madeira, int carrocas, string rec = "madeira", long? destino = null, Dictionary<string, int>? tropas = null) =>
             new(c.Id, destino ?? vila.Id, new Dictionary<string, double> { [rec] = madeira }, new Dictionary<string, int> { ["carroca"] = carrocas }, tropas);
-        Assert.Contains("carroças livres", Assert.Throws<RegraException>(() => Caravanas.Enviar(t.M, r, P(100, 1))).Message);
+        Assert.Contains("carroças livres", Assert.Throws<RegraException>(() => Caravanas.Enviar(t.M, r, P(50, 1))).Message);
         r.Veiculos["carroca"] = 1;
-        Assert.Contains("não cabe", Assert.Throws<RegraException>(() => Caravanas.Enviar(t.M, r, P(501, 1))).Message);
+        Assert.Contains("não cabe", Assert.Throws<RegraException>(() => Caravanas.Enviar(t.M, r, P(61, 1))).Message);
         Assert.Contains("só tem", Assert.Throws<RegraException>(() => Caravanas.Enviar(t.M, r, new PedidoCaravana(vila.Id, c.Id,
-            new Dictionary<string, double> { ["ouro"] = 400 }, new Dictionary<string, int> { ["carroca"] = 1 }, null))).Message);
+            new Dictionary<string, double> { ["ouro"] = 40 }, new Dictionary<string, int> { ["carroca"] = 1 }, null))).Message);
         t.DarRecursos(r, 100, "ouro");
         Assert.Contains("Valiosos", Assert.Throws<RegraException>(() => Caravanas.Enviar(t.M, r, P(50, 1, "ouro"))).Message);
         Assert.Contains("Escolha carroças ou tropas", Assert.Throws<RegraException>(() =>
             Caravanas.Enviar(t.M, r, new PedidoCaravana(c.Id, vila.Id, new Dictionary<string, double> { ["madeira"] = 10 }, null, null))).Message);
         // pouco protegida: só aviso
-        var pl = Caravanas.Planejar(t.M, r, P(100, 1));
+        var pl = Caravanas.Planejar(t.M, r, P(50, 1));
         Assert.Null(pl.Problema);
         Assert.True(pl.PoucoProtegida);
         Guarnecer(t, r, c, "lanceiro", 5);
-        pl = Caravanas.Planejar(t.M, r, P(100, 1, tropas: new() { ["lanceiro"] = 5 }));
+        pl = Caravanas.Planejar(t.M, r, P(50, 1, tropas: new() { ["lanceiro"] = 5 }));
         Assert.False(pl.PoucoProtegida);
-        Assert.Equal(500 + 5 * t.B.U["lanceiro"].Carga, pl.Capacidade);
+        Assert.Equal(t.B.VEICULOS["carroca"].Carga + 5 * t.B.U["lanceiro"].Carga, pl.Capacidade);
     }
 
     [Fact]
@@ -189,15 +190,15 @@ public class ValiososTestes
         var c = Castelo(t, r);
         var vila = LocalDe(t, r, TipoLocal.Vila);
         t.DarRecursos(r, 5000, "madeira");
-        var cv = Caravanas.Enviar(t.M, r, new PedidoCaravana(c.Id, vila.Id, new Dictionary<string, double> { ["madeira"] = 900 },
+        var cv = Caravanas.Enviar(t.M, r, new PedidoCaravana(c.Id, vila.Id, new Dictionary<string, double> { ["madeira"] = 100 },
             new Dictionary<string, int> { ["carroca"] = 2 }, null));
         Assert.Equal(Caravana.Levar, cv.Fase);   // saiu da origem (o castelo) já carregada
-        Assert.Equal(900, cv.Carga.Qtd("madeira"), 6);
+        Assert.Equal(100, cv.Carga.Qtd("madeira"), 6);
         var ci = Castelo(t, inimigo);
         Guarnecer(t, inimigo, ci, "cavalaria", 20);
         var ladrao = Exercitos.Enviar(t.M, inimigo, ci.Id, new Dictionary<string, int> { ["cavalaria"] = 20 }, HexLivre(t, inimigo, 1), OrdemMover.Id);
         cv.AoSerVencida(t.M, ladrao);
-        Assert.Equal(900, ladrao.Carga.Qtd("madeira"), 6);   // 20 cavaleiros levam 1.600
+        Assert.Equal(100, ladrao.Carga.Qtd("madeira"), 6);   // 20 cavaleiros levam 200
         Assert.False(t.M.Marchas.ContemId(cv.Id));
         Assert.Equal(0, Veiculos.Livres(r, "carroca"));
         Assert.Contains(t.M.Notificacoes, n => n.ReinoId == r.Id && n.Titulo == "Caravana roubada");
@@ -233,7 +234,7 @@ public class ValiososTestes
 
     // ---------------------------------------------------------------- extração
 
-    private static (MundoTeste t, Reino r, Jazida j, Local c) CenarioExtracao(string recurso = "prata", double qtd = 2000, int lanceiros = 10)
+    private static (MundoTeste t, Reino r, Jazida j, Local c) CenarioExtracao(string recurso = "prata", double qtd = 2000, int lanceiros = 6)
     {
         var t = new MundoTeste();
         var r = t.NovoReino();
@@ -247,7 +248,7 @@ public class ValiososTestes
     public void Extracao_rende_no_ritmo_da_formula_e_volta_com_a_carga_cheia()
     {
         var (t, r, j, c) = CenarioExtracao();
-        var g = new Dictionary<string, int> { ["lanceiro"] = 10 };
+        var g = new Dictionary<string, int> { ["lanceiro"] = 6 };
         var ex = Extracoes.Enviar(t.M, r, c.Id, g, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         AvancarAte(t, ex.Chegada);
         Assert.Equal(j.Id, ex.ExtraiJazidaId);
@@ -257,7 +258,7 @@ public class ValiososTestes
         Extracoes.Liquidar(t.M, j);
         Assert.Equal(ritmo * 5, ex.Carga.Qtd("prata"), 3);
         Assert.Equal(2000 - ritmo * 5, j.Restante, 3);
-        // a carga enche (10 lanceiros levam 400) e o grupo leva ao castelo (o depósito mais próximo)
+        // a carga enche (6 lanceiros levam 30) e o grupo leva ao castelo (o depósito mais próximo)
         var cheia = ex.CargaMax(t.M);
         var prata0 = c.Estoque.Qtd("prata");
         t.AvancarHoras(cheia / ritmo - 5 + 0.01);
@@ -267,7 +268,7 @@ public class ValiososTestes
         AvancarAte(t, ex.Chegada);
         Assert.False(t.M.Marchas.ContemId(ex.Id));   // sem "repetir", ficam no castelo
         Assert.Equal(prata0 + cheia, c.Estoque.Qtd("prata"), 3);
-        Assert.Equal(10, c.Guarnicao["lanceiro"]);
+        Assert.Equal(6, c.Guarnicao["lanceiro"]);
         Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "extracao");
     }
 
@@ -275,13 +276,13 @@ public class ValiososTestes
     public void Extracao_com_repetir_volta_a_jazida_ate_ela_esgotar()
     {
         var (t, r, j, c) = CenarioExtracao("prata", 500);
-        var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject { ["repetir"] = true });
+        var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 6 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject { ["repetir"] = true });
         var prata0 = c.Estoque.Qtd("prata");
-        t.AvancarHoras(110);   // 1ª carga cheia (400) e entregue
+        t.AvancarHoras(60);   // várias cargas (30 cada) entregues
         Assert.True(t.M.Marchas.ContemId(ex.Id));
-        Assert.True(c.Estoque.Qtd("prata") >= prata0 + 400 - 1e-6);
+        Assert.True(c.Estoque.Qtd("prata") >= prata0 + 200 - 1e-6);
         Assert.True(ex.Ordem == Extracoes.OrdemExtrair);   // voltou à jazida
-        t.AvancarHoras(60);   // os 100 restantes acabam com a jazida
+        t.AvancarHoras(80);   // o resto acaba com a jazida
         Assert.Equal(0, j.Restante, 6);
         Assert.False(t.M.Marchas.ContemId(ex.Id));
         Assert.Equal(prata0 + 500, c.Estoque.Qtd("prata"), 3);
@@ -291,12 +292,12 @@ public class ValiososTestes
     [Fact]
     public void Jazida_finita_esgota_e_dois_grupos_dividem_o_que_resta()
     {
-        var (t, r, j, c) = CenarioExtracao("prata", 30, 20);
-        var a = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
-        var b = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
+        var (t, r, j, c) = CenarioExtracao("prata", 30, 6);
+        var a = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 3 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
+        var b = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 3 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         AvancarAte(t, Math.Max(a.Chegada, b.Chegada));
         Assert.Equal(2, j.Extratores.Count);
-        var ritmo = t.M.F.ExtracaoH(new Dictionary<string, int> { ["lanceiro"] = 10 }, false, false) / t.M.P.Valor["prata"];
+        var ritmo = t.M.F.ExtracaoH(new Dictionary<string, int> { ["lanceiro"] = 3 }, false, false) / t.M.P.Valor["prata"];
         t.AvancarHoras(30 / (2 * ritmo) + 0.01);
         Assert.Equal(0, j.Restante, 6);
         Assert.Equal(30, a.Carga.Qtd("prata") + b.Carga.Qtd("prata"), 3);
@@ -306,28 +307,29 @@ public class ValiososTestes
     }
 
     [Fact]
-    public void Extracao_ate_50_tropas_e_so_jazida_descoberta()
+    public void Extracao_ate_6_tropas_e_so_jazida_descoberta()
     {
-        var (t, r, j, c) = CenarioExtracao("ouro", 1000, 60);
-        Assert.Contains("50", Assert.Throws<RegraException>(() =>
-            Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 51 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject())).Message);
-        Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 40 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
-        Assert.Throws<RegraException>(() => Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 11 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject()));
-        Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
+        var (t, r, j, c) = CenarioExtracao("ouro", 1000, 12);
+        var max = t.M.P.Extracao.MaxTropas;
+        Assert.Contains(max.ToString(), Assert.Throws<RegraException>(() =>
+            Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = max + 1 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject())).Message);
+        Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 4 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
+        Assert.Throws<RegraException>(() => Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 3 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject()));
+        Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         var oculta = NovaJazida(t, r, "gema", 500, 4, descoberta: false);
         Assert.Contains("jazida conhecida", Assert.Throws<RegraException>(() =>
             Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 1 }, oculta.Hex, Extracoes.OrdemExtrair, false, new JsonObject())).Message);
-        // acima de 50 o ritmo não cresce (fórmula com no máximo 50)
-        Assert.Equal(t.M.F.ExtracaoH(new Dictionary<string, int> { ["lanceiro"] = 50 }, false, false),
-            t.M.F.ExtracaoH(new Dictionary<string, int> { ["lanceiro"] = 60 }, false, false) , 6);
+        // acima do máximo o ritmo não cresce (fórmula com no máximo P.extracao.maxTropas)
+        Assert.Equal(t.M.F.ExtracaoH(new Dictionary<string, int> { ["lanceiro"] = max }, false, false),
+            t.M.F.ExtracaoH(new Dictionary<string, int> { ["lanceiro"] = max + 3 }, false, false) , 6);
     }
 
     [Fact]
     public void Posto_acelera_a_extracao_e_rota_no_caminho_tambem()
     {
-        var (t, r, j, c) = CenarioExtracao();
+        var (t, r, j, c) = CenarioExtracao("ouro");   // ouro sai devagar: a carga não enche durante o teste
         t.DarRecursos(r);
-        var g = new Dictionary<string, int> { ["lanceiro"] = 10 };
+        var g = new Dictionary<string, int> { ["lanceiro"] = 4 };
         var ex = Extracoes.Enviar(t.M, r, c.Id, g, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         AvancarAte(t, ex.Chegada);
         var item = Postos.Construir(t.M, r, j.Hex);
@@ -339,11 +341,11 @@ public class ValiososTestes
         Assert.Equal(r.Id, posto!.ReinoId);
         Assert.Equal(0, r.Fundados);   // o posto não encarece o próximo local
         Extracoes.Liquidar(t.M, j);
-        var antes = ex.Carga.Qtd("prata");
+        var antes = ex.Carga.Qtd("ouro");
         t.AvancarHoras(3);
         Extracoes.Liquidar(t.M, j);
-        var valor = t.M.P.Valor["prata"];
-        Assert.Equal(t.M.F.ExtracaoH(g, true, false) / valor * 3, ex.Carga.Qtd("prata") - antes, 3);
+        var valor = t.M.P.Valor["ouro"];
+        Assert.Equal(t.M.F.ExtracaoH(g, true, false) / valor * 3, ex.Carga.Qtd("ouro") - antes, 3);
         Assert.Equal(t.M.P.Extracao.Posto, t.M.F.ExtracaoH(g, true, false) / t.M.F.ExtracaoH(g, false, false), 6);
         // rota pública na maior parte do caminho até o depósito: ×1,2
         var rota = Caminhos.Calcular(t.M, j.Hex, c.Hex, "Lenta");
@@ -352,8 +354,8 @@ public class ValiososTestes
         Assert.True(Extracoes.RotaNoCaminho(t.M, Caminhos.Calcular(t.M, j.Hex, c.Hex, "Lenta")));
         Assert.Equal(t.M.P.Extracao.Rota, Extracoes.Ritmo(t.M, g, "prata", false, true) / Extracoes.Ritmo(t.M, g, "prata", false, false), 6);
         // tropas no próprio posto começam na hora
-        Guarnecer(t, r, posto, "lanceiro", 5);
-        var dali = Extracoes.Enviar(t.M, r, posto.Id, new Dictionary<string, int> { ["lanceiro"] = 5 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
+        Guarnecer(t, r, posto, "lanceiro", 2);
+        var dali = Extracoes.Enviar(t.M, r, posto.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         Assert.Equal(j.Id, dali.ExtraiJazidaId);
     }
 
@@ -361,7 +363,7 @@ public class ValiososTestes
     public void Nova_ordem_tira_da_extracao_levando_o_que_ja_tirou()
     {
         var (t, r, j, c) = CenarioExtracao();
-        var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
+        var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 6 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         AvancarAte(t, ex.Chegada);
         t.AvancarHoras(4);
         Exercitos.DarOrdem(t.M, r, ex.Id, OrdemRetornar.Id, null);
@@ -459,16 +461,15 @@ public class ValiososTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var vila = LocalDe(t, r, TipoLocal.Vila);
-        var ef = Economia.Eficiencia(t.M, r);
-        var base0 = Economia.TaxaLocal(t.M, r, vila, ef).Qtd("comida");
+        var base0 = Economia.TaxaLocal(t.M, r, vila).Qtd("comida");
         DarReliquia(t, r, vila, "producao");
-        Assert.Equal(base0 * (1 + t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila, ef).Qtd("comida"), 6);
+        Assert.Equal(base0 * (1 + t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila).Qtd("comida"), 6);
         DarReliquia(t, r, vila, "producao");
-        Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila, ef).Qtd("comida"), 6);
+        Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila).Qtd("comida"), 6);
         DarReliquia(t, r, vila, "ataque");   // outro tipo não muda a produção
-        Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila, ef).Qtd("comida"), 6);
+        Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila).Qtd("comida"), 6);
         var serraria = LocalDe(t, r, TipoLocal.Serraria);
-        Assert.Equal(t.M.F.Producao(serraria.Nivel) * ef, Economia.TaxaLocal(t.M, r, serraria, ef).Qtd("madeira"), 6);
+        Assert.Equal(t.M.F.Producao(serraria.Nivel) * Economia.EficienciaLocal(t.M, serraria), Economia.TaxaLocal(t.M, r, serraria).Qtd("madeira"), 6);
     }
 
     [Fact]

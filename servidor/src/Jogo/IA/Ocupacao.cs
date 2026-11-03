@@ -116,7 +116,7 @@ public static class Ocupacao
 
     /// <summary>Porte de um reino: soma dos níveis dos locais e um tanto pelas tropas (para escolher quem abdica).</summary>
     public static double Porte(Mundo m, Reino r) =>
-        m.LocaisDe(r.Id).Where(l => !l.Ruina).Sum(l => l.Nivel) + Economia.Tropas(m, r) / (double)Math.Max(1, m.P.TrabPorNivel);
+        m.LocaisDe(r.Id).Where(l => !l.Ruina).Sum(l => l.Nivel) + Economia.Tropas(m, r) * m.P.Vagas.PorNivel;
 
     /// <summary>
     /// Gancho de <see cref="CriacaoReino.LiberarVagaDeIA"/>: o reino de IA de menor porte abdica e devolve a vaga
@@ -158,12 +158,13 @@ public static class Ocupacao
             if (l.Tipo == TipoLocal.Castelo)
             {
                 l.Ruina = true; l.Nivel = 1; l.Tipo = TipoLocal.Vila; l.Produz = "comida"; l.Nome = "Ruínas de castelo";
-                l.Portoes = 0; l.EstruturaPortoes = 0; l.Moradias = 0; l.Estoque = new(); l.Marcas = 0; l.MarcasTropas = 0;
+                l.Portoes = 0; l.EstruturaPortoes = 0; l.Moradias = 0; l.Estoque = new();
             }
-            else { l.Moradias = 0; l.Marcas = 0; l.MarcasTropas = 0; }
+            else l.Moradias = 0;
             m.MudarDono(l, 0);
         }
         foreach (var t in Defesas.DoReino(m, r.Id).ToList()) m.Torres.Remover(t);
+        Pessoas.Pessoas.RemoverTodas(m, r);
         r.Ativo = false;
         m.Sujar(r);
         foreach (var outro in Ativos(m)) m.Avisar(outro.Id, "mapa");

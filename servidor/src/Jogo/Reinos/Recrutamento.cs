@@ -1,6 +1,7 @@
 using ReinoDePedra.Jogo.Config;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Social;
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 
 namespace ReinoDePedra.Jogo.Reinos;
 
@@ -77,7 +78,7 @@ public static class Recrutamento
         var u = m.B.U[unidade];
         Economia.Atualizar(m, r);
         var pop = u.Pop * (long)qtd;
-        var livre = (long)Math.Floor(r.Pop);
+        var livre = PS.LivresParaTreino(m, r);
         if (livre < pop) throw new RegraException($"Falta população civil livre: precisa de {pop}, há {livre}.");
         var custo = new Recursos();
         custo.Somar(u.Custo, qtd);
@@ -87,7 +88,7 @@ public static class Recrutamento
             Rotulo = $"{qtd} {Tropas.Nome(u, qtd)} · {l.Nome}",
             Custo = custo, DuracaoSeg = u.Tempo * qtd,
         });
-        r.Pop -= pop;
+        PS.ParaTreino(m, r, (int)pop, u.Id, item, l);   // ociosos primeiro; cancelar devolve ao ofício anterior
         m.Sujar(r);
         return item;
     }
@@ -108,17 +109,12 @@ public sealed class ItemRecrutar : ITipoItemPorUnidade
         var l = item.LocalId is long id ? m.Locais.Obter(id) : null;
         if (l == null || l.ReinoId != r.Id || l.Ruina) l = m.Locais.Obter(r.CasteloId);
         if (l == null || l.ReinoId != r.Id) l = m.LocaisDe(r.Id).FirstOrDefault(x => !x.Ruina);
-        if (l == null) { r.Pop += u.Pop * n; m.Sujar(r); return; }   // sem onde morar: voltam à população
-        Tropas.Devolver(m, l, new Dictionary<string, int> { [u.Id] = n });
+        if (l == null) { PS.DevolverDoTreino(m, r, item, u.Pop * n); return; }   // sem onde morar: voltam à população
+        PS.TreinoPronto(m, r, item, u.Pop * n, l);   // a pessoa treinada entra na guarnição com o nome dela
     }
 
     public void Concluir(Mundo m, Reino r, ItemFila item) =>
         Registros.Notificar(m, r.Id, "tropas", "Recrutamento concluído", item.Rotulo, "tropas");
 
-    public void Cancelado(Mundo m, Reino r, ItemFila item)
-    {
-        if (item.Param == null || !m.B.U.TryGetValue(item.Param, out var u)) return;
-        r.Pop += u.Pop * item.Restantes;
-        m.Sujar(r);
-    }
+    public void Cancelado(Mundo m, Reino r, ItemFila item) => PS.TreinoCancelado(m, r, item);
 }

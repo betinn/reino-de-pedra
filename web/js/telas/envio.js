@@ -32,6 +32,12 @@
   function exercitoDe() { return est && est.marchaId ? RP.exercito(est.marchaId) : null; }
   function disponiveis() { var l = localDe(); return l ? l.guarnicao : {}; }
   function grupoAtual() { var e = exercitoDe(); return e ? e.tropas : est.grupo; }
+  /* contagem por unidade das pessoas escolhidas pelo id (vem do mapa, que sabe o ofício de cada uma) */
+  function grupoDeIds(ids) {
+    var g = {}, M = RP.mapaModelo;
+    (ids || []).forEach(function (id) { var p = M && M.pessoa ? M.pessoa(id) : null; if (p) g[p.oficio] = (g[p.oficio] || 0) + 1; });
+    return g;
+  }
 
   /* RP.grupoPadraoEnvio(local) → grupo ou null: o combate devolve as tropas do último ataque (ordem rápida) */
   function grupoPadrao(l) {
@@ -47,16 +53,19 @@
       if (o.marchaId) {
         if (!RP.exercito(o.marchaId)) { RP.aviso({ titulo: 'Este exército não está mais em campo', icone: 'info' }); return; }
         est = { marchaId: o.marchaId, seguro: RP.exercito(o.marchaId).seguro };
+      } else if (o.pessoas && o.pessoas.length) {
+        est = { de: o.de, pessoas: o.pessoas.slice(), grupo: grupoDeIds(o.pessoas), seguro: false };
       } else {
         var l = t.locais.filter(function (x) { return x.id === o.de; })[0] || t.locais.filter(function (x) { return RP.somaGrupo(x.guarnicao) > 0; })[0];
         if (!l || !RP.somaGrupo(l.guarnicao)) { RP.aviso({ titulo: 'Nenhuma tropa para enviar', texto: 'Recrute no castelo ou no quartel.', icone: 'tropas', tipo: 'alerta' }); return; }
         est = { de: l.id, grupo: grupoPadrao(l), seguro: false };
       }
       barra();
+      if (RP.selecao) RP.selecao.barra();
       RP.aviso({ titulo: 'Toque no destino', texto: 'Um local seu, ou qualquer hexágono.', icone: 'alvo', ms: 1800 });
     }, function () { /* aviso já mostrado */ });
   }
-  function cancelar() { est = null; barra(); }
+  function cancelar() { est = null; barra(); if (RP.selecao) RP.selecao.barra(); }
 
   /* ---------------------------------------------------------------- barra "Toque no destino" */
   function barra() {
@@ -69,7 +78,7 @@
     if (!est) return;
     var g = grupoAtual(), l = localDe(), n = RP.somaGrupo(g);
     b.innerHTML = '<span class="ordem-ico">' + RP.icone('alvo') + '</span><span class="ordem-txt"><b>Toque no destino</b><small>' +
-      (n ? RP.esc(RP.partesGrupo(g)) : 'nenhuma tropa escolhida') + (l ? ' · de ' + RP.esc(l.nome) : est.marchaId ? ' · exército em campo' : '') + '</small></span>' +
+      (n ? RP.esc(RP.partesGrupo(g)) : 'nenhuma tropa escolhida') + (est.pessoas ? ' · ' + est.pessoas.length + ' escolhid' + (est.pessoas.length === 1 ? 'a' : 'as') + ' pelo nome' : '') + (l ? ' · de ' + RP.esc(l.nome) : est.marchaId ? ' · exército em campo' : '') + '</small></span>' +
       (est.de ? '<button type="button" class="btn btn-p" data-envio-tropas>' + RP.icone('tropas') + 'Tropas</button>' : '') +
       '<button type="button" class="btn btn-p btn-fantasma btn-icone" data-envio-cancelar aria-label="Cancelar envio">' + RP.icone('fechar') + '</button>';
   }
@@ -116,7 +125,7 @@
   }
   function confirmar(h, ordem) {
     est.hex = h; est.ordem = ordem;
-    var corpo = est.marchaId ? { marchaId: est.marchaId, destinoHex: h } : { deLocalId: est.de, tropas: est.grupo, destinoHex: h };
+    var corpo = est.marchaId ? { marchaId: est.marchaId, destinoHex: h } : est.pessoas ? { deLocalId: est.de, pessoas: est.pessoas, destinoHex: h } : { deLocalId: est.de, tropas: est.grupo, destinoHex: h };
     if (!RP.somaGrupo(grupoAtual())) { folhaGrupo(); return; }
     RP.tentar(RP.post('/tropas/previa', corpo)).then(function (p) { est.previa = p; folhaConfirmar(); });
   }
@@ -177,9 +186,10 @@
     var extra = d.dados ? d.dados(e.hex, RP.mapa.dados(), e) : undefined;
     var p = e.marchaId
       ? RP.post('/tropas/' + e.marchaId + '/ordem', { ordem: e.ordem, destinoHex: e.hex, seguro: !!e.seguro, dados: extra })
-      : RP.post('/tropas/enviar', { deLocalId: e.de, tropas: e.grupo, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra });
+      : RP.post('/tropas/enviar', e.pessoas ? { deLocalId: e.de, pessoas: e.pessoas, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra } : { deLocalId: e.de, tropas: e.grupo, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra });
     RP.tentar(p).then(function (ex) {
       RP.fecharFolha(); cancelar();
+      if (RP.selecao) RP.selecao.limpar();
       RP.aviso({ titulo: e.marchaId ? 'Nova ordem dada' : 'Tropas a caminho', texto: ex && ex.chegada ? (RP.partesGrupo(ex.tropas) + ' · chegam ' + RP.fmtEm(ex.chegada) + '.') : '', icone: d.icone || 'seta', tipo: 'sucesso' });
       if (RP.mapa.recarregar) RP.mapa.recarregar();
       RP.recarregarReino(); RP.carregarTropas().catch(function () { /* offline */ });
@@ -231,6 +241,20 @@
   /* ---------------------------------------------------------------- escolher tropas (e de onde saem) */
   function folhaGrupo() {
     var t = RP.tropas, l = localDe();
+    if (est.pessoas) {
+      var M = RP.mapaModelo;
+      RP.abrirFolha({
+        titulo: 'Quem vai',
+        subtitulo: '<span class="fraco">Escolhid' + (est.pessoas.length === 1 ? 'a' : 'as') + ' pelo nome, de ' + RP.esc(l ? l.nome : '—') + '.</span>',
+        corpo: '<div class="lista pessoas-lista">' + est.pessoas.map(function (id) {
+          var p = M && M.pessoa ? M.pessoa(id) : null;
+          return '<div class="lista-item"><span class="ico-placa dono-meu">' + RP.icone(RP.iconeUnidade(p ? p.oficio : 'lanceiro')) + '</span><div style="flex:1"><b>' + RP.esc(p ? p.nome : '#' + id) + '</b><div class="fraco">' + RP.esc(p ? RP.nomeUnidade(p.oficio, 1) : '') + '</div></div></div>';
+        }).join('') + '</div>',
+        acoes: '<button type="button" class="btn btn-p btn-primario" data-envio-pronto>' + RP.icone('check') + 'Pronto</button>' +
+          '<button type="button" class="btn btn-p btn-fantasma" data-envio-por-quantidade>' + RP.icone('tropas') + 'Escolher por quantidade</button>'
+      });
+      return;
+    }
     var origens = t.locais.filter(function (x) { return RP.somaGrupo(x.guarnicao) > 0; });
     RP.abrirFolha({
       titulo: 'Tropas do envio',
@@ -249,6 +273,7 @@
     if (!est) return;
     if (e.target.closest('[data-envio-cancelar]')) { RP.fecharFolha(); cancelar(); return; }
     if (e.target.closest('[data-envio-tropas]')) { folhaGrupo(); return; }
+    if (e.target.closest('[data-envio-por-quantidade]')) { var lq = localDe(); est.pessoas = null; est.grupo = lq ? grupoPadrao(lq) : {}; if (RP.selecao) RP.selecao.limpar(); folhaGrupo(); barra(); return; }
     if ((b = e.target.closest('[data-envio-de]'))) {
       var l = RP.tropas.locais.filter(function (x) { return x.id === +b.getAttribute('data-envio-de'); })[0];
       if (l) { est.de = l.id; est.grupo = grupoPadrao(l); folhaGrupo(); barra(); }

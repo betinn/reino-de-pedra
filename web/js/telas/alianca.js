@@ -163,7 +163,7 @@
   });
 
   /* ---------------------------------------------------------------- Pedir recursos a um aliado */
-  var pr = { reino: null, rec: 'pedra', q: 300, local: null, recado: '' };
+  var pr = { reino: null, rec: 'pedra', q: 30, local: null, recado: '' };
   function desenharPedido(el) {
     var d = dados, a = d && d.alianca;
     if (!a) { RP.$('.pd-conteudo', el).innerHTML = S.vazio('Você não está numa aliança.'); return; }

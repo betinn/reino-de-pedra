@@ -2,6 +2,7 @@ using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Reinos;
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 using ReinoDePedra.Jogo.Valiosos;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
@@ -54,7 +55,7 @@ public static class VisaoMapa
             {
                 tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = aliada ? "aliado" : "desconhecido", hex = h, caminho, tempos,
                 paraMim = !aliada && ParaMim(m, r, x) ? true : (bool?)null,   // sem isso, o fim dos tempos é quando ela sai da vista
-                tamanho = Aproximado(x.Tropas.Values.Sum()), estandarte = x.Estandarte ? true : (bool?)null,
+                tamanho = Aproximado(m, x.Tropas.Values.Sum()), estandarte = x.Estandarte ? true : (bool?)null,
                 reino = dm != null ? Espionagem.Identidade(dm) : null, brasao = dm?.Brasao,
             });
         }
@@ -71,7 +72,34 @@ public static class VisaoMapa
             cols = g.Cols, lins = g.Lins, agora, terreno = new string(ter), idade,
             rotas = vias.Rotas.Where(h => nevoa.MinutoVisto(h) > 0), pontes = vias.Pontes.Where(h => nevoa.MinutoVisto(h) > 0),
             objetos,
+            pessoas = Pessoas(m, r), pessoasOutras = PessoasOutras(m, r, vis),
         };
+    }
+
+    /// <summary>
+    /// As pessoas do próprio reino, com nome e onde estão: <c>hex</c> do local em que estão (null para quem está numa marcha:
+    /// a marcha leva <c>pessoaIds</c>). A Vista desenha cada uma; a folha vem de GET /pessoas/{id}.
+    /// </summary>
+    public static List<object> Pessoas(Mundo m, Reino r) =>
+        m.PessoasDe(r.Id).OrderBy(p => p.Id).Select(p => (object)new
+        {
+            id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, estado = p.Estado, localId = p.LocalId, grupoId = p.GrupoId,
+            marcas = Math.Round(p.Marcas, 2),
+            hex = p.GrupoId is long gid && gid > 0 ? (int?)null : p.LocalId is long lid && m.Locais.Obter(lid) is { } l ? l.Hex : (int?)null,
+        }).ToList();
+
+    /// <summary>Pessoas de outros reinos nos locais à vista agora: só contagens por hexágono, sem nome nem dono (a foto da névoa não guarda pessoas).</summary>
+    public static List<object> PessoasOutras(Mundo m, Reino r, HashSet<int> vis)
+    {
+        var lista = new List<object>();
+        foreach (var l in m.Locais)
+        {
+            if (l.ReinoId == r.Id || l.ReinoId == 0 || !vis.Contains(l.Hex)) continue;
+            var civis = PS.Presentes(m, l).Count();
+            var soldados = PS.Guarnicao(m, l).Count();
+            if (civis + soldados > 0) lista.Add(new { hex = l.Hex, civis, soldados });
+        }
+        return lista;
     }
 
     /// <summary>
@@ -89,7 +117,7 @@ public static class VisaoMapa
         };
         long? alvoId = x switch
         {
-            Exercito e => e.AlvoLocalId, Carregadores c => c.DestinoLocalId,
+            Exercito e => e.AlvoLocalId, Carregadores c => c.Retornando ? c.OrigemLocalId : c.DestinoLocalId, ReinoDePedra.Jogo.Pessoas.Deslocamento d => d.ParaLocalId,
             Caravana c => c.Fase == Caravana.Buscar ? c.OrigemLocalId : c.Fase == Caravana.Levar ? c.DestinoLocalId : c.BaseLocalId,
             _ => null,
         };
@@ -100,7 +128,8 @@ public static class VisaoMapa
             estado = VisaoTropas.Estado(m, x),
             ordem = x switch { Exercito e => e.Ordem, Explorador ex => ex.Ordem, Caravana c => c.Fase, _ => null },
             carga = x.Carga.Arredondado(), cargaMax, cargaUsada = Math.Floor(x.Carga.Total),
-            tropas = x.Tropas, resumo = GT.Partes(m, x.Tropas), pessoas = x is Carregadores cg ? cg.Pessoas : (int?)null,
+            tropas = x.Tropas, resumo = GT.Partes(m, x.Tropas), pessoas = x is Carregadores cg ? cg.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento dp ? dp.PessoaIds.Count : (int?)null,
+            pessoaIds = x.PessoaIds,
             alvo = VisaoTropas.NomeLocal(m, r, alvoId), destinoNome = VisaoTropas.NomeLocal(m, r, m.LocalNoHex(x.Destino)?.Id),
             reliquias = x.Reliquias.Count, x.Estandarte,
         };
@@ -141,5 +170,5 @@ public static class VisaoMapa
     public static bool ParaMim(Mundo m, Reino r, Marcha x) =>
         x.Caminho.Count > 0 && m.LocalNoHex(x.Caminho[^1]) is { } l && l.ReinoId == r.Id && !l.Ruina;
 
-    public static string Aproximado(int n) => n switch { 0 => "nenhuma", < 10 => "poucas", < 30 => "≈ " + (n / 5 * 5), < 100 => "≈ " + (n / 10 * 10), _ => "≈ " + (n / 50 * 50) };
+    public static string Aproximado(Mundo m, int n) => Jogo.Combate.Avistamentos.Aproximado(m, n);
 }
