@@ -5,7 +5,10 @@ using ReinoDePedra.Jogo.Nucleo;
 
 namespace ReinoDePedra.Jogo.Reinos;
 
-/// <summary>Fundação de um reino numa vaga do mapa: castelo, 4 locais iniciais, kit e escudo de novato.</summary>
+/// <summary>
+/// Fundação de um reino numa vaga do mapa: castelo, 4 locais iniciais, kit e escudo de novato. Os primeiros passos já
+/// foram dados (<c>P.inicio</c>): locais acima do nível 1, moradias, guarnição e exploradores prontos, entorno explorado.
+/// </summary>
 public static partial class CriacaoReino
 {
     [GeneratedRegex(@"^[\p{L}][\p{L}\p{M} '\-]{1,22}[\p{L}\p{M}]$")]
@@ -93,25 +96,49 @@ public static partial class CriacaoReino
             Id = IdNovo?.Invoke(m) ?? 0, ContaId = contaId, Nome = nome, Brasao = brasao, CriadoEm = agora, UltimoAcesso = agora, Vaga = vaga,
             EscudoAte = agora + T.DeHoras(m.P.EscudoNovatoH), AtualizadoEm = agora,
         });
+        var ini = m.InicioReino ?? m.P.Inicio;
+        var nivelCastelo = Math.Clamp(ini.Castelo, 1, m.P.NivelMax);
         var castelo = m.AdicionarLocal(new Local
         {
-            Id = IdNovo?.Invoke(m) ?? 0, ReinoId = r.Id, Tipo = TipoLocal.Castelo, Hex = V.Castelo, Nivel = 1, Nome = "Castelo de " + nome,
-            Estoque = Recursos.De(m.P.Kit.Concat(m.P.KitExtra).ToDictionary(kv => kv.Key, kv => kv.Value)),
+            Id = IdNovo?.Invoke(m) ?? 0, ReinoId = r.Id, Tipo = TipoLocal.Castelo, Hex = V.Castelo, Nivel = nivelCastelo, Nome = "Castelo de " + nome,
+            Estoque = Recursos.De(m.P.Kit.Concat(m.P.KitExtra).ToDictionary(kv => kv.Key, kv => kv.Value)), Moradias = Math.Max(0, ini.Moradias),
         });
         r.CasteloId = castelo.Id;
+        var nivelLocal = Math.Clamp(ini.Locais, 1, nivelCastelo);   // nenhum local passa do nível do castelo
         void Inicial(TipoLocal t, string produz, int hex) =>
-            m.AdicionarLocal(new Local { Id = IdNovo?.Invoke(m) ?? 0, ReinoId = r.Id, Tipo = t, Produz = produz, Hex = hex, Nivel = 1, Nome = Obras.NomeNovo(m, r, t, produz) });
+            m.AdicionarLocal(new Local { Id = IdNovo?.Invoke(m) ?? 0, ReinoId = r.Id, Tipo = t, Produz = produz, Hex = hex, Nivel = nivelLocal, Nome = Obras.NomeNovo(m, r, t, produz) });
         Inicial(TipoLocal.Vila, "comida", V.Comida);
         Inicial(TipoLocal.Serraria, "madeira", V.Madeira);
         Inicial(TipoLocal.Mina, "pedra", V.Pedra);
         Inicial(TipoLocal.Mina, "ferro", V.Ferro);
         foreach (var l in m.LocaisDe(r.Id)) Nevoas.RevelarArea(m, r.Id, l.Hex, Nevoas.RaioLocal(m, l));
+        if (ini.RaioExplorado > 0) Nevoas.RevelarArea(m, r.Id, castelo.Hex, ini.RaioExplorado);   // o entorno já foi percorrido
         Pessoas.Pessoas.Nascer(m, r, m.P.PopInicial, andar: false);   // as primeiras pessoas já aparecem nas vagas
+        // tropas e exploradores prontos no castelo, com nome: a primeira sessão começa com o que fazer, sem esperar o treino
+        if (ini.Tropas.Count > 0) Pessoas.Pessoas.CriarSoldados(m, r, castelo, ini.Tropas.Where(kv => m.B.U.ContainsKey(kv.Key)).ToDictionary());
+        if (ini.Exploradores.Count > 0)
+        {
+            r.ExploradoresLivres = ini.Exploradores.Where(kv => kv.Value > 0 && m.P.Exploradores.ContainsKey(kv.Key)).ToDictionary();
+            Pessoas.Pessoas.SincronizarLivres(m, r);
+        }
         Economia.GarantirCheckpoint(m, r);
         m.Sujar(r);
         AoCriar?.Invoke(m, r);
         return r;
     }
+    /// <summary>"4 lanceiros, 2 arqueiros e 3 exploradores esperam ordens no castelo." (null se o reino novo não traz ninguém pronto).</summary>
+    public static string? TextoInicio(Mundo m)
+    {
+        var ini = m.InicioReino ?? m.P.Inicio;
+        var partes = ini.Tropas.Where(kv => kv.Value > 0 && m.B.U.ContainsKey(kv.Key))
+            .Select(kv => kv.Value + " " + (kv.Value == 1 ? m.B.U[kv.Key].Nome.ToLowerInvariant() : Tropas.Plural(m.B.U[kv.Key]))).ToList();
+        var ex = ini.Exploradores.Values.Sum();
+        if (ex > 0) partes.Add(ex + (ex == 1 ? " explorador" : " exploradores"));
+        if (partes.Count == 0) return null;
+        var um = partes.Count == 1 && (ex == 1 || ini.Tropas.Values.Sum() == 1);
+        return Pessoas.Pessoas.Nomear(partes) + (um ? " espera" : " esperam") + " ordens no castelo.";
+    }
+
     public static event Action<Mundo, Reino>? AoCriar;
     /// <summary>Gancho do legado: o que a linhagem da conta libera no brasão (cores e formas extras, moldura).</summary>
     public static Func<Mundo, long?, (bool extras, bool moldura)>? BrasaoLiberado { get; set; }

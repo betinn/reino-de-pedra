@@ -29,11 +29,11 @@ Em relação à primeira versão do modelo (castelo com teto 300, exércitos de 
 | Temporada | **70 dias** (10 semanas) |
 | Mundo | 30 reinos num mapa de **104 × 80 hexágonos** (≈ 277 por reino) |
 | Escudo de novato | **72 h**; escudo de exílio **24 h**; regência após **48 h** sem entrar |
-| Reino novo | **8 pessoas**; o castelo abriga 15, cada moradia mais 3 (a primeira custa 40 recursos, cada uma 24 a mais) |
+| Reino novo | **Primeiros passos já dados**: castelo e locais no nível 2, 2 moradias, **4 lanceiros e 2 arqueiros** no castelo, **3 exploradores** prontos (a pé, a cavalo, prospector) e o entorno explorado até 6 hexágonos. **8 civis**; o castelo abriga 15, cada moradia mais 3 (a primeira custa 40 recursos, cada uma 24 a mais) |
 | Produção de um local | 3/h no nível 1 → **31,8/h no nível 10** (+30% por nível), proporcional às vagas ocupadas |
 | Obras | Nível 2 em **2 min**; nível 6 em 32 min; nível 10 em **8 h 32 min** (o castelo leva o dobro) |
 | Retorno de uma melhoria | Primeira em **≈ 6 h**; a do nível 10 em **≈ 13 dias** (investimento de fim de temporada) |
-| Pessoas e exército | Jogador médio: **15 pessoas e 5 soldados** no fim do escudo, **63 pessoas e 21 soldados** no dia 35. Ativo: 2,5× as tropas; termina a temporada com ≈ 120 pessoas |
+| Pessoas e exército | Jogador médio: **21 pessoas e 7 soldados** no fim do escudo, **65 pessoas e 22 soldados** no dia 35. Ativo: 2,4× as tropas; termina a temporada com ≈ 135 pessoas |
 | Unidade básica | Lanceiro: 90 recursos, 12 min, carga 5 |
 | Viagem (tropa lenta) | Vizinho do reino (3 hex.) **2 min**; reino vizinho (24 hex.) **16 min**; travessia do mapa (104 hex.) **1 h 10 min** |
 | Combate | Para tomar um local, cerca de **1,5× a força da defesa**; um castelo médio resiste a 20 tropas e cai com cerca de **2×** |
@@ -50,19 +50,23 @@ Sem elas, a simulação não fecha.
 4. **Cada local guarda até 10 h da própria produção.** É o que um saque pode levar de um local e o que a requisição busca. Para guardar mais, o armazém. O jogador médio para no castelo nível 9, porque o nível 10 (≈ 9 mil recursos) passa do que ele consegue juntar sem armazém maior.
 5. **Civis como milícia morrem só em parte.** Toda pessoa presente no local defende, mas um saque vitorioso não esvazia o local: 25% dos civis que lutaram morrem na proporção das perdas e os outros fogem. Quem quer matar gente usa o massacre (cada tropa viva mata até 1 pessoa).
 
+### Primeiros passos já dados
+
+Testado a 6×: no reino de antes (castelo e locais no nível 1, nenhuma tropa, nenhum explorador) a primeira sessão era esperar o treino. O kit acabava em 10 min, um lanceiro custa 30 de ferro e o reino fazia 5,5 de ferro por hora. Agora o reino nasce como se a primeira hora já tivesse passado (`P.inicio`). Os números finais quase não mudam: o médio chega ao dia 35 com 65 pessoas (eram 63) e o ativo termina com 135 (eram 123). Para isso, a meta M5g passou a ir até 140 e a Era do Aço pede 120 de madeira (eram 100), porque o médio produz um pouco mais no dia 10.
+
 ## Metas de ritmo
 
 Cada meta vem das regras do `CLAUDE.md`, do plano de pessoas no mapa ou de prática do gênero. O modelo confere todas; hoje **todas estão no alvo**.
 
 | | Meta | Por quê | Resultado |
 |---|---|---|---|
-| M1 | O kit inicial recruta 2 a 3 lanceiros, prontos em até 45 min | "O reino base já gera recursos para tropas básicas"; a primeira sessão tem o que fazer | 3 · 36 min |
+| M1 | O kit inicial recruta 2 a 3 lanceiros, prontos em até 45 min; o reino novo já tem tropas que caçam o perigo baixo ilesas e exploradores prontos | "O reino base já gera recursos para tropas básicas"; a primeira sessão tem o que fazer desde o primeiro minuto, sem esperar treino | 3 · 36 min · 190 de força e 3 exploradores |
 | M2 | Primeira melhoria se paga em até 6 h; a do nível 10 em 1 a 2 semanas | Começo rápido; fim de temporada com escolhas de longo prazo | 5,6 h · 13 dias |
 | M3 | Obra do nível 2 em até 2 min; do nível 10 em 6 a 10 h; 10 obras de nível médio cobrem a noite | "Básico rápido, forte demorado"; fila de 10 para a noite | 2 min · 8 h 32 min · 12 h 27 min |
 | M4 | Vizinho do reino (3 hex.) em até 3 min; reino vizinho (24 hex.) em 10 a 20 min; travessia (104 hex.) em até 90 min | "Deslocamento não deve demorar excessivamente" ([decisão 0022](../docs/decisoes/0022-velocidade-e-mapa-maior.md)) | 2 min · 16 min · 1 h 10 min |
-| M5 | Médio com 4 a 10 soldados e 15 a 25 pessoas no dia 3; 20 a 30 soldados e 50 a 80 pessoas no dia 35; ativo com 1,5 a 2,5× as tropas e 90 a 130 pessoas no fim | As metas de escala do plano: dezenas de pessoas, não centenas | 5 · 15 / 21 · 63 / 2,5× · 123 |
+| M5 | Médio com 4 a 10 soldados e 15 a 25 pessoas no dia 3; 20 a 30 soldados e 50 a 80 pessoas no dia 35; ativo com 1,5 a 2,5× as tropas e 90 a 140 pessoas no fim | As metas de escala do plano: dezenas de pessoas, não centenas | 7 · 21 / 22 · 65 / 2,4× · 135 |
 | M5 | Recrutar não derruba a economia do médio (eficiência ≥ 90%) | Tropas e economia em equilíbrio | 100% |
-| M5 | Sem guerra, o ativo maximiza a economia entre os dias 30 e 50; o médio, depois do dia 40 | Saques e sabotagens atrasam os jogadores de verdade; a temporada não acaba antes da hora | dia 45 · não chega |
+| M5 | Sem guerra, o ativo maximiza a economia entre os dias 30 e 50; o médio, depois do dia 40 | Saques e sabotagens atrasam os jogadores de verdade; a temporada não acaba antes da hora | dia 43 · não chega |
 | M6 | 6 cavaleiros levam pelo menos 2 h da produção de um local nível 6 | Saque que vale a viagem | 5,4 h |
 | M7 | Um local defendido cai com cerca de 1,5× a força; uma torre muda o resultado; castelo médio aguenta 20 tropas e cai com cerca de 2× isso | "Destruir um reino deve ser muito difícil e caro" | ✓ |
 | M8 | Relíquia de produção vale menos que 1 nível do local | Vantagem real, mas sem decidir a temporada | +1,7/h contra +3,3/h |
@@ -143,14 +147,14 @@ Dois jogadores simulados, hora a hora:
 
 Os dois enchem a fila até a próxima sessão (ou a noite), escolhem a melhoria de melhor retorno, fundam locais e fazem moradias quando faltam trabalhadores.
 
-| Dia | Médio: produção/h · locais · nível médio · pessoas (civis + tropas) | Ativo: produção/h · locais · nível médio · pessoas (civis + tropas) |
+| Dia | Médio: produção/h · locais · nível médio · pessoas (civis + tropas + exploradores) | Ativo: produção/h · locais · nível médio · pessoas (civis + tropas + exploradores) |
 |---|---|---|
-| 1 | 33 · 4 · 3 · 13 (9 + 4) | 40 · 4 · 4 · 13 (9 + 4) |
-| 3 | 54 · 4 · 5,3 · 15 (10 + 5) | 50 · 4 · 5 · 17 (9 + 8) |
-| 7 | 92 · 5 · 7 · 18 (12 + 6) | 97 · 6 · 6,5 · 27 (14 + 13) |
-| 14 | 150 · 7 · 7,9 · 24 (16 + 8) | 173 · 8 · 8 · 36 (18 + 18) |
-| 35 | 318 · 12 · 9 · 63 (41 + 21) | 392 · 15 · 9 · 105 (52 + 52) |
-| 70 | 367 · 14 · 9 · 72 (47 + 25) | 600 · 18 · 10 · 123 (62 + 61) |
+| 1 | 40 · 4 · 4 · 20 (10 + 7 + 3) | 40 · 4 · 4 · 20 (7 + 10 + 3) |
+| 3 | 62 · 4 · 6 · 21 (11 + 7 + 3) | 54 · 4 · 5,3 · 25 (9 + 13 + 3) |
+| 7 | 92 · 5 · 7 · 21 (11 + 7 + 3) | 100 · 6 · 6,7 · 33 (14 + 16 + 3) |
+| 14 | 150 · 7 · 7,9 · 28 (16 + 10 + 3) | 173 · 8 · 8 · 45 (20 + 22 + 3) |
+| 35 | 318 · 12 · 9 · 65 (39 + 22 + 3) | 392 · 15 · 9 · 105 (49 + 52 + 3) |
+| 70 | 367 · 14 · 9 · 81 (50 + 27 + 3) | 600 · 18 · 10 · 135 (64 + 67 + 3) |
 
 Limites do modelo: não há guerra (saques, sabotagens e perdas em batalha atrasariam todos), nem caça, relíquias ou o efeito do armazém; a extração de valiosos e a ferraria são calculadas à parte. Os jogadores simulados são simples. Os números servem para dar a ordem de grandeza e mostrar o efeito de cada parâmetro, não para prever o jogo exato.
 
@@ -167,7 +171,7 @@ Valiosos e seus usos, comércio, pactos, resgate, limites do novato, eras, ferra
 | Valor de referência | Básicos 1 · couro e peles 2 · sal 6 · ervas 8 · **prata 10** · aço 15 · **ouro 20** · gemas 30 · cavalo de raça 40 · minério raro 60 |
 | Jazidas | Cada valiosa guarda **2 mil em valor** (ex.: 100 de ouro, 200 de prata); 1 de cada valioso para cada 3 reinos (10 no mundo). Minério raro: 5 no mundo, 20 cada |
 | Extração | 4 lanceiros tiram **38 de valor/h** (1,9 de ouro/h); 6 lanceiros com posto, 79/h. Por pessoa, ≈ 1,7× um trabalhador de local nível 6. Até **6 tropas por jazida** |
-| Era do Aço | Ferraria 7 · 8 ouro, 150 ferro, 100 madeira · 6 h. Libera armas e armaduras 2–3, cavaleiro de elite, lendário |
+| Era do Aço | Ferraria 7 · 8 ouro, 150 ferro, 120 madeira · 6 h. Libera armas e armaduras 2–3, cavaleiro de elite, lendário |
 | Era do Cerco Avançado | Era do Aço e quartel 8 · 15 ouro, 400 madeira, 300 pedra, 150 ferro · 12 h. Libera trebuchet e portões 4–5 |
 | Armas e armaduras | +8% por nível, 3 níveis, por família (infantaria, arqueiros, cavalaria). Linha completa: ≈ 2,2 mil de valor e 20 h; tudo: 13 mil (29% das obras do médio) |
 | Veterania | Por pessoa: marca por vitória com perdas < 50% contra inimigo com ≥ 30% da força. 2 / 5 / 9 marcas: +5% / +10% / +15%; o bônus do grupo é a média |
@@ -176,7 +180,7 @@ Valiosos e seus usos, comércio, pactos, resgate, limites do novato, eras, ferra
 | Teto de bônus | A soma de armas, veterania, relíquia, lendário e legado vale até **+50%** (sem teto chegaria a +84% / +89%) |
 | Novato | Sob escudo: diferença entre o que dá e recebe de até **200 de valor por dia** (22% do que produz no escudo) |
 | Pacto | 1 a 7 dias, até 3 ativos; começa quando o pagamento chega |
-| Queda do castelo | Sede vai para o local de maior nível com metade do nível do castelo; −50% dos recursos, −30% da população civil. Supondo ainda 40% das tropas mortas no cerco, o médio volta ao nível em **2,3 dias** |
+| Queda do castelo | Sede vai para o local de maior nível com metade do nível do castelo; −50% dos recursos, −30% da população civil. Supondo ainda 40% das tropas mortas no cerco, o médio volta ao nível em **2,2 dias** |
 
 ### Por que esses números
 
@@ -189,7 +193,7 @@ Valiosos e seus usos, comércio, pactos, resgate, limites do novato, eras, ferra
 - **Lendário pequeno de propósito**: +25% para até 8 tropas equivale a ≈ 2 tropas. É forte numa tropa de elite e irrelevante num cerco de 40, para não decidir a temporada. O valor está em ser raro e roubável.
 - **Cavaleiro de elite**: mais ataque por pessoa (60 contra 45) e menos por valor (24 contra 26,5 por 100). É para quem tem recurso, mas não tem teto.
 - **Novato**: o limite de 200 por dia impede que contas secundárias alimentem uma principal, mas deixa um amigo ajudar. O reino sob escudo não pode ser cobrado por pacto.
-- **Queda do castelo**: perder metade do nível do castelo custa ≈ 7,8 mil de obras. O médio refaz em 2,3 dias e recupera a produção em 1,5 dia: perda pesada, que não faz o jogador desistir.
+- **Queda do castelo**: perder metade do nível do castelo custa ≈ 7,8 mil de obras. O médio refaz em 2,2 dias e recupera a produção em 1,4 dia: perda pesada, que não faz o jogador desistir.
 
 ### Metas desta parte
 
@@ -201,12 +205,12 @@ Valiosos e seus usos, comércio, pactos, resgate, limites do novato, eras, ferra
 | M13 | Extrair valiosos rende por pessoa 1,5 a 3× um trabalhador de local nível 6 | 1,7× |
 | M14 | O ouro da Era do Aço sai em 3 a 12 h com 4 lanceiros, sem posto | 4 h 13 min |
 | M15 | Ouro e aço do mapa cobrem 90% a 150% da demanda típica | 101% / 96% |
-| M16 | Era do Aço custa 2 a 4 h de produção do médio no dia 10; Era do Cerco, 4 a 8 h no dia 21 (sem o ouro) | 2 h / 4,7 h |
+| M16 | Era do Aço custa 2 a 4 h de produção do médio no dia 10; Era do Cerco, 4 a 8 h no dia 21 (sem o ouro) | 2,1 h / 4,7 h |
 | M17 | Curar um ferido custa 25% a 60% de recrutar um lanceiro | 44% |
 | M18 | Equipamento lendário vale no máximo 3 tropas | 2 |
 | M19 | Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria | ✓ |
 | M20 | Reino sob escudo recebe no máximo 30% do que produz no escudo | 22% |
-| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível em 2 a 6 dias | 2,3 dias |
+| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível em 2 a 6 dias | 2,2 dias |
 
 ### Combates com bônus
 

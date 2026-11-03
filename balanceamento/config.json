@@ -46,6 +46,21 @@
   "kitExtra": {
    "couro": 20
   },
+  "inicio": {
+   "castelo": 2,
+   "locais": 2,
+   "moradias": 2,
+   "tropas": {
+    "lanceiro": 4,
+    "arqueiro": 2
+   },
+   "exploradores": {
+    "pe": 1,
+    "cavalo": 1,
+    "prospector": 1
+   },
+   "raioExplorado": 6
+  },
   "carregador": {
    "carga": 30,
    "vel": "Lenta"
@@ -286,7 +301,7 @@
     "custo": {
      "ouro": 8,
      "ferro": 150,
-     "madeira": 100
+     "madeira": 120
     },
     "tempo": 21600,
     "dia": 10,

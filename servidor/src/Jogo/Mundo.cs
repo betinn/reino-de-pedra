@@ -24,6 +24,9 @@ public sealed partial class Mundo
     /// <summary>Sorteios de jogo (combate, fauna, espionagem). Não determinístico entre execuções.</summary>
     public Rng Sorte { get; set; } = new((ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() ^ 0xA5A5_5A5AUL);
 
+    /// <summary>Como nasce um reino novo (níveis, guarnição, exploradores). Padrão: <c>P.inicio</c>; cenários de teste trocam.</summary>
+    public InicioP? InicioReino { get; set; }
+
     /// <summary>Canal para avisar clientes conectados (SSE). Padrão: não faz nada.</summary>
     public ICanalAvisos Avisos { get; set; } = new CanalNulo();
 

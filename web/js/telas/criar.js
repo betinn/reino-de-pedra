@@ -126,6 +126,7 @@
         '<div class="pilha" data-regiao-bloco></div>' +
         '<div class="linha">' + RP.icone('escudo') + '<div style="flex:1"><b>Escudo de novato · 72 h</b><div class="fraco" style="font-size:var(--fs-2)">Seus locais ficam protegidos contra ataques no começo.</div></div></div>' +
         '<div class="linha">' + RP.icone('mapa') + '<div style="flex:1"><b>Um único mundo</b><div class="fraco" style="font-size:var(--fs-2)">Todos jogam no mesmo mapa, com até 30 reinos.</div></div></div>' +
+        '<div class="linha">' + RP.icone('tropas') + '<div style="flex:1"><b>Primeiros passos já dados</b><div class="fraco" style="font-size:var(--fs-2)">' + RP.esc(textoInicio()) + '</div></div></div>' +
         '<div class="linha">' + RP.icone('castelo') + '<div style="flex:1"><b>Castelo e recursos básicos</b><div class="fraco" style="font-size:var(--fs-2)">O reino já produz o suficiente para tropas básicas.</div></div></div>' +
         '</div></div>' +
         '<div class="rodape-acao"><button type="button" class="btn btn-primario btn-bloco btn-grande" data-fundar>' + RP.icone('castelo') + 'Fundar reino</button></div>';
@@ -168,6 +169,11 @@
     }
   });
 
+  /* "4 lanceiros, 2 arqueiros e 3 exploradores esperam ordens no castelo." (GET /mundo: o que o reino novo já traz pronto) */
+  function textoInicio() {
+    return (RP.mundo && RP.mundo.reinoNovo) || 'O reino começa com o castelo e os locais iniciais.';
+  }
+
   function fundar(el) {
     if (validarNome(rascunho.nome)) { RP.$('#nome-reino', el).focus(); return; }
     if (rascunho.brasao.cor1 === rascunho.brasao.cor2) { RP.aviso({ titulo: 'Escolha duas cores diferentes no brasão.', icone: 'alerta', tipo: 'alerta' }); return; }
@@ -179,11 +185,11 @@
         RP.modal({
           topo: '<div class="modal-brasao">' + RP.iconeReino(RP.reino, 96) + '</div>',
           titulo: 'Reino de ' + RP.esc(RP.reino.nome) + ' fundado',
-          corpo: '<p class="suave">O castelo foi erguido numa região do mapa. O entorno já é conhecido; o resto do mundo está coberto pela névoa.</p>' +
+          corpo: '<p class="suave">O castelo foi erguido numa região do mapa. ' + RP.esc(textoInicio()) + ' O entorno já é conhecido; o resto do mundo está coberto pela névoa.</p>' +
             '<p class="selo selo-visivel" style="margin-top:var(--esp-3)">' + RP.icone('escudo') + 'Escudo de novato ativo</p>',
           acoes: [
-            { rotulo: RP.icone('castelo') + 'Ver meu reino', classe: 'btn-primario', acao: function () { RP.ir('reino'); } },
-            { rotulo: RP.icone('mapa') + 'Abrir o mapa', acao: function () { RP.ir('mapa'); } }
+            { rotulo: RP.icone('batedor') + 'Mandar explorar', classe: 'btn-primario', acao: function () { RP.ir('exploradores'); } },
+            { rotulo: RP.icone('castelo') + 'Ver meu reino', acao: function () { RP.ir('reino'); } }
           ],
           fecharFora: false
         });

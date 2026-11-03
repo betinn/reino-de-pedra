@@ -28,6 +28,7 @@ public sealed class ModuloReino : IModuloApi
                 reinos = ativos, limite = m.P.Reinos, agora = m.Agora,
                 vagas = CriacaoReino.VagaLivre(m) >= 0 || m.Reinos.Any(r => r.Ativo && r.EhIA),
                 cols = m.G.Cols, lins = m.G.Lins,
+                reinoNovo = CriacaoReino.TextoInicio(m),   // o que o reino novo já traz pronto (tela de fundar)
                 aceleracao = cfg.Aceleracao,   // > 1 só no teste local (REINO_ACELERACAO): o relógio do cliente anda junto
             }, Json.Web);
         }));
