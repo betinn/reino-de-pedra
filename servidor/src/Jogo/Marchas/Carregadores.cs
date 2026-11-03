@@ -17,7 +17,6 @@ public sealed class Carregadores : Marcha
     public override string Tipo => "carregadores";
     /// <summary>Quantas pessoas carregam (anônimas quando <see cref="PessoaIds"/> está vazio).</summary>
     public int Pessoas { get; set; }
-    public List<long> PessoaIds { get; set; } = new();
     /// <summary>Item de fila que recebe o material; null se a obra foi cancelada.</summary>
     public long? ItemId { get; set; }
     public string Fila { get; set; } = "";
@@ -99,10 +98,11 @@ public sealed class Carregadores : Marcha
             Partir(m, Caminhos.Calcular(m, OrigemHex, ParaHex, Vel, new OpcoesCaminho { ReinoId = ReinoId }));
             return;
         }
-        Encerrar(m);
         var onde = m.LocalNoHex(OrigemHex);
-        foreach (var id in PessoaIds)
+        foreach (var id in PessoaIds.ToList())
             if (m.Pessoas.Obter(id) is { } p && p.GrupoId == Id) PS.Soltar(m, p, onde);
+        PessoaIds.Clear();
+        Encerrar(m);
         m.Avisar(ReinoId, "reino");
     }
 

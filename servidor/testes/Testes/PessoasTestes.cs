@@ -228,7 +228,9 @@ public class PessoasTestes
         Assert.Equal(3, Economia.Trabalhando(t.M, r));
         t.Avancar(TimeSpan.FromSeconds(t.B.U["milicia"].Tempo + 1));
         Assert.Equal(1, t.M.Locais[r.CasteloId].Guarnicao.GetValueOrDefault("milicia"));
-        Assert.False(t.M.Pessoas.ContemId(q.Id));   // virou tropa (pessoa com id na fase seguinte)
+        Assert.Equal(Estados.Guarnecida, q.Estado);   // virou soldado, com o mesmo nome, na guarnição do castelo
+        Assert.Equal("milicia", q.Oficio);
+        Assert.Equal(r.CasteloId, q.LocalId);
         Assert.Equal(3, r.Pop);
     }
 

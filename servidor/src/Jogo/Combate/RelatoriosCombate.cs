@@ -132,6 +132,7 @@ public static class RelatoriosCombate
             ["alvo"] = nomeGenerico, ["batalhaId"] = b.Id, ["estandarte"] = b.Estandarte, ["tatica"] = plano.Tatica,
             ["forcas"] = new JsonObject { ["ataque"] = Math.Round(full.A), ["defesa"] = Math.Round(full.D) },
             ["tropas"] = new JsonObject { ["enviadas"] = Grupo(rc.TropasAtaque), ["perdas"] = Grupo(rc.PerdasAtaque), ["feridos"] = Grupo(feridosA) },
+            ["mortos"] = new JsonArray(b.MortosAtaque.Select(x => (JsonNode)x).ToArray()),
             ["defesa"] = new JsonObject
             {
                 ["tropas"] = Grupo(rc.TropasDefesa), ["perdas"] = Grupo(rc.PerdasDefesa), ["milicia"] = Math.Round(milicia),
@@ -178,13 +179,14 @@ public static class RelatoriosCombate
             ["tropasVistas"] = Grupo(b.TropasAtaque), ["direcao"] = direcao,
             ["forcas"] = new JsonObject { ["ataque"] = Math.Round(full.A), ["defesa"] = Math.Round(full.D) },
             ["perdas"] = new JsonObject { ["guarnicao"] = Grupo(rc.PerdasDefesa), ["milicia"] = rc.MiliciaMorta, ["civisMortos"] = new JsonArray(b.CivisMortos.Select(x => (JsonNode)x).ToArray()), ["feridos"] = Grupo(feridosD), ["atacantes"] = Grupo(rc.PerdasAtaque) },
+            ["mortos"] = new JsonArray(b.MortosDefesa.Select(x => (JsonNode)x).ToArray()),
             ["levaram"] = Rec(ef.Levaram), ["reliquias"] = new JsonArray(ef.Reliquias.Select(x => (JsonNode)x).ToArray()),
             ["danos"] = new JsonArray(danos.Select(x => (JsonNode)x).ToArray()), ["serie"] = Serie(b, agora),
             ["linhas"] = new JsonArray(
                 Linha("Forças", quem),
                 Linha("Tropas vistas", GT.Partes(m, b.TropasAtaque)),
                 Linha("Vindas do", direcao),
-                Linha("Suas perdas", (rc.PerdasDefesa.Count > 0 ? GT.Partes(m, rc.PerdasDefesa) : "nenhuma tropa") + (rc.MiliciaMorta > 0 ? " · " + N(rc.MiliciaMorta) + " da milícia" + (b.CivisMortos.Count > 0 ? ": " + Pessoas.Pessoas.Nomear(b.CivisMortos) : "") : "")),
+                Linha("Suas perdas", (rc.PerdasDefesa.Count > 0 ? GT.Partes(m, rc.PerdasDefesa) + (b.MortosDefesa.Count > 0 ? " (" + Pessoas.Pessoas.Nomear(b.MortosDefesa) + ")" : "") : "nenhuma tropa") + (rc.MiliciaMorta > 0 ? " · " + N(rc.MiliciaMorta) + " da milícia" + (b.CivisMortos.Count > 0 ? ": " + Pessoas.Pessoas.Nomear(b.CivisMortos) : "") : "")),
                 Linha("Baixas deles", rc.PerdasAtaque.Count > 0 ? GT.Partes(m, rc.PerdasAtaque) : "nenhuma")),
         };
         if (l != null) dD["hex"] = l.Hex;

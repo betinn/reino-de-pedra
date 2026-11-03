@@ -4,6 +4,7 @@ using ReinoDePedra.Jogo.Combate;
 using ReinoDePedra.Jogo.Config;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Pessoas;
 using ReinoDePedra.Jogo.Reinos;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
@@ -108,12 +109,13 @@ public class GuerraTestes
     public void Vitoria_com_poucas_perdas_contra_inimigo_forte_da_uma_marca_que_volta_para_a_guarnicao()
     {
         var (s, ex, b) = Vitoria();
-        Assert.Equal(1, ex.Marcas);
+        Assert.Equal(1, Veterania.DaMarcha(s.M, ex));
+        Assert.All(Pessoas.SoldadosDaMarcha(s.M, ex), p => Assert.Equal(1, p.Marcas));   // cada sobrevivente guarda a sua marca
         s.AvancarAte(ex.Chegada);
         Assert.False(s.M.Marchas.ContemId(ex.Id));
         Assert.Equal(1, Veterania.DoLocal(s.M, s.CasteloAtk), 6);
         // a defesa perdeu: sem marcas negativas
-        Assert.Equal(0, s.M.Locais[b.LocalId].Marcas);
+        Assert.Equal(0, Veterania.DoLocal(s.M, s.M.Locais[b.LocalId]));
     }
 
     [Fact]
@@ -124,7 +126,7 @@ public class GuerraTestes
         var ex = s.Atacar(alvo, G(("arqueiro", 60)), CombateCenario.Plano("saque", "semLimite"));
         s.Terminar(s.Chegar(ex));
         Assert.Equal("vitoria", s.M.Batalhas.Single().Resultado);
-        Assert.Equal(0, ex.Marcas);                                   // inimigo com menos de 30% da força
+        Assert.Equal(0, Veterania.DaMarcha(s.M, ex));                 // inimigo com menos de 30% da força
         Assert.Equal(1, Veterania.Aplicar(s.M, 0, true, 0.49, 100, 30));
         Assert.Equal(0, Veterania.Aplicar(s.M, 0, true, 0.5, 100, 30));   // perdas de 50%
         Assert.Equal(0, Veterania.Aplicar(s.M, 0, true, 0.1, 100, 29));   // inimigo com 29%
@@ -139,16 +141,17 @@ public class GuerraTestes
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 15)), 200);
         var tropas = G(("lanceiro", 20));
         s.Guarnecer(s.CasteloAtk, tropas);
-        s.CasteloAtk.Marcas = 5; s.CasteloAtk.MarcasTropas = 20;
+        Pessoas.Sincronizar(s.M, s.CasteloAtk);
+        foreach (var p in Pessoas.Guarnicao(s.M, s.CasteloAtk)) p.Marcas = 5;
         var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, tropas, alvo.Hex, OrdemAtacar.Id, false, CombateCenario.Plano("saque", "media"));
-        Assert.Equal(5, ex.Marcas);
-        Assert.Equal(0.10, Veterania.BonusDe(s.M, ex.Marcas), 6);
+        Assert.Equal(5, Veterania.DaMarcha(s.M, ex));
+        Assert.Equal(0.10, Veterania.BonusDe(s.M, Veterania.DaMarcha(s.M, ex)), 6);
         var b = s.Chegar(ex);
         Assert.Equal(s.M.F.ValorAtaque(tropas, alvo.Guarnicao, 0.10), b.Marcos[0].A, 6);
         s.Terminar(b);
         Assert.Equal("recuo", b.Resultado);
-        Assert.Equal(4, ex.Marcas);
-        Assert.Equal(0.05, Veterania.BonusDe(s.M, ex.Marcas), 6);
+        Assert.Equal(4, Veterania.DaMarcha(s.M, ex));
+        Assert.Equal(0.05, Veterania.BonusDe(s.M, Veterania.DaMarcha(s.M, ex)), 6);
         Assert.Equal(0, Veterania.BonusDe(s.M, 1.9));
         Assert.Equal(0.15, Veterania.BonusDe(s.M, 9));
     }
@@ -159,21 +162,24 @@ public class GuerraTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = t.M.Locais[r.CasteloId];
-        c.Guarnicao["arqueiro"] = 4; c.Marcas = 3; c.MarcasTropas = 4;
+        c.Guarnicao["arqueiro"] = 4;
+        Pessoas.Sincronizar(t.M, c);
+        foreach (var p in Pessoas.Guarnicao(t.M, c)) p.Marcas = 3;
         t.DarRecursos(r);
         t.DarRecursos(r, 1000, "couro");
         var item = Recrutamento.Recrutar(t.M, r, c.Id, "lanceiro", 4);
         t.AvancarMin(item.DuracaoSeg / 60 + 1);
         Assert.Equal(8, GT.Total(c.Guarnicao));
-        Assert.Equal(1.5, c.Marcas, 6);
+        Assert.Equal(1.5, Veterania.DoLocal(t.M, c), 6);   // 4 veteranos com 3 e 4 recrutas com 0
+        // quem sai leva as próprias marcas: os mais veteranos saem primeiro
         var ex = Exercitos.Enviar(t.M, r, c.Id, G(("arqueiro", 2)), t.M.G.Area(c.Hex, 1).First(h => h != c.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
-        Assert.Equal(1.5, ex.Marcas, 6);
-        Assert.Equal(1.5, Veterania.DoLocal(t.M, c), 6);
-        // um exército veterano que volta faz a média ponderada
-        ex.Marcas = 5.5; t.M.Sujar(ex);
+        Assert.Equal(3, Veterania.DaMarcha(t.M, ex), 6);
+        Assert.Equal(1, Veterania.DoLocal(t.M, c), 6);   // ficaram 2 com 3 e 4 com 0
+        // um exército veterano que volta entra na média
+        foreach (var p in Pessoas.SoldadosDaMarcha(t.M, ex)) { p.Marcas = 5.5; t.M.Sujar(p); }
         Exercitos.Retornar(t.M, ex);
         t.AvancarMin(30);
-        Assert.Equal((1.5 * 6 + 5.5 * 2) / 8, c.Marcas, 6);
+        Assert.Equal((3 * 2 + 5.5 * 2) / 8, Veterania.DoLocal(t.M, c), 6);
     }
 
     // ---------------------------------------------------------------- queda do castelo
@@ -499,7 +505,9 @@ public class GuerraTestes
             ModelosAtaque.Salvar(s.M, s.Atk, "Saque", "saque", "media", false, false, G(("cavalaria", 5)), [new Objetivo("recurso", "auto", 500)]);
             ForcasVistas.Registrar(s.M, s.Atk.Id, alvo, alvo.Origem, "sul");
             Revide.Registrar(s.M, s.Atk.Id, s.Def.Id);
-            s.CasteloAtk.Marcas = 2.5; s.M.Sujar(s.CasteloAtk);
+            s.Guarnecer(s.CasteloAtk, G(("lanceiro", 2)));
+            Pessoas.Sincronizar(s.M, s.CasteloAtk);
+            foreach (var p in Pessoas.Guarnicao(s.M, s.CasteloAtk)) { p.Marcas = 2.5; s.M.Sujar(p); }
             using var db = new ReinoDePedra.Jogo.Persistencia.Banco(Path.Combine(dir, "t.db"));
             db.Salvar(s.M);
             Assert.Equal(0, db.SalvarEsquecidos(s.M));
@@ -512,7 +520,7 @@ public class GuerraTestes
             Assert.Equal("auto", r2.ModelosAtaque.Single().Objetivos[0].R);
             Assert.Single(ForcasVistas.De(m2, s.Atk.Id));
             Assert.True(Revide.Atacou(m2, s.Atk.Id, s.Def.Id));
-            Assert.Equal(2.5, m2.Locais[s.CasteloAtk.Id].Marcas, 6);
+            Assert.Equal(2.5, Veterania.DoLocal(m2, m2.Locais[s.CasteloAtk.Id]), 6);
             // o encontro agendado acontece no mundo recarregado
             s.T.Relogio.Agora = e.Eles;
             m2.ProcessarAte(e.Eles);

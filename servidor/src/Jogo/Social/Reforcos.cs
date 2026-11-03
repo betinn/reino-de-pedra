@@ -4,6 +4,8 @@ using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
+
 namespace ReinoDePedra.Jogo.Social
 {
     /// <summary>Tropas de um aliado defendendo um local: ficam na guarnição (lutam na defesa), mas continuam dele.</summary>
@@ -61,7 +63,7 @@ namespace ReinoDePedra.Jogo.Social
             var dono = m.Reinos.Obter(l.ReinoId)!;
             Economia.Atualizar(m, r); Economia.Atualizar(m, dono);
             var grupo = GT.Limpo(ex.Tropas);
-            GT.Devolver(m, l, grupo);
+            PS.Desembarcar(m, ex, l);
             var e = l.ReforcosAliados.FirstOrDefault(x => x.ReinoId == r.Id);
             if (e == null) l.ReforcosAliados.Add(e = new ReforcoAliado { ReinoId = r.Id, OrigemLocalId = ex.OrigemLocalId, Desde = m.Agora });
             GT.Somar(e.Tropas, grupo);
@@ -99,7 +101,7 @@ namespace ReinoDePedra.Jogo.Social
             if (grupo.Count == 0 || r == null || !r.Ativo) return null;
             Economia.Atualizar(m, r);
             if (m.Reinos.Obter(l.ReinoId) is { } dono) Economia.Atualizar(m, dono);
-            Combates.Tirar(l.Guarnicao, grupo);
+            PS.Sair(m, l, grupo, e.ReinoId);
             var ex = Sair(m, r, l, grupo, e.OrigemLocalId);
             if (Batalhas.Ativa(m, l.Id) is { } b && b.DefensorId == l.ReinoId)
                 Batalhas.Recalcular(m, b, "Reforço aliado saiu: " + GT.Partes(m, grupo) + ".", "defesa");
@@ -118,6 +120,7 @@ namespace ReinoDePedra.Jogo.Social
                 Origem = l.Hex, Destino = l.Hex, Caminho = [l.Hex], Tempos = [m.Agora],
             };
             m.Marchas.Adicionar(ex);
+            PS.Reclamar(m, ex);
             Exercitos.Retornar(m, ex);
             return ex;
         }
@@ -184,7 +187,7 @@ namespace ReinoDePedra.Jogo.Social
                         }
                     l.ReforcosAliados.Remove(e);
                     if (r == null || grupo.Count == 0) continue;
-                    Combates.Tirar(fuga!.Tropas, grupo);
+                    PS.Transferir(m, fuga!, grupo, e.ReinoId);
                     m.Sujar(fuga);
                     Sair(m, r, l, grupo, e.OrigemLocalId);
                     Registros.Notificar(m, r.Id, "tropas", "Reforço recuou", GT.Partes(m, grupo) + " deixaram " + l.Nome + " com a defesa e voltam para casa.", "tropas");

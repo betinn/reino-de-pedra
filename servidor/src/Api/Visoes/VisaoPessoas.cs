@@ -103,5 +103,8 @@ public static class VisaoPessoas
         }
     }
 
+    /// <summary>Resumo de uma pessoa dentro de uma guarnição ou exército.</summary>
+    public static object Curta(Mundo m, Pessoa p) => new { id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, oficioNome = Oficios.Nome(p), estado = p.Estado, marcas = Math.Round(p.Marcas, 2) };
+
     public static string NomeOficio(string oficio, bool feminina) => Oficios.Nome(new Pessoa { Oficio = oficio, Feminina = feminina });
 }

@@ -1,11 +1,13 @@
 using System.Text.Json.Nodes;
 using ReinoDePedra.Jogo;
+using ReinoDePedra.Jogo.Combate;
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Valiosos;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 
 namespace ReinoDePedra.Api.Visoes;
 
@@ -20,6 +22,8 @@ public static class VisaoTropas
         {
             l.Id, tipo = l.Tipo.Chave(), l.Produz, l.Nome, l.Nivel, l.Hex, c = m.G.C(l.Hex), lin = m.G.L(l.Hex),
             guarnicao = GT.GuarnicaoLivre(m, l), l.Postura, l.Ruina,   // sem o reforço de aliados (é deles)
+            pessoas = PS.Guarnicao(m, l).Where(p => p.ReinoId == r.Id).OrderBy(p => p.Oficio).ThenByDescending(p => p.Marcas).ThenBy(p => p.Id).Select(p => VisaoPessoas.Curta(m, p)).ToList(),
+            marcas = Math.Round(Veterania.DoLocal(m, l), 2),
             recruta = Recrutamento.Recruta(l),
             unidades = Recrutamento.Recruta(l) ? m.B.U.Keys.Where(u => Recrutamento.RecrutaNoLocal(m, l, u)).ToList() : [],
         }).ToList();
@@ -72,6 +76,8 @@ public static class VisaoTropas
             e.Id, e.Ordem, estado = Estado(m, e, trabalho), trabalho,
             podeOrdem = bloqueio == null, bloqueio,   // o painel da marcha mostra o motivo (ex.: em batalha) em vez de deixar a ordem falhar
             tropas = e.Tropas, total = GT.Total(e.Tropas), resumo = GT.Partes(m, e.Tropas),
+            pessoas = PS.SoldadosDaMarcha(m, e).OrderBy(p => p.Oficio).ThenBy(p => p.Id).Select(p => VisaoPessoas.Curta(m, p)).ToList(),
+            marcas = Math.Round(Veterania.DaMarcha(m, e), 2),
             carga = e.Carga.Arredondado(), cargaMax = e.CargaMax(m), cargaUsada = Math.Floor(e.Carga.Total), e.Vel, e.Postura, e.Seguro,
             e.OrigemLocalId, origem = NomeLocal(m, r, e.OrigemLocalId),
             e.AlvoLocalId, alvo = NomeLocal(m, r, e.AlvoLocalId),

@@ -6,6 +6,8 @@ using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
+
 namespace ReinoDePedra.Jogo.Combate
 {
     /// <summary>Ponto do caminho da marcha onde o exército chega antes dela.</summary>
@@ -289,21 +291,20 @@ namespace ReinoDePedra.Jogo.Combate
                 if (saida.Count == 0) return;
                 var r = m.Reinos.Obter(l.ReinoId)!;
                 Economia.Atualizar(m, r);
-                Veterania.Normalizar(m, l);
-                var prov = new Exercito { ReinoId = l.ReinoId, OrigemLocalId = l.Id, Tropas = new(saida), Marcas = l.Marcas, MarcasIniciadas = true, Postura = l.Postura };
-                var antes = GT.Total(saida);
+                var prov = new Exercito { ReinoId = l.ReinoId, OrigemLocalId = l.Id, Postura = l.Postura, Origem = l.Hex, Destino = l.Hex, Caminho = [l.Hex], Tempos = [m.Agora] };
+                m.Marchas.Adicionar(prov);
+                PS.Embarcar(m, prov, PS.Sair(m, l, saida, null));
                 Revide.Registrar(m, mc.ReinoId, l.ReinoId);
-                var res = Campo.Lutar(m, prov, mc, m.P.Combate.TaticaPadrao, l.Postura == Postura.AtacarQualquer ? "Guarnição de " + l.Nome + " atacou" : "Guarnição de " + l.Nome + " revidou");
-                // os que saíram voltam ao local (as perdas saem da guarnição) com a carga e as relíquias tomadas
-                Combates.Tirar(l.Guarnicao, res.PerdasAtaque);
-                if (prov.Carga.Count > 0) { Economia.Atualizar(m, r); l.Estoque.Somar(prov.Carga); }
-                foreach (var id in prov.Reliquias) if (m.Reliquias.Obter(id) is { } rel) Reliquias.Guardar(m, rel, l);
-                // marcas: a parte que saiu ganhou ou perdeu; a guarnição fica com a média
-                var fic = GT.Total(l.Guarnicao);
-                var vivos = antes - GT.Total(res.PerdasAtaque);
-                var parados = Math.Max(0, fic - vivos);
-                l.Marcas = fic > 0 ? (l.Marcas * parados + prov.Marcas * vivos) / fic : 0;
-                l.MarcasTropas = fic;
+                Campo.Lutar(m, prov, mc, m.P.Combate.TaticaPadrao, l.Postura == Postura.AtacarQualquer ? "Guarnição de " + l.Nome + " atacou" : "Guarnição de " + l.Nome + " revidou");
+                // os que sobraram voltam ao local com a carga e as relíquias tomadas (as perdas e as marcas já são de cada pessoa)
+                if (m.Marchas.ContemId(prov.Id))
+                {
+                    if (prov.Carga.Count > 0) { Economia.Atualizar(m, r); l.Estoque.Somar(prov.Carga); prov.Carga = new(); }
+                    foreach (var id in prov.Reliquias.ToList()) if (m.Reliquias.Obter(id) is { } rel) Reliquias.Guardar(m, rel, l);
+                    prov.Reliquias = new();
+                    PS.Desembarcar(m, prov, l);
+                    prov.Encerrar(m);
+                }
                 m.Sujar(l);
                 m.Avisar(l.ReinoId, "reino");
                 return;

@@ -139,8 +139,8 @@ namespace ReinoDePedra.Jogo.Combate
         private static void Arruinar(Mundo m, Local c)
         {
             c.Ruina = true; c.Nivel = 1; c.Tipo = TipoLocal.Vila; c.Produz = "comida"; c.Nome = "Ruínas de castelo";
-            c.Portoes = 0; c.EstruturaPortoes = 0; c.Moradias = 0; c.Guarnicao.Clear(); c.Estoque = new();
-            c.Marcas = 0; c.MarcasTropas = 0;
+            c.Portoes = 0; c.EstruturaPortoes = 0; c.Moradias = 0; c.Estoque = new();
+            Pessoas.Pessoas.LimparGuarnicao(m, c);
             m.MudarDono(c, 0);
         }
 
@@ -184,9 +184,10 @@ namespace ReinoDePedra.Jogo.Combate
             var c = m.AdicionarLocal(new Local
             {
                 ReinoId = r.Id, Tipo = TipoLocal.Castelo, Hex = hex, Nivel = 1, Nome = "Castelo de " + r.Nome,
-                Estoque = Recursos.De(e.Kit), Guarnicao = GT.Limpo(e.Tropas),
+                Estoque = Recursos.De(e.Kit),
             });
             r.CasteloId = c.Id;
+            Pessoas.Pessoas.CriarSoldados(m, r, c, e.Tropas);   // o kit de recomeço: soldados novos, com nome
             r.Vaga = vaga;
             // carroças, exploradores e mensageiros parados ficavam no castelo caído: o exílio recomeça só com o kit
             r.Veiculos.Clear(); r.ExploradoresLivres.Clear(); r.MensageirosLivres = 0;

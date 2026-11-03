@@ -4,6 +4,8 @@ using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
+
 namespace ReinoDePedra.Jogo.Exploracao
 {
     /// <summary>
@@ -15,6 +17,9 @@ namespace ReinoDePedra.Jogo.Exploracao
         public long CaptorId { get; set; }
         public long DonoId { get; set; }
         public string TipoExp { get; set; } = "";
+        /// <summary>A pessoa presa (continua do reino de origem, em <c>Estados.Capturada</c>) e o nome dela.</summary>
+        public long PessoaId { get; set; }
+        public string Nome { get; set; } = "";
         public int Hex { get; set; }
         public long Quando { get; set; }
         /// <summary>Fim do prazo de decisão (libertação automática).</summary>
@@ -43,10 +48,13 @@ namespace ReinoDePedra.Jogo.Exploracao
         {
             var dono = m.Reinos.Obter(e.ReinoId);
             var nome = e.NomeTipo(m);
+            var pessoa = m.Pessoas.Obter(e.PessoaId);
+            if (pessoa != null) PS.Capturada(m, e, pessoa);
             e.Encerrar(m);
             var p = m.Prisioneiros.Adicionar(new Prisioneiro
             {
                 CaptorId = captor.Id, DonoId = e.ReinoId, TipoExp = e.TipoExp, Hex = hex, Quando = m.Agora,
+                PessoaId = pessoa?.Id ?? 0, Nome = pessoa?.Nome ?? "",
                 Ate = m.Agora + T.DeHoras(m.P.ResgateH),
             });
             p.EventoId = m.Agendar(new PrazoPrisioneiroEvento { PrisioneiroId = p.Id, Quando = p.Ate }).Id;
@@ -54,7 +62,8 @@ namespace ReinoDePedra.Jogo.Exploracao
             var onde = "hexágono " + m.G.C(hex) + ", " + m.G.L(hex);
             Registros.Relatar(m, captor.Id, "captura", nome + " capturado", new JsonObject
             {
-                ["resumo"] = "Suas tropas pegaram um explorador perto do " + onde + ". Decida em " + m.P.ResgateH + " h: pedir resgate, libertar ou executar. Sem decisão, ele é libertado.",
+                ["resumo"] = "Suas tropas pegaram " + (p.Nome.Length > 0 ? p.Nome + ", " + nome.ToLowerInvariant() + "," : "um explorador") + " perto do " + onde + ". Decida em " + m.P.ResgateH + " h: pedir resgate, libertar ou executar. Sem decisão, ele é libertado.",
+                ["nome"] = p.Nome,
                 ["origem"] = dono != null ? Espionagem.Identidade(dono) : null,
                 ["prisioneiro"] = p.Id, ["ate"] = p.Ate, ["hex"] = hex,
                 ["linhas"] = new JsonArray { Fauna.Linha("Reino de origem", dono?.Nome ?? "desconhecido"), Fauna.Linha("Onde", onde) },
@@ -62,8 +71,8 @@ namespace ReinoDePedra.Jogo.Exploracao
             if (dono != null)
                 Registros.Relatar(m, dono.Id, "captura", nome + " capturado", new JsonObject
                 {
-                    ["resumo"] = "Perdemos o explorador perto do " + onde + ". Quem o pegou tem " + m.P.ResgateH + " h para decidir; sem decisão, ele volta.",
-                    ["hex"] = hex, ["linhas"] = new JsonArray { Fauna.Linha("Onde", onde) },
+                    ["resumo"] = "Perdemos " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " perto do " + onde + ". Quem a pegou tem " + m.P.ResgateH + " h para decidir; sem decisão, volta.",
+                    ["hex"] = hex, ["nome"] = p.Nome, ["linhas"] = new JsonArray { Fauna.Linha("Onde", onde) },
                 }, "exploracao");
             m.Avisar(captor.Id, "reino");
             return p;
@@ -117,6 +126,7 @@ namespace ReinoDePedra.Jogo.Exploracao
         private static void Executar(Mundo m, Prisioneiro p)
         {
             Remover(m, p);
+            if (m.Pessoas.Obter(p.PessoaId) is { } pessoa) PS.Remover(m, pessoa);
             Registros.Relatar(m, p.DonoId, "captura", Exploradores.NomeTipo(m, p.TipoExp) + " executado", new JsonObject
             {
                 ["resumo"] = "O explorador capturado perto do hexágono " + m.G.C(p.Hex) + ", " + m.G.L(p.Hex) + " não vai voltar.", ["hex"] = p.Hex,
@@ -129,13 +139,16 @@ namespace ReinoDePedra.Jogo.Exploracao
         {
             Remover(m, p);
             var dono = m.Reinos.Obter(p.DonoId);
-            if (dono == null || !dono.Ativo) return;
+            var pessoa = m.Pessoas.Obter(p.PessoaId);
+            if (dono == null || !dono.Ativo) { if (pessoa != null) PS.Remover(m, pessoa); return; }
             var e = new Explorador
             {
                 ReinoId = dono.Id, TipoExp = p.TipoExp, CasaLocalId = dono.CasteloId, Base = p.Hex, Ordem = Exploradores.Retornar,
-                Origem = p.Hex, Destino = p.Hex, Caminho = [p.Hex], Tempos = [m.Agora],
+                Origem = p.Hex, Destino = p.Hex, Caminho = [p.Hex], Tempos = [m.Agora], PessoaId = p.PessoaId,
             };
             e.Vel = Exploradores.Velocidade(m, p.TipoExp, e.Tropas);
+            m.Marchas.Adicionar(e);
+            if (pessoa != null) PS.Embarcar(m, e, [pessoa]);
             Exploradores.IrParaCasa(m, e);
             Registros.Notificar(m, dono.Id, "exploracao", Exploradores.NomeTipo(m, p.TipoExp) + " " + motivo, "Está voltando para casa.", "exploradores");
             if (motivo == "libertado" && m.Agora >= p.Ate)

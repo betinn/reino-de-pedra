@@ -34,8 +34,8 @@ Cada unidade é uma pessoa do reino (as máquinas de cerco, a equipe que as oper
 | Arqueiro | Arqueiros | 35 | 25 | Infantaria | Média | 5 | 2 | 30 comida, 50 madeira, 10 couro | 100 | 14 min | 1 | 35 | 25 | — |
 | Cavalaria | Cavalaria | 45 | 30 | Arqueiros | Rápida | 10 | 2 | 60 comida, 50 ferro, 30 couro | 170 | 24 min | 1 | 26.5 | 17.6 | — |
 | Cavaleiro de elite | Cavalaria | 60 | 40 | Arqueiros | Rápida | 10 | 2 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 250 | 32 min | 1 | 24 | 16 | Era do Aço |
-| Aríete | Cerco | 10 | 10 | torres e portões (40) | Lenta | 0 | 1 | 60 madeira, 15 ferro | 75 | 1 h | 2 | 13.3 | 13.3 | — |
-| Trebuchet | Cerco | 5 | 5 | torres e portões (90) | Lenta | 0 | 1 | 90 madeira, 40 pedra, 30 ferro | 160 | 2 h | 3 | 3.1 | 3.1 | Era do Cerco Avançado |
+| Aríete | Cerco | 10 | 10 | torres e portões (40) | Lenta | 0 | 1 | 60 madeira, 15 ferro | 75 | 1 h | 1 | 13.3 | 13.3 | — |
+| Trebuchet | Cerco | 5 | 5 | torres e portões (90) | Lenta | 0 | 1 | 90 madeira, 40 pedra, 30 ferro | 160 | 2 h | 1 | 3.1 | 3.1 | Era do Cerco Avançado |
 
 Mensageiro: 30 comida, 1 de população, 4 min, velocidade rápida (reino vizinho em 6 min). Mensagem de até 200 caracteres; recado de proposta, até 120.
 

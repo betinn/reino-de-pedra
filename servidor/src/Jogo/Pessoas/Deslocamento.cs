@@ -12,7 +12,6 @@ namespace ReinoDePedra.Jogo.Pessoas;
 public sealed class Deslocamento : Marcha
 {
     public override string Tipo => "pessoas";
-    public List<long> PessoaIds { get; set; } = new();
     /// <summary>Local de destino (trabalho ou casa).</summary>
     public long ParaLocalId { get; set; }
 
@@ -22,10 +21,11 @@ public sealed class Deslocamento : Marcha
 
     public override void Chegou(Mundo m)
     {
-        Encerrar(m);
         var l = m.Locais.Obter(ParaLocalId);
-        foreach (var id in PessoaIds)
+        foreach (var id in PessoaIds.ToList())
             if (m.Pessoas.Obter(id) is { } p && p.GrupoId == Id) Pessoas.Chegou(m, p, l);
+        PessoaIds.Clear();
+        Encerrar(m);
         m.Avisar(ReinoId, "reino");
     }
 

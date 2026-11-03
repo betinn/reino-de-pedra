@@ -138,7 +138,7 @@ public sealed class Caravana : Marcha
         Economia.Atualizar(m, r);
         foreach (var (k, n) in Veiculos) r.Veiculos[k] = r.Veiculos.GetValueOrDefault(k) + n;
         m.Sujar(r);
-        GT.Devolver(m, b!, Tropas);
+        Pessoas.Pessoas.Desembarcar(m, this, b!);
         if (Carga.Count > 0)
         {
             var sobra = Carga.Arredondado();
@@ -303,6 +303,7 @@ public static class Caravanas
             // carroças e escolta já estão na origem: carregam e partem para o destino
             c.Caminho = [pl.Origem.Hex]; c.Tempos = [m.Agora]; c.Origem = c.Destino = pl.Origem.Hex;
             m.Marchas.Adicionar(c);
+            Pessoas.Pessoas.Reclamar(m, c);
             c.Carregar(m, r);
         }
         m.Avisar(r.Id, "reino");

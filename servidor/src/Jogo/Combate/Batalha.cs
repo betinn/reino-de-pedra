@@ -6,6 +6,9 @@ using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
 using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
+using ReinoDePedra.Jogo.Pessoas;
+using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
+
 namespace ReinoDePedra.Jogo.Combate
 {
     /// <summary>
@@ -62,6 +65,9 @@ namespace ReinoDePedra.Jogo.Combate
         public double MiliciaMorta { get; set; }
         /// <summary>Nomes dos civis mortos na milícia.</summary>
         public List<string> CivisMortos { get; set; } = new();
+        /// <summary>Nomes dos soldados mortos de cada lado.</summary>
+        public List<string> MortosAtaque { get; set; } = new();
+        public List<string> MortosDefesa { get; set; } = new();
         public long? RelatorioAtaque { get; set; }
         public long? RelatorioDefesa { get; set; }
     }
@@ -288,28 +294,31 @@ namespace ReinoDePedra.Jogo.Combate
             }
             b.Resultado = resultado;
 
-            // perdas: proporcionais entre as unidades de cada exército e da guarnição
+            // perdas: proporcionais entre as unidades de cada exército e da guarnição; dentro de cada unidade, quem cai é sorteado
             var trebuchetsInicio = c.Ataque.GetValueOrDefault("trebuchet");
             var perdasAtk = new Dictionary<string, int>();
+            var caidasA = new List<Pessoa>();
             foreach (var ex in c.Exercitos)
             {
                 var pe = Combates.Perdas(ex.Tropas, perdaA);
-                Combates.Tirar(ex.Tropas, pe);
+                caidasA.AddRange(PS.Baixas(m, ex, pe));
                 GT.Somar(perdasAtk, pe);
                 m.Sujar(ex);
             }
             var perdasDef = Combates.Perdas(c.Defesa, perdaD);
-            if (l != null && perdasDef.Count > 0) { Combates.Tirar(l.Guarnicao, perdasDef); m.Sujar(l); }
+            var caidasD = l != null && perdasDef.Count > 0 ? PS.Baixas(m, l, perdasDef) : new List<Pessoa>();
             var miliciaPessoas = c.Extra.Pop * m.P.MiliciaPorPop;
             var miliciaMorta = modo == ModoRecuoDefesa ? 0 : Math.Floor(miliciaPessoas * perdaD * m.P.MiliciaBaixas + 1e-9);   // os outros civis fogem
-            if (defR != null && l != null && miliciaMorta > 0) b.CivisMortos = Pessoas.Pessoas.Matar(m, Pessoas.Pessoas.Presentes(m, l), (int)miliciaMorta);
+            if (defR != null && l != null && miliciaMorta > 0) b.CivisMortos = PS.Matar(m, PS.Presentes(m, l), (int)miliciaMorta);
             b.PerdasAtaque = perdasAtk; b.PerdasDefesa = perdasDef; b.MiliciaMorta = miliciaMorta;
 
-            // feridos: de quem vence ou recua (quem perde sem recuar não tem feridos)
+            // feridos: de quem vence ou recua (quem perde sem recuar não tem feridos); os outros caídos morrem
             var feridosA = venceu || resultado == "recuo" ? Combates.Feridos(m, perdasAtk) : new();
+            var (mortosA, feridasA) = PS.Enterrar(m, caidasA, feridosA);
             // os feridos de um reforço aliado são do reino que o mandou (o dono do local fica só com os dele)
             var feridosD = new Dictionary<string, int>();
-            var feridosAliados = new List<(Reino reino, Dictionary<string, int> feridos)>();
+            var feridosAliados = new List<(Reino reino, Dictionary<string, int> feridos, List<Pessoa> pessoas)>();
+            var mortosD = new List<string>(); var feridasD = new List<Pessoa>();
             if (!venceu || modo == ModoRecuoDefesa)
             {
                 var proprias = new Dictionary<string, int>(perdasDef);
@@ -317,19 +326,26 @@ namespace ReinoDePedra.Jogo.Combate
                     foreach (var (e, pe) in Reforcos.PartesDasPerdas(l, c.Defesa, perdasDef))
                     {
                         Combates.Tirar(proprias, pe);
-                        if (m.Reinos.Obter(e.ReinoId) is { Ativo: true } ar) feridosAliados.Add((ar, Combates.Feridos(m, pe)));
+                        var fa = Combates.Feridos(m, pe);
+                        var (ma, fp) = PS.Enterrar(m, caidasD.Where(p => p.ReinoId == e.ReinoId).ToList(), fa);
+                        mortosD.AddRange(ma);
+                        if (m.Reinos.Obter(e.ReinoId) is { Ativo: true } ar) feridosAliados.Add((ar, fa, fp));
                     }
                 feridosD = Combates.Feridos(m, proprias);
+                var (md, fd) = PS.Enterrar(m, caidasD.Where(p => defR == null || p.ReinoId == defR.Id).ToList(), feridosD);
+                mortosD.AddRange(md); feridasD = fd;
             }
+            else mortosD.AddRange(PS.Enterrar(m, caidasD, null).mortos);
+            b.MortosAtaque = mortosA; b.MortosDefesa = mortosD;
             if (atkR != null && feridosA.Count > 0)
             {
                 var origem = c.Exercitos.Select(e => m.Locais.Obter(e.OrigemLocalId)).FirstOrDefault(x => x != null && x.ReinoId == atkR.Id);
-                foreach (var f in Combates.AoFerir) f(m, atkR, feridosA, origem);
+                foreach (var f in Combates.AoFerir) f(m, atkR, feridosA, origem, feridasA);
             }
             if (defR != null && feridosD.Count > 0)
-                foreach (var f in Combates.AoFerir) f(m, defR, feridosD, l != null && l.ReinoId == defR.Id ? l : null);
-            foreach (var (ar, fa) in feridosAliados)
-                if (fa.Count > 0) foreach (var f in Combates.AoFerir) f(m, ar, fa, l);
+                foreach (var f in Combates.AoFerir) f(m, defR, feridosD, l != null && l.ReinoId == defR.Id ? l : null, feridasD);
+            foreach (var (ar, fa, fp) in feridosAliados)
+                if (fa.Count > 0) foreach (var f in Combates.AoFerir) f(m, ar, fa, l, fp);
 
             var rc = new ResultadoCombate(b.Id, b.LocalId, b.AtacanteId, b.DefensorId, plano.Tipo, resultado, full.A, full.D,
                 c.Ataque, c.Defesa, perdasAtk, perdasDef, miliciaMorta);
@@ -339,8 +355,7 @@ namespace ReinoDePedra.Jogo.Combate
             if (modo == ModoRecuoDefesa && l != null && defR != null && l.ReinoId == defR.Id)
             {
                 var resto = GT.Limpo(l.Guarnicao);
-                l.Guarnicao.Clear(); m.Sujar(l);
-                if (resto.Count > 0) Efeitos.Fugir(m, defR, l, resto);
+                if (resto.Count > 0) { PS.Sair(m, l, resto, null, todosOsReinos: true); Efeitos.Fugir(m, defR, l, resto); }
             }
 
             // efeitos: objetivos (vitória) ou só o dano de trebuchets à distância (derrota e recuo)

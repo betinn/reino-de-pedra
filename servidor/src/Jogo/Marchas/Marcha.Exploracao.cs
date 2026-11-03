@@ -41,21 +41,18 @@ public abstract partial class Marcha
     {
         var total = GT.Total(Tropas);
         var mortos = new Dictionary<string, int>();
+        List<string>? nomes = null;
         if (total > 0)
         {
             var n = Math.Min(total, Math.Max(1, (int)Math.Round(total * perda, MidpointRounding.AwayFromZero)));
             if (Reliquias.Count > 0) n = Math.Min(n, total - 1);   // quem leva relíquia não some inteiro na mata
             mortos = Fauna.Distribuir(Tropas, n);
-            foreach (var (k, v) in mortos)
-            {
-                var resto = Tropas.GetValueOrDefault(k) - v;
-                if (resto > 0) Tropas[k] = resto; else Tropas.Remove(k);
-            }
+            nomes = Pessoas.Pessoas.Enterrar(m, Pessoas.Pessoas.Baixas(m, this, mortos), null).mortos;
         }
         var carga = new Recursos();
         foreach (var (k, v) in Carga.ToList()) carga.Somar(k, Carga.Retirar(k, v * perda));
         m.Sujar(this);
-        return new PerdaFauna(mortos, carga, total > 0 && GT.Total(Tropas) == 0);
+        return new PerdaFauna(mortos, carga, total > 0 && GT.Total(Tropas) == 0, nomes);
     }
 
     /// <summary>Revela na névoa do dono os hexágonos do caminho já percorridos até <paramref name="ate"/>, cada um no minuto da passagem.</summary>
@@ -111,7 +108,7 @@ public abstract partial class Marcha
 }
 
 /// <summary>O que uma marcha perdeu num ataque de fauna. <see cref="Acabou"/>: não sobrou ninguém.</summary>
-public sealed record PerdaFauna(Dictionary<string, int> Mortos, Recursos Carga, bool Acabou);
+public sealed record PerdaFauna(Dictionary<string, int> Mortos, Recursos Carga, bool Acabou, List<string>? Nomes = null);
 
 /// <summary>
 /// Revela o caminho de uma marcha até este instante (ao entrar em névoa nunca vista) ou inteiro, logo antes de ela chegar

@@ -23,7 +23,7 @@ public static class Combates
     /// Feridos de um lado (P.feridos.frac das baixas de quem vence ou recua): (mundo, reino, unidades, local onde ficam).
     /// O sistema de feridos registra aqui. Sem ninguém registrado, não há feridos: as baixas são todas mortes.
     /// </summary>
-    public static List<Action<Mundo, Reino, Dictionary<string, int>, Local?>> AoFerir { get; } = new();
+    public static List<Action<Mundo, Reino, Dictionary<string, int>, Local?, List<Pessoas.Pessoa>>> AoFerir { get; } = new();
 
     /// <summary>População civil do local: os civis presentes nele (base da milícia e do massacre).</summary>
     public static double PopDoLocal(Mundo m, Reino r, Local l) =>

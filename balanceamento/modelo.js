@@ -333,8 +333,8 @@ const U = {
   arqueiro:  { nome: 'Arqueiro',  fam: 'arqueiros',  atk: 35, def: 25, vel: 'Média',  carga: 5,  visao: 2, custo: { comida: 30, madeira: 50, couro: 10 }, tempo: 840, pop: 1, vence: 'infantaria' },
   cavalaria: { nome: 'Cavalaria', fam: 'cavalaria',  atk: 45, def: 30, vel: 'Rápida', carga: 10, visao: 2, custo: { comida: 60, ferro: 50, couro: 30 }, tempo: 1440, pop: 1, vence: 'arqueiros' },
   elite:     { nome: 'Cavaleiro de elite', fam: 'cavalaria', atk: 60, def: 40, vel: 'Rápida', carga: 10, visao: 2, custo: { comida: 70, ferro: 60, couro: 40, cavalo: 1 }, tempo: 1920, pop: 1, vence: 'arqueiros', req: 'Era do Aço' },
-  ariete:    { nome: 'Aríete',    fam: 'cerco', atk: 10, def: 10, vel: 'Lenta',  carga: 0,  visao: 1, custo: { madeira: 60, ferro: 15 }, tempo: 3600, pop: 2, cerco: 40 },
-  trebuchet: { nome: 'Trebuchet', fam: 'cerco', atk: 5,  def: 5,  vel: 'Lenta',  carga: 0,  visao: 1, custo: { madeira: 90, pedra: 40, ferro: 30 }, tempo: 7200, pop: 3, cerco: 90, req: 'Era do Cerco Avançado' }
+  ariete:    { nome: 'Aríete',    fam: 'cerco', atk: 10, def: 10, vel: 'Lenta',  carga: 0,  visao: 1, custo: { madeira: 60, ferro: 15 }, tempo: 3600, pop: 1, cerco: 40 },
+  trebuchet: { nome: 'Trebuchet', fam: 'cerco', atk: 5,  def: 5,  vel: 'Lenta',  carga: 0,  visao: 1, custo: { madeira: 90, pedra: 40, ferro: 30 }, tempo: 7200, pop: 1, cerco: 90, req: 'Era do Cerco Avançado' }
 };
 const NOME_FAM = { infantaria: 'Infantaria', arqueiros: 'Arqueiros', cavalaria: 'Cavalaria', cerco: 'Cerco' };
 const VEICULOS = { carroca: { carga: 60, vel: 'Lenta', custo: { madeira: 15, ferro: 2 } }, carrocao: { carga: 180, vel: 'Média', custo: { madeira: 40, ferro: 8, cavalo: 2 } } };

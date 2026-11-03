@@ -9,10 +9,10 @@ using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 namespace ReinoDePedra.Api.Endpoints;
 
 public sealed record PedidoRecrutar(long LocalId, string Unidade, int Qtd);
-public sealed record PedidoEnviar(long DeLocalId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L, string? Ordem, bool Seguro, JsonObject? Dados);
+public sealed record PedidoEnviar(long DeLocalId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L, string? Ordem, bool Seguro, JsonObject? Dados, List<long>? Pessoas = null);
 public sealed record PedidoOrdem(string Ordem, int? DestinoHex, int? C, int? L, bool? Seguro, JsonObject? Dados);
 public sealed record PedidoPostura(long? LocalId, long? MarchaId, bool? Todas, bool? TodosExercitos, string Postura);
-public sealed record PedidoPrevia(long? DeLocalId, long? MarchaId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L);
+public sealed record PedidoPrevia(long? DeLocalId, long? MarchaId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L, List<long>? Pessoas = null);
 
 /// <summary>Recrutamento, envio de tropas, ordens a exércitos em campo e posturas.</summary>
 public sealed class ModuloTropas : IModuloApi
@@ -48,7 +48,9 @@ public sealed class ModuloTropas : IModuloApi
             return Results.Json(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
-                var ex = Exercitos.Enviar(m, r, p.DeLocalId, p.Tropas, Hex(m, p.DestinoHex, p.C, p.L), p.Ordem ?? OrdemMover.Id, p.Seguro, p.Dados);
+                var (tropas, escolha) = EnvioPessoas.Ler(m, r, p.DeLocalId, p.Pessoas, p.Tropas);
+                using var _ = escolha;
+                var ex = Exercitos.Enviar(m, r, p.DeLocalId, tropas, Hex(m, p.DestinoHex, p.C, p.L), p.Ordem ?? OrdemMover.Id, p.Seguro, p.Dados);
                 return VisaoTropas.Exercito(m, ex);
             }), Json.Web, statusCode: 201);
         });
@@ -68,7 +70,9 @@ public sealed class ModuloTropas : IModuloApi
                 }
                 var l = m.Locais.Obter(p.DeLocalId ?? 0);
                 if (l == null || l.ReinoId != r.Id) throw new RegraException("Local não é seu.", 404);
-                return VisaoTropas.Previa(m, r, l.Hex, para, GT.Validar(m, l, p.Tropas));
+                var (tropas, escolha) = EnvioPessoas.Ler(m, r, l.Id, p.Pessoas, p.Tropas);
+                using var _ = escolha;
+                return VisaoTropas.Previa(m, r, l.Hex, para, GT.Validar(m, l, tropas));
             }), Json.Web);
         });
 

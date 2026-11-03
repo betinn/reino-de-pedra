@@ -10,9 +10,20 @@ namespace ReinoDePedra.Jogo.Pessoas;
 /// <see cref="Reino.Pop"/> (contagem das pessoas civis) e os índices do <see cref="Mundo"/>.
 /// </summary>
 [Sistema]
-public static class Pessoas
+public static partial class Pessoas
 {
-    public static void AoIniciar(Mundo m) => Sistemas.UmaVez("pessoas", () => { });
+    public static void AoIniciar(Mundo m) => Sistemas.UmaVez("pessoas", () =>
+    {
+        Marcha.AoPartir.Add(Reclamar);
+        Marcha.AoEncerrar.Add(AoEncerrarMarcha);
+    });
+
+    /// <summary>A marcha acabou com gente ainda dentro: quem não desembarcou antes some (morreu, foi capturado, o reino acabou).</summary>
+    private static void AoEncerrarMarcha(Mundo m, Marcha mc)
+    {
+        foreach (var p in DaMarcha(m, mc).Where(p => p.GrupoId == mc.Id).ToList()) Remover(m, p);
+        mc.PessoaIds.Clear();
+    }
 
     // ---------------------------------------------------------------- consultas
 
@@ -97,12 +108,19 @@ public static class Pessoas
         return lista;
     }
 
-    /// <summary>Tira a pessoa do mundo (morte, saída do reino).</summary>
+    /// <summary>Tira a pessoa do mundo (morte, saída do reino) e mantém as contagens de onde ela estava.</summary>
     public static void Remover(Mundo m, Pessoa p)
     {
         m.DesindexarPessoa(p);
         m.Pessoas.Remover(p);
-        if (m.Reinos.Obter(p.ReinoId) is { } r) Recontar(m, r);
+        var r = m.Reinos.Obter(p.ReinoId);
+        if (p.EhCivil) { if (r != null) Recontar(m, r); return; }
+        if (p.GrupoId is long g && g > 0 && m.Marchas.Obter(g) is { } mc && mc.PessoaIds.Remove(p.Id)) RecontarTropas(m, mc);
+        if (p.Estado == Estados.Guarnecida && p.LocalId is long lid && m.Locais.Obter(lid) is { } l)
+        {
+            if (EhSoldado(m, p)) RecontarGuarnicao(m, l);
+            else if (r != null) RecontarLivres(m, r);
+        }
     }
 
     /// <summary>Mata até <paramref name="n"/> pessoas sorteadas entre as candidatas. Devolve os nomes.</summary>
@@ -386,15 +404,48 @@ public static class Pessoas
     }
 
     /// <summary>
-    /// <paramref name="n"/> pessoas do item ficaram prontas. Por enquanto a unidade entra na guarnição como contagem e a pessoa
-    /// sai do mundo (soldados, exploradores e mensageiros passam a ser pessoas com id na fase seguinte do refactor).
-    /// Devolve os nomes.
+    /// <paramref name="n"/> pessoas do item ficaram prontas: entram na guarnição de <paramref name="l"/> com o ofício da unidade
+    /// (exploradores e mensageiros ficam livres no castelo). Devolve os nomes.
     /// </summary>
-    public static List<string> TreinoPronto(Mundo m, Reino r, ItemFila item, int n)
+    public static List<string> TreinoPronto(Mundo m, Reino r, ItemFila item, int n, Local l)
     {
         var nomes = new List<string>();
-        foreach (var p in EmTreino(m, r, item).Take(n).ToList()) { nomes.Add(p.Nome); Remover(m, p); }
+        var soldado = false;
+        Sincronizar(m, l);
+        foreach (var p in EmTreino(m, r, item).Take(n).ToList())
+        {
+            nomes.Add(p.Nome);
+            MudarLocal(m, p, l.Id);
+            p.Estado = Estados.Guarnecida; p.ItemId = null; p.GrupoId = null; m.Sujar(p);
+            soldado |= EhSoldado(m, p);
+        }
+        if (soldado) RecontarGuarnicao(m, l);
+        RecontarLivres(m, r);
         return nomes;
+    }
+
+    /// <summary>Explorador ou mensageiro livre no castelo com este ofício (o de menor id), ou null.</summary>
+    public static Pessoa? Livre(Mundo m, Reino r, string oficio)
+    {
+        SincronizarLivres(m, r);
+        return m.PessoasDe(r.Id).Where(p => p.Oficio == oficio && p.Estado == Estados.Guarnecida).OrderBy(p => p.Id).FirstOrDefault();
+    }
+
+    /// <summary>A pessoa sai da marcha e fica livre (guarnecida) no local.</summary>
+    public static void Livrar(Mundo m, Marcha mc, long pessoaId, Local l)
+    {
+        if (m.Pessoas.Obter(pessoaId) is not { } p) return;
+        mc.PessoaIds.Remove(p.Id); m.Sujar(mc);
+        MudarLocal(m, p, l.Id);
+        p.Estado = Estados.Guarnecida; p.GrupoId = null; m.Sujar(p);
+    }
+
+    /// <summary>O explorador foi capturado: sai da marcha, fica preso (continua do reino dele, sem ocupar o teto).</summary>
+    public static void Capturada(Mundo m, Marcha mc, Pessoa p)
+    {
+        mc.PessoaIds.Remove(p.Id); m.Sujar(mc);
+        if (m.Reinos.Obter(p.ReinoId) is { } r) MudarLocal(m, p, r.CasteloId);
+        p.Estado = Estados.Capturada; p.GrupoId = null; m.Sujar(p);
     }
 
     /// <summary>Volta ao civil sem treinar (não há onde morar): fica sem trabalho e é reatribuída.</summary>
@@ -416,9 +467,12 @@ public static class Pessoas
     public static void Exilar(Mundo m, Reino r, Local novo, int manter)
     {
         var todas = m.PessoasDe(r.Id).Where(p => p.EhCivil).OrderBy(p => p.Presente ? 0 : 1).ThenBy(p => p.Id).ToList();
-        foreach (var p in m.PessoasDe(r.Id).Where(p => !p.EhCivil).ToList()) Remover(m, p);
+        // soldados, exploradores e mensageiros parados nos locais perdidos ficam para trás; quem está em marcha, ferido ou preso segue o reino
+        foreach (var p in m.PessoasDe(r.Id).Where(p => !p.EhCivil && p.Estado == Estados.Guarnecida && p.LocalId != novo.Id).ToList()) Remover(m, p);
+        foreach (var p in m.PessoasDe(r.Id).Where(p => !p.EhCivil && p.Estado == Estados.Ferida).ToList()) MudarLocal(m, p, novo.Id);
         foreach (var p in todas.Skip(manter).ToList()) Remover(m, p);
         foreach (var p in todas.Take(manter)) Ficar(m, p, novo, Oficios.Ocioso);
         Recontar(m, r);
+        RecontarLivres(m, r);
     }
 }

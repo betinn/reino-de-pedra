@@ -54,6 +54,11 @@ public static class Oficios
 
     /// <summary>Ofício de um explorador pelo tipo ("pe", "cavalo", "prospector", "batedor").</summary>
     public static string DeExplorador(string tipo) => tipo is "pe" or "cavalo" ? "explorador-" + tipo : tipo;
+    /// <summary>Tipo de explorador de um ofício ("pe", "cavalo", "prospector", "batedor"), ou null.</summary>
+    public static string? TipoExplorador(string oficio) => oficio switch
+    {
+        "explorador-pe" => "pe", "explorador-cavalo" => "cavalo", "prospector" => "prospector", "batedor" => "batedor", _ => null,
+    };
 
     private static readonly Dictionary<string, (string m, string f)> Nomes = new()
     {

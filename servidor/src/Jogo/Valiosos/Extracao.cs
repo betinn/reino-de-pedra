@@ -217,6 +217,7 @@ namespace ReinoDePedra.Jogo.Valiosos
             GT.Retirar(m, l, grupo);
             ex.Caminho = [hex]; ex.Tempos = [m.Agora]; ex.Origem = ex.Destino = hex;
             m.Marchas.Adicionar(ex);
+            Pessoas.Pessoas.Reclamar(m, ex);
             o.Chegou(m, ex);
             m.Avisar(r.Id, "reino");
             m.Avisar(r.Id, "marchas");

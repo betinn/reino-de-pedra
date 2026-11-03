@@ -158,9 +158,9 @@ public static class Ocupacao
             if (l.Tipo == TipoLocal.Castelo)
             {
                 l.Ruina = true; l.Nivel = 1; l.Tipo = TipoLocal.Vila; l.Produz = "comida"; l.Nome = "Ruínas de castelo";
-                l.Portoes = 0; l.EstruturaPortoes = 0; l.Moradias = 0; l.Estoque = new(); l.Marcas = 0; l.MarcasTropas = 0;
+                l.Portoes = 0; l.EstruturaPortoes = 0; l.Moradias = 0; l.Estoque = new();
             }
-            else { l.Moradias = 0; l.Marcas = 0; l.MarcasTropas = 0; }
+            else l.Moradias = 0;
             m.MudarDono(l, 0);
         }
         foreach (var t in Defesas.DoReino(m, r.Id).ToList()) m.Torres.Remover(t);

@@ -110,8 +110,7 @@ public sealed class ItemRecrutar : ITipoItemPorUnidade
         if (l == null || l.ReinoId != r.Id || l.Ruina) l = m.Locais.Obter(r.CasteloId);
         if (l == null || l.ReinoId != r.Id) l = m.LocaisDe(r.Id).FirstOrDefault(x => !x.Ruina);
         if (l == null) { PS.DevolverDoTreino(m, r, item, u.Pop * n); return; }   // sem onde morar: voltam à população
-        PS.TreinoPronto(m, r, item, u.Pop * n);
-        Tropas.Devolver(m, l, new Dictionary<string, int> { [u.Id] = n });
+        PS.TreinoPronto(m, r, item, u.Pop * n, l);   // a pessoa treinada entra na guarnição com o nome dela
     }
 
     public void Concluir(Mundo m, Reino r, ItemFila item) =>

@@ -978,7 +978,7 @@
     "ferro": 15
    },
    "tempo": 3600,
-   "pop": 2,
+   "pop": 1,
    "cerco": 40
   },
   "trebuchet": {
@@ -995,7 +995,7 @@
     "ferro": 30
    },
    "tempo": 7200,
-   "pop": 3,
+   "pop": 1,
    "cerco": 90,
    "req": "Era do Cerco Avançado"
   }

@@ -40,6 +40,8 @@ namespace ReinoDePedra.Jogo.Social
     {
         public override string Tipo => "mensageiro";
         public long MensagemId { get; set; }
+        /// <summary>A pessoa que leva a mensagem.</summary>
+        public long PessoaId { get; set; }
         public override bool Interceptavel => false;
         public override bool AlvoDeFauna => false;
         public override int PopOcupada(Mundo m) => m.P.Mensageiro.Pop;
@@ -54,9 +56,9 @@ namespace ReinoDePedra.Jogo.Social
         public void Entregar(Mundo m, Reino r, ItemFila item, int n)
         {
             if (n <= 0) return;
-            PS.TreinoPronto(m, r, item, n * m.P.Mensageiro.Pop);
-            r.MensageirosLivres += n;
-            m.Sujar(r);
+            var casa = m.Locais.Obter(r.CasteloId) ?? m.LocaisDe(r.Id).FirstOrDefault(x => !x.Ruina);
+            if (casa == null) { PS.DevolverDoTreino(m, r, item, n); return; }
+            PS.TreinoPronto(m, r, item, n, casa);
         }
         public void Concluir(Mundo m, Reino r, ItemFila item) =>
             Registros.Notificar(m, r.Id, "mensagens", item.Qtd > 1 ? "Mensageiros prontos" : "Mensageiro pronto", item.Rotulo, "mensagens");
@@ -130,6 +132,7 @@ namespace ReinoDePedra.Jogo.Social
                 hex = l.Hex; lid = l.Id;
             }
             else throw new RegraException("Escolha para quem vai a mensagem.");
+            PS.SincronizarLivres(m, r);
             if (r.MensageirosLivres < 1) throw new RegraException("Nenhum mensageiro livre: treine outro ou espere um voltar.");
             var castelo = m.Locais.Obter(r.CasteloId);
             if (castelo == null || castelo.ReinoId != r.Id) throw new RegraException("Mensageiros saem do castelo.");
@@ -141,8 +144,11 @@ namespace ReinoDePedra.Jogo.Social
                 DeId = r.Id, ParaId = porReino ? paraReinoId!.Value : 0, PorReino = porReino, LocalId = lid, Hex = hex, Texto = texto,
                 Enviada = m.Agora, RespondeA = respondeA,
             });
-            r.MensageirosLivres--; m.Sujar(r);
-            var mc = new Mensageiro { ReinoId = r.Id, MensagemId = msg.Id, Vel = vel };
+            var pessoa = PS.Livre(m, r, Pessoas.Oficios.Mensageiro) ?? throw new RegraException("Nenhum mensageiro livre: treine outro ou espere um voltar.");
+            var mc = new Mensageiro { ReinoId = r.Id, MensagemId = msg.Id, Vel = vel, PessoaId = pessoa.Id };
+            m.Marchas.Adicionar(mc);
+            PS.Embarcar(m, mc, [pessoa]);
+            PS.RecontarLivres(m, r);
             mc.Partir(m, rota);
             msg.MarchaId = mc.Id; m.Sujar(msg);
             Podar(m, r.Id);
@@ -155,8 +161,8 @@ namespace ReinoDePedra.Jogo.Social
             var r = m.Reinos.Obter(mc.ReinoId);
             if (mc.Retornando || r == null || !r.Ativo)
             {
-                mc.Encerrar(m);
-                if (r != null && r.Ativo) { r.MensageirosLivres++; m.Sujar(r); m.Avisar(r.Id, "reino"); }
+                if (r != null && r.Ativo) { EmCasa(m, r, mc); m.Avisar(r.Id, "reino"); }
+                else mc.Encerrar(m);
                 return;
             }
             var msg = m.Mensagens.Obter(mc.MensagemId);
@@ -164,9 +170,18 @@ namespace ReinoDePedra.Jogo.Social
             // volta para casa
             var castelo = m.Locais.Obter(r.CasteloId);
             var rota = castelo != null ? Caminhos.Calcular(m, mc.Destino, castelo.Hex, mc.Vel, new OpcoesCaminho { ReinoId = r.Id }) : null;
-            if (rota == null || rota.Hexes.Count < 2 || rota.Hexes[^1] != castelo!.Hex) { mc.Encerrar(m); r.MensageirosLivres++; m.Sujar(r); return; }
+            if (rota == null || rota.Hexes.Count < 2 || rota.Hexes[^1] != castelo!.Hex) { EmCasa(m, r, mc); return; }
             mc.Retornando = true;
             mc.Partir(m, rota);
+        }
+
+        /// <summary>O mensageiro volta a ficar livre no castelo e a marcha acaba.</summary>
+        private static void EmCasa(Mundo m, Reino r, Mensageiro mc)
+        {
+            var castelo = m.Locais.Obter(r.CasteloId) ?? m.LocaisDe(r.Id).FirstOrDefault(x => !x.Ruina);
+            if (castelo != null) PS.Livrar(m, mc, mc.PessoaId, castelo);
+            PS.RecontarLivres(m, r);
+            mc.Encerrar(m);
         }
 
         private static void Entregar(Mundo m, Reino de, Mensagem msg, int hex)

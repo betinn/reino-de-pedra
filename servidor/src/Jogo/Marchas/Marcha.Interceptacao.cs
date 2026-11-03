@@ -35,7 +35,7 @@ public abstract partial class Marcha
         vencedor.Reliquias.AddRange(Reliquias);
         Reliquias = new();
         Carga = new();
-        Tropas = new();
+        Pessoas.Pessoas.Aniquilar(m, this);
         m.Sujar(vencedor);
         Encerrar(m);
     }
