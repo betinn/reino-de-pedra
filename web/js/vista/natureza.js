@@ -10,7 +10,7 @@ import { GLTFLoader } from '../../vendor/three/GLTFLoader.js';
 
 const RP = window.RP = window.RP || {};
 const BASE = new URL('../../modelos/', import.meta.url).href;
-const RES = (window.devicePixelRatio || 1) >= 1.5 ? 3 : 2.5;
+const RES = (window.devicePixelRatio || 1) >= 1.5 ? 3 : 2.5, PASSO_PONTE = 15;
 
 /* variantes por tipo: [peça, unidades do mundo por unidade do kit, giro em graus] */
 const pinheiros = ['tree_pineTallA', 'tree_pineTallB', 'tree_pineTallC', 'tree_pineTallD', 'tree_pineRoundA', 'tree_pineRoundB', 'tree_pineRoundC',
@@ -39,8 +39,8 @@ const TIPOS = {
   pedraRio: ['stone_smallFlatB', 'rock_smallFlatA', 'stone_smallD'].map((n, i) => [n, 38, i * 70]),
   margem: ['grass_leafs', 'grass_leafsLarge', 'plant_flatTall', 'plant_flatShort', 'rock_smallA', 'stone_smallB'].map((n, i) => [n, 30, i * 50]),
   canoa: [0, 45, 90, 135].map(g => ['canoe', 22, g]),
-  /* pontes em arco: a peça gira para o eixo da estrada (0°, 60° e 120° no chão, as direções dos vizinhos do hexágono) */
-  ponte: [0, 60, 120].map(g => ['bridge_stoneRound', 27, g])
+  /* pontes em arco: a ponte é chão, então gira com o mapa: um sprite a cada PASSO_PONTE graus, escolhido pelo eixo da estrada na tela */
+  ponte: Array.from({ length: 180 / PASSO_PONTE }, (_, i) => ['bridge_stoneRound', 27, -i * PASSO_PONTE])
 };
 /* cores do kit (verde-azulado) trocadas pelas da paleta do terreno; as folhas variam de tom por variante */
 const COR = {
@@ -83,7 +83,7 @@ function copia(nome, v) {
 
 function render(nome, esc, giro, v) {
   const obj = copia(nome, v);
-  obj.scale.setScalar(esc); obj.rotation.y = giro * Math.PI / 180 - ((RP.arte && RP.arte.AZ3D) || 0);
+  obj.scale.setScalar(esc); obj.rotation.y = giro * Math.PI / 180;
   cena.add(obj); obj.updateMatrixWorld(true);
   const bb = new THREE.Box3().setFromObject(obj), tam = bb.getSize(new THREE.Vector3());
   const k = (RP.arte && RP.arte.K) || 0.62, el = Math.asin(Math.min(0.95, k)), ce = Math.cos(el), se = Math.sin(el);
@@ -133,23 +133,22 @@ N.desenhar = function (c, tipo, h, s, antigo) {
   if (antigo) c.globalAlpha = 1;
   return true;
 };
-/* ponte na direção da estrada: ang em radianos no chão (o mesmo da arte 2D); a peça é simétrica, então vale ang mod 180° */
+/* ponte na direção da estrada: ang em radianos no chão (o mesmo da arte 2D), mais o giro da câmera; a peça é simétrica, então vale mod 180° */
 N.ponte = function (c, ang, antigo) {
   if (!N.pronto) return false;
-  const g = ((ang * 180 / Math.PI) % 180 + 180) % 180, i = Math.round(g / 60) % 3, sp = sprites.get('ponte|' + i + '|0');
+  const n = 180 / PASSO_PONTE, g = (((ang + ((RP.arte && RP.arte.AZ) || 0)) * 180 / Math.PI) % 180 + 180) % 180, i = Math.round(g / PASSO_PONTE) % n, sp = sprites.get('ponte|' + i + '|0');
   if (!sp) return false;
   if (antigo) c.globalAlpha = 0.78;
   c.drawImage(sp.img, -sp.W / 2, -sp.ALT, sp.W, sp.ALT + sp.PE);
   if (antigo) c.globalAlpha = 1;
   return true;
 };
-/* inclinar ou girar a câmera muda o que se vê de cada peça: refaz as variantes e avisa as cenas */
+/* inclinar a câmera muda o que se vê de cada peça: refaz as variantes e avisa as cenas (o giro não muda: a vegetação fica em pé) */
 function refazer() {
   if (!N.pronto) return;
   clearTimeout(N._k);
   N._k = setTimeout(() => { gerarTodos().then(() => document.dispatchEvent(new CustomEvent('rp:natureza'))); }, 250);
 }
 if (RP.arte && RP.arte.aoMudarK) RP.arte.aoMudarK.push(refazer);
-if (RP.arte && RP.arte.aoFixarAz) RP.arte.aoFixarAz.push(refazer);
 
 carregar().catch(e => { console.warn('vegetação 3D indisponível; a Vista usa a arte 2D.', e); N.falhou = true; });
