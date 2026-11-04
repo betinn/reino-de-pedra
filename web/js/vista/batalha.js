@@ -8,6 +8,7 @@
   var tb = RP.mapa.tiposObjeto.batalha = RP.mapa.tiposObjeto.batalha || {};
 
   tb.alvo = { w: 64, h: 40 };
+  tb.som = 'batalha';   /* espadas e escudos batendo, quando a batalha está à vista (RP.sons.mundo) */
   tb.rotuloDy = -46;
   tb.rotulo = function (o, info) {
     var ag = info.agora || RP.agora();

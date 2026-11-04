@@ -254,6 +254,7 @@
     folhaAbertaEstado = true;
     raiz.classList.add('com-folha');
     requestAnimationFrame(function () { folha.classList.add('aberta'); });
+    if (RP.sons && !jaAberta) RP.sons.tocar('folha');
     RP.$('[data-fechar-folha]', folha).addEventListener('click', function () {
       /* sobre uma tela: o X fecha a pilha toda e volta ao mundo; o "‹" volta só um passo */
       if (sob) RP.ir('mapa'); else RP.fecharFolha();
@@ -271,7 +272,7 @@
     folha.classList.remove('aberta');
     raiz.classList.remove('com-folha');
     if (aoFecharFolha) { var f = aoFecharFolha; aoFecharFolha = null; f(false); }
-    if (estava) RP.painel.redimensionado();
+    if (estava) { RP.painel.redimensionado(); if (RP.sons) RP.sons.tocar('fechar'); }
   };
   RP.folhaAberta = function () { return folhaAbertaEstado; };
   /* troca só o corpo (e as ações) da folha aberta, sem fechar nem animar */

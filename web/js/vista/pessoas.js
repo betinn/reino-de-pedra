@@ -31,6 +31,11 @@
   var ultimos = [];   /* figuras desenhadas no último quadro, em coordenadas de tela (para o laço) */
 
   function ehSoldado(p) { return !!SOLDADOS[p.oficio]; }
+  /* som do trabalho de quem está à vista (RP.sons.mundo): lenhador no machado, pedreiro e mineiro na picareta */
+  function somDe(p) {
+    if (p.estado !== 'trabalhando' || ehSoldado(p)) return null;
+    return p.oficio === 'lenhador' ? 'machado' : p.oficio === 'pedreiro' || p.oficio === 'mineiro' ? 'picareta' : p.oficio === 'agricultor' ? null : 'martelo';
+  }
   function ehExplorador(p) { return /^explorador|^prospector|^batedor/.test(p.oficio); }
 
   /* posição de cada pessoa em volta do local: soldados em formação ao sul; civis em arco pelos lados; estável pela ordem */
@@ -125,7 +130,7 @@
         var pos = posicoes(lista, ce);
         lista.forEach(function (p, i) {
           var pp = pos[p.id], dir = (p.id + i) % 3 === 0 ? -1 : 1, selecionada = sel && sel.tem(p.id);
-          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, d: function () {
+          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, som: somDe(p), d: function () {
             q.obj(pp.x, pp.y);
             if (selecionada) anel(c, Cs.selecao);
             figura(c, p, q.t, dir, q.cor, false);

@@ -621,7 +621,7 @@
           if (obra) { obj(c, V, p.x, p.y); if (obra.ativa) A.andaime(c, castelo ? 30 : 20, P); else A.materiais(c, P); }
         }, alvo: alvo(p.x, p.y, castelo ? 64 : 50, castelo ? 66 : 42, ['local', o.id], o) });
         if (obra && obra.ativa) {
-          itens.push({ y: p.y + 14, x: p.x + 16, d: function () { obj(c, V, p.x + 16, p.y + 14); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[4], dir: -1, trabalho: 'martelo', fase: 0.5 }); } });
+          itens.push({ y: p.y + 14, x: p.x + 16, som: 'martelo', d: function () { obj(c, V, p.x + 16, p.y + 14); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[4], dir: -1, trabalho: 'martelo', fase: 0.5 }); } });
           rot(p.x, p.y, -52, 'Obra · ' + RP.fmtResta(obra.fim - ag), 'obra', Cs.alerta);
         }
         if (o.local === 'pasto' && !antigo && !o.ruina) {
@@ -650,7 +650,7 @@
       }
       /* tipos de outros sistemas, ou marcador genérico */
       var info = { t: t, pal: pal, anim: anim, antigo: antigo, A: A, estado: e, agora: ag };
-      itens.push({ y: p.y, x: p.x, d: function () {
+      itens.push({ y: p.y, x: p.x, som: tipo && tipo.som, d: function () {
         obj(c, V, p.x, p.y);
         try { if (tipo && tipo.desenharCena) tipo.desenharCena(c, o, info); else A.marco(c, t, pal, anim); } catch (er) { console.error(er); }
       }, alvo: alvo(p.x, p.y - 6, (tipo && tipo.alvo && tipo.alvo.w) || 40, (tipo && tipo.alvo && tipo.alvo.h) || 36, [o.tipo, o.id != null ? o.id : o._k], o) });
@@ -668,7 +668,7 @@
         obj(c, V, p.x, p.y); A.ruina(c, { ruina: false }, t, P);
         if (ativa) { A.andaime(c, 16, P); } else A.materiais(c, P, -36);
       }, alvo: alvo(p.x, p.y, 44, 34, ['hex', it.hex], null) });
-      if (ativa) itens.push({ y: p.y + 12, x: p.x + 14, d: function () { obj(c, V, p.x + 14, p.y + 12); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[2], dir: -1, trabalho: 'martelo', fase: 0.2 }); } });
+      if (ativa) itens.push({ y: p.y + 12, x: p.x + 14, som: 'martelo', d: function () { obj(c, V, p.x + 14, p.y + 12); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[2], dir: -1, trabalho: 'martelo', fase: 0.2 }); } });
       rot(p.x, p.y, -36, ativa ? 'Obra · ' + RP.fmtResta(it.fim - ag) : 'Aguardando material', 'obra', Cs.alerta);
     });
 
@@ -746,6 +746,13 @@
       if (!it.tapada || !it.silhueta) return;
       c.save(); c.globalAlpha = 0.32; it.d(); c.restore();
     });
+
+    /* sons do mundo: quem trabalha ou luta à vista (o volume cai com a distância do centro e com o zoom) */
+    if (RP.sons && this.opt.interativa) {
+      var fontes = [];
+      itens.forEach(function (it) { if (it.som && it.x != null) { var q = self.tela(it.x, it.y); fontes.push({ som: it.som, x: q.x, y: q.y }); } });
+      RP.sons.mundo(fontes, self);
+    }
 
     /* névoa à deriva sobre o desconhecido */
     var pf = A.puff();
@@ -831,7 +838,7 @@
     var dir = Math.cos(pos.ang + AZ) >= 0 ? 1 : -1, ux = Math.cos(pos.ang), uy = Math.sin(pos.ang);
     var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
-    function add(p, fn) { itens.push({ y: p.y, x: p.x, silhueta: true, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
+    function add(p, fn, som) { itens.push({ y: p.y, x: p.x, silhueta: true, som: som, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
     /* pessoas selecionadas dentro desta marcha: anel no chão */
     if (RP.selecao && RP.selecao.n() && m.pessoaIds && m.pessoaIds.some(function (id) { return RP.selecao.tem(id); })) {
       itens.push({ y: pos.y - 0.1, x: pos.x, d: function () { obj(c, V, pos.x, pos.y); c.strokeStyle = Cs.selecao; c.lineWidth = 1.6; c.beginPath(); c.ellipse(0, 1, 16, 16 * K * 0.55, 0, 0, 6.2832); c.stroke(); } });
@@ -891,7 +898,7 @@
           RP.pessoasVista.figura(c, f, t, extra.dir || dir, revelado ? cor : P.hostil, !revelado, extra);
           if (propria) RP.pessoasVista.barraVida(c, f);
           if (i === 0 && revelado && !trab && nfig > 2) A.bandeira(c, -dir * 2, -26, 18, cor, t, 10, 7);
-        });
+        }, parada && trab && trab !== 'cacar' ? (extra.ferramenta === 'machado' ? 'machado' : 'picareta') : null);
       })(i, figs[i]);
       if (figs.length > nfig) prefixo = figs.length + ' · ';
       if (trab) prefixo = ({ escavar: 'Escavando', extrair: 'Extraindo', cacar: 'Caçando', coletar: 'Coletando' }[trab] || 'Trabalhando') + ' · ' + prefixo;

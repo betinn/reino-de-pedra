@@ -379,6 +379,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Comércio e diplomacia: ao conhecer o primeiro reino.
   - Ferraria e eras: ao ter a primeira ferraria (fundada ou ocupada).
 - A câmera da Vista **inclina e gira** em volta do ponto olhado: botão do meio do mouse (para cima e para baixo inclina, para os lados gira) ou dois dedos (juntos sobem ou descem para inclinar, rodam para girar). Um toque no botão da câmera volta ao padrão.
+- **Sons de efeito**: cliques, folhas, ações confirmadas, notificações pela categoria e, na Vista, o trabalho e as batalhas à vista (mais alto quanto mais perto e maior o zoom). Liga, desliga e volume em Mais, no aparelho.
 - **Um painel por vez.** Telas, folhas de seleção e confirmações dividem o mesmo lugar (embaixo no celular, a coluna da direita no computador) e nunca se sobrepõem: abrir um detalhe empilha e mostra "‹ voltar".
 - Tudo que tem tempo (obras, recrutamento, ferraria, cura, escavação, extração, caça, marchas, treino) mostra uma **barra de progresso com o cronômetro** ao lado.
 - Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação e sem recompensa. Os 3 mais urgentes aparecem no topo de Meu reino.

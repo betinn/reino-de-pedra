@@ -27,6 +27,7 @@
             if (resp.status === 401 && !opcoes.sem401 && RP.aoSair) RP.aoSair();
             throw erroDe(resp, j);
           }
+          if (metodo !== 'GET' && RP.sons) RP.sons.aoPedido(metodo, caminho);   /* som da ação feita */
           return j;
         });
       });
@@ -38,7 +39,7 @@
 
   /* mostra o erro do servidor como aviso; devolve a promessa para encadear */
   RP.tentar = function (p) {
-    return p.catch(function (e) { RP.aviso({ titulo: e.message, icone: 'alerta', tipo: 'perigo' }); throw e; });
+    return p.catch(function (e) { if (RP.sons) RP.sons.aoErro(); RP.aviso({ titulo: e.message, icone: 'alerta', tipo: 'perigo' }); throw e; });
   };
 
   /* ---------------------------------------------------------------- tempo do servidor
