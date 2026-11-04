@@ -29,6 +29,17 @@ O que ficou pendente na primeira etapa de implementação e como testar o jogo. 
 5. **Ranking** mostra nome e brasão de todos os reinos, inclusive os que o jogador ainda não conhece (como no protótipo). Confirmar se é a regra desejada; se não, mostrar "Reino desconhecido" para quem não é conhecido.
 6. **Avistamento de ataque** usa a visão do defensor no instante em que o atacante parte. Considerar avistar quando a marcha entra na visão (evento no instante da entrada, sem tique).
 
+## Mapa maior e bonecos 3D: pendências
+
+A decisão [0026](decisoes/0026-mapa-maior-e-bonecos-3d.md) entregou o mapa de 312 × 240 com hexágonos menores, construções em vários hexágonos, explorador que espera no destino, percursos e patrulha, escavação somada, névoa quase ao vivo e os bonecos 3D. Ficou para depois:
+
+1. **Animais em 3D.** Lobos, javalis, ursos e crocodilos ainda são a arte 2D; o pacote animado de Quaternius (CC0) tem lobo e outros bichos que servem para o mesmo esquema de sprites.
+2. **Construções na escala nova.** As construções são as do protótipo, desenhadas no centro da pegada; o chão dos hexágonos extras da pegada não tem desenho próprio (pátio, cerca, campo).
+3. **Bonecos no celular de verdade.** O render dos sprites tem orçamento de 7 ms por quadro e cai na figura 2D enquanto o sprite não existe; medir num aparelho fraco quanto tempo leva para a cena encher e, se precisar, pré-renderizar as poses mais comuns na carga.
+4. **Névoa sem buscar o mapa inteiro.** Cada aviso "mapa" ainda busca o `GET /mapa` completo (comprimido); um pedido só com o que mudou desde a última busca deixaria a revelação ao vivo mais leve.
+5. **Percurso desenhado no mapa.** O envio lista os pontos do percurso e da patrulha na folha; desenhar a linha do percurso e o anel da patrulha no mapa enquanto se escolhe.
+6. **Banco antigo.** Um banco gravado com o mapa de 104 × 80 não serve para 312 × 240 (locais, névoas e fotos em índices do mapa antigo): em desenvolvimento, apague `reino.db` antes de subir; em produção, a troca entra com o reset de temporada.
+
 ## Pessoas no mapa: pendências
 
 O refactor (decisão 0024) entregou pessoas civis e soldados como documentos, a Vista com cada pessoa, a folha, a tela Pessoas, a seleção com laço e missão, sprites por ofício em cache, transição de terreno, grade opcional e a batalha animada. Ficou para depois:

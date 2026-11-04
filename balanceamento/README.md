@@ -27,7 +27,7 @@ Em relação à primeira versão do modelo (castelo com teto 300, exércitos de 
 | Tema | Valor |
 |---|---|
 | Temporada | **70 dias** (10 semanas) |
-| Mundo | 30 reinos num mapa de **104 × 80 hexágonos** (≈ 277 por reino) |
+| Mundo | 30 reinos num mapa de **312 × 240 hexágonos** pequenos (≈ 2.500 por reino; [decisão 0026](../docs/decisoes/0026-mapa-maior-e-bonecos-3d.md)); construções ocupam 7 (castelo), 3 (locais) ou 1 (posto) hexágonos (`P.ocupa`) |
 | Escudo de novato | **72 h**; escudo de exílio **24 h**; regência após **48 h** sem entrar |
 | Reino novo | **Primeiros passos já dados**: castelo e locais no nível 2, 2 moradias, **4 lanceiros e 2 arqueiros** no castelo, **3 exploradores** prontos (a pé, a cavalo, prospector) e o entorno explorado até 6 hexágonos. **8 civis**; o castelo abriga 15, cada moradia mais 3 (a primeira custa 40 recursos, cada uma 24 a mais) |
 | Produção de um local | 3/h no nível 1 → **31,8/h no nível 10** (+30% por nível), proporcional às vagas ocupadas |
@@ -63,7 +63,7 @@ Cada meta vem das regras do `CLAUDE.md`, do plano de pessoas no mapa ou de prát
 | M1 | O kit inicial recruta 2 a 3 lanceiros, prontos em até 45 min; o reino novo já tem tropas que caçam o perigo baixo ilesas e exploradores prontos | "O reino base já gera recursos para tropas básicas"; a primeira sessão tem o que fazer desde o primeiro minuto, sem esperar treino | 3 · 36 min · 190 de força e 3 exploradores |
 | M2 | Primeira melhoria se paga em até 6 h; a do nível 10 em 1 a 2 semanas | Começo rápido; fim de temporada com escolhas de longo prazo | 5,6 h · 13 dias |
 | M3 | Obra do nível 2 em até 2 min; do nível 10 em 6 a 10 h; 10 obras de nível médio cobrem a noite | "Básico rápido, forte demorado"; fila de 10 para a noite | 2 min · 8 h 32 min · 12 h 27 min |
-| M4 | Vizinho do reino (3 hex.) em até 3 min; reino vizinho (24 hex.) em 10 a 20 min; travessia (104 hex.) em até 90 min | "Deslocamento não deve demorar excessivamente" ([decisão 0022](../docs/decisoes/0022-velocidade-e-mapa-maior.md)) | 2 min · 16 min · 1 h 10 min |
+| M4 | Vizinho do reino (6 hex.) em até 2 min; reino vizinho (72 hex.) em 10 a 20 min; travessia (312 hex.) em até 90 min | "Deslocamento não deve demorar excessivamente" ([decisões 0022](../docs/decisoes/0022-velocidade-e-mapa-maior.md) e [0026](../docs/decisoes/0026-mapa-maior-e-bonecos-3d.md)) | 1 min · 12 min · 53 min |
 | M5 | Médio com 4 a 10 soldados e 15 a 25 pessoas no dia 3; 20 a 30 soldados e 50 a 80 pessoas no dia 35; ativo com 1,5 a 2,5× as tropas e 90 a 140 pessoas no fim | As metas de escala do plano: dezenas de pessoas, não centenas | 7 · 21 / 22 · 65 / 2,4× · 135 |
 | M5 | Recrutar não derruba a economia do médio (eficiência ≥ 90%) | Tropas e economia em equilíbrio | 100% |
 | M5 | Sem guerra, o ativo maximiza a economia entre os dias 30 e 50; o médio, depois do dia 40 | Saques e sabotagens atrasam os jogadores de verdade; a temporada não acaba antes da hora | dia 43 · não chega |

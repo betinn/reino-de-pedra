@@ -52,3 +52,17 @@ Com as pessoas como documentos ([0024](decisoes/0024-pessoas.md): cada civil, so
 Os eventos a mais são os deslocamentos de pessoas (nascimentos, trocas de vaga, carregadores que voltam); a memória caiu com a escala ÷10 dos recursos e a população em dezenas (menos tropas, menos marchas). Um reino de 120 pessoas e 30 reinos dão cerca de 3 600 documentos de pessoa, dentro do orçamento.
 
 Limites afirmados no teste: menos de 43 s de CPU por dia de jogo (0,05% de um núcleo), pico de memória gerenciada abaixo de 400 MB e banco abaixo de 64 MB.
+
+Com o mapa de 312 × 240, hexágonos menores e construções em vários hexágonos ([0026](decisoes/0026-mapa-maior-e-bonecos-3d.md)), medido de novo em 10 dias (mesma máquina, testes em Debug):
+
+| | 104 × 80 (antes) | 312 × 240 (depois) |
+|---|---|---|
+| Eventos por dia de jogo | 3 619 | 5 045 |
+| CPU por dia de jogo | 2,46 s | 9,9 s |
+| CPU por evento (sessões de IA incluídas) | 679 µs | 1 964 µs |
+| Sessão de IA | 12,3 ms | 58 ms |
+| Fração de um núcleo em tempo real | 0,0028% | 0,0115% |
+| Pico de memória gerenciada | 116 MB | 51 MB |
+| Banco | 5,5 MB | 5,4 MB |
+
+O que cresceu: a sessão de IA (A* e Dijkstra numa grade 9× maior, e os alcances da IA em hexágonos 3× maiores) e a revelação da névoa em intervalos de 10 s de jogo. O que caiu: a névoa gravada comprimida (deflate) tirou a cópia em base64 de 4 bytes por hexágono da memória e do banco. Tudo segue três ordens de grandeza abaixo do orçamento; se a sessão de IA virar problema, limitar o Dijkstra ao alcance da decisão é o primeiro passo.
