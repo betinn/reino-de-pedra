@@ -17,6 +17,8 @@ public static class VisaoSocial
     private static JsonObject? Id(Mundo m, long reinoId) => m.Reinos.Obter(reinoId) is { } r ? Espionagem.Identidade(r) : null;
 
     private static long? Chegada(IEnumerable<Remessa> l) { var x = l.ToList(); return x.Count > 0 ? x.Max(r => r.Chegada) : null; }
+    /// <summary>Partida da carga que chega por último (início da barra de tempo de quem espera a carga).</summary>
+    private static long? Partida(IEnumerable<Remessa> l) => l.OrderByDescending(r => r.Chegada).Select(r => (long?)r.Partida).FirstOrDefault();
 
     public static object Proposta(Mundo m, Reino r, Proposta p) => new
     {
@@ -26,6 +28,7 @@ public static class VisaoSocial
         de = Id(m, p.DeId), para = Id(m, p.ParaId), minha = p.DeId == r.Id,
         local = p.LocalId is long lid && m.Locais.Obter(lid) is { } l && (l.ReinoId == r.Id || p.DeId == l.ReinoId) ? l.Nome : null,
         chegada = p.Estado == Comercio.Aceita ? Chegada(Remessas.Do(m, p.Tipo, p.Id)) : null,
+        partida = p.Estado == Comercio.Aceita ? Partida(Remessas.Do(m, p.Tipo, p.Id)) : null,
     };
 
     // ---------------------------------------------------------------- aliança
@@ -128,12 +131,13 @@ public static class VisaoSocial
                 p.Id, com = Id(m, p.Outro(r.Id)), p.Dias, p.Estado, p.Inicio, p.Fim, p.Aceito,
                 pagador = p.PagadorId == null ? null : p.PagadorId == r.Id ? "eu" : "outro", pagamento = p.Pagamento.Arredondado(),
                 chegada = p.Estado == Comercio.Aguardando ? Chegada(Remessas.Do(m, Comercio.PactoT, p.Id)) : null,
+                partida = p.Estado == Comercio.Aguardando ? Partida(Remessas.Do(m, Comercio.PactoT, p.Id)) : null,
             }).ToList(),
             resgates = Capturas.PresosDe(m, r.Id).Where(p => p.Estado == Capturas.ResgatePedido).OrderBy(p => p.Ate).Select(p => new
             {
                 prisioneiroId = p.Id, nome = Exploradores.NomeTipo(m, p.TipoExp), captor = Id(m, p.CaptorId), resgate = p.Resgate.Arredondado(), p.Ate,
                 valor = Math.Round(Remessas.Valor(m, p.Resgate)),
-                chegada = Chegada(Remessas.Do(m, Comercio.Resgate, p.Id)), recusado = r.ResgatesRecusados.Contains(p.Id),
+                chegada = Chegada(Remessas.Do(m, Comercio.Resgate, p.Id)), partida = Partida(Remessas.Do(m, Comercio.Resgate, p.Id)), recusado = r.ResgatesRecusados.Contains(p.Id),
             }).ToList(),
         };
     }
@@ -157,7 +161,7 @@ public static class VisaoSocial
         return new
         {
             agora = m.Agora, livres = r.MensageirosLivres, emTreino = Mensageiros.EmTreino(r).Sum(i => i.Restantes),
-            emCampo = Mensageiros.EmCampo(m, r.Id).Select(x => new { x.Id, x.Chegada, x.Retornando, mensagem = x.MensagemId }).ToList(),
+            emCampo = Mensageiros.EmCampo(m, r.Id).Select(x => new { x.Id, x.Partida, x.Chegada, x.Retornando, mensagem = x.MensagemId }).ToList(),
             custo = m.P.Mensageiro.Custo, tempo = m.P.Mensageiro.Tempo, pop = m.P.Mensageiro.Pop, vel = m.P.Mensageiro.Vel, max = m.P.Mensageiro.Caracteres,
             recebidas = Mensageiros.Recebidas(m, r.Id).OrderByDescending(x => x.Entregue).Select(x => new { x.Id, de = Id(m, x.DeId), x.Texto, quando = x.Entregue, x.Lida, x.RespondeA }).ToList(),
             enviadas = Mensageiros.Enviadas(m, r.Id).OrderByDescending(x => x.Id).Select(x =>
@@ -170,6 +174,7 @@ public static class VisaoSocial
                     para = Mensageiros.DestinatarioConhecido(m, x) ? Id(m, x.ParaId) : null,
                     local = x.PorReino || l == null ? null : new { l.Id, tipo = l.Tipo.Chave(), nome = l.Tipo.NomeGenerico(), hex = l.Hex },
                     chegada = mc != null && !mc.Retornando ? mc.Chegada : (long?)null, marcha = mc?.Id,
+                    partida = mc != null && !mc.Retornando ? mc.Partida : (long?)null,
                 };
             }).ToList(),
             destinos = new

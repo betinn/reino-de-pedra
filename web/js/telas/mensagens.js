@@ -16,7 +16,7 @@
   function cardEnviada(m) {
     var ag = RP.agora(), indo = m.estado === 'a-caminho' && m.chegada && m.chegada > ag;
     var para = m.para ? RP.esc(m.para.nome) : m.local ? 'dono da ' + RP.esc(m.local.nome) + ' (desconhecido)' : 'reino';
-    var est = indo ? 'a caminho · entrega em <b class="num" data-fim="' + m.chegada + '">' + RP.fmtResta(m.chegada - ag) + '</b>'
+    var est = indo ? 'a caminho · entrega ' + RP.barraTempo(m.partida, m.chegada, { classe: 'curta', rotulo: 'Mensageiro a caminho' })
       : m.estado === 'sem-destinatario' ? 'ninguém recebeu: o local não tinha mais dono'
       : 'entregue' + (m.entregue ? ' ' + quando(m.entregue) : '') + (!m.para && m.local ? ' · sem resposta, o dono segue desconhecido' : '');
     return '<div class="card pilha msg-card"><div class="linha">' + S.brasao(m.para, 30) + '<span style="flex:1;min-width:0"><b>Para ' + para + '</b><br><small class="fraco">' + est + '</small></span>' +
@@ -30,6 +30,7 @@
         '<div class="card linha-entre" style="margin-top:var(--esp-3)"><span class="linha"><span class="ico-placa">' + RP.icone('mensagem') + '</span><span><b>' + d.livres + ' de ' + total + ' mensageiros livres</b><br><small class="fraco">' +
         (d.emTreino ? d.emTreino + ' em treino · ' : '') + 'cada um ocupa ' + d.pop + ' de população · ' + RP.custoHTML(d.custo) + '</small></span></span>' +
         '<button type="button" class="btn btn-p" data-treinar-mensageiro>' + RP.icone('mais') + 'Treinar</button></div>' +
+        (function () { var t = RP.itensFilaHTML ? RP.itensFilaHTML('recrutamento', function (i) { return i.tipo === 'mensageiro'; }) : ''; return t ? '<div class="card pilha" style="margin-top:var(--esp-2)">' + t + '</div>' : ''; })() +
         '<div class="linha" style="margin-top:var(--esp-3);flex-wrap:wrap"><a class="btn btn-p btn-primario" href="#/mensagem" style="flex:1 1 150px">' + RP.icone('mensagem') + 'Escrever</a>' +
         (RP.sistema('alianca') ? '<a class="btn btn-p" href="#/alianca" style="flex:1 1 150px">' + RP.icone('conversa') + 'Conversa da aliança</a>' : '') + '</div>' +
         '<div class="secao-titulo">Recebidas</div><div class="pilha">' + (d.recebidas.length ? d.recebidas.map(cardRecebida).join('') : S.vazio('Nenhuma mensagem.')) + '</div>' +

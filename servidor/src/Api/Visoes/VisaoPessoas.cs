@@ -53,14 +53,17 @@ public static class VisaoPessoas
         var l = p.LocalId is long id ? m.Locais.Obter(id) : null;
         var mc = p.GrupoId is long g ? m.Marchas.Obter(g) : null;
         var hex = PS.HexDe(m, p);
-        long? pronta = null;
+        long? pronta = null, treinoInicio = null;
         if (p.Estado == Estados.Treinando && p.ItemId is long iid)
         {
             var item = r.Filas.Values.SelectMany(f => f.Itens).FirstOrDefault(i => i.Id == iid);
             if (item != null)
             {
                 var pos = PS.EmTreino(m, r, item).TakeWhile(x => x.Id != p.Id).Count();
-                pronta = item.FimDaUnidade(item.Prontos + pos + 1);
+                var n = item.Prontos + pos + 1;
+                pronta = item.FimDaUnidade(n);
+                // o treino desta pessoa começa quando a unidade anterior fica pronta (a primeira, no início do item)
+                if (pronta != null && item.Inicio is long ini) treinoInicio = n <= 1 ? ini : item.FimDaUnidade(n - 1);
             }
         }
         return new
@@ -68,6 +71,7 @@ public static class VisaoPessoas
             id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, oficioNome = Oficios.Nome(p), estado = p.Estado,
             civil = p.EhCivil, localId = p.LocalId, local = l?.Nome, hex, c = hex >= 0 ? m.G.C(hex) : (int?)null, l = hex >= 0 ? m.G.L(hex) : (int?)null,
             grupoId = p.GrupoId, chegada = mc != null && mc.EventoId != null ? mc.Chegada : (long?)null, pronta,
+            partida = mc != null && mc.EventoId != null ? mc.Partida : (long?)null, treinoInicio,   // inícios das barras de tempo
             texto = Texto(m, r, p, l, mc), marcas = Math.Round(p.Marcas, 2), nasceuEm = p.NasceuEm,
         };
     }

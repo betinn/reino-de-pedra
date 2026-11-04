@@ -19,7 +19,7 @@
   }
   function meuPedido(p) {
     var ag = RP.agora(), indo = p.estado === 'aceita' && p.chegada && p.chegada > ag;
-    var est = p.estado === 'aberta' ? 'aguardando resposta' : p.estado === 'aceita' ? (indo ? 'a caminho, chega em <b class="num" data-fim="' + p.chegada + '">' + RP.fmtResta(p.chegada - ag) + '</b>' : 'entregue') : p.estado === 'recusada' ? 'recusado' : p.estado;
+    var est = p.estado === 'aberta' ? 'aguardando resposta' : p.estado === 'aceita' ? (indo ? 'a caminho, chega ' + RP.barraTempo(p.partida, p.chegada, { classe: 'curta', rotulo: 'Ajuda a caminho' }) : 'entregue') : p.estado === 'recusada' ? 'recusado' : p.estado;
     return '<div class="card linha">' + S.brasao(p.para, 28) + '<span style="flex:1;min-width:0"><b>' + RP.esc(S.cargaTxt(p.quer)) + '</b><br><small class="fraco">' + RP.esc(S.nome(p.para)) + (p.local ? ' · para ' + RP.esc(p.local) : '') + ' · ' + est + '</small></span>' +
       (p.estado === 'aberta' ? '<button type="button" class="btn btn-p btn-fantasma" data-proposta-cancelar="' + p.id + '">Cancelar</button>' : '') + '</div>';
   }

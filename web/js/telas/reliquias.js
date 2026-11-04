@@ -23,8 +23,8 @@
 
   function cartaoMinha(r) {
     var corpo;
-    if (r.estado === 'levada' && r.marcha) corpo = '<p class="nota-antiga">' + RP.icone('tropas', 'ico-p') + '<span>Sendo levada' + (r.marcha.destino ? ' a ' + RP.esc(r.marcha.destino) : '') + ' por ' + RP.esc(r.marcha.tropas) + ' · chega em <b class="num" data-fim="' + r.marcha.chegada + '">' + RP.fmtResta(r.marcha.chegada - RP.agora()) + '</b>. Pode ser roubada no caminho.</span></p>';
-    else if (r.estado === 'buscando' && r.escolta) corpo = '<p class="nota-antiga">' + RP.icone('tropas', 'ico-p') + '<span>Escolta a caminho de ' + RP.esc(r.local ? r.local.nome : '') + ' para buscar · em <b class="num" data-fim="' + r.escolta.coleta + '">' + RP.fmtResta(r.escolta.coleta - RP.agora()) + '</b>. Depois leva a ' + RP.esc(r.escolta.destino || '') + '. Até lá, continua fortalecendo o local.</span></p>';
+    if (r.estado === 'levada' && r.marcha) corpo = '<p class="nota-antiga">' + RP.icone('tropas', 'ico-p') + '<span>Sendo levada' + (r.marcha.destino ? ' a ' + RP.esc(r.marcha.destino) : '') + ' por ' + RP.esc(r.marcha.tropas) + ' · chega ' + RP.barraTempo(r.marcha.partida, r.marcha.chegada, { classe: 'curta', rotulo: 'Relíquia a caminho' }) + '. Pode ser roubada no caminho.</span></p>';
+    else if (r.estado === 'buscando' && r.escolta) corpo = '<p class="nota-antiga">' + RP.icone('tropas', 'ico-p') + '<span>Escolta a caminho de ' + RP.esc(r.local ? r.local.nome : '') + ' para buscar · chega ' + RP.barraTempo(r.escolta.partida, r.escolta.coleta, { classe: 'curta', rotulo: 'Escolta a caminho' }) + '. Depois leva a ' + RP.esc(r.escolta.destino || '') + '. Até lá, continua fortalecendo o local.</span></p>';
     else corpo = '<p class="fraco" style="font-size:var(--fs-2)">Guardada em <b style="color:var(--cor-texto)">' + RP.esc(r.local ? r.local.nome : '—') + '</b>' + (r.local && r.local.n > 1 ? ' · ' + r.local.n + ' relíquias juntas' : '') + '</p>';
     var hex = r.marcha ? null : r.local && r.local.hex;
     return '<div class="card relq-card tipo-' + r.tipo + '">' + cabRel(r) + corpo + '<small class="fraco">' + RP.esc(r.origem) + '</small>' +
@@ -46,8 +46,8 @@
     var g = ru.escavando;
     return '<div class="card relq-card"><div class="linha"><span class="ico-placa">' + RP.icone('ruina', 'r-lendario') + '</span><span style="flex:1"><b>Ruína antiga</b><br><small class="fraco">' +
       (ru.esgotada ? 'Já escavada' : 'Guarda 1 relíquia · tipo só se conhece ao achar') + ' · ' + (ru.idadeMin ? 'visto ' + RP.fmtHa(ru.idadeMin / 60) : 'visível') + (ru.posto === 'meu' ? ' · com posto' : '') + '</small></span></div>' +
-      (g ? '<p class="nota-antiga">' + RP.icone('picareta', 'ico-p') + '<span>' + (g.fim ? 'Escavação em andamento · relíquia encontrada em <b class="num" data-fim="' + g.fim + '">' + RP.fmtResta(g.fim - RP.agora()) + '</b>'
-        : 'Grupo a caminho · chega em <b class="num" data-fim="' + g.chegada + '">' + RP.fmtResta(g.chegada - RP.agora()) + '</b>') + ' · ' + RP.esc(g.tropas) + (g.destino ? '. A relíquia vai para ' + RP.esc(g.destino) : '') + '.</span></p>'
+      (g ? '<p class="nota-antiga">' + RP.icone('picareta', 'ico-p') + '<span>' + (g.fim ? 'Escavação em andamento · relíquia encontrada ' + RP.barraTempo(g.inicio, g.fim, { classe: 'curta', cor: 'sucesso', rotulo: 'Escavação' })
+        : 'Grupo a caminho · chega ' + RP.barraTempo(g.partida, g.chegada, { classe: 'curta', rotulo: 'Marcha até a ruína' })) + ' · ' + RP.esc(g.tropas) + (g.destino ? '. A relíquia vai para ' + RP.esc(g.destino) : '') + '.</span></p>'
         : ru.esgotada ? '' : '<div class="linha relq-acoes"><a class="btn btn-p btn-primario" href="#/extracao?hex=' + ru.hex + '">' + RP.icone('picareta') + 'Escavar</a><a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + ru.hex + '">' + RP.icone('mapa') + 'Ver</a></div>') + '</div>';
   }
 

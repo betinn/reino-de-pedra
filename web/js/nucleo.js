@@ -160,7 +160,9 @@
 
   /* ---------------------------------------------------------------- folha (painel de seleção)
      Painel baixo no celular e coluna lateral no computador, nunca a tela toda e sem véu escuro sobre o jogo.
-     Mostra no máximo 3 ações; as demais ficam em "Mais ações". A ação principal (btn-primario) vem primeiro. */
+     Mostra no máximo 3 ações; as demais ficam em "Mais ações". A ação principal (btn-primario) vem primeiro.
+     Um lugar só (decisão 0027): tela do painel, folha e confirmação ocupam o mesmo lugar e só a de cima aparece.
+     A folha aberta sobre uma tela esconde a tela e mostra "‹ Título da tela" para voltar a ela; o X volta ao mundo. */
   var folha = null, aoFecharFolha = null, folhaAbertaEstado = false;
   function limitarAcoes(html) {
     if (!html) return '';
@@ -212,32 +214,50 @@
     folha.addEventListener('pointerup', solta);
     folha.addEventListener('pointercancel', solta);
   }
+  /* título da tela que a folha esconde ("Exército"), ou '' quando a folha abre direto sobre o mundo */
+  function telaSobFolha() {
+    if (!RP.painel.aberto || RP.painel.recolhido || !atual || !RP.telas[atual] || RP.telas[atual].fundo) return '';
+    /* destinos da navegação voltam pelo nome do destino ("Reino", "Exército"); sub-telas, pelo título delas */
+    var nav = RP.NAV.filter(function (i) { return i.tela === atual; })[0];
+    return (nav && nav.rotulo) || tituloPainel() || 'Voltar';
+  }
   RP.abrirFolha = function (o) {
     garantirFolha();
     if (aoFecharFolha) { var f = aoFecharFolha; aoFecharFolha = null; f(true); }
-    var acoes = limitarAcoes(o.acoes);
+    fecharModais(true);
+    var acoes = limitarAcoes(o.acoes), sob = telaSobFolha();
     folha.innerHTML =
       '<div class="folha-pega" aria-hidden="true"></div>' +
+      (sob ? '<button type="button" class="folha-voltar" data-folha-voltar>' + RP.icone('voltar') + '<span>' + RP.esc(sob) + '</span></button>' : '') +
       '<header class="folha-topo">' + (o.icone || '') +
       '<div class="folha-titulos"><h2 id="folha-titulo">' + o.titulo + '</h2>' + (o.subtitulo ? '<div class="folha-sub">' + o.subtitulo + '</div>' : '') + '</div>' +
-      '<button class="btn btn-fantasma btn-icone" type="button" data-fechar-folha aria-label="Fechar">' + RP.icone('fechar') + '</button></header>' +
+      '<button class="btn btn-fantasma btn-icone" type="button" data-fechar-folha aria-label="' + (sob ? 'Fechar e ver o mundo' : 'Fechar') + '">' + RP.icone('fechar') + '</button></header>' +
       '<div class="folha-corpo">' + (o.corpo || '') + '</div>' +
       (acoes ? '<footer class="folha-acoes">' + acoes + '</footer>' : '');
     folha.setAttribute('aria-labelledby', 'folha-titulo');
     aoFecharFolha = o.aoFechar || null;
+    var jaAberta = folhaAbertaEstado;
     folhaAbertaEstado = true;
     raiz.classList.add('com-folha');
     requestAnimationFrame(function () { folha.classList.add('aberta'); });
-    RP.$('[data-fechar-folha]', folha).addEventListener('click', function () { RP.fecharFolha(); });
+    RP.$('[data-fechar-folha]', folha).addEventListener('click', function () {
+      /* sobre uma tela: o X fecha a pilha toda e volta ao mundo; o "‹" volta só um passo */
+      if (sob) RP.ir('mapa'); else RP.fecharFolha();
+    });
+    var volta = RP.$('[data-folha-voltar]', folha);
+    if (volta) volta.addEventListener('click', function () { RP.fecharFolha(); });
     folha.scrollTop = 0; var corpo = RP.$('.folha-corpo', folha); if (corpo) corpo.scrollTop = 0;
+    if (!jaAberta) RP.painel.redimensionado();
     return folha;
   };
   RP.fecharFolha = function () {
     if (!folha) return;
+    var estava = folhaAbertaEstado;
     folhaAbertaEstado = false;
     folha.classList.remove('aberta');
     raiz.classList.remove('com-folha');
     if (aoFecharFolha) { var f = aoFecharFolha; aoFecharFolha = null; f(false); }
+    if (estava) RP.painel.redimensionado();
   };
   RP.folhaAberta = function () { return folhaAbertaEstado; };
   /* troca só o corpo (e as ações) da folha aberta, sem fechar nem animar */
@@ -249,8 +269,17 @@
   };
 
   /* ---------------------------------------------------------------- confirmação curta
-     Fica no mesmo lugar da folha (embaixo no celular, na coluna no computador), sem escurecer o jogo. */
+     Fica no mesmo lugar da folha (embaixo no celular, na coluna no computador), sem escurecer o jogo.
+     É o topo da pilha: enquanto está aberta, a folha e a tela do painel ficam escondidas; ao responder, voltam.
+     Só existe uma confirmação por vez (uma nova substitui a anterior). */
+  function fecharModais(sem) {
+    RP.$$('.modal-fundo').forEach(function (m) { m.remove(); });
+    raiz.classList.remove('com-modal');
+    if (!sem) RP.painel.redimensionado();
+  }
   RP.modal = function (o) {
+    fecharModais(true);
+    raiz.classList.add('com-modal');
     var fundo = document.createElement('div');
     fundo.className = 'modal-fundo';
     fundo.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-t">' + (o.topo || '') +
@@ -260,12 +289,20 @@
       }).join('') + '</div></div>';
     document.body.appendChild(fundo);
     requestAnimationFrame(function () { fundo.classList.add('ativo'); });
-    var fechar = function () { fundo.classList.remove('ativo'); setTimeout(function () { fundo.remove(); }, 240); };
+    RP.painel.redimensionado();
+    var fechar = function () {
+      if (!fundo.parentNode) return;
+      fundo.classList.remove('ativo');
+      fundo.classList.add('saindo');
+      if (!RP.$$('.modal-fundo:not(.saindo)').some(function (m) { return m !== fundo; })) { raiz.classList.remove('com-modal'); RP.painel.redimensionado(); }
+      setTimeout(function () { fundo.remove(); }, 240);
+    };
     fundo.addEventListener('click', function (e) {
       var b = e.target.closest('[data-i]');
       if (b) { fechar(); var a = o.acoes[+b.getAttribute('data-i')]; if (a.acao) a.acao(); }
       else if (e.target === fundo && o.fecharFora !== false) fechar();
     });
+    fundo.addEventListener('rp:fechar-modal', function () { if (o.fecharFora !== false) fechar(); });
     var bt = RP.$('.btn', fundo);
     if (bt) setTimeout(function () { bt.focus(); }, 50);
     return fechar;
@@ -274,20 +311,35 @@
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
     var m = RP.$$('.modal-fundo.ativo').pop();
-    if (m) { m.click(); return; }
+    if (m) { m.dispatchEvent(new CustomEvent('rp:fechar-modal')); return; }
     if (RP.folhaAberta()) RP.fecharFolha();
   });
 
   /* ---------------------------------------------------------------- timers ao vivo */
-  /* barra de tempo. fimAbs (ms) opcional; sem ele, seg conta a partir da abertura da página.
+  function pctTempo(ini, fim, agora) { return Math.max(0, Math.min(100, (100 * (agora - ini)) / Math.max(1, fim - ini))); }
+  /* Barra de progresso com o cronômetro ao lado: o componente único para tudo que tem tempo (obra, treino, forja,
+     cura, marcha, escavação, extração, caça...). inicio e fim em ms do servidor (RP.agora()); o tique de 1 s anda
+     a barra e o cronômetro sozinhos. Sem início conhecido, mostra só o cronômetro. Já terminado: barra cheia.
+     opt: { rotulo (para leitores de tela), classe ('curta' = barra fina), cor ('sucesso' | 'perigo' | 'info') } */
+  RP.barraTempo = function (inicio, fim, opt) {
+    opt = opt || {};
+    fim = +fim;
+    if (!fim || !isFinite(fim)) return '';
+    var agora = RP.agora(), ini = +inicio;
+    var resta = '<b class="num barra-tempo-resta" data-fim="' + fim + '">' + RP.fmtResta(fim - agora) + '</b>';
+    if (!ini || !isFinite(ini) || ini >= fim) return '<span class="barra-tempo sem-inicio' + (opt.classe ? ' ' + opt.classe : '') + '">' + resta + '</span>';
+    var pct = pctTempo(ini, fim, agora);
+    return '<span class="barra-tempo' + (opt.classe ? ' ' + opt.classe : '') + '">' +
+      '<span class="barra' + (opt.cor ? ' barra-' + opt.cor : '') + '" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(pct) + '" aria-label="' + RP.esc(opt.rotulo || 'Progresso') + '">' +
+      '<i data-ini="' + ini + '" data-barra-fim="' + fim + '" style="width:' + pct.toFixed(1) + '%"></i></span>' + resta + '</span>';
+  };
+  /* barra de tempo com rótulo em cima (itens de fila). fimAbs (ms) opcional; sem ele, seg conta a partir de agora.
      Itens que ainda não começaram aparecem como "Na fila". */
   RP.timerHTML = function (rotulo, seg, total, extra, fimAbs) {
     var f = fimAbs || (RP.agora() + seg * 1000), ini = f - total * 1000, agora = RP.agora();
-    var pct = Math.max(0, Math.min(100, (100 * (agora - ini)) / (f - ini)));
     return '<div class="timer">' +
-      '<div class="timer-topo"><b>' + rotulo + '</b>' + (ini > agora ? '<span class="selo">Na fila</span>' : '') + '<span class="timer-resta" data-fim="' + f + '">' + RP.fmtResta(f - agora) + '</span></div>' +
-      '<div class="barra ' + (extra || '') + '" role="progressbar" aria-label="Progresso: ' + RP.esc(rotulo.replace(/<[^>]+>/g, '').trim()) + '"><i data-ini="' + ini + '" data-barra-fim="' + f + '" style="width:' +
-      pct.toFixed(1) + '%"></i></div></div>';
+      '<div class="timer-topo"><b>' + rotulo + '</b>' + (ini > agora ? '<span class="selo">Na fila</span>' : '') + '</div>' +
+      RP.barraTempo(ini, f, { rotulo: 'Progresso: ' + rotulo.replace(/<[^>]+>/g, '').trim(), cor: extra ? String(extra).replace(/^barra-/, '') : '' }) + '</div>';
   };
   RP.fimItem = function (it) { return it.fim || (RP.agora() + (it.seg || 0) * 1000); };
   /* item de fila (obra ou recrutamento): enquanto o material não chega, mostra a espera */
@@ -436,8 +488,9 @@
     var agora = RP.agora();
     RP.$$('[data-fim]').forEach(function (el) { el.textContent = RP.fmtResta(+el.getAttribute('data-fim') - agora); });
     RP.$$('[data-barra-fim]').forEach(function (el) {
-      var i = +el.getAttribute('data-ini'), f = +el.getAttribute('data-barra-fim');
-      el.style.width = Math.max(0, Math.min(100, (100 * (agora - i)) / Math.max(1, f - i))).toFixed(2) + '%';
+      var p = pctTempo(+el.getAttribute('data-ini'), +el.getAttribute('data-barra-fim'), agora);
+      el.style.width = p.toFixed(2) + '%';
+      var b = el.parentNode; if (b && b.hasAttribute('aria-valuenow')) b.setAttribute('aria-valuenow', String(Math.round(p)));
     });
     RP.$$('[data-rec]').forEach(function (el) {
       var q = RP.qtdRecurso(el.getAttribute('data-rec'), el.getAttribute('data-local') || undefined);
@@ -595,7 +648,7 @@
       montadas[atual].hidden = true;
     }
     RP.fecharFolha();
-    RP.$$('.modal-fundo').forEach(function (m) { m.remove(); });
+    fecharModais(true);
     raiz.classList.toggle('jogo', !cheia);
     raiz.classList.toggle('tela-cheia', cheia);
     if (cheia) RP.$('#mundo').hidden = true;

@@ -298,7 +298,7 @@
     var h = '';
     if (l.podeSalgadeira) h += '<div class="info-linha"><span class="fraco">Salgadeira</span><span>' + (l.salgadeira ? 'guarda ' + RP.reino.valiosos.salgadeira.horas + ' h de comida' : 'não tem') + '</span></div>';
     var it = obraEsperando(l);
-    if (it) h += '<div class="info-linha"><span class="fraco">Obra</span><span>' + RP.esc(it.rotulo) + ' · ' + (it.materialChegaEm ? 'material chega em <span data-fim="' + it.materialChegaEm + '">' + RP.fmtResta(it.materialChegaEm - RP.agora()) + '</span>' : 'aguardando material') + '</span></div>';
+    if (it) h += '<div class="info-linha"><span class="fraco">Obra</span><span>' + RP.esc(it.rotulo) + ' · ' + (it.materialChegaEm ? 'material chega ' + RP.barraTempo(it.materialPartida, it.materialChegaEm, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho' }) : 'aguardando material') + '</span></div>';
     return h;
   });
   /* o que falta no local para a próxima obra (a próxima melhoria), para a caravana já vir preenchida */

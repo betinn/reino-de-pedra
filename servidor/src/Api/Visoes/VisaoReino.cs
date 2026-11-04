@@ -81,7 +81,9 @@ public static class VisaoReino
     /// </summary>
     public static object Item(Mundo m, Reino r, ItemFila i)
     {
-        var chegada = m.Marchas.OfType<Carregadores>().Where(c => c.ItemId == i.Id).Select(c => c.Chegada).DefaultIfEmpty(0).Max();
+        // a última leva de carregadores a chegar: a barra "material chega" vai da partida dela à chegada
+        var leva = m.Marchas.OfType<Carregadores>().Where(c => c.ItemId == i.Id).OrderByDescending(c => c.Chegada).FirstOrDefault();
+        var chegada = leva?.Chegada ?? 0;
         var pos = r.Filas.Values.Select(f => f.Itens.IndexOf(i)).FirstOrDefault(p => p >= 0, -1);
         return new
         {
@@ -89,6 +91,7 @@ public static class VisaoReino
             custo = i.Custo, entregue = i.Entregue.ToDictionary(kv => kv.Key, kv => Math.Floor(kv.Value)),
             duracao = i.DuracaoSeg, i.Inicio, i.Fim, materialCompleto = i.MaterialCompleto,
             materialChegaEm = i.MaterialCompleto ? (long?)null : chegada > 0 ? chegada : null,
+            materialPartida = i.MaterialCompleto || leva == null || chegada <= 0 ? (long?)null : leva.Partida,
             estado = i.Iniciado ? "andamento" : !i.MaterialCompleto ? "material" : "fila",
             posicao = pos >= 0 ? pos + 1 : (int?)null,
             // por unidade (tropas, exploradores...): quantas já ficaram prontas e quando fica a próxima

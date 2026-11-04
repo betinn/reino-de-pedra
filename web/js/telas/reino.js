@@ -16,18 +16,25 @@
     var rot = RP.esc(it.rotulo);
     var cancelar = '<button type="button" class="btn btn-fantasma btn-icone btn-mini" data-cancelar="' + it.id + '" data-fila="' + (it.fila || 'obras') + '" aria-label="Cancelar ' + rot + '">' + RP.icone('fechar') + '</button>';
     if (ini && fim && (it.qtd || 1) > 1 && it.proximoFim) {
-      /* várias unidades: cada uma fica pronta no seu tempo; a barra anda por unidade */
-      var q = it.qtd, porUn = (fim - ini) / q, pf = it.proximoFim, iu = pf - porUn, ag = RP.agora();
-      var pct = Math.max(0, Math.min(100, (100 * (ag - iu)) / porUn));
-      return '<div class="item-fila"><div class="timer"><div class="timer-topo"><b>' + rot + '</b><span class="timer-resta" data-fim="' + pf + '">' + RP.fmtResta(pf - ag) + '</span></div>' +
-        '<div class="barra" role="progressbar" aria-label="Progresso da próxima unidade: ' + rot + '"><i data-ini="' + iu + '" data-barra-fim="' + pf + '" style="width:' + pct.toFixed(1) + '%"></i></div>' +
-        '<small class="fraco fila-prontos">' + (it.prontos || 0) + ' de ' + q + ' prontos · todos em <span data-fim="' + fim + '">' + RP.fmtResta(fim - ag) + '</span></small></div>' + cancelar + '</div>';
+      /* várias unidades: cada uma fica pronta no seu tempo; a barra grande anda por unidade, a fina pelo item todo */
+      var q = it.qtd, porUn = (fim - ini) / q, pf = it.proximoFim, iu = pf - porUn;
+      return '<div class="item-fila"><div class="timer"><div class="timer-topo"><b>' + rot + '</b></div>' +
+        RP.barraTempo(iu, pf, { rotulo: 'Próxima unidade: ' + it.rotulo }) +
+        '<small class="fraco fila-prontos"><span>' + (it.prontos || 0) + ' de ' + q + ' prontos · todos</span>' + RP.barraTempo(ini, fim, { classe: 'curta', rotulo: 'Todas as unidades: ' + it.rotulo }) + '</small></div>' + cancelar + '</div>';
     }
     if (ini && fim) return '<div class="item-fila">' + RP.timerHTML(rot, 0, (fim - ini) / 1000, '', fim) + cancelar + '</div>';
-    var estado = !it.materialCompleto
-      ? '<span class="selo selo-antigo selo-material">' + RP.icone('carroca') + (aguarda ? 'material chega em <span data-fim="' + aguarda + '">' + RP.fmtResta(aguarda - RP.agora()) + '</span>' : 'esperando material') + '</span>'
-      : '<span class="selo">Na fila</span>';
-    return '<div class="item-fila"><div class="timer"><div class="timer-topo"><b>' + rot + '</b>' + estado + '<span class="fraco">' + RP.fmtDuracao(it.duracao) + '</span></div></div>' + cancelar + '</div>';
+    /* material a caminho: a viagem dos carregadores também é tempo, com barra (sai da origem → chega à obra) */
+    if (!it.materialCompleto) {
+      return '<div class="item-fila"><div class="timer"><div class="timer-topo"><b>' + rot + '</b><span class="fraco">' + RP.fmtDuracao(it.duracao) + '</span></div>' +
+        '<small class="fila-material">' + RP.icone('carroca', 'ico-p') + (aguarda ? '<span>Material chega</span>' + RP.barraTempo(it.materialPartida, aguarda, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho: ' + it.rotulo }) : '<span>Esperando material</span>') + '</small>' +
+        '</div>' + cancelar + '</div>';
+    }
+    return '<div class="item-fila"><div class="timer"><div class="timer-topo"><b>' + rot + '</b><span class="selo">Na fila</span><span class="fraco">' + RP.fmtDuracao(it.duracao) + '</span></div></div>' + cancelar + '</div>';
+  };
+  /* itens de uma fila do reino que passam no filtro (ex.: só o treino de exploradores), já com barra e cronômetro */
+  RP.itensFilaHTML = function (nome, filtro) {
+    var f = ((RP.reino && RP.reino.filas) || {})[nome] || [];
+    return f.filter(filtro || function () { return true; }).map(function (i) { i.fila = nome; return RP.itemFilaServidor(i); }).join('');
   };
   /* texto curto para o aviso depois de pôr algo na fila: hora de fim só quando já começou (nunca "Invalid Date") */
   RP.textoFilaItem = function (it) {
@@ -64,7 +71,7 @@
   function linhaLocal(l) {
     var ks = Object.keys(l.taxa || {}), k = ks[0], obra = obraDoLocal(l);
     var est = k ? RP.qtdRecurso(k, l.id) : 0, cap = k && l.cap ? l.cap[k] : 0, pct = cap ? Math.min(100, 100 * est / cap) : 0;
-    var sub = RP.nomeTipoLocal(l) + (l.tipo === 'castelo' ? ' · sede' : '') + (obra ? ' · ' + (obra.inicio && obra.fim ? 'obra termina em <span data-fim="' + obra.fim + '">' + RP.fmtResta(obra.fim - RP.agora()) + '</span>' : 'obra esperando material') : '');
+    var sub = RP.nomeTipoLocal(l) + (l.tipo === 'castelo' ? ' · sede' : '') + (obra ? ' · ' + (obra.inicio && obra.fim ? 'obra ' + RP.barraTempo(obra.inicio, obra.fim, { classe: 'curta', rotulo: 'Obra: ' + obra.rotulo }) : 'obra esperando material') : '');
     return '<button type="button" class="linha-local' + (obra ? ' obra' : '') + '" data-local="' + l.id + '">' +
       '<span class="ico-placa dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span>' +
       '<span class="ll-nome"><span>' + RP.esc(l.nome) + '</span><span class="selo-nv">Nv ' + l.nivel + '</span></span>' +
@@ -96,7 +103,7 @@
       (l.moradias ? '<div class="info-linha"><span class="fraco">Moradias</span><span>' + l.moradias + '</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Tropas aqui</span><span>' + (g.length ? RP.esc(RP.partesGrupo(l.guarnicao)) : 'nenhuma, só a população defende') + '</span></div>' +
       '<div class="info-linha"><span class="fraco">Comportamento</span><span class="selo selo-info">' + (RP.POSTURAS[l.postura] || '') + '</span></div>' +
-      (obra ? '<div class="info-linha"><span class="fraco">Obra</span><span>' + RP.esc(obra.rotulo) + ' · ' + (obra.inicio && obra.fim ? 'termina em <span data-fim="' + obra.fim + '">' + RP.fmtResta(obra.fim - RP.agora()) + '</span>' : 'esperando material') + '</span></div>' : '') +
+      (obra ? '<div class="info-linha info-tempo"><span class="fraco">' + RP.esc(obra.rotulo) + '</span><span>' + (obra.inicio && obra.fim ? RP.barraTempo(obra.inicio, obra.fim, { rotulo: 'Obra: ' + obra.rotulo }) : obra.materialChegaEm ? 'material chega ' + RP.barraTempo(obra.materialPartida, obra.materialChegaEm, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho' }) : 'esperando material') + '</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Onde</span><span>' + (RP.hex.NOME_TERRENO[l.terreno] || '') + '</span></div>' +
       RP.extrasFolhaLocal.map(function (f) { return f(l) || ''; }).join('') +
       '</div>' +

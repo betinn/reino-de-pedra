@@ -44,7 +44,8 @@
     pedirMinimapa();
   }
   function centrarHex(h, animar) {
-    var p = H.centroH(h), fy = RP.folhaAberta() ? 0.3 : 0.5;
+    /* no celular a folha cobre a parte de baixo: o hexágono sobe; no computador ela é a coluna ao lado */
+    var p = H.centroH(h), fy = RP.folhaAberta() && window.innerWidth < 900 ? 0.3 : 0.5;
     if (modo === 'cena') cena.centrar(p.x, p.y, Math.max(cena.cam.s, 1.8), fy, animar);
     else tat.centrar(p.x, p.y, Math.max(tat.cam.s, 0.9), fy, animar);
   }
@@ -204,8 +205,9 @@
       (tropas ? linhaInfo('Quem', tropas) : '') +
       linhaInfo('Estado', (ESTADO_MARCHA[estado] || estado) + (d.ordem && d.ordem !== 'mover' && d.ordem !== 'retornar' && RP.ORDENS_NOMES && RP.ORDENS_NOMES[d.ordem] ? ' · ' + RP.esc(RP.ORDENS_NOMES[d.ordem].toLowerCase()) : '')) +
       (destino ? linhaInfo(estado === 'retornando' ? 'Volta para' : 'Destino', RP.esc(destino)) : '') +
-      (cheg && cheg > ag ? linhaInfo(estado === 'retornando' ? 'Chega em casa' : 'Chegada', '<b class="num" data-fim="' + cheg + '">' + RP.fmtResta(cheg - ag) + '</b>') : '') +
-      (d.trabalho ? linhaInfo(d.trabalho.tipo === 'caca' ? 'Caçando' : d.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo', (d.trabalho.coletado && RP.cargaUsada(d.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(d.trabalho.coletado)) : 'começando') + (d.trabalho.destino ? ' · leva para ' + RP.esc(d.trabalho.destino) : '')) : '') +
+      (cheg && cheg > ag ? linhaInfo(estado === 'retornando' ? 'Chega em casa' : 'Chegada', RP.barraTempo(o.tempos && o.tempos[0], cheg, { rotulo: estado === 'retornando' ? 'Volta para casa' : 'Marcha até o destino' })) : '') +
+      (d.trabalho ? linhaInfo(d.trabalho.tipo === 'caca' ? 'Caçando' : d.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo', (d.trabalho.coletado && RP.cargaUsada(d.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(d.trabalho.coletado)) : 'começando') + (d.trabalho.destino ? ' · leva para ' + RP.esc(d.trabalho.destino) : '')) +
+        (d.trabalho.fim ? linhaInfo(d.trabalho.tipo === 'extracao' ? 'Carga cheia' : 'Termina', RP.barraTempo(d.trabalho.inicio, d.trabalho.fim, { cor: 'sucesso', rotulo: 'Trabalho' })) : '') : '') +
       '</div>' +
       (d.cargaMax != null || (d.carga && RP.cargaUsada(d.carga)) ? '<div style="margin-top:var(--esp-3)">' + RP.cargaHTML(d.carga, d.cargaMax) + '</div>' : '') +
       (d.bloqueio ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p') + RP.esc(d.bloqueio) + '</p>' : '');
