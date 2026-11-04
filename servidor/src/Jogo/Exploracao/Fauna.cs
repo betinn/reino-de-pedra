@@ -275,6 +275,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             var r = m.Reinos.Obter(mc.ReinoId);
             var exp = mc as Explorador;
             var quem = exp != null && m.Pessoas.Obter(exp.PessoaId) is { } px ? px.Nome : null;
+            var fem = exp != null && m.Pessoas.Obter(exp.PessoaId) is { Feminina: true };
             var animal = NomeAnimal.GetValueOrDefault(rg.Animal, rg.Animal).ToLowerInvariant();
             var linhas = new JsonArray
             {
@@ -295,12 +296,12 @@ namespace ReinoDePedra.Jogo.Exploracao
             string titulo, resumo;
             if (exp != null && morreuExplorador)
             {
-                titulo = exp.NomeTipo(m) + (quem != null ? " " + quem : "") + " morto por " + animal;
+                titulo = exp.NomeTipo(m) + (quem != null ? " " + quem : "") + (fem ? " morta por " : " morto por ") + animal;
                 resumo = "Os animais tiraram toda a vida do explorador." + (a.Acabou ? "" : " A escolta que sobrou volta para casa.") + " Prefira a rota segura ou leve escolta.";
             }
             else if (exp != null && GT.Total(exp.Tropas) == 0)
             {
-                titulo = exp.NomeTipo(m) + (quem != null ? " " + quem : "") + " ferido por " + animal;
+                titulo = exp.NomeTipo(m) + (quem != null ? " " + quem : "") + (fem ? " ferida por " : " ferido por ") + animal;
                 resumo = "Sobreviveu ao ataque e segue a ordem, ferido. A vida volta com o tempo; outro ataque antes disso pode matar.";
             }
             else

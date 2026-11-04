@@ -277,14 +277,14 @@ public class ExploracaoTestes
         // um golpe do perigo médio (20 a 60) não tira a vida inteira (80): segue ferido
         Assert.Contains(e, t.M.Marchas);
         Assert.True(Vidas.Ferida(t.M, p));
-        Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna" && x.Titulo.Contains("ferido"));
+        Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna" && (x.Titulo.Contains("ferido") || x.Titulo.Contains("ferida")));
         // com pouca vida, o próximo ataque mata
         p.Dano = Vidas.Max(t.M, p) - 1; p.DanoEm = t.M.Agora;
         Fauna.Atacar(t.M, e, rg, alvo, 2);
         Assert.DoesNotContain(e, t.M.Marchas);
         Assert.Null(t.M.Pessoas.Obter(p.Id));
         Assert.False(r.ExploradoresLivres.ContainsKey("pe"));
-        Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna" && x.Titulo.Contains("morto") && x.Titulo.Contains(p.Nome));
+        Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna" && (x.Titulo.Contains("morto") || x.Titulo.Contains("morta")) && x.Titulo.Contains(p.Nome));
         Assert.Equal(0, Economia.Tropas(t.M, r));   // ninguém mais ocupa o teto
     }
 
