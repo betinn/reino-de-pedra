@@ -43,8 +43,8 @@ public class CorrecoesUsabilidadeApiTestes
         var reino = await c.ContaComReino("ivo@exemplo.com", "Mirante");
         var reinoId = reino.GetProperty("id").GetInt64();
         var castelo = await Guarnecer(s, reinoId, new() { ["lanceiro"] = 6 });
-        var a = await HexLivre(s, castelo, 10);
-        var b = await HexLivre(s, castelo, 10, pular: 8);
+        var a = await HexLivre(s, castelo, 20);
+        var b = await HexLivre(s, castelo, 20, pular: 8);
 
         var (st, ex) = await c.Post("tropas/enviar", new { deLocalId = reino.GetProperty("casteloId").GetInt64(), tropas = new { lanceiro = 3 }, destinoHex = a, ordem = "mover" });
         Assert.True(st == HttpStatusCode.Created, ex.ToString());
@@ -80,7 +80,7 @@ public class CorrecoesUsabilidadeApiTestes
         // prévia a partir da marcha: visão do grupo e fauna (nenhuma conhecida no destino)
         var (sp, previa) = await c.Post("tropas/previa", new { marchaId = id, destinoHex = b });
         Assert.Equal(HttpStatusCode.OK, sp);
-        Assert.Equal(1, previa.GetProperty("visao").GetInt32());
+        Assert.Equal(2, previa.GetProperty("visao").GetInt32());   // U.lanceiro.visao
         Assert.True(Nulo(previa, "fauna"));
 
         // no meio do caminho, a nova ordem sai de onde a tropa está
@@ -123,13 +123,13 @@ public class CorrecoesUsabilidadeApiTestes
         var reinoId = reino.GetProperty("id").GetInt64();
         var casteloId = reino.GetProperty("casteloId").GetInt64();
         var castelo = await Guarnecer(s, reinoId, new() { ["lanceiro"] = 20, ["milicia"] = 1 });
-        var perto = await HexLivre(s, castelo, 2);
-        var longe = await HexLivre(s, castelo, 6, longeDosReinos: true);
+        var perto = await HexLivre(s, castelo, 4);
+        var longe = await HexLivre(s, castelo, 12, longeDosReinos: true);
         await s.Motor.Executar(m =>
         {
             Fauna.Adicionar(m, new RegiaoFauna { Centro = perto, Hex = perto, Raio = 1, Animal = "javalis", Nivel = "baixo", Qtd = 5 });
             Fauna.Adicionar(m, new RegiaoFauna { Centro = longe, Hex = longe, Raio = 1, Animal = "ursos", Nivel = "alto", Qtd = 2 });
-            Nevoas.RevelarArea(m, reinoId, longe, 1);   // como se um explorador tivesse passado por lá
+            Nevoas.RevelarArea(m, reinoId, longe, 2);   // como se um explorador tivesse passado por lá
         });
         await s.Avancar(TimeSpan.FromMinutes(30));
 

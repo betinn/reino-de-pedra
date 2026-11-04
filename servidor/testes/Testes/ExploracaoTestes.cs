@@ -90,7 +90,7 @@ public class ExploracaoTestes
         t.Avancar(TimeSpan.FromSeconds(x.Tempo + 1));
         Assert.Equal(1, r.ExploradoresLivres[tipo]);
 
-        var destino = HexA(t, c.Hex, 8);
+        var destino = HexA(t, c.Hex, 16);
         var e = Exploradores.Enviar(t.M, r, tipo, Exploradores.Explorar, destino);
         Assert.Equal(x.Visao, e.RaioVisao(t.M));
         Assert.Equal(x.Vel, e.Vel);
@@ -138,7 +138,7 @@ public class ExploracaoTestes
         var r = t.NovoReino();
         var c = Castelo(t, r);
         r.ExploradoresLivres["pe"] = 1;
-        var destino = HexA(t, c.Hex, 12);
+        var destino = HexA(t, c.Hex, 24);
         var nevoa = Nevoas.De(t.M, r.Id);
         Assert.Equal(0, nevoa.MinutoVisto(destino));
         var e = Exploradores.Enviar(t.M, r, "pe", Exploradores.Explorar, destino);
@@ -167,9 +167,9 @@ public class ExploracaoTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        var alvo = HexA(t, c.Hex, 6);
+        var alvo = HexA(t, c.Hex, 12);
         var j = t.M.Jazidas.Adicionar(new Jazida { Hex = alvo, Recurso = "ouro", Inicial = 1000, Restante = 1000 });
-        var longe = t.M.Jazidas.Adicionar(new Jazida { Hex = HexA(t, c.Hex, 16), Recurso = "prata", Inicial = 1000, Restante = 1000 });
+        var longe = t.M.Jazidas.Adicionar(new Jazida { Hex = HexA(t, c.Hex, 32), Recurso = "prata", Inicial = 1000, Restante = 1000 });
         r.ExploradoresLivres["pe"] = 1; r.ExploradoresLivres["prospector"] = 1;
         Exploradores.Enviar(t.M, r, "pe", Exploradores.Explorar, alvo);
         t.AvancarHoras(12);
@@ -189,7 +189,7 @@ public class ExploracaoTestes
         var r = t.NovoReino();
         var c = Castelo(t, r);
         r.ExploradoresLivres["cavalo"] = 2;
-        var a = HexA(t, c.Hex, 5); var b = HexA(t, c.Hex, 7);
+        var a = HexA(t, c.Hex, 10); var b = HexA(t, c.Hex, 14);
         var e = Exploradores.Enviar(t.M, r, "cavalo", Exploradores.SeguirRota, null, [a, b]);
         Assert.Equal(a, e.Destino);
         AvancarAte(t, e.Chegada + 1);
@@ -216,7 +216,7 @@ public class ExploracaoTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        var alvo = HexA(t, c.Hex, 6, h => LongeDosReinos(t, h, 1));
+        var alvo = HexA(t, c.Hex, 12, h => LongeDosReinos(t, h, 1));
         return (t, r, c, alvo);
     }
 
@@ -320,7 +320,7 @@ public class ExploracaoTestes
         }
         Assert.Contains(t.M.Faunas, rg => rg.Nivel == "alto");
         // mesmo uma região forte fica fraca ao lado do castelo
-        var perto = t.M.G.Area(castelos[0], 2).First(h => h != castelos[0]);
+        var perto = t.M.G.Area(castelos[0], 4).First(h => h != castelos[0]);
         var forte = Regiao(t, perto, "ursos", "alto");
         Assert.Equal(1, Fauna.NivelEm(t.M, forte, perto));
         // mundo que sobe sem fauna ganha fauna
@@ -339,7 +339,7 @@ public class ExploracaoTestes
         var op = new OpcoesCaminho { Seguro = true, Forca = 30, ReinoId = r.Id };
         // o reino ainda não viu a fauna: a rota segura não sabe dela
         Assert.Equal(curta.Hexes, Caminhos.Calcular(t.M, c.Hex, alvo, "Lenta", op).Hexes);
-        Nevoas.RevelarArea(t.M, r.Id, meio, 2, t.M.Agora + T.Min);
+        Nevoas.RevelarArea(t.M, r.Id, meio, 4, t.M.Agora + T.Min);
         var segura = Caminhos.Calcular(t.M, c.Hex, alvo, "Lenta", op);
         Assert.DoesNotContain(meio, segura.Hexes);
         Assert.True(segura.TotalMin >= curta.TotalMin);
@@ -355,10 +355,10 @@ public class ExploracaoTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        var alvo = HexA(t, c.Hex, 3);
+        var alvo = HexA(t, c.Hex, 6);
         var rg = Regiao(t, alvo, "javalis", "baixo");
         Guarnecer(t, r, c, "arqueiro", 10);   // força 300 ≥ 80: ilesos
-        Assert.Throws<RegraException>(() => Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 10 }, HexA(t, c.Hex, 9), OrdemCacar.Id));
+        Assert.Throws<RegraException>(() => Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 10 }, HexA(t, c.Hex, 18), OrdemCacar.Id));
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 10 }, alvo, OrdemCacar.Id);
         AvancarAte(t, ex.Chegada + 1);
         Assert.True(rg.Abatido);
@@ -384,7 +384,7 @@ public class ExploracaoTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        var alvo = HexA(t, c.Hex, 3);
+        var alvo = HexA(t, c.Hex, 6);
         var rg = Regiao(t, alvo, "javalis", "baixo");
         Guarnecer(t, r, c, "arqueiro", 1);   // 30 < 40: perde 25% (1 unidade)
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 1 }, alvo, OrdemCacar.Id);
@@ -404,8 +404,8 @@ public class ExploracaoTestes
         var c = Castelo(t, r);
         t.DarRecursos(r);
         var P = t.B.P;
-        var fl = t.M.G.Area(c.Hex, 3).FirstOrDefault(h => t.M.Mapa.Terrenos[h] == Terreno.Floresta && !t.M.Mapa.Rio[h], -1);
-        if (fl < 0) { fl = HexA(t, c.Hex, 2); t.M.Mapa.Terrenos[fl] = Terreno.Floresta; }
+        var fl = t.M.G.Area(c.Hex, 6).FirstOrDefault(h => t.M.Mapa.Terrenos[h] == Terreno.Floresta && !t.M.Mapa.Rio[h], -1);
+        if (fl < 0) { fl = HexA(t, c.Hex, 4); t.M.Mapa.Terrenos[fl] = Terreno.Floresta; }
         var (custo, seg, ponte) = Rotas.Custo(t.M, fl);
         Assert.False(ponte);
         Assert.Equal(Math.Round(P.Rota.Custo["madeira"] * P.Terreno["floresta"]), custo["madeira"]);
@@ -416,7 +416,7 @@ public class ExploracaoTestes
         Assert.Null(item.LocalId);
         Assert.Equal(fl, item.Hex);
         Assert.Throws<RegraException>(() => Rotas.Construir(t.M, r, fl));   // já na fila
-        Assert.Throws<RegraException>(() => Rotas.Construir(t.M, r, HexA(t, c.Hex, 15)));   // não explorado
+        Assert.Throws<RegraException>(() => Rotas.Construir(t.M, r, HexA(t, c.Hex, 30)));   // não explorado
         t.AvancarHoras(2);
         Assert.Contains(fl, t.M.Vias.Rotas);
         Assert.Equal(antes * P.RotaFator, Caminhos.MinutosEntrar(t.M, fl, "Lenta", OpcoesCaminho.Padrao), 6);
@@ -452,7 +452,7 @@ public class ExploracaoTestes
         var a = t.NovoReino(); var b = t.NovoReino();
         var cb = Castelo(t, b);
         if (tropasB > 0) Guarnecer(t, b, cb, "lanceiro", tropasB);
-        var perto = HexA(t, cb.Hex, 1);
+        var perto = HexA(t, cb.Hex, 2);
         return (t, a, b, cb, perto);
     }
 
@@ -528,7 +528,7 @@ public class ExploracaoTestes
         var (t, a, b, cb, _) = DoisReinos(4);
         Assert.Equal(t.M.F.ChanceEspiao(0, 4), Espionagem.Chance(t.M, cb), 9);   // 25%: o sorteio abaixo (≥ 0,25) não vê o batedor
         var rel = t.M.Reliquias.Adicionar(new Reliquia { Nome = "Pedra do Vale", Tipo = "producao", ReinoId = b.Id, LocalId = cb.Id });
-        Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 1);
+        Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 2);
         a.ExploradoresLivres["batedor"] = 1;
         var conhecidos = new List<long>();
         void Ao(Mundo m, Reino quem, Reino outro, string como) { if (m == t.M) conhecidos.Add(outro.Id); }
@@ -562,7 +562,7 @@ public class ExploracaoTestes
     public void Espiao_visto_vira_avistamento_e_metade_das_vezes_e_capturado()
     {
         var (t, a, b, cb, _) = DoisReinos(20);
-        Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 1);
+        Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 2);
         a.ExploradoresLivres["batedor"] = 2;
         // visto e capturado: sem relatório
         t.M.Sorte = Sorte(x => x < 0.25, x => x < t.B.P.Espiao.Capturado);
@@ -594,8 +594,8 @@ public class ExploracaoTestes
     {
         var (t, a, b, cb, _) = DoisReinos(0);
         var mina = t.M.LocaisDe(b.Id).First(l => l.Tipo == TipoLocal.Mina);
-        var rg = Regiao(t, HexA(t, mina.Hex, 1), "lobos", "alto");
-        Nevoas.RevelarArea(t.M, a.Id, mina.Hex, 2, t.M.Agora + T.Min);
+        var rg = Regiao(t, HexA(t, mina.Hex, 2), "lobos", "alto");
+        Nevoas.RevelarArea(t.M, a.Id, mina.Hex, 4, t.M.Agora + T.Min);
         var foto = Fotos.De(t.M, a.Id);
         var obj = Assert.Single(foto.Objetos[mina.Hex]);
         Assert.Equal("local", obj["tipo"]!.GetValue<string>());
@@ -609,7 +609,7 @@ public class ExploracaoTestes
         t.M.MudarDono(mina, 0); mina.Ruina = true;
         Assert.Equal("desconhecido", foto.Objetos[mina.Hex][0]["dono"]!.GetValue<string>());
         Assert.True(Fotos.PerigoConhecido(t.M, a.Id, rg.Centro) > 0);
-        Nevoas.RevelarArea(t.M, a.Id, mina.Hex, 2, t.M.Agora + 2 * T.Min);
+        Nevoas.RevelarArea(t.M, a.Id, mina.Hex, 4, t.M.Agora + 2 * T.Min);
         Assert.Equal("livre", foto.Objetos[mina.Hex][0]["dono"]!.GetValue<string>());
         Assert.Equal(0, Fotos.PerigoConhecido(t.M, a.Id, rg.Centro));
     }

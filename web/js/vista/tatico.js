@@ -464,9 +464,13 @@
     var d = M.dados, r = RP.reino, f = r && r.fundaveis && r.fundaveis[this.fundar], dd = '';
     if (!d || !f) return '';
     var n = H.COLS * H.LINS, emFila = {};
-    ((r.filas && r.filas.obras) || []).forEach(function (it) { if (it.tipo === 'fundar') emFila[it.hex] = true; });
+    ((r.filas && r.filas.obras) || []).forEach(function (it) { if (it.tipo === 'fundar') H.pegada(it.hex, 3).forEach(function (x) { emFila[x] = true; }); });
+    /* a construção ocupa a pegada inteira (P.ocupa: 7, 3 ou 1 hexágonos): todos precisam ser conhecidos, sem rio e livres */
+    function livre(x) { return d.ter[x] && !d.rio[x] && !(d.porHex[x] && d.porHex[x].length) && !emFila[x]; }
     for (var h = 0; h < n; h++) {
-      if (!d.ter[h] || d.rio[h] || f.terrenos.indexOf(d.ter[h]) < 0 || (d.porHex[h] && d.porHex[h].length) || emFila[h]) continue;
+      if (!d.ter[h] || f.terrenos.indexOf(d.ter[h]) < 0) continue;
+      var pg = H.pegada(h, f.ocupa || 1);
+      if (pg.length < (f.ocupa || 1) || !pg.every(livre)) continue;
       var p = H.centroH(h);
       dd += 'M' + H.cantos(p.x, p.y, H.R - 3).split(' ').join('L') + 'Z';
     }

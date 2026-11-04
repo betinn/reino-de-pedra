@@ -42,7 +42,7 @@ public sealed class Formulas(Balanceamento b)
         return new() { ["pedra"] = ArredJs(c * 0.7), ["madeira"] = ArredJs(c * 0.3) };
     }
     public double TempoTorre(int n) => P.Torre.TempoN1 * n;
-    public int AlcanceTorre(int n) => n + P.Torre.AlcanceBase;
+    public int AlcanceTorre(int n) => n * P.Torre.AlcancePorNivel + P.Torre.AlcanceBase;
 
     public double CapacidadeArmazem(int L) => P.Armazem.CapN1 * Math.Pow(P.Armazem.CapCresc, L - 1);
 

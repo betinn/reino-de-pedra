@@ -225,7 +225,8 @@ namespace ReinoDePedra.Jogo.Exploracao
                 e.Ordem = ordem; e.Pontos = ps; e.Ponto = 0; e.Alvo = ps[^1];
                 return ps[0];
             }
-            if (destino is not int d || !m.G.Valido(d)) throw new RegraException("Escolha o destino.");
+            if (destino is not int dd || !m.G.Valido(dd)) throw new RegraException("Escolha o destino.");
+            var d = m.CentroDoLocal(dd);
             if (d == de) throw new RegraException("O explorador já está aqui.");
             if (ordem == Espionar)
             {

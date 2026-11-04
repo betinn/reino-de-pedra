@@ -73,7 +73,7 @@ public sealed class CombateCenario
     /// O defensor fica só com um local (o alvo), perto do castelo atacante, com a população civil dada e a economia congelada
     /// (a população "do local" é exatamente <paramref name="pop"/>; estoques não andam).
     /// </summary>
-    public Local Alvo(TipoLocal tipo, IReadOnlyDictionary<string, int> guarnicao, double pop, int dist = 2, string? produz = "ferro", int nivel = 1)
+    public Local Alvo(TipoLocal tipo, IReadOnlyDictionary<string, int> guarnicao, double pop, int dist = 4, string? produz = "ferro", int nivel = 1)
     {
         foreach (var l in M.LocaisDe(Def.Id).ToList()) M.RemoverLocal(l);
         var alvo = M.AdicionarLocal(new Local
@@ -93,7 +93,7 @@ public sealed class CombateCenario
 
     public Torre Torre(Local perto, int nivel, int pular = 0)
     {
-        var h = M.G.Area(perto.Hex, 2).Where(x => x != perto.Hex && Obras.HexLivre(M, x) && !M.Mapa.Rio[x]).Skip(pular).First();
+        var h = M.G.Area(perto.Hex, 4).Where(x => x != perto.Hex && Obras.HexLivre(M, x) && !M.Mapa.Rio[x]).Skip(pular).First();
         return M.Torres.Adicionar(new Torre { ReinoId = perto.ReinoId, Hex = h, Nivel = nivel, Estrutura = Defesas.EstruturaCheia(M, nivel) });
     }
 

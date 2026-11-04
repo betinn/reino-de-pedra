@@ -103,6 +103,10 @@ public sealed class ParametrosP
     public MapaP Mapa { get; init; } = new();
     /// <summary>Distância típica (hexágonos) até o castelo do reino vizinho, para prévias e metas.</summary>
     public int VizinhoHex { get; init; }
+    /// <summary>Hexágonos que cada tipo de construção ocupa (7, 3 ou 1), pela chave do tipo de local.</summary>
+    public Dictionary<string, int> Ocupa { get; init; } = new();
+    /// <summary>Escalas da geração do mapa, em hexágonos.</summary>
+    public MapaGenP MapaGen { get; init; } = new();
     public double ExpPerdas { get; init; }
     public double Vantagem { get; init; }
     public double MiliciaPorPop { get; init; }
@@ -331,6 +335,12 @@ public sealed class VagasP { public double PorNivel { get; init; } public int Mi
 public sealed class AproximadoP { public int Poucas { get; init; } public int Passo { get; init; } }
 public sealed class VisaoP { public int Castelo { get; init; } public int Local { get; init; } public int Tropa { get; init; } }
 public sealed class MapaP { public int Cols { get; init; } public int Lins { get; init; } }
+public sealed class MapaGenP
+{
+    public double Relevo { get; init; } public double Umidade { get; init; } public int HexPorRio { get; init; } public int RioLonge { get; init; }
+    public int RioPassos { get; init; } public int RioMin { get; init; } public int AnelLocais { get; init; } public int JazidaLonge { get; init; }
+    public int RuinaLonge { get; init; } public int ObjLonge { get; init; } public int JazidaEspaco { get; init; } public int RuinaEspaco { get; init; }
+}
 public sealed class TorreP
 {
     public double CustoN1 { get; init; }
@@ -341,6 +351,7 @@ public sealed class TorreP
     public int NivelMax { get; init; }
     public double Estrutura { get; init; }
     public int AlcanceBase { get; init; }
+    public int AlcancePorNivel { get; init; } = 1;
 }
 public sealed class ReliquiaP
 {

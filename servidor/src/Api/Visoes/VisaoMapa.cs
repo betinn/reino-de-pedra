@@ -36,10 +36,10 @@ public static class VisaoMapa
             var aliado = !meu && !l.Ruina && Aliado(m, r, l.ReinoId);
             if (!meu && !vis.Contains(l.Hex) && !(aliado && nevoa.MinutoVisto(l.Hex) > 0)) continue;
             if (aliado && m.Reinos.Obter(l.ReinoId) is { } dl)   // aliados se reconhecem: nome e brasão
-                objetos.Add(new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)l.Nivel, nome = l.Nome, dono = "aliado", ruina = false, reino = Espionagem.Identidade(dl) });
+                objetos.Add(new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "aliado", ruina = false, reino = Espionagem.Identidade(dl) });
             else objetos.Add(meu
-                ? new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)l.Nivel, nome = l.Nome, dono = "meu", ruina = l.Ruina }
-                : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina });
+                ? new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "meu", ruina = l.Ruina }
+                : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina });
         }
         foreach (var x in m.Marchas)
         {

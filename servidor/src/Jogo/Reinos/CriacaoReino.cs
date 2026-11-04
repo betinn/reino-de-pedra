@@ -35,6 +35,9 @@ public static partial class CriacaoReino
 
     /// <summary>Hexágonos do castelo e dos 4 locais iniciais da vaga.</summary>
     public static int[] Hexes(Vaga v) => [v.Castelo, v.Comida, v.Madeira, v.Pedra, v.Ferro];
+    /// <summary>Todos os hexágonos que o reino novo ocupa: a pegada do castelo e a dos 4 locais iniciais (P.ocupa).</summary>
+    public static List<int> Pegadas(Mundo m, Vaga v) =>
+        Mapa.Pegada.Hexes(m, TipoLocal.Castelo, v.Castelo).Concat(new[] { v.Comida, v.Madeira, v.Pedra, v.Ferro }.SelectMany(h => Mapa.Pegada.Hexes(m, TipoLocal.Vila, h))).Distinct().ToList();
 
     /// <summary>
     /// Um local inicial só toma o lugar de um local sem dono (ruína ou terra livre) que não guarda relíquia nem equipamento
@@ -45,10 +48,10 @@ public static partial class CriacaoReino
         (saindo != 0 && l.ReinoId == saindo || Combate.Ataques.SemDono(m, l))
         && !m.Reliquias.Any(x => x.LocalId == l.Id) && !m.Lendarios.Any(e => e.LocalId == l.Id);
 
-    /// <summary>Os 5 hexágonos da vaga estão livres ou só têm locais que podem dar lugar (ver <see cref="LocalSubstituivel"/>).</summary>
+    /// <summary>As pegadas da vaga estão livres ou só têm locais que podem dar lugar (ver <see cref="LocalSubstituivel"/>).</summary>
     public static bool VagaUtilizavel(Mundo m, Vaga v, long saindo = 0)
     {
-        foreach (var h in Hexes(v))
+        foreach (var h in Pegadas(m, v))
         {
             if (m.LocalNoHex(h) is { } l) { if (!LocalSubstituivel(m, l, saindo)) return false; }
             else if (!Obras.HexLivre(m, h)) return false;
@@ -85,7 +88,7 @@ public static partial class CriacaoReino
         if (vaga < 0) throw new RegraException("Não há vaga no mapa.", 409);
         var V = m.Mapa.Vagas[vaga];
         if (!VagaUtilizavel(m, V)) throw new RegraException("Esta vaga do mapa está ocupada.", 409);
-        foreach (var h in Hexes(V))
+        foreach (var h in Pegadas(m, V))
         {
             var antigo = m.LocalNoHex(h);
             if (antigo != null) m.RemoverLocal(antigo);   // ruínas sem dono de um reino que ocupou esta vaga antes

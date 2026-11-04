@@ -157,7 +157,10 @@ public sealed partial class Mundo
 
     private void Indexar(Local l)
     {
+        Desindexar(l);
+        // a pegada inteira responde pelo local (o centro sempre; os outros hexágonos se estiverem livres)
         _localNoHex[l.Hex] = l.Id;
+        if (Mapa != null) foreach (var h in Jogo.Mapa.Pegada.DoLocal(this, l)) _localNoHex.TryAdd(h, l.Id);
         if (l.ReinoId != 0)
         {
             if (!_locaisDoReino.TryGetValue(l.ReinoId, out var lst)) _locaisDoReino[l.ReinoId] = lst = new();
@@ -166,8 +169,18 @@ public sealed partial class Mundo
     }
 
     public Local? LocalNoHex(int hex) => _localNoHex.TryGetValue(hex, out var id) ? Locais.Obter(id) : null;
+    /// <summary>Destino tocado na pegada de um local vira o centro dele (o hexágono do local); fora de local, o próprio hexágono.</summary>
+    public int CentroDoLocal(int hex) => LocalNoHex(hex)?.Hex ?? hex;
     public IEnumerable<Local> LocaisDe(long reinoId) =>
         _locaisDoReino.TryGetValue(reinoId, out var l) ? l.Select(id => Locais.Obter(id)).OfType<Local>() : [];
+
+    private void Desindexar(Local l)
+    {
+        if (Mapa == null) { _localNoHex.Remove(l.Hex); return; }
+        foreach (var h in G.Area(l.Hex, 1)) if (_localNoHex.TryGetValue(h, out var id) && id == l.Id) _localNoHex.Remove(h);
+    }
+    /// <summary>O tipo do local mudou (o castelo virou ruína, a sede mudou de lugar): a pegada muda junto.</summary>
+    public void Reindexar(Local l) => Indexar(l);
 
     public Local AdicionarLocal(Local l)
     {
@@ -178,7 +191,7 @@ public sealed partial class Mundo
     }
     public void RemoverLocal(Local l)
     {
-        _localNoHex.Remove(l.Hex);
+        Desindexar(l);
         if (_locaisDoReino.TryGetValue(l.ReinoId, out var lst)) lst.Remove(l.Id);
         Locais.Remover(l);
     }

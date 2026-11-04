@@ -10,8 +10,28 @@ namespace ReinoDePedra.Jogo.Exploracao
     public sealed partial class Nevoa : Documento
     {
         public long ReinoId { get; set; }
-        /// <summary>Um int por hexágono (gravado como base64 pelo System.Text.Json).</summary>
-        public byte[] Visto { get; set; } = [];
+        /// <summary>Um int por hexágono (na memória).</summary>
+        [System.Text.Json.Serialization.JsonIgnore] public byte[] Visto { get; set; } = [];
+        /// <summary>
+        /// O vetor <see cref="Visto"/> gravado comprimido (deflate, base64): com o mapa de 312 × 240 são 300 KB por reino, quase
+        /// todos zeros no começo da temporada; comprimido, poucos KB.
+        /// </summary>
+        public string VistoZ { get => Comprimir(Visto); set => Visto = Descomprimir(value); }
+
+        private static string Comprimir(byte[] dados)
+        {
+            using var ms = new MemoryStream();
+            using (var z = new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionLevel.Fastest)) z.Write(dados);
+            return Convert.ToBase64String(ms.ToArray());
+        }
+        private static byte[] Descomprimir(string? b64)
+        {
+            if (string.IsNullOrEmpty(b64)) return [];
+            using var z = new System.IO.Compression.DeflateStream(new MemoryStream(Convert.FromBase64String(b64)), System.IO.Compression.CompressionMode.Decompress);
+            using var ms = new MemoryStream();
+            z.CopyTo(ms);
+            return ms.ToArray();
+        }
 
         public int MinutoVisto(int h) => Visto.Length >= (h + 1) * 4 ? BitConverter.ToInt32(Visto, h * 4) : 0;
         /// <summary>Banco de um mapa menor (tamanho mudou no balanceamento): o vetor cresce em vez de estourar.</summary>

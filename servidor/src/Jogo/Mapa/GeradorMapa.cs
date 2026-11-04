@@ -17,8 +17,8 @@ public static class GeradorMapa
         for (var h = 0; h < g.Total; h++)
         {
             var (x, y) = Pos(g, h);
-            m.Altura[h] = (float)Fbm(semente, 1, x, y, 9.0);
-            umid[h] = (float)Fbm(semente, 2, x, y, 7.0);
+            m.Altura[h] = (float)Fbm(semente, 1, x, y, p.MapaGen.Relevo);
+            umid[h] = (float)Fbm(semente, 2, x, y, p.MapaGen.Umidade);
         }
         // limiares por quantil: proporções estáveis em qualquer semente
         var alt = m.Altura.OrderBy(v => v).ToArray();
@@ -35,7 +35,7 @@ public static class GeradorMapa
                 a <= baixo && u >= muitoUmido ? Terreno.Pantano :
                 u >= umido ? Terreno.Floresta : Terreno.Planicie;
         }
-        GerarRios(m, semente);
+        GerarRios(m, p, semente);
         GerarVagas(m, p, semente);
         return m;
     }
@@ -66,32 +66,36 @@ public static class GeradorMapa
         return s / tot;
     }
 
-    private static void GerarRios(MapaMundo m, ulong semente)
+    private static void GerarRios(MapaMundo m, ParametrosP p, ulong semente)
     {
         var g = m.G;
         var rng = new Rng(semente ^ 0x5249_4F53UL);
         var fontes = Enumerable.Range(0, g.Total).Where(h => m.Terrenos[h] == Terreno.Montanha).ToList();
         rng.Embaralhar(fontes);
-        var nRios = Math.Max(3, g.Total / 450);
+        var gen = p.MapaGen;
+        var nRios = Math.Max(3, g.Total / Math.Max(1, gen.HexPorRio));
         var feitos = 0;
         foreach (var fonte in fontes)
         {
             if (feitos >= nRios) break;
-            if (m.Rio[fonte] || g.Area(fonte, 6).Any(x => m.Rio[x])) continue;
+            if (m.Rio[fonte] || g.Area(fonte, gen.RioLonge).Any(x => m.Rio[x])) continue;
             var caminho = new List<int> { fonte };
             var visit = new HashSet<int> { fonte };
             var h = fonte;
-            for (var passo = 0; passo < 200; passo++)
+            for (var passo = 0; passo < gen.RioPassos; passo++)
             {
                 int c = g.C(h), l = g.L(h);
                 if (c == 0 || l == 0 || c == g.Cols - 1 || l == g.Lins - 1) break;
-                var prox = g.Vizinhos(h).Where(v => !visit.Contains(v))
+                // o rio não encosta no próprio trecho de antes (só no hexágono de onde vem): um curso de um hexágono de largura,
+                // sem virar malha quando o relevo é plano
+                var anterior = h;
+                var prox = g.Vizinhos(h).Where(v => !visit.Contains(v) && g.Vizinhos(v).All(x => x == anterior || !visit.Contains(x) || m.Rio[x]))
                     .OrderBy(v => m.Altura[v] + 0.02 * rng.Real()).FirstOrDefault(-1);
                 if (prox < 0) break;
                 if (m.Rio[prox]) { caminho.Add(prox); break; }   // encontra outro rio
                 caminho.Add(prox); visit.Add(prox); h = prox;
             }
-            if (caminho.Count < 8) continue;
+            if (caminho.Count < gen.RioMin) continue;
             foreach (var x in caminho) m.Rio[x] = true;
             feitos++;
         }
@@ -107,12 +111,13 @@ public static class GeradorMapa
         var linsC = (int)Math.Ceiling(n / (double)colsC);
         double w = g.Cols / (double)colsC, hgt = g.Lins / (double)linsC;
         var centros = new List<int>();
+        var borda = p.MapaGen.AnelLocais + 3;   // o anel dos locais iniciais e a pegada deles cabem no mapa
         for (var lc = 0; lc < linsC; lc++)
             for (var cc = 0; cc < colsC; cc++)
             {
                 if (centros.Count >= n) break;
-                var c = (int)Math.Clamp(Math.Round((cc + 0.5) * w + (rng.Real() - 0.5) * w * 0.35), 3, g.Cols - 4);
-                var l = (int)Math.Clamp(Math.Round((lc + 0.5) * hgt + (rng.Real() - 0.5) * hgt * 0.35), 3, g.Lins - 4);
+                var c = (int)Math.Clamp(Math.Round((cc + 0.5) * w + (rng.Real() - 0.5) * w * 0.35), borda, g.Cols - 1 - borda);
+                var l = (int)Math.Clamp(Math.Round((lc + 0.5) * hgt + (rng.Real() - 0.5) * hgt * 0.35), borda, g.Lins - 1 - borda);
                 centros.Add(g.Indice(c, l));
             }
         // ordem de ocupação: a partir do centro do mapa, cada nova vaga perto das já ocupadas
@@ -129,19 +134,24 @@ public static class GeradorMapa
         var idx = 0;
         foreach (var castelo in ordem)
         {
-            // o castelo e o entorno imediato ficam em planície, sem rio; os 4 locais iniciais ganham o terreno certo
-            foreach (var x in g.Area(castelo, 1)) { if (m.Terrenos[x] is Terreno.Montanha or Terreno.Pantano) m.Terrenos[x] = Terreno.Planicie; }
-            m.Terrenos[castelo] = Terreno.Planicie; m.Rio[castelo] = false;
-            var anel = g.Area(castelo, 2).Where(x => g.Distancia(x, castelo) == 2).ToList();
+            // o castelo e o entorno (a pegada dele e um anel em volta) ficam em planície, sem rio; os 4 locais iniciais ganham
+            // o terreno certo em toda a pegada deles
+            foreach (var x in g.Area(castelo, 2)) { if (m.Terrenos[x] is Terreno.Montanha or Terreno.Pantano) m.Terrenos[x] = Terreno.Planicie; }
+            foreach (var x in Pegada.Hexes(g, Ocupa(p, "castelo"), castelo)) { m.Terrenos[x] = Terreno.Planicie; m.Rio[x] = false; }
+            var raioAnel = p.MapaGen.AnelLocais;
+            var (cx0, cy0) = Pos(g, castelo);   // anel em ordem de ângulo: os 4 locais saem em lados diferentes do castelo
+            var anel = g.Area(castelo, raioAnel).Where(x => g.Distancia(x, castelo) == raioAnel)
+                .OrderBy(x => Math.Atan2(Pos(g, x).y - cy0, Pos(g, x).x - cx0)).ToList();
             var giro = rng.Int(0, anel.Count);
             int Pegar(int k) => anel[(giro + k * anel.Count / 4) % anel.Count];
             int comida = Pegar(0), madeira = Pegar(1), pedra = Pegar(2), ferro = Pegar(3);
-            m.Terrenos[comida] = Terreno.Planicie; m.Terrenos[madeira] = Terreno.Floresta;
-            m.Terrenos[pedra] = Terreno.Colina; m.Terrenos[ferro] = Terreno.Colina;
-            foreach (var x in new[] { comida, madeira, pedra, ferro }) m.Rio[x] = false;
+            void Preparar(int centro, Terreno t) { foreach (var x in Pegada.Hexes(g, Ocupa(p, "vila"), centro)) { m.Terrenos[x] = t; m.Rio[x] = false; } }
+            Preparar(comida, Terreno.Planicie); Preparar(madeira, Terreno.Floresta); Preparar(pedra, Terreno.Colina); Preparar(ferro, Terreno.Colina);
             m.Vagas.Add(new Vaga(idx++, castelo, comida, madeira, pedra, ferro));
         }
     }
+
+    private static int Ocupa(ParametrosP p, string tipo) => p.Ocupa.TryGetValue(tipo, out var n) ? n : 1;
 
     /// <summary>Onde cada recurso valioso aparece.</summary>
     public static readonly Dictionary<string, Terreno[]> TerrenoDoValioso = new()
@@ -158,7 +168,9 @@ public static class GeradorMapa
         var g = m.G; var p = b.P;
         var rng = new Rng(semente ^ 0x4A41_5A49UL);
         var castelos = m.Vagas.Select(v => v.Castelo).ToList();
-        var iniciais = m.Vagas.SelectMany(v => new[] { v.Castelo, v.Comida, v.Madeira, v.Pedra, v.Ferro }).ToHashSet();
+        var gen = p.MapaGen;
+        var iniciais = m.Vagas.SelectMany(v => Pegada.Hexes(g, Ocupa(p, "castelo"), v.Castelo)
+            .Concat(new[] { v.Comida, v.Madeira, v.Pedra, v.Ferro }.SelectMany(x => Pegada.Hexes(g, Ocupa(p, "vila"), x)))).ToHashSet();
         var ocupados = new List<int>();
         var jaz = new List<(int, string, double)>();
         var refJaz = b.Referencia.GetProperty("jazidas");
@@ -169,7 +181,7 @@ public static class GeradorMapa
             var qtd = j.GetProperty("quantidade").GetInt32();
             var terr = TerrenoDoValioso[rec];
             var cand = Enumerable.Range(0, g.Total)
-                .Where(h => terr.Contains(m.Terrenos[h]) && !m.Rio[h] && !iniciais.Contains(h) && castelos.All(c => g.Distancia(c, h) >= 4))
+                .Where(h => terr.Contains(m.Terrenos[h]) && !m.Rio[h] && !iniciais.Contains(h) && castelos.All(c => g.Distancia(c, h) >= gen.JazidaLonge))
                 .ToList();
             var mesmos = new List<int>();
             for (var k = 0; k < qtd && cand.Count > 0; k++)
@@ -179,9 +191,9 @@ public static class GeradorMapa
                 for (var t = 0; t < 24; t++)
                 {
                     var h = cand[rng.Int(0, cand.Count)];
-                    if (ocupados.Any(o => g.Distancia(o, h) < 2)) continue;
-                    var dm = mesmos.Count == 0 ? 99 : mesmos.Min(o => g.Distancia(o, h));
-                    var s = Math.Min(dm, 14) + rng.Real();
+                    if (ocupados.Any(o => g.Distancia(o, h) < gen.ObjLonge)) continue;
+                    var dm = mesmos.Count == 0 ? 999 : mesmos.Min(o => g.Distancia(o, h));
+                    var s = Math.Min(dm, gen.JazidaEspaco) + rng.Real();
                     if (s > nota) { nota = s; melhor = h; }
                 }
                 if (melhor < 0) continue;
@@ -191,16 +203,16 @@ public static class GeradorMapa
         }
         var ruinas = new List<int>();
         var candR = Enumerable.Range(0, g.Total)
-            .Where(h => !m.Rio[h] && !iniciais.Contains(h) && castelos.All(c => g.Distancia(c, h) >= 5)).ToList();
+            .Where(h => !m.Rio[h] && !iniciais.Contains(h) && castelos.All(c => g.Distancia(c, h) >= gen.RuinaLonge)).ToList();
         for (var k = 0; k < p.Reinos && candR.Count > 0; k++)
         {
             int melhor = -1; double nota = double.MinValue;
             for (var t = 0; t < 32; t++)
             {
                 var h = candR[rng.Int(0, candR.Count)];
-                if (ocupados.Any(o => g.Distancia(o, h) < 2)) continue;
-                var dm = ruinas.Count == 0 ? 99 : ruinas.Min(o => g.Distancia(o, h));
-                var s = Math.Min(dm, 12) + rng.Real();
+                if (ocupados.Any(o => g.Distancia(o, h) < gen.ObjLonge)) continue;
+                var dm = ruinas.Count == 0 ? 999 : ruinas.Min(o => g.Distancia(o, h));
+                var s = Math.Min(dm, gen.RuinaEspaco) + rng.Real();
                 if (s > nota) { nota = s; melhor = h; }
             }
             if (melhor < 0) continue;

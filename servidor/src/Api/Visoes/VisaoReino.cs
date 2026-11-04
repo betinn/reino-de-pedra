@@ -35,7 +35,7 @@ public static class VisaoReino
                 moradia = m.F.Receita(m.F.CustoMoradia(n)), moradiaSeg = m.F.TempoMoradia(n),
                 novoLocal = m.F.CustoNovoLocal(f), novoLocalSeg = m.P.TempoNovoLocal,
             },
-            ["fundaveis"] = Obras.Fundaveis.ToDictionary(kv => kv.Key, kv => new { tipo = kv.Value.tipo.Chave(), kv.Value.produz, terrenos = kv.Value.terrenos.Select(t => Jogo.Mapa.TerrenoExt.Chave(t)) }),
+            ["fundaveis"] = Obras.Fundaveis.ToDictionary(kv => kv.Key, kv => new { tipo = kv.Value.tipo.Chave(), kv.Value.produz, terrenos = kv.Value.terrenos.Select(t => Jogo.Mapa.TerrenoExt.Chave(t)), ocupa = Jogo.Mapa.Pegada.Tamanho(m, kv.Value.tipo) }),
         };
         foreach (var x in Extras) x(m, r, dados);
         return dados;

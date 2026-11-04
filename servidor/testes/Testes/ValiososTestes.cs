@@ -35,18 +35,18 @@ public class ValiososTestes
 
     private static void AvancarAte(MundoTeste t, long instante) => t.Avancar(TimeSpan.FromMilliseconds(Math.Max(0, instante - t.M.Agora)));
 
-    private static Jazida NovaJazida(MundoTeste t, Reino r, string recurso, double qtd, int dist = 3, bool descoberta = true)
+    private static Jazida NovaJazida(MundoTeste t, Reino r, string recurso, double qtd, int dist = 6, bool descoberta = true)
     {
         var j = t.M.Jazidas.Adicionar(new Jazida { Hex = HexLivre(t, r, dist), Recurso = recurso, Inicial = qtd, Restante = qtd });
         if (descoberta) j.DescobertaPor.Add(r.Id);
-        Nevoas.RevelarArea(t.M, r.Id, j.Hex, 1);
+        Nevoas.RevelarArea(t.M, r.Id, j.Hex, 2);
         return j;
     }
 
-    private static Ruina NovaRuina(MundoTeste t, Reino r, string tipo, int dist = 3)
+    private static Ruina NovaRuina(MundoTeste t, Reino r, string tipo, int dist = 6)
     {
         var ru = t.M.Ruinas.Adicionar(new Ruina { Hex = HexLivre(t, r, dist), TipoReliquia = tipo });
-        Nevoas.RevelarArea(t.M, r.Id, ru.Hex, 1);
+        Nevoas.RevelarArea(t.M, r.Id, ru.Hex, 2);
         return ru;
     }
 
@@ -196,7 +196,7 @@ public class ValiososTestes
         Assert.Equal(100, cv.Carga.Qtd("madeira"), 6);
         var ci = Castelo(t, inimigo);
         Guarnecer(t, inimigo, ci, "cavalaria", 20);
-        var ladrao = Exercitos.Enviar(t.M, inimigo, ci.Id, new Dictionary<string, int> { ["cavalaria"] = 20 }, HexLivre(t, inimigo, 1), OrdemMover.Id);
+        var ladrao = Exercitos.Enviar(t.M, inimigo, ci.Id, new Dictionary<string, int> { ["cavalaria"] = 20 }, HexLivre(t, inimigo, 2), OrdemMover.Id);
         cv.AoSerVencida(t.M, ladrao);
         Assert.Equal(100, ladrao.Carga.Qtd("madeira"), 6);   // 20 cavaleiros levam 200
         Assert.False(t.M.Marchas.ContemId(cv.Id));
@@ -482,7 +482,7 @@ public class ValiososTestes
         DarReliquia(t, r, c, "resistencia");
         DarReliquia(t, r, c, "resistencia");
         Guarnecer(t, r, c, "lanceiro", 2);
-        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 1 }, HexLivre(t, r, 1), OrdemMover.Id);
+        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 1 }, HexLivre(t, r, 2), OrdemMover.Id);
         Assert.Equal(t.M.P.Reliquia.Ataque, Jogo.Combate.Bonus.SomaAtaque(t.M, ex), 6);
         Assert.Equal(2 * t.M.P.Reliquia.Resistencia, Jogo.Combate.Bonus.SomaDefesa(t.M, c), 6);
         Assert.Equal(0, Jogo.Combate.Bonus.SomaDefesa(t.M, LocalDe(t, r, TipoLocal.Vila)), 6);
@@ -496,7 +496,7 @@ public class ValiososTestes
         var outro = t.NovoReino();
         var longe = t.NovoReino();
         var mina = LocalDe(t, dono, TipoLocal.Mina, "ferro");
-        Nevoas.RevelarArea(t.M, outro.Id, mina.Hex, 1);   // "outro" já explorou a área; "longe", não
+        Nevoas.RevelarArea(t.M, outro.Id, mina.Hex, 2);   // "outro" já explorou a área; "longe", não
         var vazio = new HashSet<int>();
         List<ReliquiaNoMapa> Ve(Reino r) => ReliquiasLendarias.NoMapa(t.M, r.Id, vazio).Where(x => x.LocalId == mina.Id).ToList();
         DarReliquia(t, dono, mina, "ataque");
@@ -570,7 +570,7 @@ public class ValiososTestes
         var ex = ReliquiasLendarias.Mover(t.M, r, rel.Id, c.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, LocalDe(t, r, TipoLocal.Vila).Id, false);
         var ci = Castelo(t, inimigo);
         Guarnecer(t, inimigo, ci, "cavalaria", 10);
-        var ladrao = Exercitos.Enviar(t.M, inimigo, ci.Id, new Dictionary<string, int> { ["cavalaria"] = 10 }, HexLivre(t, inimigo, 1), OrdemMover.Id);
+        var ladrao = Exercitos.Enviar(t.M, inimigo, ci.Id, new Dictionary<string, int> { ["cavalaria"] = 10 }, HexLivre(t, inimigo, 2), OrdemMover.Id);
         ex.AoSerVencida(t.M, ladrao);
         Assert.Contains(rel.Id, ladrao.Reliquias);
         Exercitos.DarOrdem(t.M, inimigo, ladrao.Id, OrdemRetornar.Id, null);
@@ -593,12 +593,12 @@ public class ValiososTestes
         int Achar(int distMin, int distMax) => t.M.G.Area(c.Hex, distMax).First(h => t.M.G.Distancia(h, c.Hex) >= distMin && Obras.HexLivre(t.M, h)
             && !t.M.Mapa.Rio[h] && t.M.Mapa.Terrenos[h] == Terreno.Planicie);
         var perto = Achar(1, t.M.P.LogisticaLongeHex);
-        Nevoas.RevelarArea(t.M, r.Id, perto, 0);
+        Nevoas.RevelarArea(t.M, r.Id, perto, 1);   // a pegada inteira do local
         Obras.Fundar(t.M, r, "vila", perto);
         t.AvancarHoras(3);
         Assert.False(Sistemas.Visto(r, Apresentacao.Logistica));
         var longe = Achar(t.M.P.LogisticaLongeHex + 1, t.M.P.LogisticaLongeHex + 4);
-        Nevoas.RevelarArea(t.M, r.Id, longe, 0);
+        Nevoas.RevelarArea(t.M, r.Id, longe, 1);
         Obras.Fundar(t.M, r, "vila", longe);
         t.AvancarHoras(3);
         Assert.True(Sistemas.Visto(r, Apresentacao.Logistica));

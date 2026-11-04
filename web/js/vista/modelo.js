@@ -66,6 +66,10 @@
       if (o.tipo === 'marcha') { d.marchas.push(o); return; }
       d.objs.push(o);
       if (o.hex != null && o.hex >= 0) (d.porHex[o.hex] = d.porHex[o.hex] || []).push(o);
+      /* construções ocupam vários hexágonos (o.ocupa): o toque em qualquer um deles acha o local; o desenho é um só, no centro */
+      (o.ocupa || []).forEach(function (h) { if (h !== o.hex) (d.porHex[h] = d.porHex[h] || []).push(o); });
+      /* construções ocupam vários hexágonos (o.ocupa): o toque em qualquer um deles acha o local; o desenho é um só, no centro */
+      (o.ocupa || []).forEach(function (h) { if (h !== o.hex) (d.porHex[h] = d.porHex[h] || []).push(o); });
     });
     d.recebidoEm = RP.agora();
     /* pessoas do reino: por hexágono (as que estão num local) e por id (as de marcha vão com a marcha) */

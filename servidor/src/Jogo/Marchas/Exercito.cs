@@ -152,6 +152,7 @@ public static class Exercitos
         if (l == null || l.ReinoId != r.Id) throw new RegraException("Local não é seu.", 404);
         if (l.Ruina) throw new RegraException("O local está em ruínas.");
         if (!m.G.Valido(destino)) throw new RegraException("Destino fora do mapa.");
+        destino = m.CentroDoLocal(destino);
         if (destino == l.Hex) throw new RegraException("As tropas já estão aqui.");
         var o = OrdemOuNulo(ordem);
         if (o == null || !o.NoEnvio) throw new RegraException("Ordem desconhecida.");
@@ -180,7 +181,8 @@ public static class Exercitos
         if (Bloqueio(m, ex) is { } motivo) throw new RegraException(motivo);
         if (ordem == OrdemRetornar.Id) { Retornar(m, ex, seguro); return; }
         var o = OrdemOuNulo(ordem) ?? throw new RegraException("Ordem desconhecida.");
-        if (destino is not int d || !m.G.Valido(d)) throw new RegraException("Escolha o destino.");
+        if (destino is not int d0 || !m.G.Valido(d0)) throw new RegraException("Escolha o destino.");
+        var d = m.CentroDoLocal(d0);
         var de = ex.HexEm(m.Agora);   // a nova rota sai de onde as tropas estão agora, não da origem
         if (d == de)
         {

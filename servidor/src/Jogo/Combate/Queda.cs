@@ -99,7 +99,7 @@ namespace ReinoDePedra.Jogo.Combate
             {
                 novo = outros.OrderByDescending(l => l.Nivel).ThenBy(l => l.Id).First();
                 var nivel = Math.Max(1, (int)Math.Floor(q.NivelAntigo * m.P.Queda.Nivel + 1e-9));
-                novo.Tipo = TipoLocal.Castelo; novo.Produz = null; novo.Nivel = nivel;
+                novo.Tipo = TipoLocal.Castelo; novo.Produz = null; novo.Nivel = nivel; m.Reindexar(novo);
                 novo.Nome = "Castelo de " + r.Nome;
                 novo.Estoque.Somar(restoCastelo);
                 m.Sujar(novo);
@@ -138,7 +138,7 @@ namespace ReinoDePedra.Jogo.Combate
         /// <summary>O castelo vira ruína sem dono: sem nível de castelo, sem portões nem moradias; pode ser ocupado ou reconstruído.</summary>
         private static void Arruinar(Mundo m, Local c)
         {
-            c.Ruina = true; c.Nivel = 1; c.Tipo = TipoLocal.Vila; c.Produz = "comida"; c.Nome = "Ruínas de castelo";
+            c.Ruina = true; c.Nivel = 1; c.Tipo = TipoLocal.Vila; c.Produz = "comida"; c.Nome = "Ruínas de castelo"; m.Reindexar(c);
             c.Portoes = 0; c.EstruturaPortoes = 0; c.Moradias = 0; c.Estoque = new();
             Pessoas.Pessoas.LimparGuarnicao(m, c);
             m.MudarDono(c, 0);
@@ -221,7 +221,7 @@ namespace ReinoDePedra.Jogo.Combate
             if (vagas.Count == 0)
             {
                 var perto = new HashSet<int>();
-                foreach (var l in m.Locais) foreach (var h in m.G.Area(l.Hex, 2)) perto.Add(h);
+                foreach (var l in m.Locais) foreach (var h in m.G.Area(l.Hex, m.P.Visao.Local)) perto.Add(h);
                 for (var h = 0; h < m.G.Total; h++)
                     if (!perto.Contains(h) && m.Mapa.Terrenos[h] is Mapa.Terreno.Planicie or Mapa.Terreno.Colina && PontoLivre(m, h)) vagas.Add((h, -1));
             }

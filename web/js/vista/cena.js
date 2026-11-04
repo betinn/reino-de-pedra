@@ -264,7 +264,8 @@
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.fillStyle = P.nevoa; c.fillRect(0, 0, V.pw, V.ph);
     if (!d) return;
-    var hexes = hexesNoRetangulo(r, 2), conhecidos = [], itens = [];
+    /* E: escala dos detalhes pelo tamanho do hexágono (a arte foi feita para R = 30; desde a decisão 0026, R = 15) */
+    var E = H.R / 30, hexes = hexesNoRetangulo(r, 4), conhecidos = [], itens = [];
     hexes.forEach(function (h) {
       var e = M.estado(h);
       if (e.v === 'desconhecido') return;
@@ -298,16 +299,16 @@
     conhecidos.forEach(function (x) {
       var pal = x.pal, i, px, py;
       if (x.t === 'planicie') {
-        for (i = 0; i < 7; i++) {
+        for (i = 0; i < 3; i++) {
           px = x.ce.x + (A.hash(x.c, x.l, 70 + i) - 0.5) * H.W * 0.9; py = x.ce.y + (A.hash(x.c, x.l, 80 + i) - 0.5) * H.R * 1.4;
           c.fillStyle = i % 3 ? pal.grama : pal.grama2; c.fillRect(px, py, 2.2, 2.2);
         }
-        if (A.hash(x.c, x.l, 90) > 0.6) for (i = 0; i < 4; i++) { c.fillStyle = [pal.flor1, pal.flor2, pal.flor3][i % 3]; c.fillRect(x.ce.x + (A.hash(x.c, x.l, 91 + i) - 0.5) * 30, x.ce.y + (A.hash(x.c, x.l, 95 + i) - 0.5) * 24, 1.6, 1.6); }
+        if (A.hash(x.c, x.l, 90) > 0.6) for (i = 0; i < 4; i++) { c.fillStyle = [pal.flor1, pal.flor2, pal.flor3][i % 3]; c.fillRect(x.ce.x + (A.hash(x.c, x.l, 91 + i) - 0.5) * 30 * E, x.ce.y + (A.hash(x.c, x.l, 95 + i) - 0.5) * 24 * E, 1.6, 1.6); }
       } else if (x.t === 'pantano') {
-        for (i = 0; i < 3; i++) {
-          px = x.ce.x + (A.hash(x.c, x.l, 100 + i) - 0.5) * 34; py = x.ce.y + (A.hash(x.c, x.l, 104 + i) - 0.5) * 28;
-          c.fillStyle = pal.poca; c.beginPath(); c.ellipse(px, py, 7 + i * 2, 5 + i, 0, 0, 6.2832); c.fill();
-          c.fillStyle = pal.pocaLuz; c.beginPath(); c.ellipse(px - 2, py - 1.5, 3, 1.4, 0, 0, 6.2832); c.fill();
+        for (i = 0; i < 2; i++) {
+          px = x.ce.x + (A.hash(x.c, x.l, 100 + i) - 0.5) * 34 * E; py = x.ce.y + (A.hash(x.c, x.l, 104 + i) - 0.5) * 28 * E;
+          c.fillStyle = pal.poca; c.beginPath(); c.ellipse(px, py, (7 + i * 2) * E * 1.4, (5 + i) * E * 1.4, 0, 0, 6.2832); c.fill();
+          c.fillStyle = pal.pocaLuz; c.beginPath(); c.ellipse(px - 2 * E, py - 1.5 * E, 3 * E * 1.4, 1.4 * E * 1.4, 0, 0, 6.2832); c.fill();
         }
       } else if (x.t === 'floresta') {
         c.fillStyle = pal.folhaSombra; c.globalAlpha = 0.35;
@@ -321,22 +322,22 @@
     }
     /* rios e estradas (só sobre o que é conhecido) */
     c.lineCap = 'round'; c.lineJoin = 'round';
-    c.strokeStyle = P.aguaMargem; c.lineWidth = 24; c.stroke(d.curvaRios);
-    c.strokeStyle = P.agua; c.lineWidth = 16; c.stroke(d.curvaRios);
-    c.strokeStyle = 'rgba(30,70,110,.35)'; c.lineWidth = 6; c.stroke(d.curvaRios);
-    c.strokeStyle = P.estradaBorda; c.lineWidth = 12; c.stroke(d.curvaRotas);
-    c.strokeStyle = P.estrada; c.lineWidth = 8.5; c.stroke(d.curvaRotas);
+    c.strokeStyle = P.aguaMargem; c.lineWidth = 24 * E * 1.2; c.stroke(d.curvaRios);
+    c.strokeStyle = P.agua; c.lineWidth = 16 * E * 1.2; c.stroke(d.curvaRios);
+    c.strokeStyle = 'rgba(30,70,110,.35)'; c.lineWidth = 6 * E * 1.2; c.stroke(d.curvaRios);
+    c.strokeStyle = P.estradaBorda; c.lineWidth = 12 * E * 1.2; c.stroke(d.curvaRotas);
+    c.strokeStyle = P.estrada; c.lineWidth = 8.5 * E * 1.2; c.stroke(d.curvaRotas);
     c.setLineDash([2, 7]); c.strokeStyle = 'rgba(90,70,40,.35)'; c.lineWidth = 1.2; c.stroke(d.curvaRotas); c.setLineDash([]);
     /* pontes (de madeira) e vaus (pedras), planos no chão */
     conhecidos.forEach(function (x) {
       if (!x.rio || !d.rotaH[x.h]) return;
       if (d.ponteH[x.h]) {
-        c.save(); c.translate(x.ce.x, x.ce.y); c.rotate(anguloRota(x.h));
+        c.save(); c.translate(x.ce.x, x.ce.y); c.rotate(anguloRota(x.h)); c.scale(E * 1.2, E * 1.2);
         c.fillStyle = P.madeiraEsc; c.fillRect(-20, -8, 40, 16); c.fillStyle = P.madeiraLuz; c.fillRect(-19, -6.5, 38, 13);
         c.strokeStyle = P.madeiraEsc; c.lineWidth = 0.8; for (var q = -16; q <= 16; q += 4) { c.beginPath(); c.moveTo(q, -6.5); c.lineTo(q, 6.5); c.stroke(); }
         c.restore();
       } else {
-        [[-12, 4], [-4, -2], [4, 3], [12, -3]].forEach(function (p) { c.fillStyle = '#8f897f'; c.beginPath(); c.ellipse(x.ce.x + p[0], x.ce.y + p[1], 4.5, 3.4, 0, 0, 6.2832); c.fill(); c.fillStyle = '#b8b2a8'; c.beginPath(); c.ellipse(x.ce.x + p[0] - 1, x.ce.y + p[1] - 1, 2.5, 1.6, 0, 0, 6.2832); c.fill(); });
+        [[-12, 4], [-4, -2], [4, 3], [12, -3]].forEach(function (p) { p = [p[0] * E, p[1] * E]; c.fillStyle = '#8f897f'; c.beginPath(); c.ellipse(x.ce.x + p[0], x.ce.y + p[1], 4.5, 3.4, 0, 0, 6.2832); c.fill(); c.fillStyle = '#b8b2a8'; c.beginPath(); c.ellipse(x.ce.x + p[0] - 1, x.ce.y + p[1] - 1, 2.5, 1.6, 0, 0, 6.2832); c.fill(); });
       }
     });
 
@@ -344,28 +345,28 @@
     conhecidos.forEach(function (x) {
       if (x.rio) return;
       var pal = x.pal, i, px, py, cheio = ocupado(x.h), rota = d.rotaH[x.h];
-      function livre(xx, yy) { return !cheio || Math.hypot(xx - x.ce.x, yy - x.ce.y) > 24; }
+      function livre(xx, yy) { return !cheio; }
       if (x.t === 'floresta') {
-        for (i = 0; i < 6; i++) {
+        for (i = 0; i < 2; i++) {
           px = x.ce.x + (A.hash(x.c, x.l, 110 + i) - 0.5) * H.W * 0.95; py = x.ce.y + (A.hash(x.c, x.l, 120 + i) - 0.5) * H.R * 1.5;
           if (!livre(px, py) || (rota && Math.abs(A.hash(x.c, x.l, 130 + i) - 0.5) < 0.2)) continue;
           itens.push({ y: py, x: px, f: A.hash(x.c, x.l, 140 + i) > 0.4 ? 'con' : 'fol', s: 0.85 + A.hash(x.c, x.l, 150 + i) * 0.45, alt: i & 1, pal: pal });
         }
       } else if (x.t === 'planicie') {
-        if (A.hash(x.c, x.l, 160) > 0.82) { px = x.ce.x + (A.hash(x.c, x.l, 161) - 0.5) * 30; py = x.ce.y + (A.hash(x.c, x.l, 162) - 0.5) * 24; if (livre(px, py)) itens.push({ y: py, x: px, f: 'fol', s: 0.9, pal: pal }); }
-        if (A.hash(x.c, x.l, 163) > 0.7) { px = x.ce.x + (A.hash(x.c, x.l, 164) - 0.5) * 34; py = x.ce.y + (A.hash(x.c, x.l, 165) - 0.5) * 26; if (livre(px, py)) itens.push({ y: py, x: px, f: 'arb', s: 1, pal: pal }); }
+        if (A.hash(x.c, x.l, 160) > 0.93) { px = x.ce.x + (A.hash(x.c, x.l, 161) - 0.5) * 30 * E; py = x.ce.y + (A.hash(x.c, x.l, 162) - 0.5) * 24 * E; if (livre(px, py)) itens.push({ y: py, x: px, f: 'fol', s: 0.9, pal: pal }); }
+        if (A.hash(x.c, x.l, 163) > 0.86) { px = x.ce.x + (A.hash(x.c, x.l, 164) - 0.5) * 34 * E; py = x.ce.y + (A.hash(x.c, x.l, 165) - 0.5) * 26 * E; if (livre(px, py)) itens.push({ y: py, x: px, f: 'arb', s: 1, pal: pal }); }
       } else if (x.t === 'colina') {
-        px = x.ce.x + (A.hash(x.c, x.l, 170) - 0.5) * 16; py = x.ce.y + (A.hash(x.c, x.l, 171) - 0.5) * 10;
-        if (livre(px, py)) itens.push({ y: py, x: px, f: 'mon', s: 1, pal: pal });
-        px = x.ce.x + (A.hash(x.c, x.l, 172) - 0.5) * 36; py = x.ce.y + 10 + A.hash(x.c, x.l, 173) * 8;
-        if (livre(px, py)) itens.push({ y: py, x: px, f: 'roc', s: 0.9, pal: pal });
+        px = x.ce.x + (A.hash(x.c, x.l, 170) - 0.5) * 16 * E; py = x.ce.y + (A.hash(x.c, x.l, 171) - 0.5) * 10 * E;
+        if (livre(px, py) && A.hash(x.c, x.l, 174) > 0.55) itens.push({ y: py, x: px, f: 'mon', s: 1, pal: pal });
+        px = x.ce.x + (A.hash(x.c, x.l, 172) - 0.5) * 36 * E; py = x.ce.y + (10 + A.hash(x.c, x.l, 173) * 8) * E;
+        if (livre(px, py) && A.hash(x.c, x.l, 175) > 0.6) itens.push({ y: py, x: px, f: 'roc', s: 0.7, pal: pal });
       } else if (x.t === 'montanha') {
-        if (!cheio) itens.push({ y: x.ce.y + 6, x: x.ce.x + (A.hash(x.c, x.l, 180) - 0.5) * 10, f: 'pic', s: 0.9 + A.hash(x.c, x.l, 181) * 0.35, pal: pal });
-        if (A.hash(x.c, x.l, 182) > 0.45) itens.push({ y: x.ce.y - 8, x: x.ce.x + 16, f: 'pic', s: 0.55, pal: pal });
-        itens.push({ y: x.ce.y + 16, x: x.ce.x - 14, f: 'roc', s: 0.8, pal: pal });
+        /* picos em parte dos hexágonos (com hexágonos pequenos, um pico em cada um viraria um paliteiro) */
+        if (!cheio && A.hash(x.c, x.l, 183) > 0.45) itens.push({ y: x.ce.y + 6 * E, x: x.ce.x + (A.hash(x.c, x.l, 180) - 0.5) * 10 * E, f: 'pic', s: 0.75 + A.hash(x.c, x.l, 181) * 0.45, pal: pal });
+        else if (!cheio) itens.push({ y: x.ce.y + 8 * E, x: x.ce.x - 6 * E, f: 'roc', s: 0.8, pal: pal });
       } else if (x.t === 'pantano') {
-        for (i = 0; i < 4; i++) { px = x.ce.x + (A.hash(x.c, x.l, 190 + i) - 0.5) * 40; py = x.ce.y + (A.hash(x.c, x.l, 195 + i) - 0.5) * 30; if (livre(px, py)) itens.push({ y: py, x: px, f: 'jun', s: 1, pal: pal }); }
-        if (A.hash(x.c, x.l, 199) > 0.7 && livre(x.ce.x + 8, x.ce.y + 4)) itens.push({ y: x.ce.y + 4, x: x.ce.x + 8, f: 'fol', s: 0.7, pal: pal });
+        for (i = 0; i < 2; i++) { px = x.ce.x + (A.hash(x.c, x.l, 190 + i) - 0.5) * 40 * E; py = x.ce.y + (A.hash(x.c, x.l, 195 + i) - 0.5) * 30 * E; if (livre(px, py)) itens.push({ y: py, x: px, f: 'jun', s: 1, pal: pal }); }
+        if (A.hash(x.c, x.l, 199) > 0.85 && livre(x.ce.x + 8 * E, x.ce.y + 4 * E)) itens.push({ y: x.ce.y + 4 * E, x: x.ce.x + 8 * E, f: 'fol', s: 0.7, pal: pal });
       }
     });
     /* bancos de névoa nos hexágonos desconhecidos */
@@ -380,8 +381,8 @@
       if (it.f === 'nev') {
         chao(c, V); c.fillStyle = P.nevoa; hexagono(c, it.x, it.y - H.R * 0.55, H.R + 3); c.fill();
         obj(c, V, it.x, it.y - H.R * 0.55);
-        for (var i = 0; i < 3; i++) {
-          var px = (A.hash(it.c, it.l, 200 + i) - 0.5) * 40, py = (A.hash(it.c, it.l, 210 + i) - 0.5) * 18 - 10, ps = 64 + A.hash(it.c, it.l, 220 + i) * 30;
+        for (var i = 0; i < 2; i++) {
+          var px = (A.hash(it.c, it.l, 200 + i) - 0.5) * 40 * E, py = ((A.hash(it.c, it.l, 210 + i) - 0.5) * 18 - 10) * E, ps = (64 + A.hash(it.c, it.l, 220 + i) * 30) * E * 1.15;
           c.drawImage(pf, px - ps / 2, py - ps / 2, ps, ps * 0.8);
         }
         return;
