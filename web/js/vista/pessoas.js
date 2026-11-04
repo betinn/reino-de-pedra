@@ -7,7 +7,7 @@
      ferida       sentada
    Com o zoom afastado, ou com mais de MAX_FIG pessoas no hexágono, vira uma pilha com contador. Pessoas de outros
    reinos à vista (`pessoasOutras`, só contagens) aparecem em roupa crua, sem nome. Cada figura é um alvo de toque
-   (ent ['pessoa', id]); a pilha, ['pessoas', hex]. A seleção (RP.selecao) ganha um anel no chão. */
+   (ent ['pessoa', id]); a pilha, ['pessoas', hex]. Quem está selecionado (RP.selecao) ganha um círculo azul em volta dos pés. */
 (function () {
   'use strict';
   var RP = window.RP, H = RP.hex, A = RP.arte, M = RP.mapaModelo;
@@ -97,9 +97,14 @@
     c.fillStyle = f > 0.6 ? Cs.sucesso : f > 0.3 ? Cs.alerta : Cs.perigo; c.fillRect(-w / 2, yy, w * f, 2);
   }
 
-  function anel(c, cor) {
-    var a0 = c.globalAlpha; c.strokeStyle = cor; c.lineWidth = 1.6; c.globalAlpha = a0 * 0.9;
-    c.beginPath(); c.ellipse(0, 0.8, 8, 8 * A.K * 0.55, 0, 0, 6.2832); c.stroke(); c.globalAlpha = a0;
+  /* círculo azul em volta dos pés de quem está selecionado: deitado no chão, com borda clara para aparecer em qualquer
+     terreno, e pulsando de leve. Quem monta tem um círculo maior. */
+  function anel(c, p, t) {
+    var r = (/cavalaria|elite|cavalo/.test(p.oficio) ? 15 : 10) * (1 + Math.sin(t * 5) * 0.06), a0 = c.globalAlpha, cor = A.cores().selecaoPes;
+    c.beginPath(); c.ellipse(0, 0.6, r, r * A.K, 0, 0, 6.2832);
+    c.fillStyle = cor; c.globalAlpha = a0 * 0.3; c.fill();
+    c.globalAlpha = a0; c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 3.6; c.stroke();
+    c.strokeStyle = cor; c.lineWidth = 2.4; c.stroke();
   }
 
   var V = RP.pessoasVista = {
@@ -115,14 +120,16 @@
         if (!lista.length || !q.naTela(ce.x, ce.y)) return;
         var pilha = s < ZOOM_PILHA || lista.length > MAX_FIG;
         if (pilha) {
-          var mostra = lista.slice(0, 3), ns = lista.filter(ehSoldado).length, nc = lista.length - ns;
+          /* na pilha, quem está selecionado vem na frente, para o círculo aparecer */
+          var marcados = sel ? lista.filter(function (p) { return sel.tem(p.id); }) : [];
+          var mostra = marcados.concat(lista.filter(function (p) { return marcados.indexOf(p) < 0; })).slice(0, 3), ns = lista.filter(ehSoldado).length, nc = lista.length - ns;
           mostra.forEach(function (p, i) {
             var x = ce.x - 6 + i * 6, y = ce.y + 22 + (i % 2) * 2;
-            q.itens.push({ y: y, x: x, silhueta: true, d: function () { q.obj(x, y); figura(c, p, q.t, 1, q.cor, false); } });
+            q.itens.push({ y: y, x: x, silhueta: true, d: function () { q.obj(x, y); if (sel && sel.tem(p.id)) anel(c, p, q.t); figura(c, p, q.t, 1, q.cor, false); } });
           });
           var txt = (nc ? nc + (nc === 1 ? ' pessoa' : ' pessoas') : '') + (nc && ns ? ' · ' : '') + (ns ? ns + (ns === 1 ? ' soldado' : ' soldados') : '');
           var selN = sel ? lista.filter(function (p) { return sel.tem(p.id); }).length : 0;
-          q.rot(ce.x, ce.y + 22, 10, (selN ? selN + ' sel · ' : '') + txt, selN ? 'selecao' : 'marcha', selN ? Cs.selecao : Cs.meu);
+          q.rot(ce.x, ce.y + 22, selN ? 22 : 10, (selN ? selN + ' sel · ' : '') + txt, selN ? 'selecao' : 'marcha', selN ? Cs.selecao : Cs.meu);
           q.itens.push({ y: ce.y + 22, d: function () {}, alvo: q.alvo(ce.x, ce.y + 24, 40, 24, ['pessoas', h], { hex: h }) });
           lista.forEach(function (p) { var tp = q.cena.tela(ce.x, ce.y + 22); ultimos.push({ id: p.id, x: tp.x, y: tp.y, hex: h }); });
           return;
@@ -132,7 +139,7 @@
           var pp = pos[p.id], dir = (p.id + i) % 3 === 0 ? -1 : 1, selecionada = sel && sel.tem(p.id);
           q.itens.push({ y: pp.y, x: pp.x, silhueta: true, som: somDe(p), d: function () {
             q.obj(pp.x, pp.y);
-            if (selecionada) anel(c, Cs.selecao);
+            if (selecionada) anel(c, p, q.t);
             figura(c, p, q.t, dir, q.cor, false);
             barraVida(c, p);
           }, alvo: q.alvo(pp.x, pp.y, 14, 28, ['pessoa', p.id], p) });
@@ -156,6 +163,8 @@
     },
     ehSoldado: ehSoldado,
     ehExplorador: ehExplorador,
+    /* círculo azul de quem está selecionado, nos pés da figura: anel(c, pessoa, t) */
+    anel: anel,
     /* figura de uma pessoa fora dos locais (marchas): figura(c, pessoa, t, dir, cor, cru, extra) */
     figura: figura,
     /* barra de vida sobre a figura (só de quem está ferido) e a vida de agora de uma pessoa do mapa */

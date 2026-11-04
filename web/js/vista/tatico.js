@@ -138,11 +138,23 @@
     this.animarPara({ x: this.cam.x, y: this.cam.y, s: Math.max(SMIN, Math.min(SMAX, ns)) }, 220);
   };
   TP.ligarGestos = function () {
-    var self = this, p0 = null;
+    var self = this, p0 = null, tracando = false, ponto = null, toque = null;
+    function tracar(p) { var w = self.mundo(p.x, p.y), h = H.pixelParaHex(w.x, w.y); if (h >= 0) self.opt.aoTracar(h); }
+    this.el.addEventListener('pointerdown', function (e) { var r = self.el.getBoundingClientRect(); toque = { x: e.clientX - r.left, y: e.clientY - r.top }; });
     RP.gestos(this.el, {
-      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; },
-      inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; },
-      arrasto: function (dx, dy) { self.cam.x -= dx / self.cam.s; self.cam.y -= dy / self.cam.s; self.mudou(); },
+      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; tracando = !!(self.opt.desenhando && self.opt.desenhando()); ponto = null; },
+      inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; if (tracando) { tracando = false; self.opt.aoTracarFim(); } },
+      arrasto: function (dx, dy) {
+        /* desenhando a linha de uma patrulha: arrastar risca hexágono a hexágono */
+        if (tracando) {
+          if (!ponto) { ponto = toque || { x: self.w / 2, y: self.h / 2 }; tracar(ponto); }
+          ponto = { x: ponto.x + dx, y: ponto.y + dy };
+          tracar(ponto);
+          self.pedirQuadro();
+          return;
+        }
+        self.cam.x -= dx / self.cam.s; self.cam.y -= dy / self.cam.s; self.mudou();
+      },
       pinca: function (f, mx, my, mx0, my0) {
         var wx = (mx0 - self.w / 2) / p0.s + p0.x, wy = (my0 - self.h / 2) / p0.s + p0.y, ns = Math.max(SMIN, Math.min(SMAX, p0.s * f));
         self.cam = { s: ns, x: wx - (mx - self.w / 2) / ns, y: wy - (my - self.h / 2) / ns };
@@ -154,7 +166,7 @@
         self.mudou();
       },
       toque: function (x, y, cx, cy) { self.tocar(x, y, cx, cy); },
-      fim: function () { self.gesto = false; self.ultimaMudanca = performance.now(); self.pedirQuadro(); }
+      fim: function () { self.gesto = false; self.ultimaMudanca = performance.now(); self.pedirQuadro(); if (tracando) { tracando = false; self.opt.aoTracarFim(); } }
     });
   };
   TP.tocar = function (x, y, cx, cy) {
