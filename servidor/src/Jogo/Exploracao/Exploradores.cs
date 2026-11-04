@@ -13,8 +13,9 @@ namespace ReinoDePedra.Jogo.Exploracao
 {
     /// <summary>
     /// Explorador em campo (a pé, a cavalo, prospector ou batedor de elite), com escolta opcional em <see cref="Marcha.Tropas"/>.
-    /// Cada perna da ordem é uma marcha com evento de chegada: explorar (vai e volta), seguir rota (pontos), patrulhar
-    /// (ida e volta até nova ordem), espionar (batedor, fica no local) e retornar. Ocupa 1 de população (+ a escolta).
+    /// Cada perna da ordem é uma marcha com evento de chegada: explorar (vai e fica no destino esperando nova ordem), seguir
+    /// rota (pontos; no fim espera, ou recomeça se for circuito), patrulhar (ida e volta até nova ordem), espionar (batedor,
+    /// fica no local) e retornar. Parado ("aguardar"), mantém a área à vista. Ocupa 1 de população (+ a escolta).
     /// Não é interceptável; o batedor é furtivo (outros reinos não o veem no mapa).
     /// </summary>
     public sealed class Explorador : Marcha
@@ -30,6 +31,8 @@ namespace ReinoDePedra.Jogo.Exploracao
         /// <summary>Pontos da ordem "rota", em ordem; <see cref="Ponto"/> é o índice do ponto para onde está indo.</summary>
         public List<int> Pontos { get; set; } = new();
         public int Ponto { get; set; }
+        /// <summary>Rota em circuito: ao chegar ao último ponto, recomeça do primeiro, até nova ordem.</summary>
+        public bool Circuito { get; set; }
         /// <summary>Patrulha: indo para o alvo (true) ou voltando ao ponto de partida (false).</summary>
         public bool Ida { get; set; } = true;
         /// <summary>De onde saiu e onde mora (o castelo).</summary>
@@ -86,7 +89,7 @@ namespace ReinoDePedra.Jogo.Exploracao
     [Sistema]
     public static class Exploradores
     {
-        public const string Explorar = "explorar", SeguirRota = "rota", Patrulhar = "patrulhar", Espionar = "espionar", Retornar = "retornar";
+        public const string Explorar = "explorar", SeguirRota = "rota", Patrulhar = "patrulhar", Espionar = "espionar", Retornar = "retornar", Aguardar = "aguardar";
         public const string Pe = "pe", Cavalo = "cavalo", Prospector = "prospector", Batedor = "batedor";
         public static readonly string[] Ordens = [Explorar, SeguirRota, Patrulhar, Espionar];
 
@@ -181,7 +184,7 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         /// <summary>Manda um explorador livre do castelo com uma ordem. Escolta opcional, tirada da guarnição do castelo.</summary>
         public static Explorador Enviar(Mundo m, Reino r, string tipo, string ordem, int? destino, IReadOnlyList<int>? pontos = null,
-            bool seguro = false, IReadOnlyDictionary<string, int>? escolta = null)
+            bool seguro = false, IReadOnlyDictionary<string, int>? escolta = null, bool circuito = false)
         {
             Tipo(m, tipo);
             var casa = m.Locais.Obter(r.CasteloId);
@@ -193,7 +196,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             if (grupo.Count > 0) grupo = GT.Validar(m, casa, grupo);
             var e = new Explorador
             {
-                ReinoId = r.Id, TipoExp = tipo, CasaLocalId = casa.Id, Base = casa.Hex, Seguro = seguro, Tropas = grupo,
+                ReinoId = r.Id, TipoExp = tipo, CasaLocalId = casa.Id, Base = casa.Hex, Seguro = seguro, Tropas = grupo, Circuito = circuito,
             };
             e.Vel = Velocidade(m, tipo, grupo);
             var primeiro = Preparar(m, r, e, ordem, destino, pontos, casa.Hex);
@@ -244,10 +247,11 @@ namespace ReinoDePedra.Jogo.Exploracao
             m.Marchas.Obter(marchaId) is Explorador e && e.ReinoId == r.Id ? e : throw new RegraException("Explorador não encontrado.", 404);
 
         /// <summary>Nova ordem a um explorador em campo (andando, patrulhando ou espionando).</summary>
-        public static void DarOrdem(Mundo m, Reino r, long marchaId, string ordem, int? destino, IReadOnlyList<int>? pontos = null, bool? seguro = null)
+        public static void DarOrdem(Mundo m, Reino r, long marchaId, string ordem, int? destino, IReadOnlyList<int>? pontos = null, bool? seguro = null, bool circuito = false)
         {
             var e = Do(m, r, marchaId);
             if (seguro != null) e.Seguro = seguro.Value;
+            e.Circuito = circuito && ordem == SeguirRota;
             if (ordem == Retornar) { PararEspionagem(m, e); IrParaCasa(m, e); return; }
             var de = e.HexEm(m.Agora);
             var antes = (e.Ordem, e.Alvo, e.Pontos, e.Ponto, e.Ida);
@@ -285,8 +289,9 @@ namespace ReinoDePedra.Jogo.Exploracao
             {
                 case SeguirRota:
                     e.Ponto++;
+                    if (e.Ponto >= e.Pontos.Count && e.Circuito && e.Pontos.Count > 1) e.Ponto = 0;   // circuito: recomeça
                     if (e.Ponto < e.Pontos.Count && TentarIr(m, e, e.Pontos[e.Ponto])) return;
-                    IrParaCasa(m, e);
+                    Esperar(m, e);
                     return;
                 case Patrulhar:
                     e.Ida = !e.Ida;
@@ -296,10 +301,30 @@ namespace ReinoDePedra.Jogo.Exploracao
                 case Espionar:
                     Espionagem.Comecar(m, e);
                     return;
+                case Aguardar:
+                    Esperar(m, e);
+                    return;
                 default:
-                    IrParaCasa(m, e);
+                    Esperar(m, e);
                     return;
             }
+        }
+
+        /// <summary>
+        /// O explorador fica onde está, à espera de nova ordem (explorar outro lugar, seguir rota, patrulhar ou voltar): não
+        /// volta sozinho ao castelo. Parado, continua vendo a área em volta (a visão de toda marcha é a do hexágono onde ela está).
+        /// </summary>
+        public static void Esperar(Mundo m, Explorador e)
+        {
+            var h = e.HexEm(m.Agora);
+            m.Cancelar(e.EventoId);
+            e.EventoId = null;
+            e.Caminho = [h]; e.Tempos = [m.Agora]; e.Origem = e.Destino = h;
+            e.Retornando = false; e.Ordem = Aguardar;
+            m.Sujar(e);
+            Registros.Notificar(m, e.ReinoId, "exploracao", e.NomeTipo(m) + " no destino",
+                "Espera nova ordem no hexágono " + m.G.C(h) + ", " + m.G.L(h) + ".", "mapa?foco=" + h);
+            m.Avisar(e.ReinoId, "marchas");
         }
 
         private static bool TentarIr(Mundo m, Explorador e, int para)

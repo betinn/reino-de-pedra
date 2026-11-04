@@ -48,6 +48,12 @@ const P = {
   /* servidor: raio de visão (hexágonos) do castelo, dos locais e de marchas sem tropa (carregadores, caravana sem escolta);
      um exército enxerga com a maior U.visao do grupo e revela a névoa por onde passa e onde fica. Avistamentos somem depois de 10 h */
   visao: { castelo: 6, local: 4, tropa: 2 }, avistamentoH: 10,
+  /* servidor: a névoa se abre ao vivo enquanto a marcha anda: um evento a cada revelacaoSeg segundos de jogo nos trechos que
+     entram em névoa nunca vista (a 6×, menos de 2 s reais), e o cliente busca o mapa a cada aviso. Ver docs/decisoes/0026 */
+  revelacaoSeg: 10,
+  /* servidor: patrulha de tropas em volta de um lugar: circuito de `pontos` pontos num anel de `raio` hexágonos (o raio da visão
+     do castelo), até nova ordem */
+  patrulha: { raio: 6, pontos: 6 },
   /* servidor: tamanho aproximado de uma força vista ("poucas" abaixo de poucas; depois, arredondado ao passo) */
   aproximado: { poucas: 4, passo: 5 },
   /* novos locais: custo e quando o jogador funda (médio) */

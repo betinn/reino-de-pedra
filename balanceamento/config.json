@@ -74,6 +74,11 @@
    "tropa": 2
   },
   "avistamentoH": 10,
+  "revelacaoSeg": 10,
+  "patrulha": {
+   "raio": 6,
+   "pontos": 6
+  },
   "aproximado": {
    "poucas": 4,
    "passo": 5

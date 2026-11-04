@@ -21,6 +21,8 @@ public interface IOrdemExercito
     void Validar(Mundo m, Reino r, Exercito ex, int destino) { }
     /// <summary>Chegou ao fim do caminho. Para ficar no mapa, chame <c>ex.Parar(m)</c>; para entrar num local, <c>ex.EntrarNoLocal(m, l)</c>.</summary>
     void Chegou(Mundo m, Exercito ex);
+    /// <summary>Primeiro hexágono a alcançar, depois de <see cref="Validar"/> (a patrulha vai ao ponto do anel mais perto, não ao centro).</summary>
+    int Primeiro(Mundo m, Exercito ex, int destino, int de) => destino;
 }
 
 /// <summary>
@@ -153,9 +155,9 @@ public static class Exercitos
         if (l.Ruina) throw new RegraException("O local está em ruínas.");
         if (!m.G.Valido(destino)) throw new RegraException("Destino fora do mapa.");
         destino = m.CentroDoLocal(destino);
-        if (destino == l.Hex) throw new RegraException("As tropas já estão aqui.");
         var o = OrdemOuNulo(ordem);
         if (o == null || !o.NoEnvio) throw new RegraException("Ordem desconhecida.");
+        if (destino == l.Hex && o.Ordem != OrdemPatrulhar.Id) throw new RegraException("As tropas já estão aqui.");
         var grupo = GT.Validar(m, l, tropas);
         var ex = new Exercito
         {
@@ -163,6 +165,8 @@ public static class Exercitos
             Seguro = seguro, Dados = dados ?? new(), AlvoLocalId = m.LocalNoHex(destino)?.Id,
         };
         o.Validar(m, r, ex, destino);
+        destino = o.Primeiro(m, ex, destino, l.Hex);
+        if (destino == l.Hex) throw new RegraException("As tropas já estão aqui.");
         var rota = Rota(m, ex, l.Hex, destino);
         Economia.Atualizar(m, r);
         GT.Retirar(m, l, grupo);
@@ -184,7 +188,7 @@ public static class Exercitos
         if (destino is not int d0 || !m.G.Valido(d0)) throw new RegraException("Escolha o destino.");
         var d = m.CentroDoLocal(d0);
         var de = ex.HexEm(m.Agora);   // a nova rota sai de onde as tropas estão agora, não da origem
-        if (d == de)
+        if (d == de && o.Ordem != OrdemPatrulhar.Id)
         {
             // "mover" para o próprio hexágono é "parar aqui" (andando, caçando ou trabalhando); outra ordem não tem o que fazer
             if (o.Ordem != OrdemMover.Id) throw new RegraException("As tropas já estão aqui.");
@@ -195,9 +199,10 @@ public static class Exercitos
         var antes = (ex.Ordem, ex.AlvoLocalId, ex.Dados, ex.Seguro);
         ex.Ordem = o.Ordem; ex.AlvoLocalId = m.LocalNoHex(d)?.Id;
         if (dados != null) ex.Dados = dados;
+        else if (o.Ordem is OrdemPercorrer.Id or OrdemPatrulhar.Id) ex.Dados = new();   // percurso novo, sem os pontos da ordem de antes
         if (seguro != null) ex.Seguro = seguro.Value;
         Rota rota;
-        try { o.Validar(m, r, ex, d); rota = Rota(m, ex, de, d); }
+        try { o.Validar(m, r, ex, d); d = o.Primeiro(m, ex, d, de); if (d == de) throw new RegraException("As tropas já estão aqui."); rota = Rota(m, ex, de, d); }
         catch { (ex.Ordem, ex.AlvoLocalId, ex.Dados, ex.Seguro) = antes; throw; }
         ex.Retornando = false;
         ex.Partir(m, rota);

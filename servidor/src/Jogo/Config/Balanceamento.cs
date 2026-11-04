@@ -103,6 +103,9 @@ public sealed class ParametrosP
     public MapaP Mapa { get; init; } = new();
     /// <summary>Distância típica (hexágonos) até o castelo do reino vizinho, para prévias e metas.</summary>
     public int VizinhoHex { get; init; }
+    /// <summary>Intervalo (segundos de jogo) entre as revelações ao vivo da névoa de uma marcha.</summary>
+    public double RevelacaoSeg { get; init; } = 60;
+    public PatrulhaP Patrulha { get; init; } = new();
     /// <summary>Hexágonos que cada tipo de construção ocupa (7, 3 ou 1), pela chave do tipo de local.</summary>
     public Dictionary<string, int> Ocupa { get; init; } = new();
     /// <summary>Escalas da geração do mapa, em hexágonos.</summary>
@@ -335,6 +338,7 @@ public sealed class VagasP { public double PorNivel { get; init; } public int Mi
 public sealed class AproximadoP { public int Poucas { get; init; } public int Passo { get; init; } }
 public sealed class VisaoP { public int Castelo { get; init; } public int Local { get; init; } public int Tropa { get; init; } }
 public sealed class MapaP { public int Cols { get; init; } public int Lins { get; init; } }
+public sealed class PatrulhaP { public int Raio { get; init; } = 6; public int Pontos { get; init; } = 6; }
 public sealed class MapaGenP
 {
     public double Relevo { get; init; } public double Umidade { get; init; } public int HexPorRio { get; init; } public int RioLonge { get; init; }

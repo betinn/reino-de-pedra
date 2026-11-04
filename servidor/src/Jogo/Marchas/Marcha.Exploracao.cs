@@ -76,7 +76,7 @@ public abstract partial class Marcha
     }
 
     /// <summary>
-    /// Agenda a revelação ao vivo do caminho novo: um evento em cada trecho que entra em névoa nunca vista (no máximo um por
+    /// Agenda a revelação ao vivo do caminho novo: um evento em cada trecho que entra em névoa nunca vista (no máximo um a cada
     /// minuto) e um logo antes da chegada. Entre os eventos, o que a marcha já viu entra na névoa quando o reino consulta o mapa
     /// (<see cref="Nevoas.VisiveisAgora"/>). Os eventos vão para <see cref="EventosCaminho"/> (cancelados se o caminho mudar).
     /// </summary>
@@ -86,9 +86,10 @@ public abstract partial class Marcha
         var nevoa = Nevoas.De(m, ReinoId);
         var raio = RaioVisao(m);
         long? ultimo = null;
+        var intervalo = (long)Math.Max(1000, m.P.RevelacaoSeg * 1000);   // P.revelacaoSeg: a névoa se abre quase ao vivo
         for (var i = 1; i < Caminho.Count - 1; i++)
         {
-            if ((ultimo != null && Tempos[i] - ultimo.Value < T.Min) || Tempos[i] >= Chegada - 1) continue;
+            if ((ultimo != null && Tempos[i] - ultimo.Value < intervalo) || Tempos[i] >= Chegada - 1) continue;
             if (!m.G.Area(Caminho[i], raio).Any(x => nevoa.MinutoVisto(x) == 0)) continue;
             ultimo = Tempos[i];
             EventosCaminho.Add(m.Agendar(new RevelarCaminhoEvento { MarchaId = Id, Partida = Partida, Quando = Tempos[i] }).Id);

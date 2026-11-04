@@ -144,6 +144,8 @@ public class SoldadosTestes
         Assert.Equal(Estados.Marchando, pessoa.Estado);
         Assert.False(r.ExploradoresLivres.ContainsKey("pe"));
         Assert.Throws<RegraException>(() => Exploradores.Enviar(t.M, r, "pe", Exploradores.Explorar, HexLivrePerto(t, c)));
+        t.AvancarHoras(1);
+        Exploradores.DarOrdem(t.M, r, e.Id, Exploradores.Retornar, null);   // espera no destino até mandarem voltar
         t.AvancarHoras(3);
         Assert.False(t.M.Marchas.ContemId(e.Id));
         Assert.Equal(Estados.Guarnecida, pessoa.Estado);

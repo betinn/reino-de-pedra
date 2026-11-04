@@ -20,7 +20,8 @@
   };
   var ORDENS = {
     explorar: { nome: 'Explorar área', txt: 'Vai até o destino revelando o caminho e volta ao castelo.' },
-    rota: { nome: 'Seguir rota', txt: 'Passa pelos pontos, em ordem, e volta ao castelo.' },
+    rota: { nome: 'Seguir rota', txt: 'Passa pelos pontos, em ordem, e espera no último. Em circuito, recomeça do primeiro até nova ordem.' },
+    aguardar: { nome: 'Esperando ordens', txt: 'Chegou ao destino e espera: mande explorar outro lugar, seguir rota, patrulhar ou voltar.' },
     patrulhar: { nome: 'Patrulhar', txt: 'Vai e volta entre o ponto de partida e o destino até nova ordem, mantendo a área à vista.' },
     espionar: { nome: 'Espionar', txt: 'Fica alguns minutos no local de outro reino e traz dono, defesa, estoque e relíquias.' },
     retornar: { nome: 'Retornar', txt: 'Volta ao castelo.' }
@@ -87,7 +88,7 @@
   document.addEventListener('rp:tela', function (ev) { if (ev.detail !== 'mapa' && ev.detail !== 'exploradores') escolhendo = null; });
 
   /* ---------------------------------------------------------------- estado do formulário */
-  var ex = { tipo: 'cavalo', ordem: 'explorar', alvo: null, pontos: [], seguro: false, comEscolta: false, escolta: {}, previa: null, ativo: null, chave: '' };
+  var ex = { tipo: 'cavalo', ordem: 'explorar', alvo: null, pontos: [], circuito: false, seguro: false, comEscolta: false, escolta: {}, previa: null, ativo: null, chave: '' };
 
   function tiposVisiveis(d) { return d.tipos.filter(function (t) { return t.id !== 'batedor' || RP.sistema('espionagem'); }); }
   function destinoAtual() { return ex.ordem === 'rota' ? ex.pontos[0] : ex.alvo; }
@@ -109,9 +110,10 @@
     if (!d.exploradores.length) return '';
     return '<div class="secao-titulo" style="margin-top:0">Em campo</div><div class="pilha">' + d.exploradores.map(function (e) {
       var est = e.estado === 'espionando' ? 'espionando · termina em <b class="num" data-fim="' + e.espionandoAte + '">' + RP.fmtResta(e.espionandoAte - RP.agora()) + '</b>'
+        : e.estado === 'parado' ? '<b>no destino, esperando ordens</b>'
         : (e.estado === 'retornando' ? 'volta' : 'chega') + ' em <b class="num" data-fim="' + e.chegada + '">' + RP.fmtResta(e.chegada - RP.agora()) + '</b>';
       return '<div class="card emcampo exp-ativo' + (ex.ativo === e.id ? ' foco' : '') + '"><span class="ico-placa dono-meu">' + RP.icone(RP.ICONE_EXPLORADOR[e.tipoExp] || 'explorador') + '</span>' +
-        '<span class="emcampo-corpo"><b>' + RP.esc(e.nome) + '</b><small class="fraco">' + RP.esc((ORDENS[e.ordem] || {}).nome || e.ordem) + ' · ' + (e.ordem === 'rota' ? e.pontos.length + ' pontos' : 'destino ' + e.alvoC + ', ' + e.alvoL) +
+        '<span class="emcampo-corpo"><b>' + RP.esc(e.nome) + '</b><small class="fraco">' + RP.esc((ORDENS[e.ordem] || {}).nome || e.ordem) + ' · ' + (e.ordem === 'rota' ? e.pontos.length + ' pontos' + (e.circuito ? ' em circuito' : '') : 'destino ' + e.alvoC + ', ' + e.alvoL) +
         (RP.somaGrupo(e.escolta) ? ' · escolta: ' + RP.esc(RP.partesGrupo(e.escolta)) : '') + '</small><small class="fraco">' + est + '</small>' +
         '<span class="exercito-acoes">' + (e.estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exp-voltar="' + e.id + '">' + RP.icone('voltar') + 'Voltar</button>' : '') +
         '<button type="button" class="btn btn-p" data-exp-nova="' + e.id + '">' + RP.icone('seta') + 'Nova ordem</button>' +
@@ -164,7 +166,9 @@
       return '<div class="card pilha destino-card">' + (ex.pontos.length ? ex.pontos.map(function (h, i) {
         return '<div class="linha-entre"><span class="linha"><span class="obj-n">' + (i + 1) + '</span>' + RP.esc(nome(h)) + '</span><button type="button" class="btn btn-icone btn-fantasma" data-exp-tirar="' + i + '" aria-label="Tirar o ponto ' + (i + 1) + '">' + RP.icone('fechar') + '</button></div>';
       }).join('') : '<p class="fraco">Nenhum ponto ainda.</p>') +
-        '<button type="button" class="btn btn-p" data-exp-escolher="ponto">' + RP.icone('mais') + 'Adicionar ponto no mapa</button></div>';
+        '<button type="button" class="btn btn-p" data-exp-escolher="ponto">' + RP.icone('mais') + 'Adicionar ponto no mapa</button>' +
+        (ex.pontos.length > 1 ? '<button type="button" class="btn btn-p btn-fantasma" data-exp-circuito aria-pressed="' + !!ex.circuito + '">' + RP.icone('seta') +
+          (ex.circuito ? 'Em circuito: recomeça do primeiro ponto' : 'Uma vez só: espera no último ponto') + '</button>' : '') + '</div>';
     }
     if (ex.alvo == null) return '<div class="card linha destino-card"><span class="ico-placa">' + RP.icone('alvo') + '</span><div style="flex:1"><b>Sem destino</b><br><small class="fraco">Toque num hexágono do mapa.</small></div><button type="button" class="btn btn-p" data-exp-escolher="destino">' + RP.icone('mapa') + 'Escolher</button></div>';
     var idade = dm && dm.idade ? dm.idade[ex.alvo] : null;
@@ -245,7 +249,7 @@
     if (destinoAtual() == null) { RP.aviso({ titulo: 'Escolha o destino', icone: 'alvo', tipo: 'alerta' }); return; }
     if (!ativo && (!tipo || !tipo.livres)) { RP.aviso({ titulo: 'Nenhum ' + (tipo ? tipo.nome.toLowerCase() : 'explorador') + ' livre', texto: 'Treine um novo ou espere um voltar.', icone: 'explorador', tipo: 'alerta' }); return; }
     if (!p || !p.curta || !p.curta.ok) return;
-    var corpo = { ordem: ex.ordem, destinoHex: ex.ordem === 'rota' ? null : ex.alvo, pontos: ex.ordem === 'rota' ? ex.pontos : null, seguro: !!ex.seguro };
+    var corpo = { ordem: ex.ordem, destinoHex: ex.ordem === 'rota' ? null : ex.alvo, pontos: ex.ordem === 'rota' ? ex.pontos : null, circuito: ex.ordem === 'rota' && !!ex.circuito, seguro: !!ex.seguro };
     var req = ativo ? RP.post('/exploradores/' + ativo.id + '/ordem', corpo)
       : RP.post('/exploradores/enviar', Object.assign({ tipo: ex.tipo, escolta: ex.comEscolta ? ex.escolta : null }, corpo));
     RP.tentar(req).then(function (e) {
@@ -270,13 +274,14 @@
         if ((b = e.target.closest('[data-exp-caminho]'))) { ex.seguro = b.getAttribute('data-exp-caminho') === 'segura'; desenhar(el); return; }
         if ((b = e.target.closest('[data-exp-escolher]'))) { escolherNoMapa(b.getAttribute('data-exp-escolher')); return; }
         if ((b = e.target.closest('[data-exp-tirar]'))) { ex.pontos.splice(+b.getAttribute('data-exp-tirar'), 1); desenhar(el); return; }
+        if (e.target.closest('[data-exp-circuito]')) { ex.circuito = !ex.circuito; desenhar(el); return; }
         if (e.target.closest('[data-exp-escolta]')) { ex.comEscolta = !ex.comEscolta; desenhar(el); return; }
         if (e.target.closest('[data-exp-grupo]') && RP.exploracao.dados && RP.grupoTropas.clique(e, ex.escolta, RP.exploracao.dados.castelo.guarnicao)) { desenhar(el); return; }
         if ((b = e.target.closest('[data-exp-nova]'))) {
           var id = b.getAttribute('data-exp-nova');
           ex.ativo = id ? +id : null; ex.chave = '';
           var a = ex.ativo && RP.exploracao.ativo(ex.ativo);
-          if (a) { ex.ordem = a.ordem === 'retornar' ? 'explorar' : a.ordem; ex.alvo = a.alvo; ex.pontos = (a.pontos || []).slice(); }
+          if (a) { ex.ordem = a.ordem === 'retornar' || a.ordem === 'aguardar' ? 'explorar' : a.ordem; ex.alvo = a.ordem === 'aguardar' ? null : a.alvo; ex.pontos = (a.pontos || []).slice(); ex.circuito = !!a.circuito; }
           desenhar(el); window.scrollTo(0, 0); return;
         }
         if ((b = e.target.closest('[data-exp-treinar]'))) {

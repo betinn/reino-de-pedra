@@ -100,7 +100,10 @@ public class ExploracaoTestes
         var esperado = Caminhos.Calcular(t.M, c.Hex, destino, x.Vel, Exploradores.Opcoes(t.M, r.Id, tipo, Nenhuma, false));
         Assert.Equal(esperado.TotalMin * T.Min, e.Chegada - e.Partida, 1000.0);
         Assert.False(r.ExploradoresLivres.ContainsKey(tipo));
-        // vai, revela e volta para o castelo
+        // vai, revela e fica no destino esperando; volta quando mandam
+        t.AvancarHoras(1);
+        Assert.Equal(Exploradores.Aguardar, e.Ordem);
+        Exploradores.DarOrdem(t.M, r, e.Id, Exploradores.Retornar, null);
         t.AvancarHoras(12);
         Assert.Empty(Exploradores.De(t.M, r.Id));
         Assert.Equal(1, r.ExploradoresLivres[tipo]);
@@ -154,6 +157,8 @@ public class ExploracaoTestes
         // depois de voltar, o destino ficou marcado no minuto da última passagem por perto, não no de agora
         AvancarAte(t, chegadaIda + 1);
         var raio = e.RaioVisao(t.M);
+        Exploradores.DarOrdem(t.M, r, e.Id, Exploradores.Retornar, null);   // espera no destino até mandarem voltar
+        // a última vez que viu o destino foi na volta, quando saiu de perto dele
         var ultimaPassagem = e.Caminho.Select((h, i) => (h, i)).Where(x => t.M.G.Distancia(x.h, destino) <= raio).Max(x => e.Tempos[x.i]);
         t.AvancarHoras(24);
         Assert.Equal(1, r.ExploradoresLivres["pe"]);
@@ -195,7 +200,8 @@ public class ExploracaoTestes
         AvancarAte(t, e.Chegada + 1);
         Assert.Equal(b, e.Destino);
         AvancarAte(t, e.Chegada + 1);
-        Assert.True(e.Retornando);
+        Assert.Equal(Exploradores.Aguardar, e.Ordem);   // no fim da rota, espera nova ordem
+        Assert.Equal(b, e.HexEm(t.M.Agora));
         var p = Exploradores.Enviar(t.M, r, "cavalo", Exploradores.Patrulhar, b);
         for (var i = 0; i < 4; i++)
         {
@@ -205,6 +211,7 @@ public class ExploracaoTestes
             Assert.Contains(p, t.M.Marchas);   // a patrulha não entra no castelo: segue até nova ordem
         }
         Exploradores.DarOrdem(t.M, r, p.Id, Exploradores.Retornar, null);
+        Exploradores.DarOrdem(t.M, r, e.Id, Exploradores.Retornar, null);
         t.AvancarHoras(6);
         Assert.Equal(2, r.ExploradoresLivres["cavalo"]);
     }
@@ -494,6 +501,9 @@ public class ExploracaoTestes
         var esc = Exploradores.Enviar(t.M, a, "pe", Exploradores.Explorar, perto, null, false, new Dictionary<string, int> { ["lanceiro"] = 2 });
         Assert.DoesNotContain(t.M.Eventos, ev => ev is CapturaExploradorEvento);
         Assert.Equal(1 + 2, esc.PopOcupada(t.M));
+        t.AvancarHoras(1);
+        Exploradores.DarOrdem(t.M, a, bat.Id, Exploradores.Retornar, null);
+        Exploradores.DarOrdem(t.M, a, esc.Id, Exploradores.Retornar, null);
         t.AvancarHoras(12);
         Assert.Empty(t.M.Prisioneiros);
         Assert.Equal(2, Castelo(t, a).Guarnicao["lanceiro"]);

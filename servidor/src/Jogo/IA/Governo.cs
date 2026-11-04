@@ -41,6 +41,7 @@ public static class Governo
         Tentar(() => Defender(m, r, c));
         if (!c.Regencia) Tentar(() => Comerciante.Responder(m, r, c));
         Tentar(() => Construir(m, r, c, castelo));
+        Tentar(() => ExploradoresParados(m, r, castelo, c.Regencia));
         Tentar(() => Recrutar(m, r, c, castelo));
         Tentar(() => Curar(m, r));   // a regência também cura: guarda o reino para quem volta
         if (c.Regencia) return;
@@ -316,6 +317,24 @@ public static class Governo
     }
 
     /// <summary>Um explorador a pé: treina se não tem; se está livre, explora um hexágono ainda não visto.</summary>
+    /// <summary>
+    /// Exploradores parados no destino (eles esperam nova ordem): a IA manda o explorador a pé a outro lugar ainda não visto
+    /// e traz os outros para casa; a regência só os traz para casa.
+    /// </summary>
+    public static void ExploradoresParados(Mundo m, Reino r, Local castelo, bool regencia)
+    {
+        foreach (var e in Exploradores.De(m, r.Id).Where(x => x.Ordem == Exploradores.Aguardar).ToList())
+        {
+            try
+            {
+                if (!regencia && e.TipoExp == Exploradores.Pe && NaoVisto(m, r, castelo) is int alvo && alvo != e.HexEm(m.Agora))
+                    Exploradores.DarOrdem(m, r, e.Id, Exploradores.Explorar, alvo, null, true);
+                else Exploradores.DarOrdem(m, r, e.Id, Exploradores.Retornar, null);
+            }
+            catch (RegraException) { Exploradores.DarOrdem(m, r, e.Id, Exploradores.Retornar, null); }
+        }
+    }
+
     public static void Explorar(Mundo m, Reino r, Local castelo)
     {
         if (Ocupados(m, r, Exploradores.Pe) == 0) { Exploradores.Treinar(m, r, Exploradores.Pe, 1); return; }
