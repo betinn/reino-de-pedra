@@ -49,8 +49,8 @@ public static class VisaoValiosos
             rel.Id, rel.Nome, rel.Tipo, efeito = ReliquiasLendarias.Efeito(m, rel.Tipo), bonus = ReliquiasLendarias.Bonus(m, rel.Tipo),
             estado = mc != null ? "levada" : escolta != null ? "buscando" : "guardada",
             local = l == null ? null : new { l.Id, l.Nome, l.Hex, tipo = l.Tipo.Chave(), n = ReliquiasLendarias.Concentracoes(m).GetValueOrDefault(l.Id) },
-            marcha = mc == null ? null : new { mc.Id, mc.Chegada, destinoHex = mc.Destino, destino = VisaoTropas.NomeLocal(m, r, (mc as Exercito)?.AlvoLocalId), tropas = GT.Partes(m, mc.Tropas) },
-            escolta = escolta == null ? null : new { escolta.Id, coleta = escolta.Chegada, destino = destinoEscolta?.Nome, tropas = GT.Partes(m, escolta.Tropas) },
+            marcha = mc == null ? null : new { mc.Id, mc.Partida, mc.Chegada, destinoHex = mc.Destino, destino = VisaoTropas.NomeLocal(m, r, (mc as Exercito)?.AlvoLocalId), tropas = GT.Partes(m, mc.Tropas) },
+            escolta = escolta == null ? null : new { escolta.Id, partida = escolta.Partida, coleta = escolta.Chegada, destino = destinoEscolta?.Nome, tropas = GT.Partes(m, escolta.Tropas) },
             origem = ruina != null ? "Escavada numa ruína antiga" : "Tomada de outro reino",
             rel.AchadaEm,
         };
@@ -82,6 +82,7 @@ public static class VisaoValiosos
                 escavando = g == null ? null : new
                 {
                     g.Id, tropas = GT.Partes(m, g.Tropas), chegada = g.EscavaRuinaId == null ? g.Chegada : (long?)null, fim = g.EscavaFim,
+                    partida = g.EscavaRuinaId == null ? g.Partida : (long?)null, inicio = g.EscavaInicio,
                     destino = VisaoTropas.NomeLocal(m, r, g.Dados["destinoLocalId"]?.GetValue<long>()),
                 },
             };
@@ -135,6 +136,7 @@ public static class VisaoValiosos
         {
             e.Id, e.Ordem, estado, hex = e.HexEm(m.Agora), e.Destino, tropas = e.Tropas, total = GT.Total(e.Tropas), resumo = GT.Partes(m, e.Tropas),
             carga = e.Carga.Arredondado(), cargaMax = e.CargaMax(m), ritmo, cheiaEm, chegada = e.Parado ? (long?)null : e.Chegada,
+            partida = e.Parado ? (long?)null : e.Partida, extraiInicio = VisaoTropas.InicioExtracao(m, e, j),   // inícios das barras de tempo
             jazidaId = e.ExtraiJazidaId ?? e.Dados["jazidaId"]?.GetValue<long>(), ruinaId = e.EscavaRuinaId, escavaFim = e.EscavaFim, escavaInicio = e.EscavaInicio,
             repetir = e.Dados["repetir"]?.GetValue<bool>() == true, deposito = VisaoTropas.NomeLocal(m, r, e.Ordem == Extracoes.OrdemEntregar ? e.AlvoLocalId : null),
         };

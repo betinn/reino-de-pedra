@@ -101,12 +101,37 @@ html.tela-cheia .folha { bottom: 0; }
 .folha-mais[hidden] { display: none; }
 .folha-mais .btn { flex: 1 1 calc(50% - var(--esp-2)); }
 .veu { display: none; }
+/* "‹ Exército": a folha abriu sobre uma tela; um toque volta a ela */
+.folha-voltar {
+  flex: none; align-self: flex-start; display: inline-flex; align-items: center; gap: 4px;
+  min-height: 36px; margin: 0 var(--esp-3) 2px; padding: 0 12px 0 6px;
+  border: 0; border-radius: var(--raio-pill); background: none; color: var(--cor-info);
+  font: inherit; font-size: var(--fs-2); font-weight: 700; cursor: pointer;
+}
+.folha-voltar .ico { width: 18px; height: 18px; }
+.folha-voltar:hover, .folha-voltar:focus-visible { background: var(--cor-superficie-2); }
 
 /* confirmação curta: embaixo, sem escurecer o jogo */
 .modal-fundo { background: transparent; align-items: end; justify-items: center; padding-bottom: calc(var(--nav-altura) + env(safe-area-inset-bottom) + var(--esp-2)); pointer-events: none; }
 .modal-fundo.ativo { pointer-events: none; }
 .modal-fundo .modal { pointer-events: auto; text-align: left; max-width: 440px; background: var(--painel-fundo); backdrop-filter: blur(12px); transform: translateY(12px); }
 .modal-fundo.ativo .modal { transform: none; }
+
+/* ---------------------------------------------------------------- um lugar só (decisão 0027)
+   Tela do painel, folha de seleção e confirmação dividem o mesmo lugar (painel baixo no celular, coluna à direita
+   no computador) e formam uma pilha: só a de cima aparece. Fechar a de cima mostra de novo a de baixo. */
+html.jogo.com-folha #telas, html.jogo.com-modal #telas {
+  visibility: hidden; opacity: 0; pointer-events: none; transition: none;
+}
+html.jogo.com-modal .folha { visibility: hidden; opacity: 0; pointer-events: none; }
+html.jogo.com-folha .painel-barra, html.jogo.com-modal .painel-barra { display: none; }
+/* no celular a confirmação é uma folha curta, presa à navegação como as outras */
+html.jogo .modal-fundo { justify-items: stretch; padding: 0 0 calc(var(--nav-altura) + env(safe-area-inset-bottom)); }
+html.jogo .modal-fundo .modal {
+  width: 100%; max-width: 640px; margin: 0 auto; padding: var(--esp-5) var(--esp-4) var(--esp-4);
+  border-color: var(--painel-borda); border-bottom: 0; border-radius: var(--raio-3) var(--raio-3) 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, .45);
+}
 .modal h2 { font-size: var(--fs-4); }
 .modal .acoes { flex-direction: row; flex-wrap: wrap; }
 .modal .acoes .btn { flex: 1 1 40%; width: auto; }
@@ -139,6 +164,28 @@ html.painel-aberto .mapa-controles, html.com-folha .mapa-controles { top: 28%; o
 .mapa-topo { max-width: 640px; }
 .mapa-controles .btn { background: var(--painel-fundo); backdrop-filter: blur(8px); }
 .modo-mapa { background: var(--painel-fundo); backdrop-filter: blur(8px); }
+
+/* ---------------------------------------------------------------- barra de tempo (RP.barraTempo)
+   Barra de progresso com o cronômetro ao lado, em tudo que tem tempo. Num texto corrido ocupa ~12em;
+   em linhas de informação, filas e cartões estica até a largura que sobra. */
+.barra-tempo { display: inline-flex; align-items: center; gap: 8px; width: 12em; max-width: 100%; vertical-align: middle; }
+.barra-tempo .barra { flex: 1 1 auto; min-width: 48px; height: 8px; }
+.barra-tempo-resta { flex: none; min-width: 5ch; text-align: right; font-weight: 700; color: var(--cor-destaque); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.barra-tempo.curta { gap: 6px; width: 10em; }
+.barra-tempo.curta .barra { height: 6px; min-width: 36px; }
+.barra-tempo.sem-inicio { width: auto; }
+.barra-info > i { background: var(--cor-info); }
+.timer .barra-tempo, .info-tempo .barra-tempo { width: 100%; }
+.fila-prontos .barra-tempo, .fila-material .barra-tempo { flex: 1 1 auto; width: auto; min-width: 0; }
+.timer .barra-tempo .barra { height: 10px; }
+.info-linha.info-tempo > span:last-child, .info-linha > span:last-child:has(> .barra-tempo:only-child) { flex: 1 1 55%; max-width: 62%; display: flex; justify-content: flex-end; }
+.fila-prontos, .fila-material { display: flex; align-items: center; gap: 8px; font-size: var(--fs-1); }
+.fila-prontos > span, .fila-material > span { flex: none; white-space: nowrap; }
+.fila-material { color: var(--cor-info); font-weight: 600; }
+.fila-material .ico { flex: none; }
+.ll-sub .barra-tempo { width: 9em; }
+.emcampo-tempo .barra-tempo { width: 8.5em; }
+.emcampo-tempo .barra-tempo-resta { font-size: var(--fs-3); }
 
 /* ---------------------------------------------------------------- peças novas */
 .custo-falta { flex-basis: 100%; display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-1); font-weight: 600; color: var(--cor-alerta); }
@@ -230,9 +277,24 @@ html.painel-aberto .mapa-controles, html.com-folha .mapa-controles { top: 28%; o
   html.jogo .painel-pega { display: none; }
   html.jogo .tela .topo { top: 0; }
   .painel-barra { left: auto; right: var(--esp-2); bottom: var(--esp-2); transform: none; }
-  .folha { left: auto; right: 0; width: var(--coluna); max-width: none; max-height: 72vh; bottom: 0; border-radius: var(--raio-3) 0 0 0; }
+  /* folha e confirmação ocupam a coluna inteira, no lugar da tela (que fica escondida): nada se sobrepõe */
+  .folha {
+    left: auto; right: 0; top: 0; bottom: 0; width: var(--coluna); max-width: none; max-height: none;
+    border: 0; border-left: 1px solid var(--painel-borda); border-radius: 0; box-shadow: -8px 0 30px rgba(0, 0, 0, .35);
+    padding-top: var(--esp-3); transform: translateX(calc(100% + 24px));
+  }
+  .folha.aberta { transform: none; }
+  .folha .folha-pega { display: none; }
+  html.jogo.com-folha .mundo, html.jogo.com-modal .mundo { right: var(--coluna); }
   .modal-fundo { justify-items: end; padding: 0 var(--esp-2) var(--esp-2) 0; }
   .modal-fundo .modal { width: calc(var(--coluna) - var(--esp-3)); }
+  html.jogo .modal-fundo {
+    left: auto; right: 0; top: 0; bottom: 0; width: var(--coluna); padding: var(--esp-3) 0 0;
+    align-items: start; justify-items: stretch; pointer-events: auto;
+    background: var(--painel-fundo); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-left: 1px solid var(--painel-borda); box-shadow: -8px 0 30px rgba(0, 0, 0, .35);
+  }
+  html.jogo .modal-fundo .modal { width: auto; max-width: none; margin: 0; border: 0; box-shadow: none; background: transparent; backdrop-filter: none; }
   .avisos { left: calc(var(--trilho) + var(--esp-2)); right: auto; top: calc(env(safe-area-inset-top) + 70px); align-items: flex-start; width: 320px; }
   html.painel-aberto .minimapa, html.painel-aberto .modo-mapa { opacity: 1; pointer-events: auto; }
   html.painel-aberto .mapa-controles, html.com-folha .mapa-controles { top: 50%; }

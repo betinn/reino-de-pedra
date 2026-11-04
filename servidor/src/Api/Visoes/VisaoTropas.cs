@@ -33,6 +33,7 @@ public static class VisaoTropas
             i.Rotulo, i.Inicio, i.Fim, duracao = i.DuracaoSeg, materialCompleto = i.MaterialCompleto,
             prontos = i.Prontos, proximoFim = i.Restantes > 0 ? i.FimDaUnidade(i.Prontos + 1) : null,
             materialChegaEm = i.MaterialCompleto ? null : MaterialChegaEm(m, i),
+            materialPartida = i.MaterialCompleto ? null : MaterialPartida(m, i),
         }).ToList();
         var unidades = m.B.U.Values.Select(u => new
         {
@@ -56,6 +57,10 @@ public static class VisaoTropas
         var c = m.Marchas.OfType<Carregadores>().Where(x => x.ItemId == i.Id).Select(x => x.Chegada).DefaultIfEmpty(0).Max();
         return c > 0 ? c : null;
     }
+
+    /// <summary>Partida da leva de carregadores que chega por último (início da barra "material chega").</summary>
+    private static long? MaterialPartida(Mundo m, ItemFila i) =>
+        m.Marchas.OfType<Carregadores>().Where(x => x.ItemId == i.Id).OrderByDescending(x => x.Chegada).Select(x => (long?)x.Partida).FirstOrDefault();
 
     /// <summary>Nome que o reino pode ver de um local: o próprio pelo nome; o de outro reino, só pelo tipo.</summary>
     public static string? NomeLocal(Mundo m, Reino r, long? id)
@@ -96,8 +101,10 @@ public static class VisaoTropas
     }
 
     /// <summary>
-    /// O que um exército parado está fazendo: <c>{ tipo: "caca" | "extracao" | "escavacao", recurso, coletado, destino, fim }</c>, ou null.
+    /// O que um exército parado está fazendo: <c>{ tipo: "caca" | "extracao" | "escavacao", recurso, coletado, destino, inicio, fim }</c>, ou null.
     /// <c>coletado</c> é o que já tirou (a carga, posta em dia); <c>destino</c>, o nome do local para onde vai levar.
+    /// <c>inicio</c> e <c>fim</c> dão a barra de progresso: na extração, o início é quando a carga estaria vazia no ritmo de agora
+    /// (a barra mostra a carga até o fim: cheia ou jazida esgotada); na escavação, o começo dela; na caça, a chegada ao bando.
     /// </summary>
     public static object? Trabalho(Mundo m, Reino? r, Exercito e)
     {
@@ -108,21 +115,35 @@ public static class VisaoTropas
             var op = new OpcoesCaminho { Seguro = e.Seguro, Forca = GT.ForcaFauna(m, e.Tropas), ReinoId = e.ReinoId };
             var dep = Extracoes.Deposito(m, e.ReinoId, e.HexEm(m.Agora), e.Vel, op);
             var fim = e.ExtraiEventoId is long ev ? m.Eventos.Obter(ev)?.Quando : null;
-            return new { tipo = "extracao", recurso = j?.Recurso, coletado = e.Carga.Arredondado(), destino = dep?.local.Nome, fim };
+            return new { tipo = "extracao", recurso = j?.Recurso, coletado = e.Carga.Arredondado(), destino = dep?.local.Nome, inicio = InicioExtracao(m, e, j), fim };
         }
         if (e.EscavaRuinaId != null)
         {
             var did = e.Dados["destinoLocalId"]?.GetValue<long>();
             var dest = did is long d ? m.Locais.Obter(d) : null;
             if (!Exercitos.LocalProprio(dest, e.ReinoId)) dest = r != null ? m.Locais.Obter(r.CasteloId) : null;
-            return new { tipo = "escavacao", recurso = (string?)null, coletado = e.Carga.Arredondado(), destino = dest?.Nome, fim = e.EscavaFim };
+            return new { tipo = "escavacao", recurso = (string?)null, coletado = e.Carga.Arredondado(), destino = dest?.Nome, inicio = e.EscavaInicio, fim = e.EscavaFim };
         }
         if (e.Ordem == OrdemCacar.Id && e.Parado && e.Dados["cacaAte"] is JsonValue v && v.TryGetValue<long>(out var ate))
         {
             var origem = m.Locais.Obter(e.OrigemLocalId);
-            return new { tipo = "caca", recurso = (string?)null, coletado = e.Carga.Arredondado(), destino = Exercitos.LocalProprio(origem, e.ReinoId) ? origem!.Nome : null, fim = (long?)ate };
+            var inicio = ate - T.DeHoras(m.P.CacaMin / 60);   // Caca.Chegou: cacaAte = chegada + P.cacaMin
+            return new { tipo = "caca", recurso = (string?)null, coletado = e.Carga.Arredondado(), destino = Exercitos.LocalProprio(origem, e.ReinoId) ? origem!.Nome : null, inicio = (long?)inicio, fim = (long?)ate };
         }
         return null;
+    }
+
+    /// <summary>
+    /// Início equivalente da extração: agora menos o tempo que o grupo levaria, no ritmo atual, para tirar o que já tem do recurso.
+    /// Assim a barra (agora − início) / (fim − início) é a carga atual sobre a carga no fim. Null sem jazida ou sem ritmo.
+    /// </summary>
+    public static long? InicioExtracao(Mundo m, Exercito e, Jogo.Mapa.Jazida? j)
+    {
+        if (j == null) return null;
+        var ritmo = Extracoes.Ritmo(m, e.Tropas, j.Recurso, Extracoes.TemPosto(m, e.ReinoId, j.Hex), e.ExtraiRota == true);
+        if (ritmo <= 0) return null;
+        var tem = e.Carga.GetValueOrDefault(j.Recurso);
+        return m.Agora - (long)Math.Round(tem / ritmo * T.Hora);
     }
 
     /// <summary>

@@ -109,9 +109,9 @@
   function ativoHTML(d) {
     if (!d.exploradores.length) return '';
     return '<div class="secao-titulo" style="margin-top:0">Em campo</div><div class="pilha">' + d.exploradores.map(function (e) {
-      var est = e.estado === 'espionando' ? 'espionando · termina em <b class="num" data-fim="' + e.espionandoAte + '">' + RP.fmtResta(e.espionandoAte - RP.agora()) + '</b>'
+      var est = e.estado === 'espionando' ? 'espionando ' + RP.barraTempo(e.espionandoDesde, e.espionandoAte, { classe: 'curta', cor: 'sucesso', rotulo: 'Espionagem' })
         : e.estado === 'parado' ? '<b>no destino, esperando ordens</b>'
-        : (e.estado === 'retornando' ? 'volta' : 'chega') + ' em <b class="num" data-fim="' + e.chegada + '">' + RP.fmtResta(e.chegada - RP.agora()) + '</b>';
+        : (e.estado === 'retornando' ? 'volta ' : 'chega ') + RP.barraTempo(e.partida, e.chegada, { classe: 'curta', rotulo: e.estado === 'retornando' ? 'Volta para casa' : 'Marcha até o destino' });
       return '<div class="card emcampo exp-ativo' + (ex.ativo === e.id ? ' foco' : '') + '"><span class="ico-placa dono-meu">' + RP.icone(RP.ICONE_EXPLORADOR[e.tipoExp] || 'explorador') + '</span>' +
         '<span class="emcampo-corpo"><b>' + RP.esc(e.nome) + '</b><small class="fraco">' + RP.esc((ORDENS[e.ordem] || {}).nome || e.ordem) + ' · ' + (e.ordem === 'rota' ? e.pontos.length + ' pontos' + (e.circuito ? ' em circuito' : '') : 'destino ' + e.alvoC + ', ' + e.alvoL) +
         (RP.somaGrupo(e.escolta) ? ' · escolta: ' + RP.esc(RP.partesGrupo(e.escolta)) : '') + '</small><small class="fraco">' + est + '</small>' +
@@ -188,7 +188,8 @@
     if (ex.ordem === 'espionar') ex.comEscolta = false;
     var tipo = RP.exploracao.tipo(ex.tipo), p = ex.previa;
     pedirPrevia(el);
-    var h = presosHTML(d) + ativoHTML(d);
+    var treino = RP.itensFilaHTML ? RP.itensFilaHTML('recrutamento', function (i) { return i.tipo === 'explorador'; }) : '';
+    var h = presosHTML(d) + ativoHTML(d) + (treino ? '<div class="secao-titulo">Em treino</div><div class="card pilha">' + treino + '</div>' : '');
     if (ativo) {
       h += '<div class="card card-moldura pilha"><div class="linha"><span class="ico-placa dono-meu">' + RP.icone(RP.ICONE_EXPLORADOR[ativo.tipoExp]) + '</span><div style="flex:1"><b>Nova ordem: ' + RP.esc(ativo.nome) + '</b><br><small class="fraco">Sai de onde está agora.</small></div>' +
         '<button type="button" class="btn btn-p btn-fantasma" data-exp-nova="">' + RP.icone('fechar') + 'Cancelar</button></div></div>';

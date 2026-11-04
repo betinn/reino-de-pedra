@@ -129,8 +129,9 @@
       var corpo = '<div class="info">' +
         '<div class="info-linha"><span class="fraco">Tropas</span><span>' + RP.selosGrupo(e.tropas) + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Ordem</span><span>' + RP.esc(RP.ORDENS_NOMES[e.ordem] || e.ordem) + '</span></div>' +
-        '<div class="info-linha"><span class="fraco">' + (e.estado === 'parado' ? 'Onde' : e.estado === 'retornando' ? 'Chega em casa' : 'Chegada') + '</span><span>' + (e.estado === 'parado' ? (e.alvo || 'hexágono ' + e.destinoC + ', ' + e.destinoL) : '<b class="num" data-fim="' + e.chegada + '">' + RP.fmtResta(e.chegada - RP.agora()) + '</b>' + (e.alvo ? ' · ' + RP.esc(e.alvo) : '')) + '</span></div>' +
-        (e.trabalho ? '<div class="info-linha"><span class="fraco">' + (e.trabalho.tipo === 'caca' ? 'Caçando' : e.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo') + '</span><span>' + (e.trabalho.coletado && RP.cargaUsada(e.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(e.trabalho.coletado)) : 'começando') + (e.trabalho.destino ? ' · leva para ' + RP.esc(e.trabalho.destino) : '') + '</span></div>' : '') +
+        '<div class="info-linha"><span class="fraco">' + (e.estado === 'parado' ? 'Onde' : e.estado === 'retornando' ? 'Chega em casa' : 'Chegada') + '</span><span>' + (e.estado === 'parado' ? (e.alvo || 'hexágono ' + e.destinoC + ', ' + e.destinoL) : RP.barraTempo(e.partida, e.chegada, { rotulo: e.estado === 'retornando' ? 'Volta para casa' : 'Marcha até o destino' }) + (e.alvo ? ' · ' + RP.esc(e.alvo) : '')) + '</span></div>' +
+        (e.trabalho ? '<div class="info-linha"><span class="fraco">' + (e.trabalho.tipo === 'caca' ? 'Caçando' : e.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo') + '</span><span>' + (e.trabalho.coletado && RP.cargaUsada(e.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(e.trabalho.coletado)) : 'começando') + (e.trabalho.destino ? ' · leva para ' + RP.esc(e.trabalho.destino) : '') + '</span></div>' +
+          (e.trabalho.fim ? '<div class="info-linha info-tempo"><span class="fraco">' + (e.trabalho.tipo === 'extracao' ? 'Carga cheia' : 'Termina') + '</span><span>' + RP.barraTempo(e.trabalho.inicio, e.trabalho.fim, { cor: 'sucesso', rotulo: 'Trabalho' }) + '</span></div>' : '') : '') +
         '<div class="info-linha"><span class="fraco">Saíram de</span><span>' + RP.esc(e.origem || '—') + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Velocidade</span><span>' + RP.esc(RP.VELOCIDADES[e.vel] || e.vel) + (e.seguro ? ' · rota segura' : ' · rota curta') + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Comportamento</span><span class="selo selo-info">' + RP.esc(RP.POSTURAS[e.postura] || '') + '</span></div>' +
@@ -194,7 +195,8 @@
         '<small class="fraco">' + RP.esc(RP.estadoExercito(e)) + '</small>' +
         '<small class="fraco">' + RP.icone('carroca', 'ico-p') + ' ' + RP.esc(RP.cargaTexto(e.carga)) + (e.cargaMax ? ' · ' + RP.num(Math.max(0, e.cargaMax - RP.cargaUsada(e.carga))) + ' livres' : '') + '</small>' +
         (RP.extrasExercito || []).map(function (f) { return f(e) || ''; }).join('') + '</span>' +
-        '<span class="emcampo-tempo">' + (e.estado === 'parado' ? '<span class="selo">Parado</span>' : '<b class="num" data-fim="' + e.chegada + '">' + RP.fmtResta(e.chegada - RP.agora()) + '</b><small class="fraco">' + (e.estado === 'retornando' ? 'volta' : 'chega') + '</small>') + '</span></div>';
+        '<span class="emcampo-tempo">' + (e.trabalho && e.trabalho.fim ? RP.barraTempo(e.trabalho.inicio, e.trabalho.fim, { classe: 'curta', cor: 'sucesso', rotulo: 'Trabalho' }) + '<small class="fraco">' + (e.trabalho.tipo === 'caca' ? 'caçando' : e.trabalho.tipo === 'escavacao' ? 'escavando' : 'carga cheia') + '</small>'
+          : e.estado === 'parado' ? '<span class="selo">Parado</span>' : RP.barraTempo(e.partida, e.chegada, { classe: 'curta', rotulo: 'Marcha' }) + '<small class="fraco">' + (e.estado === 'retornando' ? 'volta' : 'chega') + '</small>') + '</span></div>';
     }).join('');
   }
   function guarnicoesHTML(t) {

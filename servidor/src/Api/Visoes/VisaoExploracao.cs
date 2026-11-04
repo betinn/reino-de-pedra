@@ -63,6 +63,8 @@ public static class VisaoExploracao
         e.Id, e.TipoExp, nome = e.NomeTipo(m), e.Ordem, e.Alvo, alvoC = m.G.C(e.Alvo), alvoL = m.G.L(e.Alvo), e.Pontos,
         hex = e.HexEm(m.Agora), e.Destino, e.Partida, e.Chegada, e.Caminho, e.Tempos, e.Retornando, e.Seguro, e.Vel,
         escolta = e.Tropas, e.EspionandoAte, e.HexesRevelados, e.JazidasAchadas, e.Circuito,
+        // início da espionagem (Espionagem: EspionandoAte = chegada + P.espiao.tempoNoLocal), para a barra de tempo
+        espionandoDesde = e.EspionandoAte is long ate ? ate - T.DeSegundos(m.P.Espiao.TempoNoLocal) : (long?)null,
         estado = e.EspionandoAte != null ? "espionando" : e.Ordem == Exploradores.Aguardar ? "parado" : e.Retornando ? "retornando" : "marchando",
     };
 

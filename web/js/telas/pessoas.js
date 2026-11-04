@@ -15,8 +15,8 @@
 
   /* ---------------------------------------------------------------- folha da pessoa */
   function textoTempo(p) {
-    if (p.estado === 'andando' && p.chegada) return ' · chega <b class="num" data-fim="' + p.chegada + '">' + RP.fmtResta(p.chegada - RP.agora()) + '</b>';
-    if (p.estado === 'treinando' && p.pronta) return ' · pront' + (p.feminina ? 'a' : 'o') + ' <b class="num" data-fim="' + p.pronta + '">' + RP.fmtResta(p.pronta - RP.agora()) + '</b>';
+    if (p.estado === 'andando' && p.chegada) return ' · chega ' + RP.barraTempo(p.partida, p.chegada, { classe: 'curta', rotulo: 'Caminhada' });
+    if (p.estado === 'treinando' && p.pronta) return ' · pront' + (p.feminina ? 'a' : 'o') + ' ' + RP.barraTempo(p.treinoInicio, p.pronta, { classe: 'curta', rotulo: 'Treino' });
     return '';
   }
   function corpoPessoa(f) {

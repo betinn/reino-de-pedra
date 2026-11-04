@@ -53,9 +53,9 @@
   function grupoCard(g) {
     var dados = ext.dados, j = g.jazidaId && dados.jazidas.filter(function (x) { return x.id === g.jazidaId; })[0];
     var titulo = g.estado === 'extraindo' ? 'Extraindo ' + RP.nomeRecurso(j ? j.recurso : '') : g.estado === 'escavando' ? 'Escavando a ruína' : g.estado === 'entregando' ? 'Levando a carga a ' + (g.deposito || 'um depósito') : g.ordem === 'escavar' ? 'A caminho da ruína' : 'A caminho da jazida';
-    var tempo = g.estado === 'escavando' && g.escavaFim ? '<b class="num" data-fim="' + g.escavaFim + '">' + RP.fmtResta(g.escavaFim - RP.agora()) + '</b><small class="fraco">relíquia</small>'
-      : g.estado === 'extraindo' && g.cheiaEm ? '<b class="num" data-fim="' + g.cheiaEm + '">' + RP.fmtResta(g.cheiaEm - RP.agora()) + '</b><small class="fraco">carga cheia</small>'
-      : g.chegada ? '<b class="num" data-fim="' + g.chegada + '">' + RP.fmtResta(g.chegada - RP.agora()) + '</b><small class="fraco">chega</small>' : '';
+    var tempo = g.estado === 'escavando' && g.escavaFim ? RP.barraTempo(g.escavaInicio, g.escavaFim, { classe: 'curta', cor: 'sucesso', rotulo: 'Escavação' }) + '<small class="fraco">relíquia</small>'
+      : g.estado === 'extraindo' && g.cheiaEm ? RP.barraTempo(g.extraiInicio, g.cheiaEm, { classe: 'curta', cor: 'sucesso', rotulo: 'Extração' }) + '<small class="fraco">carga cheia</small>'
+      : g.chegada ? RP.barraTempo(g.partida, g.chegada, { classe: 'curta', rotulo: 'Marcha' }) + '<small class="fraco">chega</small>' : '';
     var carga = Object.keys(g.carga || {}).map(function (k) { return RP.num(g.carga[k]) + ' de ' + RP.nomeRecurso(k); }).join(', ');
     return '<div class="card emcampo"><span class="ico-placa dono-meu">' + RP.icone('picareta') + '</span>' +
       '<span class="emcampo-corpo"><b>' + RP.esc(titulo) + '</b><small class="fraco">' + RP.esc(g.resumo) + (g.repetir ? ' · repete' : '') + '</small>' +

@@ -239,11 +239,11 @@ Zoom: mundo (< 0,30) · longe (0,30–0,46) · médio (0,46–0,95) · perto (�
 | Botão | `.btn` + `.btn-primario` / `.btn-perigo` / `.btn-fantasma`; `.btn-p` (44), `.btn-grande` (56), `.btn-bloco`, `.btn-icone` | Uma ação primária por área. Pressionado desce 2 px. Inativo mas tocável (`.btn-inativo`) quando o toque explica o motivo. |
 | Card | `.card`, `.card-moldura` | Superfície com relevo. Moldura só para destaques. |
 | Selo | `.selo` + `-visivel` / `-antigo` / `-desconhecido` / `-perigo` / `-info` / `-destaque` / `-perigo-<nivel>` | Estado curto com ícone. |
-| Barra de tempo | `.timer` | Rótulo à esquerda, tempo restante à direita; `mm:ss` abaixo de 1 h. |
+| Barra de tempo | `RP.barraTempo(inicio, fim)` → `.barra-tempo` (`.curta` em linhas e cartões); `.timer` com rótulo em cima | Tudo que tem tempo: barra de progresso com o cronômetro ao lado, em `--cor-destaque`; `mm:ss` abaixo de 1 h. Trabalho (extração, escavação, caça) em verde, material e cargas a caminho em azul, batalha em vermelho. Prazos (escudo, feridos) só com o cronômetro. |
 | Fila | card com Obras / Recrutamento | Mostra quantidade; itens sem início com "Aguardando". |
 | Abas / segmentado | `.abas > .aba` | Realce com sublinhado de brasa. Também usado na alternância Vista / Mapa. |
-| Folha inferior | `RP.abrirFolha({...})` | Detalhes e ações. No mundo fica acima da navegação, sem véu; fecha no X, no véu, arrastando para baixo ou com Esc. |
-| Modal | `RP.modal({...})` | Só para confirmações e marcos. |
+| Folha inferior | `RP.abrirFolha({...})` | Detalhes e ações, no mesmo lugar do painel (embaixo no celular, coluna inteira no computador), sem véu. Aberta sobre uma tela, esconde a tela e mostra "‹ Reino" para voltar (ou Esc); o X volta ao mundo. Arrastar para baixo também fecha. |
+| Modal | `RP.modal({...})` | Só para confirmações e marcos. Topo da pilha: no mesmo lugar da folha, que fica escondida até a resposta; uma por vez. |
 | Aviso | `RP.aviso({...})` | Topo, some em ~3 s. |
 | Faixa de alerta | `.faixa-alerta` | Ameaça em andamento; leva até o exército. |
 | Linha de perigo | `.perigo-linha.nivel-<nivel>` | Perigo do hexágono ou da rota de uma marcha, com orientação (escolta, rota longa). |
