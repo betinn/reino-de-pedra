@@ -419,23 +419,58 @@
         }
         return;
       }
-      obj(c, V, it.x, it.y);
-      /* vegetação e relevo 3D (RP.natureza): variante e tamanho tirados da posição, para cada lugar ter sempre a mesma */
-      if (it.f === 'ponte' && RP.natureza && RP.natureza.ponte(c, it.ang, it.pal !== P)) return;
-      if (RP.natureza && RP.natureza.pronto) {
-        var hv = A.hash(Math.round(it.x * 10), Math.round(it.y * 10), 7), hs = A.hash(Math.round(it.x * 10), Math.round(it.y * 10), 11);
-        var esc = it.f === 'pic' ? it.s * (0.65 + hs * 0.9) : it.f === 'mon' ? 0.7 + hs * 0.7 : it.f === 'mor' ? 0.6 + hs * 0.7 : it.f === 'roc' ? 0.6 + hs * 0.5 : it.f === 'arb' || it.f === 'jun' || it.f === 'margem' || it.f === 'agua' ? 0.8 + hs * 0.5 : it.f === 'pedraRio' || it.f === 'canoa' ? 0.9 + hs * 0.3 : it.s * (0.8 + hs * 0.45);
-        if (RP.natureza.desenhar(c, it.f, hv, esc, it.pal !== P)) return;
-      }
-      if (it.f === 'con') A.arvoreConifera(c, 0, 0, it.s, it.pal, it.alt);
-      else if (it.f === 'fol') A.arvoreFolhosa(c, 0, 0, it.s, it.pal);
-      else if (it.f === 'arb') A.arbusto(c, 0, 0, it.s, it.pal, it.pal.flor2);
-      else if (it.f === 'mon') A.monte(c, 0, 0, 44, 18, it.pal);
-      else if (it.f === 'roc' || it.f === 'mor') A.rocha(c, 0, 0, it.s, it.pal);
-      else if (it.f === 'pic') A.pico(c, 0, 0, 56 * it.s, 52 * it.s, it.pal);
-      else if (it.f === 'jun' || it.f === 'margem') A.junco(c, 0, 0, 1, it.pal);
+      desenharNatureza(c, V, it);
     });
     c.setTransform(1, 0, 0, 1, 0, 0);
+    /* o que fica em pé e pode tapar quem passa atrás: o quadro animado redesenha estes por cima das figuras */
+    r.altos = itens.filter(function (it) { return ALTURA_TAPA[it.f]; }).sort(function (a, b) { return a.x - b.x; });
+  }
+
+  /* uma peça de vegetação ou relevo, com o pé em (it.x, it.y); usada no cache do chão e, para as que tapam figuras, no
+     quadro animado. Variante e tamanho saem da posição, para cada lugar ter sempre a mesma peça. */
+  function desenharNatureza(c, V, it) {
+    obj(c, V, it.x, it.y);
+    if (it.f === 'ponte' && RP.natureza && RP.natureza.ponte(c, it.ang, it.pal !== P)) return;
+    if (RP.natureza && RP.natureza.pronto) {
+      var hv = A.hash(Math.round(it.x * 10), Math.round(it.y * 10), 7), hs = A.hash(Math.round(it.x * 10), Math.round(it.y * 10), 11);
+      var esc = it.f === 'pic' ? it.s * (0.65 + hs * 0.9) : it.f === 'mon' ? 0.7 + hs * 0.7 : it.f === 'mor' ? 0.6 + hs * 0.7 : it.f === 'roc' ? 0.6 + hs * 0.5 : it.f === 'arb' || it.f === 'jun' || it.f === 'margem' || it.f === 'agua' ? 0.8 + hs * 0.5 : it.f === 'pedraRio' || it.f === 'canoa' ? 0.9 + hs * 0.3 : it.s * (0.8 + hs * 0.45);
+      if (RP.natureza.desenhar(c, it.f, hv, esc, it.pal !== P)) return;
+    }
+    if (it.f === 'con') A.arvoreConifera(c, 0, 0, it.s, it.pal, it.alt);
+    else if (it.f === 'fol') A.arvoreFolhosa(c, 0, 0, it.s, it.pal);
+    else if (it.f === 'arb') A.arbusto(c, 0, 0, it.s, it.pal, it.pal.flor2);
+    else if (it.f === 'mon') A.monte(c, 0, 0, 44, 18, it.pal);
+    else if (it.f === 'roc' || it.f === 'mor') A.rocha(c, 0, 0, it.s, it.pal);
+    else if (it.f === 'pic') A.pico(c, 0, 0, 56 * it.s, 52 * it.s, it.pal);
+    else if (it.f === 'jun' || it.f === 'margem') A.junco(c, 0, 0, 1, it.pal);
+  }
+  /* altura (unidades do mundo, em pé) e meia largura de cada peça que pode tapar uma figura; o que é chato no chão
+     (água, pedras do leito, ponte, juncos) fica só no cache e nunca cobre ninguém */
+  var ALTURA_TAPA = { con: [72, 18], fol: [64, 20], pic: [110, 34], mon: [40, 26], mor: [52, 22], roc: [16, 12], arb: [16, 12] };
+
+  /* Ordem de profundidade entre o chão e o que se mexe: o cache desenha árvores e relevo por baixo de tudo, então
+     uma figura que passa atrás de uma árvore sairia por cima dela. Para cada figura do quadro, as peças do cache que
+     ficam na frente (pé mais abaixo na tela) e cobrem a figura entram na mesma lista ordenada e são redesenhadas
+     por cima dela. Só as peças perto de alguma figura entram, então o custo cresce com as figuras, não com a mata. */
+  function intercalarNatureza(c, V, altos, itens) {
+    if (!altos || !altos.length || !itens.length) return;
+    var fig = itens.filter(function (q) { return q.x != null; });
+    var MEIA_FIG = 14, MAX_DX = 34 * 1.6 + MEIA_FIG, postos = new Set();
+    function primeiro(x) { var a = 0, b = altos.length; while (a < b) { var m = (a + b) >> 1; if (altos[m].x < x) a = m + 1; else b = m; } return a; }
+    /* a peça tapa a figura quando o pé dela fica abaixo do pé da figura na tela (está na frente), o topo dela passa
+       do pé da figura (a distância na tela, achatada por K, é menor que a altura da peça) e as larguras se cruzam */
+    function tapa(t, x, y) {
+      var dim = ALTURA_TAPA[t.f], e = (t.s || 1) * 1.6;
+      return t.y > y && (t.y - y) * K < dim[0] * e && Math.abs(t.x - x) < dim[1] * e + MEIA_FIG;
+    }
+    function por(t) {
+      if (postos.has(t)) return;
+      postos.add(t);
+      itens.push({ y: t.y, x: t.x, d: function () { desenharNatureza(c, V, t); } });
+    }
+    fig.forEach(function (q) {
+      for (var i = primeiro(q.x - MAX_DX); i < altos.length && altos[i].x < q.x + MAX_DX; i++) if (tapa(altos[i], q.x, q.y)) { por(altos[i]); q.tapada = true; }
+    });
   }
 
   /* ---------------------------------------------------------------- vida: trabalho nos seus locais */
@@ -525,43 +560,43 @@
         var meu = o.dono === 'meu', loc = meu ? RP.local(o.id) : null, castelo = o.local === 'castelo';
         var x = { tipo: o.local, nivel: o.nivel, produz: loc ? loc.produz : null, ruina: o.ruina, moinho: o.local === 'vila' && (o.nivel || 0) >= 3 };
         var obra = meu ? obraDe(o.id, ag) : null;
-        itens.push({ y: p.y, d: function () {
+        itens.push({ y: p.y, x: p.x, d: function () {
           obj(c, V, p.x, p.y);
           if (o.ruina || o.dono === 'livre') A.ruina(c, x, t, pal);
           else A.local(c, x, t, pal, A.corDono(o.dono, o), anim);
           if (obra) { obj(c, V, p.x, p.y); if (obra.ativa) A.andaime(c, castelo ? 30 : 20, P); else A.materiais(c, P); }
         }, alvo: alvo(p.x, p.y, castelo ? 64 : 50, castelo ? 66 : 42, ['local', o.id], o) });
         if (obra && obra.ativa) {
-          itens.push({ y: p.y + 14, d: function () { obj(c, V, p.x + 16, p.y + 14); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[4], dir: -1, trabalho: 'martelo', fase: 0.5 }); } });
+          itens.push({ y: p.y + 14, x: p.x + 16, d: function () { obj(c, V, p.x + 16, p.y + 14); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[4], dir: -1, trabalho: 'martelo', fase: 0.5 }); } });
           rot(p.x, p.y, -52, 'Obra · ' + RP.fmtResta(obra.fim - ag), 'obra', Cs.alerta);
         }
         if (o.local === 'pasto' && !antigo && !o.ruina) {
-          itens.push({ y: p.y - 18, d: function () { obj(c, V, p.x, p.y); A.cerca(c, P, false); } });
-          itens.push({ y: p.y + 18, d: function () { obj(c, V, p.x, p.y); A.cerca(c, P, true); } });
+          itens.push({ y: p.y - 18, x: p.x, d: function () { obj(c, V, p.x, p.y); A.cerca(c, P, false); } });
+          itens.push({ y: p.y + 18, x: p.x, d: function () { obj(c, V, p.x, p.y); A.cerca(c, P, true); } });
         }
         if (o.reliquia) {
           var rx = p.x + (castelo ? -46 : -18), ry = p.y + (castelo ? 30 : 12);
-          itens.push({ y: ry, d: function () { obj(c, V, rx, ry); A.pedestalReliquia(c, t, pal, o.reliquia.tipo || 'desconhecido', anim); }, alvo: alvo(rx, ry - 12, 26, 34, ['local', o.id], o) });
+          itens.push({ y: ry, x: rx, d: function () { obj(c, V, rx, ry); A.pedestalReliquia(c, t, pal, o.reliquia.tipo || 'desconhecido', anim); }, alvo: alvo(rx, ry - 12, 26, 34, ['local', o.id], o) });
         }
         if (castelo && !o.ruina) rot(p.x, p.y, 26, meu ? (RP.reino ? RP.reino.nome : o.nome) : 'Castelo', 'castelo', A.corDono(o.dono, o));
         if (meu && ameacados[h]) rot(p.x, p.y, -46, 'Ameaçado', 'perigo', Cs.perigo);
         return;
       }
       if (o.tipo === 'jazida') {
-        itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); A.jazida(c, o.recurso, t, pal, anim); }, alvo: alvo(p.x, p.y, 46, 34, ['jazida', o.id], o) });
+        itens.push({ y: p.y, x: p.x, d: function () { obj(c, V, p.x, p.y); A.jazida(c, o.recurso, t, pal, anim); }, alvo: alvo(p.x, p.y, 46, 34, ['jazida', o.id], o) });
         if (o.recurso === 'cavalo' && !antigo) for (var q = 0; q < 3; q++) (function (q) {
           var hx = p.x + Math.sin(t * 0.21 + q * 2.1) * 16, hy = p.y + Math.cos(t * 0.17 + q * 1.3) * 12, dir = Math.cos(t * 0.21 + q * 2.1) >= 0 ? 1 : -1;
-          itens.push({ y: hy, d: function () { obj(c, V, hx, hy); A.cavalo(c, 0, 0, t, P, { cor: P.cavalo[(q + 2) % 4], dir: dir, andando: Math.sin(t * 0.4 + q) > 0, pastando: Math.sin(t * 0.4 + q) <= 0, fase: q }); } });
+          itens.push({ y: hy, x: hx, d: function () { obj(c, V, hx, hy); A.cavalo(c, 0, 0, t, P, { cor: P.cavalo[(q + 2) % 4], dir: dir, andando: Math.sin(t * 0.4 + q) > 0, pastando: Math.sin(t * 0.4 + q) <= 0, fase: q }); } });
         })(q);
         return;
       }
       if (o.tipo === 'ruina-antiga') {
-        itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); A.jazida(c, 'ruina', t, pal, anim, o.esgotada); }, alvo: alvo(p.x, p.y, 50, 40, ['ruina-antiga', o.id], o) });
+        itens.push({ y: p.y, x: p.x, d: function () { obj(c, V, p.x, p.y); A.jazida(c, 'ruina', t, pal, anim, o.esgotada); }, alvo: alvo(p.x, p.y, 50, 40, ['ruina-antiga', o.id], o) });
         return;
       }
       /* tipos de outros sistemas, ou marcador genérico */
       var info = { t: t, pal: pal, anim: anim, antigo: antigo, A: A, estado: e, agora: ag };
-      itens.push({ y: p.y, d: function () {
+      itens.push({ y: p.y, x: p.x, d: function () {
         obj(c, V, p.x, p.y);
         try { if (tipo && tipo.desenharCena) tipo.desenharCena(c, o, info); else A.marco(c, t, pal, anim); } catch (er) { console.error(er); }
       }, alvo: alvo(p.x, p.y - 6, (tipo && tipo.alvo && tipo.alvo.w) || 40, (tipo && tipo.alvo && tipo.alvo.h) || 36, [o.tipo, o.id != null ? o.id : o._k], o) });
@@ -575,11 +610,11 @@
       var e = M.estado(it.hex); if (e.v === 'desconhecido') return;
       var p = H.centroH(it.hex); if (!naTela(p.x, p.y)) return;
       var ativa = emAndamento(it, ag);
-      itens.push({ y: p.y, d: function () {
+      itens.push({ y: p.y, x: p.x, d: function () {
         obj(c, V, p.x, p.y); A.ruina(c, { ruina: false }, t, P);
         if (ativa) { A.andaime(c, 16, P); } else A.materiais(c, P, -36);
       }, alvo: alvo(p.x, p.y, 44, 34, ['hex', it.hex], null) });
-      if (ativa) itens.push({ y: p.y + 12, d: function () { obj(c, V, p.x + 14, p.y + 12); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[2], dir: -1, trabalho: 'martelo', fase: 0.2 }); } });
+      if (ativa) itens.push({ y: p.y + 12, x: p.x + 14, d: function () { obj(c, V, p.x + 14, p.y + 12); RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[2], dir: -1, trabalho: 'martelo', fase: 0.2 }); } });
       rot(p.x, p.y, -36, ativa ? 'Obra · ' + RP.fmtResta(it.fim - ag) : 'Aguardando material', 'obra', Cs.alerta);
     });
 
@@ -592,19 +627,19 @@
         var hx = o.centro.x + Math.sin(t * 0.3 + o.fase) * 18, hy = o.centro.y + Math.cos(t * 0.23 + o.fase * 1.3) * 11;
         if (!naTela(hx, hy)) return;
         var dir = Math.cos(t * 0.3 + o.fase) >= 0 ? 1 : -1, mov = Math.sin(t * 0.5 + o.fase) > -0.2;
-        itens.push({ y: hy, d: function () { obj(c, V, hx, hy); A.cavalo(c, 0, 0, t, P, { cor: o.cor, dir: dir, andando: mov, pastando: !mov, fase: o.fase }); } });
+        itens.push({ y: hy, x: hx, d: function () { obj(c, V, hx, hy); A.cavalo(c, 0, 0, t, P, { cor: o.cor, dir: dir, andando: mov, pastando: !mov, fase: o.fase }); } });
         return;
       }
       if (o.soRecrutando && !recr) return;
       if (o.alvoPalha) {
         if (!naTela(o.alvoPalha.x, o.alvoPalha.y)) return;
-        itens.push({ y: o.alvoPalha.y, d: function () { obj(c, V, o.alvoPalha.x, o.alvoPalha.y); A.linha(c, -2, 0, 0, -8, P.madeiraEsc, 1.2); A.linha(c, 2, 0, 0, -8, P.madeiraEsc, 1.2); A.elipse(c, 0, -10, 4.5, 4.5, '#d8c98f'); A.elipse(c, 0, -10, 3, 3, '#c0392b'); A.elipse(c, 0, -10, 1.4, 1.4, '#f1e6c2'); } });
+        itens.push({ y: o.alvoPalha.y, x: o.alvoPalha.x, d: function () { obj(c, V, o.alvoPalha.x, o.alvoPalha.y); A.linha(c, -2, 0, 0, -8, P.madeiraEsc, 1.2); A.linha(c, 2, 0, 0, -8, P.madeiraEsc, 1.2); A.elipse(c, 0, -10, 4.5, 4.5, '#d8c98f'); A.elipse(c, 0, -10, 3, 3, '#c0392b'); A.elipse(c, 0, -10, 1.4, 1.4, '#f1e6c2'); } });
         return;
       }
       if (o.arqueiro) {
         if (!naTela(o.fixo.x, o.fixo.y)) return;
         var fa = ((t * 0.8 + o.fase) % 1.6) / 1.6;
-        itens.push({ y: o.fixo.y, d: function () {
+        itens.push({ y: o.fixo.y, x: o.fixo.x, d: function () {
           obj(c, V, o.fixo.x, o.fixo.y);
           A.pessoa(c, 0, 0, t, P, { roupa: corMeu, cinto: '#2b2520', dir: 1, arco: true, atirando: true, fase: o.fase });
           if (fa > 0.55) {
@@ -624,7 +659,7 @@
       }
       if (!naTela(x, y)) return;
       var carga = o.carga && (o.fixo || ida) ? o.carga : null;
-      itens.push({ y: y, d: function () {
+      itens.push({ y: y, x: x, d: function () {
         obj(c, V, x, y);
         if (o.soldado) A.pessoa(c, 0, 0, t, P, { roupa: corMeu, cinto: '#2b2520', dir: dir, andando: andando, fase: o.fase, capacete: P.metal, lanca: true, escudo: corMeu, estocada: o.estocada });
         else A.pessoa(c, 0, 0, t, P, { roupa: o.roupa, dir: dir, andando: andando, fase: o.fase, trabalho: o.trabalho, carga: carga, corCarga: o.corCarga });
@@ -646,10 +681,16 @@
       var am = alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.id], m); am.hex = pos.hex; self.alvos.push(am);
     });
 
+    intercalarNatureza(c, V, r.altos, itens);
     itens.sort(function (a, b) { return a.y - b.y; });
     itens.forEach(function (it) {
       it.d();
       if (it.alvo) { var a = it.alvo; self.alvos.push(alvoTela(self, a.x, a.y, a.w, a.h, a.ent, a.obj)); }
+    });
+    /* quem ficou atrás de árvore ou pedra aparece em silhueta clara por cima, para não sumir dentro da mata */
+    itens.forEach(function (it) {
+      if (!it.tapada || !it.silhueta) return;
+      c.save(); c.globalAlpha = 0.32; it.d(); c.restore();
     });
 
     /* névoa à deriva sobre o desconhecido */
@@ -736,10 +777,10 @@
     var dir = Math.cos(pos.ang) >= 0 ? 1 : -1, ux = Math.cos(pos.ang), uy = Math.sin(pos.ang);
     var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
-    function add(p, fn) { itens.push({ y: p.y, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
+    function add(p, fn) { itens.push({ y: p.y, x: p.x, silhueta: true, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
     /* pessoas selecionadas dentro desta marcha: anel no chão */
     if (RP.selecao && RP.selecao.n() && m.pessoaIds && m.pessoaIds.some(function (id) { return RP.selecao.tem(id); })) {
-      itens.push({ y: pos.y - 0.1, d: function () { obj(c, V, pos.x, pos.y); c.strokeStyle = Cs.selecao; c.lineWidth = 1.6; c.beginPath(); c.ellipse(0, 1, 16, 16 * K * 0.55, 0, 0, 6.2832); c.stroke(); } });
+      itens.push({ y: pos.y - 0.1, x: pos.x, d: function () { obj(c, V, pos.x, pos.y); c.strokeStyle = Cs.selecao; c.lineWidth = 1.6; c.beginPath(); c.ellipse(0, 1, 16, 16 * K * 0.55, 0, 0, 6.2832); c.stroke(); } });
       prefixo = 'Selecionado · ';
     }
     if (def && def.desenharCena) {
@@ -802,7 +843,7 @@
       if (trab) prefixo = ({ escavar: 'Escavando', extrair: 'Extraindo', cacar: 'Caçando', coletar: 'Coletando' }[trab] || 'Trabalhando') + ' · ' + prefixo;
       if (!parada) {
         var po = pt(10 + Math.ceil(nfig / Math.max(1, porFila)) * 10, 0);
-        itens.push({ y: pos.y + 6, d: function () { obj(c, V, po.x, po.y); for (var w = 0; w < 3; w++) { var a = (t * 0.8 + w / 3) % 1; A.elipse(c, Math.sin(w * 3) * 6 - dir * a * 6, -a * 6, 4 + a * 6, 2 + a * 3, 'rgba(160,140,110,' + (0.3 * (1 - a)).toFixed(2) + ')'); } } });
+        itens.push({ y: pos.y + 6, x: po.x, d: function () { obj(c, V, po.x, po.y); for (var w = 0; w < 3; w++) { var a = (t * 0.8 + w / 3) % 1; A.elipse(c, Math.sin(w * 3) * 6 - dir * a * 6, -a * 6, 4 + a * 6, 2 + a * 3, 'rgba(160,140,110,' + (0.3 * (1 - a)).toFixed(2) + ')'); } } });
       }
     }
     if (m.reliquia) { var pb = pt(12, 0); add({ x: pb.x, y: pb.y + 1 }, function () { A.bauReliquia(c, t, P, m.reliquia.tipo || 'desconhecido'); }); prefixo = 'Relíquia · '; }

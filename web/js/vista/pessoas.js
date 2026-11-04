@@ -93,8 +93,8 @@
   }
 
   function anel(c, cor) {
-    c.strokeStyle = cor; c.lineWidth = 1.6; c.globalAlpha = 0.9;
-    c.beginPath(); c.ellipse(0, 0.8, 8, 8 * A.K * 0.55, 0, 0, 6.2832); c.stroke(); c.globalAlpha = 1;
+    var a0 = c.globalAlpha; c.strokeStyle = cor; c.lineWidth = 1.6; c.globalAlpha = a0 * 0.9;
+    c.beginPath(); c.ellipse(0, 0.8, 8, 8 * A.K * 0.55, 0, 0, 6.2832); c.stroke(); c.globalAlpha = a0;
   }
 
   var V = RP.pessoasVista = {
@@ -113,7 +113,7 @@
           var mostra = lista.slice(0, 3), ns = lista.filter(ehSoldado).length, nc = lista.length - ns;
           mostra.forEach(function (p, i) {
             var x = ce.x - 6 + i * 6, y = ce.y + 22 + (i % 2) * 2;
-            q.itens.push({ y: y, d: function () { q.obj(x, y); figura(c, p, q.t, 1, q.cor, false); } });
+            q.itens.push({ y: y, x: x, silhueta: true, d: function () { q.obj(x, y); figura(c, p, q.t, 1, q.cor, false); } });
           });
           var txt = (nc ? nc + (nc === 1 ? ' pessoa' : ' pessoas') : '') + (nc && ns ? ' · ' : '') + (ns ? ns + (ns === 1 ? ' soldado' : ' soldados') : '');
           var selN = sel ? lista.filter(function (p) { return sel.tem(p.id); }).length : 0;
@@ -125,7 +125,7 @@
         var pos = posicoes(lista, ce);
         lista.forEach(function (p, i) {
           var pp = pos[p.id], dir = (p.id + i) % 3 === 0 ? -1 : 1, selecionada = sel && sel.tem(p.id);
-          q.itens.push({ y: pp.y, d: function () {
+          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, d: function () {
             q.obj(pp.x, pp.y);
             if (selecionada) anel(c, Cs.selecao);
             figura(c, p, q.t, dir, q.cor, false);
@@ -144,7 +144,7 @@
         var pos = posicoes(lista, ce);
         lista.forEach(function (p, i) {
           var pp = pos[p.id];
-          q.itens.push({ y: pp.y, d: function () { q.obj(pp.x, pp.y); figura(c, p, q.t, i % 2 ? -1 : 1, P.hostil, true); } });
+          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, d: function () { q.obj(pp.x, pp.y); figura(c, p, q.t, i % 2 ? -1 : 1, P.hostil, true); } });
         });
         if (n < (o.civis || 0) + (o.soldados || 0)) q.rot(ce.x, ce.y + 22, 10, ((o.civis || 0) + (o.soldados || 0)) + ' pessoas', 'marcha', '#a39d90');
       });
