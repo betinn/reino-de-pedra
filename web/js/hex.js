@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var RP = (window.RP = window.RP || {});
-  var R = 30, W = Math.sqrt(3) * R, VS = 1.5 * R;
+  var R = 15, W = Math.sqrt(3) * R, VS = 1.5 * R;   /* metade do hexágono de antes (decisão 0026); construções e pessoas não mudam de tamanho */
   var H = {
     R: R, W: W, VS: VS, COLS: 60, LINS: 48,
     configurar: function (cols, lins) {
@@ -44,6 +44,15 @@
       var d = (l & 1) ? [[1, 0], [1, -1], [0, -1], [-1, 0], [0, 1], [1, 1]] : [[1, 0], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1]];
       return d.map(function (v) { return [c + v[0], l + v[1]]; }).filter(function (p) { return H.dentro(p[0], p[1]); })
         .map(function (p) { return H.idx(p[0], p[1]); });
+    },
+    /* hexágonos que uma construção ocupa (igual a Mapa/Pegada.cs): 7 = o hexágono e o anel; 3 = ele e os vizinhos de leste e oeste */
+    pegada: function (h, tamanho) {
+      if (tamanho >= 7) return [h].concat(H.vizinhos(h));
+      if (tamanho < 3) return [h];
+      var c = H.c(h), l = H.l(h), out = [h];
+      if (H.dentro(c - 1, l)) out.push(H.idx(c - 1, l));
+      if (H.dentro(c + 1, l)) out.push(H.idx(c + 1, l));
+      return out;
     },
     /* ruído determinístico em [0,1) para arte procedural */
     hash: function (x, y, s) {

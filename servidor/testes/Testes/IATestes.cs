@@ -175,7 +175,8 @@ public class IATestes(ITestOutputHelper saida)
         foreach (var l in t.M.LocaisDe(ia.Id)) { l.Estoque = new(); t.M.Sujar(l); }
         Governo.Sessao(t.M, ia, MundoIA.Conduta(t, ia));
         Assert.All(ia.Filas.Values, f => Assert.DoesNotContain(f.Itens, i => i.Custo.Total > 0));
-        Assert.DoesNotContain(t.M.Marchas, x => x.ReinoId == ia.Id && x is not Explorador);
+        // sem recursos, a IA não gasta: só explora e coleta (coletar madeira e pedra não custa nada)
+        Assert.DoesNotContain(t.M.Marchas, x => x.ReinoId == ia.Id && x is not Explorador && !(x is Exercito e && e.Ordem == ReinoDePedra.Jogo.Valiosos.Coletas.OrdemColetarId));
     }
 
     [Fact]

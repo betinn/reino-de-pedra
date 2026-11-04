@@ -50,7 +50,7 @@ public class VisibilidadeTestes
         var t = new MundoTeste();
         var r = t.NovoReino(); r.EscudoAte = 0;
         var c = t.M.Locais[r.CasteloId];
-        var alvo = HexLonge(t, c.Hex, 6);
+        var alvo = HexLonge(t, c.Hex, 12);
         var curta = Caminhos.Calcular(t.M, c.Hex, alvo, "Lenta");
         var meio = curta.Hexes[curta.Hexes.Count / 2];
         Fauna.Adicionar(t.M, new RegiaoFauna { Centro = meio, Hex = meio, Raio = 1, Animal = "ursos", Nivel = "alto", Qtd = 4 });
@@ -74,7 +74,7 @@ public class VisibilidadeTestes
         Assert.Equal(curtaVel, Caminho(vg.GetProperty("segura")));
 
         // caravana segura até um local próprio do outro lado
-        var dest = t.M.AdicionarLocal(new Local { ReinoId = r.Id, Tipo = TipoLocal.Armazem, Nivel = 1, Hex = HexLonge(t, alvo, 1), Nome = "Armazém" });
+        var dest = t.M.AdicionarLocal(new Local { ReinoId = r.Id, Tipo = TipoLocal.Armazem, Nivel = 1, Hex = HexLonge(t, alvo, 2), Nome = "Armazém" });
         t.DarRecursos(r, 100);
         var plano = Caravanas.Planejar(t.M, r, new PedidoCaravana(c.Id, dest.Id, new Dictionary<string, double> { ["madeira"] = 10 }, null, tropas, c.Id, true));
         Assert.Equal(Caminhos.Calcular(t.M, c.Hex, dest.Hex, plano.Vel).Hexes, plano.Levar!.Hexes);
@@ -94,7 +94,7 @@ public class VisibilidadeTestes
         Guarnecer(t, a, ca, "lanceiro", 4);
         var tropas = new Dictionary<string, int> { ["lanceiro"] = 4 };
         VisaoCombate.PedidoAtaque P(int h) => new(ca.Id, null, tropas, h, null, null, null, null, null, null, null, false);
-        var vazio = t.M.G.Area(cb.Hex, 3).First(h => t.M.LocalNoHex(h) == null && !Nevoas.Explorado(t.M, a.Id, h));
+        var vazio = t.M.G.Area(cb.Hex, 6).First(h => t.M.LocalNoHex(h) == null && !Nevoas.Explorado(t.M, a.Id, h));
         var comLocal = Assert.Throws<RegraException>(() => VisaoCombate.Previa(t.M, a, P(cb.Hex), cb.Hex)).Message;
         var semLocal = Assert.Throws<RegraException>(() => VisaoCombate.Previa(t.M, a, P(vazio), vazio)).Message;
         Assert.Equal(semLocal, comLocal);
@@ -161,19 +161,19 @@ public class VisibilidadeTestes
         var a = t.NovoReino(); var b = t.NovoReino();
         var ca = t.M.Locais[a.CasteloId];
         var vis = Nevoas.VisiveisAgora(t.M, a.Id);
-        var h = t.M.G.Area(ca.Hex, 2).First(x => vis.Contains(x) && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
+        var h = t.M.G.Area(ca.Hex, 4).First(x => vis.Contains(x) && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
         var j = t.M.Jazidas.Adicionar(new ReinoDePedra.Jogo.Mapa.Jazida { Hex = h, Recurso = "prata", Inicial = 100, Restante = 100 });
         Assert.Null(ReinoDePedra.Jogo.Combate.Defesas.MotivoTorre(t.M, a, h));
         // a torre sobe sobre a jazida que ninguém do reino descobriu (ela segue oculta embaixo)
         new ReinoDePedra.Jogo.Combate.ObraTorre().Concluir(t.M, a, new ItemFila { Hex = h });
         Assert.NotNull(ReinoDePedra.Jogo.Combate.Defesas.NoHex(t.M, h));
         // descoberta, a jazida ocupa o hexágono para quem a conhece
-        var h2 = t.M.G.Area(ca.Hex, 2).First(x => vis.Contains(x) && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
+        var h2 = t.M.G.Area(ca.Hex, 4).First(x => vis.Contains(x) && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
         t.M.Jazidas.Adicionar(new ReinoDePedra.Jogo.Mapa.Jazida { Hex = h2, Recurso = "prata", Inicial = 100, Restante = 100, DescobertaPor = [a.Id] });
         Assert.Equal("O hexágono não está livre.", ReinoDePedra.Jogo.Combate.Defesas.MotivoTorre(t.M, a, h2));
 
         // explorado e fora da vista: um local novo de outro reino não aparece no motivo
-        var longe = Enumerable.Range(0, 60).Select(p => HexLonge(t, ca.Hex, 8, p))
+        var longe = Enumerable.Range(0, 60).Select(p => HexLonge(t, ca.Hex, 16, p))
             .First(h => Obras.Fundaveis.Any(kv => kv.Value.terrenos.Contains(t.M.Mapa.Terrenos[h])));   // terreno em que se funda algo
         Nevoas.RevelarArea(t.M, a.Id, longe, 0);
         Assert.DoesNotContain(longe, Nevoas.VisiveisAgora(t.M, a.Id));
@@ -191,7 +191,7 @@ public class VisibilidadeTestes
         var t = ComApi();
         var a = t.NovoReino(); var b = t.NovoReino();
         var cb = t.M.Locais[b.CasteloId];
-        var th = t.M.G.Area(cb.Hex, 1).First(x => x != cb.Hex && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
+        var th = t.M.G.Area(cb.Hex, 2).First(x => x != cb.Hex && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
         var torre = t.M.Torres.Adicionar(new ReinoDePedra.Jogo.Combate.Torre { ReinoId = b.Id, Hex = th, Nivel = 1, Estrutura = ReinoDePedra.Jogo.Combate.Defesas.EstruturaCheia(t.M, 1) });
         Nevoas.RevelarArea(t.M, a.Id, th, 0);   // viu a torre no nível 1
         Assert.DoesNotContain(th, Nevoas.VisiveisAgora(t.M, a.Id));
@@ -217,7 +217,7 @@ public class VisibilidadeTestes
         var tropas = new Dictionary<string, int> { ["lanceiro"] = 4 };
         var vel = ReinoDePedra.Jogo.Reinos.Tropas.Velocidade(t.M, tropas);
         // um destino na névoa de A cujo caminho a partir de B atravessa a visão de A
-        var destino = t.M.G.Area(ca.Hex, 7).Where(h => !vis.Contains(h) && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null && t.M.G.Distancia(h, ca.Hex) >= 5)
+        var destino = t.M.G.Area(ca.Hex, 14).Where(h => !vis.Contains(h) && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null && t.M.G.Distancia(h, ca.Hex) >= 10)
             .First(h => Caminhos.Calcular(t.M, cb.Hex, h, vel) is var rr && rr.Hexes[^1] == h && rr.Hexes.Any(vis.Contains) && !vis.Contains(rr.Hexes[^2]));
         var ex = Exercitos.Enviar(t.M, b, cb.Id, tropas, destino, OrdemMover.Id);
         var k = ex.Caminho.FindIndex(vis.Contains);

@@ -237,6 +237,17 @@ public static partial class Pessoas
         RecontarGuarnicao(m, l);
     }
 
+    /// <summary>Todos os soldados de <paramref name="de"/> passam para a marcha <paramref name="para"/> (grupos que se juntam no mapa).</summary>
+    public static void Unir(Mundo m, Marcha de, Marcha para)
+    {
+        Sincronizar(m, de);
+        var lista = SoldadosDaMarcha(m, de).ToList();
+        foreach (var p in lista) de.PessoaIds.Remove(p.Id);
+        RecontarTropas(m, de);
+        m.Sujar(de);
+        Embarcar(m, para, lista);
+    }
+
     /// <summary>Passa <paramref name="grupo"/> de uma marcha para "saindo" (um reforço aliado que deixa o exército que recuou).</summary>
     public static List<Pessoa> Transferir(Mundo m, Marcha de, IReadOnlyDictionary<string, int> grupo, long reinoId)
     {

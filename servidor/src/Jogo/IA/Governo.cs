@@ -41,12 +41,14 @@ public static class Governo
         Tentar(() => Defender(m, r, c));
         if (!c.Regencia) Tentar(() => Comerciante.Responder(m, r, c));
         Tentar(() => Construir(m, r, c, castelo));
+        Tentar(() => ExploradoresParados(m, r, castelo, c.Regencia));
         Tentar(() => Recrutar(m, r, c, castelo));
         Tentar(() => Curar(m, r));   // a regência também cura: guarda o reino para quem volta
         if (c.Regencia) return;
         Tentar(() => Prisioneiros(m, r));
         Tentar(() => Explorar(m, r, castelo));
         Tentar(() => Cacar(m, r, castelo));
+        Tentar(() => Coletar(m, r, castelo));
         if (c.Perfil is { } p)
         {
             if (p.Torres > 0) Tentar(() => Torres(m, r, p, castelo));
@@ -316,6 +318,24 @@ public static class Governo
     }
 
     /// <summary>Um explorador a pé: treina se não tem; se está livre, explora um hexágono ainda não visto.</summary>
+    /// <summary>
+    /// Exploradores parados no destino (eles esperam nova ordem): a IA manda o explorador a pé a outro lugar ainda não visto
+    /// e traz os outros para casa; a regência só os traz para casa.
+    /// </summary>
+    public static void ExploradoresParados(Mundo m, Reino r, Local castelo, bool regencia)
+    {
+        foreach (var e in Exploradores.De(m, r.Id).Where(x => x.Ordem == Exploradores.Aguardar).ToList())
+        {
+            try
+            {
+                if (!regencia && e.TipoExp == Exploradores.Pe && NaoVisto(m, r, castelo) is int alvo && alvo != e.HexEm(m.Agora))
+                    Exploradores.DarOrdem(m, r, e.Id, Exploradores.Explorar, alvo, null, true);
+                else Exploradores.DarOrdem(m, r, e.Id, Exploradores.Retornar, null);
+            }
+            catch (RegraException) { Exploradores.DarOrdem(m, r, e.Id, Exploradores.Retornar, null); }
+        }
+    }
+
     public static void Explorar(Mundo m, Reino r, Local castelo)
     {
         if (Ocupados(m, r, Exploradores.Pe) == 0) { Exploradores.Treinar(m, r, Exploradores.Pe, 1); return; }
@@ -341,6 +361,46 @@ public static class Governo
             Exercitos.Enviar(m, r, castelo.Id, grupo, h, OrdemCacar.Id, seguro: true);
             return;
         }
+    }
+
+    /// <summary>Custo da próxima obra que a IA faria: o castelo, se algum local já o alcançou; senão a melhoria de local mais barata.</summary>
+    public static Dictionary<string, double>? ProximaObra(Mundo m, Reino r, Local castelo)
+    {
+        if (castelo.Nivel < m.P.NivelMax && Producao(m, r).Any(l => l.Nivel >= castelo.Nivel)) return m.F.CustoNivel(castelo.Nivel + 1, true);
+        var l = Producao(m, r).Where(x => x.Nivel < m.P.NivelMax && x.Nivel < castelo.Nivel).OrderBy(x => x.Nivel).ThenBy(x => x.Id).FirstOrDefault();
+        return l == null ? null : m.F.CustoNivel(l.Nivel + 1, false);
+    }
+
+    /// <summary>
+    /// Coleta quando falta madeira ou pedra para a próxima obra: os civis sem trabalho do castelo (sem eles, alguns lanceiros)
+    /// vão a um hexágono do recurso sem fauna conhecida perto do castelo e trazem uma carga (sem repetir: na próxima sessão a IA
+    /// decide de novo, e os civis voltam a ficar livres para as vagas).
+    /// </summary>
+    public static void Coletar(Mundo m, Reino r, Local castelo)
+    {
+        var p = m.P.Coleta;
+        if (Exercitos.De(m, r.Id).Any(e => e.Ordem is Coletas.OrdemColetarId or Coletas.OrdemEntregarId || e.ColetaPontoId != null)) return;
+        var custo = ProximaObra(m, r, castelo);
+        if (custo == null) return;
+        var total = Economia.TotalGuardado(m, r);
+        var falta = p.Terrenos.Values.Distinct().Where(k => custo.GetValueOrDefault(k) > total.Qtd(k))
+            .OrderByDescending(k => custo[k] - total.Qtd(k)).ThenBy(k => k).FirstOrDefault();
+        if (falta == null) return;
+        var civis = Math.Min(p.MaxPessoas, Pessoas.Pessoas.OciososPresentes(m, castelo).Count());
+        var tropas = new Dictionary<string, int>();
+        if (civis == 0)
+        {
+            var n = Math.Min(p.Ia.Tropas, GT.Livres(m, castelo, "lanceiro"));
+            if (n < 1) return;
+            tropas["lanceiro"] = n;
+        }
+        var pessoas = civis + GT.Total(tropas);
+        var alvo = m.G.Area(castelo.Hex, p.Ia.Alcance)
+            .Where(h => Coletas.Recurso(m, h) == falta && Coletas.Motivo(m, r, h) == null && Fotos.PerigoConhecido(m, r.Id, h) == 0
+                        && Coletas.Disponivel(m, h) >= p.Minimo && Coletas.PessoasNoHex(m, r.Id, h, 0) + pessoas <= p.MaxPessoas)
+            .OrderBy(h => m.G.Distancia(h, castelo.Hex)).ThenBy(h => h).Select(h => (int?)h).FirstOrDefault();
+        if (alvo is not int hex) return;
+        Coletas.Enviar(m, r, castelo.Id, tropas, civis, hex, repetir: false, seguro: true);
     }
 
     /// <summary>Prospector e extração: descobre jazidas valiosas e manda lanceiros extrair a mais perto conhecida.</summary>

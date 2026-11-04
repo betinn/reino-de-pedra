@@ -17,7 +17,7 @@ public class SoldadosTestes
     private static Dictionary<string, int> G(params (string k, int n)[] x) => x.ToDictionary(p => p.k, p => p.n);
 
     private static int HexLivrePerto(MundoTeste t, Local l) =>
-        t.M.G.Area(l.Hex, 2).First(h => h != l.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null);
+        t.M.G.Area(l.Hex, 4).First(h => h != l.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null);
 
     [Fact]
     public void Exercito_leva_pessoas_os_veteranos_primeiro_e_as_devolve_a_guarnicao()
@@ -144,6 +144,8 @@ public class SoldadosTestes
         Assert.Equal(Estados.Marchando, pessoa.Estado);
         Assert.False(r.ExploradoresLivres.ContainsKey("pe"));
         Assert.Throws<RegraException>(() => Exploradores.Enviar(t.M, r, "pe", Exploradores.Explorar, HexLivrePerto(t, c)));
+        t.AvancarHoras(1);
+        Exploradores.DarOrdem(t.M, r, e.Id, Exploradores.Retornar, null);   // espera no destino até mandarem voltar
         t.AvancarHoras(3);
         Assert.False(t.M.Marchas.ContemId(e.Id));
         Assert.Equal(Estados.Guarnecida, pessoa.Estado);
@@ -176,7 +178,7 @@ public class SoldadosTestes
         Pessoas.SincronizarLivres(t.M, a);
         var pessoa = m_Livre(t, a, "explorador-pe");
         t.M.Sorte = Sorte(x => x < 0.1);
-        var perto = t.M.G.Area(cb.Hex, 1).First(h => h != cb.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null);
+        var perto = t.M.G.Area(cb.Hex, 2).First(h => h != cb.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null);
         var e = Exploradores.Enviar(t.M, a, "pe", Exploradores.Explorar, perto);
         Assert.Equal(pessoa.Id, e.PessoaId);
         t.AvancarHoras(10);

@@ -12,9 +12,10 @@ namespace ReinoDePedra.Jogo.Valiosos;
 /// <summary>
 /// Escavação de ruínas antigas (ordem "escavar"): o grupo fica na ruína e, ao fim, acha a relíquia (tipo da ruína,
 /// nome gerado), a ruína se esgota e o próprio grupo a leva ao local escolhido no envio, numa marcha interceptável.
-/// Duração: <c>escavarHoras1 / (n^expTropas × posto)</c>, com n = tropas (até 50), nunca menos que <c>escavarMin</c>:
-/// 12 h com 1 unidade, ≈ 6,9 h com 2 e o mínimo de 4 h a partir de 4 unidades (3 com posto).
-/// Escavar depende de mãos, não de carga: qualquer unidade conta igual.
+/// Duração: <c>escavarHoras1 / (n^expTropas × posto)</c>, com n = tropas (até <c>P.extracao.maxTropas</c>), nunca menos que
+/// <c>escavarMin</c>. Escavar depende de mãos, não de carga: qualquer unidade conta igual. Mais tropas mandadas depois à mesma
+/// ruína se juntam ao grupo que já escava (uma marcha só) e o fim é recalculado com o progresso que já existe: mais gente,
+/// menos tempo, nunca recomeça.
 /// </summary>
 public static class Escavacoes
 {
@@ -47,6 +48,19 @@ public static class Escavacoes
             return;
         }
         ex.Parar(m);
+        // o reino já escava esta ruína: o grupo novo se junta ao que está lá e o fim é recalculado sem perder o progresso
+        var lider = Exercitos.De(m, ex.ReinoId).FirstOrDefault(e => e.Id != ex.Id && e.EscavaRuinaId == ru.Id);
+        if (lider != null)
+        {
+            var partes = GT.Partes(m, ex.Tropas);
+            Juntar(m, ex, lider);
+            Reagendar(m, lider);
+            var resta = (lider.EscavaFim!.Value - m.Agora) / (double)T.Hora;
+            Registros.Notificar(m, lider.ReinoId, "reliquias", "Mais tropas na escavação",
+                partes + " se juntaram. Relíquia em " + Duracao(resta) + " · " + GT.Partes(m, lider.Tropas) + " na ruína antiga.", "reliquias");
+            m.Avisar(lider.ReinoId, "marchas");
+            return;
+        }
         var h = Horas(m, ex.Tropas, Extracoes.TemPosto(m, ex.ReinoId, ru.Hex));
         ex.EscavaRuinaId = ru.Id;
         ex.EscavaInicio = m.Agora;
@@ -58,7 +72,16 @@ public static class Escavacoes
         m.Avisar(ex.ReinoId, "marchas");
     }
 
-    /// <summary>Recalcula o fim mantendo a fração já escavada (ex.: o posto ficou pronto no meio).</summary>
+    /// <summary>As pessoas, as tropas e a carga de <paramref name="de"/> passam para <paramref name="para"/>, e <paramref name="de"/> sai do mapa.</summary>
+    public static void Juntar(Mundo m, Exercito de, Exercito para)
+    {
+        Pessoas.Pessoas.Unir(m, de, para);
+        para.Carga.Somar(de.Carga); de.Carga = new();
+        m.Sujar(para);
+        de.Encerrar(m);
+    }
+
+    /// <summary>Recalcula o fim mantendo a fração já escavada (ex.: o posto ficou pronto no meio, ou chegaram mais tropas).</summary>
     public static void Reagendar(Mundo m, Exercito ex)
     {
         if (ex.EscavaRuinaId is not long rid || m.Ruinas.Obter(rid) is not { } ru || ex.EscavaInicio is not long ini || ex.EscavaFim is not long fim) return;
@@ -165,8 +188,6 @@ public sealed class OrdemEscavarRuina : IOrdemExercito
         if (ru == null || !Nevoas.Explorado(m, r.Id, destino)) throw new RegraException("Não há ruína antiga conhecida neste hexágono.");
         if (ru.Esgotada) throw new RegraException("A ruína já foi escavada.");
         if (Extracoes.OcupadoPorOutro(m, r.Id, destino)) throw new RegraException("Há um posto de outro reino nesta ruína.");
-        if (Exercitos.De(m, r.Id).Any(e => e.Id != ex.Id && (e.EscavaRuinaId == ru.Id || (e.Ordem == Escavacoes.OrdemEscavar && e.Destino == destino && !e.Parado))))
-            throw new RegraException("Suas tropas já escavam esta ruína.");
         var did = ex.Dados["destinoLocalId"]?.GetValue<long>() ?? r.CasteloId;
         if (!Exercitos.LocalProprio(m.Locais.Obter(did), r.Id)) throw new RegraException("Escolha um local seu para guardar a relíquia.");
         ex.Dados["destinoLocalId"] = did;

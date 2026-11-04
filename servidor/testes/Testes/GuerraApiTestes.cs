@@ -82,9 +82,9 @@ public class GuerraApiTestes
             var def = m.Reinos.Single(x => x.Nome == "Valdren");
             var c = m.Locais[casteloA];
             c.Guarnicao["cavalaria"] = 30; m.Sujar(c);
-            var h = m.G.Area(c.Hex, 2).First(x => m.G.Distancia(x, c.Hex) == 2 && Obras.HexLivre(m, x) && !m.Mapa.Rio[x]);
+            var h = m.G.Area(c.Hex, 4).First(x => m.G.Distancia(x, c.Hex) == 4 && Obras.HexLivre(m, x) && !m.Mapa.Rio[x]);
             var mina = m.AdicionarLocal(new Local { ReinoId = def.Id, Tipo = TipoLocal.Mina, Produz = "ferro", Hex = h, Nome = "Mina Rubra", Guarnicao = new() { ["lanceiro"] = 10 } });
-            var destino = m.G.Area(h, 10).First(x => m.G.Distancia(x, h) == 10 && Obras.HexLivre(m, x) && !m.Mapa.Rio[x] && Caminhos.Calcular(m, h, x, "Lenta").Hexes[^1] == x);
+            var destino = m.G.Area(h, 20).First(x => m.G.Distancia(x, h) == 20 && Obras.HexLivre(m, x) && !m.Mapa.Rio[x] && Caminhos.Calcular(m, h, x, "Lenta").Hexes[^1] == x);
             return Exercitos.Enviar(m, def, mina.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, destino, OrdemMover.Id).Id;
         });
         var (sp, p) = await a.Post("interceptacao/previa", new { marchaId, deLocalId = casteloA, tropas = new { cavalaria = 30 } });

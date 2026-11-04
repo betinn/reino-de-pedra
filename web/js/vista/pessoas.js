@@ -31,6 +31,11 @@
   var ultimos = [];   /* figuras desenhadas no último quadro, em coordenadas de tela (para o laço) */
 
   function ehSoldado(p) { return !!SOLDADOS[p.oficio]; }
+  /* som do trabalho de quem está à vista (RP.sons.mundo): lenhador no machado, pedreiro e mineiro na picareta */
+  function somDe(p) {
+    if (p.estado !== 'trabalhando' || ehSoldado(p)) return null;
+    return p.oficio === 'lenhador' ? 'machado' : p.oficio === 'pedreiro' || p.oficio === 'mineiro' ? 'picareta' : p.oficio === 'agricultor' ? null : 'martelo';
+  }
   function ehExplorador(p) { return /^explorador|^prospector|^batedor/.test(p.oficio); }
 
   /* posição de cada pessoa em volta do local: soldados em formação ao sul; civis em arco pelos lados; estável pela ordem */
@@ -49,30 +54,52 @@
   }
 
   /* figura de uma pessoa (o.cor: cor do dono, para soldados; roupa crua sem dono), pelos sprites pré-desenhados */
-  function figura(c, p, t, dir, cor, cru) {
-    var fase = (p.id % 13) * 0.53, est = p.estado, S = RP.sprites;
+  /* extra: opções da marcha por cima das do ofício ({ andando, correndo, ang, trabalho, ferramenta, carga, estocada, atirando }) */
+  function figura(c, p, t, dir, cor, cru, extra) {
+    var fase = (p.id % 13) * 0.53, est = p.estado, S = RP.sprites, ex = extra || {};
+    function op(o) { o.dir = dir; o.fase = fase; o.semente = p.id; o.feminina = cru ? null : p.feminina; return Object.assign(o, ex); }
     if (ehSoldado(p)) {
       var roupa = cru ? '#a39d90' : cor, arm = cru ? 1 : armadura(p.oficio), metal = arm >= 3 ? '#c9d1d9' : arm >= 2 ? '#aeb6be' : P.metal;
-      if (p.oficio === 'cavalaria' || p.oficio === 'elite') { A.cavalo(c, 0, 0, t, P, { cor: P.cavalo[p.id % 4], dir: dir, andando: false, fase: fase, cavaleiro: roupa, capacete: metal }); return; }
-      if (p.oficio === 'ariete' || p.oficio === 'trebuchet') { S.pessoa(c, 0, 0, t, { roupa: roupa, cinto: P.cinto, dir: dir, fase: fase, capacete: metal, armadura: arm, trabalho: est === 'treinando' ? 'martelo' : null }); return; }
-      if (p.oficio === 'arqueiro') { S.pessoa(c, 0, 0, t, { roupa: roupa, cinto: P.cinto, dir: dir, fase: fase, capacete: metal, armadura: arm, arco: true, atirando: est === 'treinando' }); return; }
-      S.pessoa(c, 0, 0, t, { roupa: roupa, cinto: P.cinto, dir: dir, fase: fase, capacete: p.oficio === 'milicia' ? null : metal, armadura: p.oficio === 'milicia' ? 1 : arm, lanca: true, escudo: p.oficio === 'milicia' ? null : roupa, estocada: est === 'treinando' });
+      if (p.oficio === 'cavalaria' || p.oficio === 'elite') {
+        A.cavalo(c, 0, 0, t, P, op({ pelagem: p.id % 5, andando: !!ex.andando, galope: !!ex.correndo, cavaleiro: roupa, capacete: metal, armadura: p.oficio === 'elite' ? Math.max(2, arm) : arm, lanca: true, escudo: p.oficio === 'elite' ? roupa : null }));
+        return;
+      }
+      if (p.oficio === 'ariete' || p.oficio === 'trebuchet') { S.pessoa(c, 0, 0, t, op({ roupa: roupa, cinto: P.cinto, capacete: metal, armadura: arm, trabalho: est === 'treinando' ? 'martelo' : null })); return; }
+      if (p.oficio === 'arqueiro') { S.pessoa(c, 0, 0, t, op({ roupa: roupa, cinto: P.cinto, capacete: metal, armadura: arm, arco: true, atirando: est === 'treinando' })); return; }
+      S.pessoa(c, 0, 0, t, op({ roupa: roupa, cinto: P.cinto, capacete: p.oficio === 'milicia' ? null : metal, armadura: p.oficio === 'milicia' ? 1 : arm, lanca: true, escudo: p.oficio === 'milicia' ? null : roupa, estocada: est === 'treinando' }));
       return;
     }
-    if (ehExplorador(p)) { S.pessoa(c, 0, 0, t, { roupa: /batedor/.test(p.oficio) ? '#2f3a2c' : '#6b5a3a', capuz: /batedor/.test(p.oficio) ? '#26301f' : null, dir: dir, fase: fase, carga: /prospector/.test(p.oficio) ? 'picareta' : null }); return; }
-    if (p.oficio === 'mensageiro') { S.pessoa(c, 0, 0, t, { roupa: P.roupa[4], dir: dir, fase: fase }); A.bandeira(c, -dir * 3, -22, 16, '#f3efe4', t, 9, 6); return; }
+    if (ehExplorador(p)) {
+      if (/cavalo/.test(p.oficio)) { A.cavalo(c, 0, 0, t, P, op({ pelagem: (p.id + 2) % 5, andando: !!ex.andando, galope: !!(ex.andando || ex.correndo), cavaleiro: '#6b5a3a', capuz: '#4a3d28' })); return; }
+      S.pessoa(c, 0, 0, t, op({ roupa: /batedor/.test(p.oficio) ? '#2f3a2c' : '#6b5a3a', capuz: /batedor/.test(p.oficio) ? '#26301f' : null, carga: /prospector/.test(p.oficio) ? 'picareta' : null }));
+      return;
+    }
+    if (p.oficio === 'mensageiro') { S.pessoa(c, 0, 0, t, op({ roupa: P.roupa[4], bandeira: '#f3efe4' })); return; }
     var of = OFICIO[p.oficio] || {}, roupaC = cru ? '#a39d90' : of.roupa || P.roupa[(ROUPA[p.oficio] != null ? ROUPA[p.oficio] : p.id) % 5];
-    if (est === 'ferida') { S.pessoa(c, 0, 0, t, { roupa: roupaC, dir: dir, sentado: true, fase: fase }); return; }
-    if (est === 'treinando') { S.pessoa(c, 0, 0, t, { roupa: roupaC, cinto: P.cinto, dir: dir, fase: fase, lanca: true, estocada: true }); return; }
-    var o = { roupa: roupaC, dir: dir, fase: fase, chapeu: cru ? null : of.chapeu, cinto: of.cinto, capacete: of.capacete };
+    if (est === 'ferida') { S.pessoa(c, 0, 0, t, op({ roupa: roupaC, sentado: true })); return; }
+    if (est === 'treinando') { S.pessoa(c, 0, 0, t, op({ roupa: roupaC, cinto: P.cinto, lanca: true, estocada: true })); return; }
+    var o = { roupa: roupaC, chapeu: cru ? null : of.chapeu, cinto: of.cinto, capacete: of.capacete };
     if (est === 'trabalhando') { if (of.ferramenta) o.ferramenta = of.ferramenta; else o.trabalho = of.trabalho || 'martelo'; }
     else if (est === 'carregando') o.carga = 'saco';
-    S.pessoa(c, 0, 0, t, o);
+    S.pessoa(c, 0, 0, t, op(o));
+  }
+
+  /* vida de agora (a recuperação anda entre as cargas do mapa) e barra sobre a figura de quem está ferido (cheia, não aparece) */
+  function vidaAgora(p) {
+    if (!p || p.vidaMax == null || p.vida == null) return null;
+    var d = M.dados, h = d && d.recebidoEm ? Math.max(0, RP.agora() - d.recebidoEm) / 3600000 : 0;
+    return Math.min(p.vidaMax, p.vida + (p.vidaH || 0) * h);
+  }
+  function barraVida(c, p, y) {
+    var v = vidaAgora(p); if (v == null || v >= p.vidaMax - 0.05) return;
+    var f = Math.max(0, v / p.vidaMax), Cs = A.cores(), w = 14, yy = y == null ? -31 : y;
+    c.fillStyle = 'rgba(20,16,12,0.7)'; c.fillRect(-w / 2 - 1, yy - 1, w + 2, 4);
+    c.fillStyle = f > 0.6 ? Cs.sucesso : f > 0.3 ? Cs.alerta : Cs.perigo; c.fillRect(-w / 2, yy, w * f, 2);
   }
 
   function anel(c, cor) {
-    c.strokeStyle = cor; c.lineWidth = 1.6; c.globalAlpha = 0.9;
-    c.beginPath(); c.ellipse(0, 0.8, 8, 8 * A.K * 0.55, 0, 0, 6.2832); c.stroke(); c.globalAlpha = 1;
+    var a0 = c.globalAlpha; c.strokeStyle = cor; c.lineWidth = 1.6; c.globalAlpha = a0 * 0.9;
+    c.beginPath(); c.ellipse(0, 0.8, 8, 8 * A.K * 0.55, 0, 0, 6.2832); c.stroke(); c.globalAlpha = a0;
   }
 
   var V = RP.pessoasVista = {
@@ -91,7 +118,7 @@
           var mostra = lista.slice(0, 3), ns = lista.filter(ehSoldado).length, nc = lista.length - ns;
           mostra.forEach(function (p, i) {
             var x = ce.x - 6 + i * 6, y = ce.y + 22 + (i % 2) * 2;
-            q.itens.push({ y: y, d: function () { q.obj(x, y); figura(c, p, q.t, 1, q.cor, false); } });
+            q.itens.push({ y: y, x: x, silhueta: true, d: function () { q.obj(x, y); figura(c, p, q.t, 1, q.cor, false); } });
           });
           var txt = (nc ? nc + (nc === 1 ? ' pessoa' : ' pessoas') : '') + (nc && ns ? ' · ' : '') + (ns ? ns + (ns === 1 ? ' soldado' : ' soldados') : '');
           var selN = sel ? lista.filter(function (p) { return sel.tem(p.id); }).length : 0;
@@ -103,10 +130,11 @@
         var pos = posicoes(lista, ce);
         lista.forEach(function (p, i) {
           var pp = pos[p.id], dir = (p.id + i) % 3 === 0 ? -1 : 1, selecionada = sel && sel.tem(p.id);
-          q.itens.push({ y: pp.y, d: function () {
+          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, som: somDe(p), d: function () {
             q.obj(pp.x, pp.y);
             if (selecionada) anel(c, Cs.selecao);
             figura(c, p, q.t, dir, q.cor, false);
+            barraVida(c, p);
           }, alvo: q.alvo(pp.x, pp.y, 14, 28, ['pessoa', p.id], p) });
           var tp = q.cena.tela(pp.x, pp.y);
           ultimos.push({ id: p.id, x: tp.x, y: tp.y, hex: h });
@@ -121,12 +149,17 @@
         var pos = posicoes(lista, ce);
         lista.forEach(function (p, i) {
           var pp = pos[p.id];
-          q.itens.push({ y: pp.y, d: function () { q.obj(pp.x, pp.y); figura(c, p, q.t, i % 2 ? -1 : 1, P.hostil, true); } });
+          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, d: function () { q.obj(pp.x, pp.y); figura(c, p, q.t, i % 2 ? -1 : 1, P.hostil, true); } });
         });
         if (n < (o.civis || 0) + (o.soldados || 0)) q.rot(ce.x, ce.y + 22, 10, ((o.civis || 0) + (o.soldados || 0)) + ' pessoas', 'marcha', '#a39d90');
       });
     },
     ehSoldado: ehSoldado,
-    ehExplorador: ehExplorador
+    ehExplorador: ehExplorador,
+    /* figura de uma pessoa fora dos locais (marchas): figura(c, pessoa, t, dir, cor, cru, extra) */
+    figura: figura,
+    /* barra de vida sobre a figura (só de quem está ferido) e a vida de agora de uma pessoa do mapa */
+    barraVida: barraVida,
+    vidaAgora: vidaAgora
   };
 })();

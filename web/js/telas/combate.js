@@ -72,7 +72,7 @@
   }
   function folhaBatalha(o) {
     return linha('Batalha', (o.papel === 'defesa' ? 'seu local sob ataque' : o.papel === 'ataque' ? 'suas tropas atacam' : 'em andamento') +
-      ' · termina em <b class="num" data-fim="' + o.fim + '">' + RP.fmtResta(o.fim - RP.agora()) + '</b>');
+      ' · termina ' + RP.barraTempo(o.inicio, o.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Batalha' }));
   }
   RP.mapa.extrasFolhaHex.push(function (h, dados) {
     if (RP.mapa.desenhaTiposObjeto) return '';
@@ -571,7 +571,7 @@
         return '<li><span class="selo' + (d.lado === 'meu' ? ' selo-info' : d.lado === 'eles' ? ' selo-perigo' : '') + '">' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + '</span><span>' + RP.esc(d.txt) + '</span></li>';
       }).join('') + '</ol>' +
       '<p class="fraco env-nota">Combate semi-automático: as tropas lutam sozinhas; você decide reforços e recuo. ' +
-      (b.encerrada ? 'Encerrada.' : 'Termina em <b class="num" data-fim="' + b.fim + '">' + RP.fmtResta(b.fim - agora) + '</b>.') + '</p>' +
+      (b.encerrada ? 'Encerrada.' : 'Termina ' + RP.barraTempo(b.inicio, b.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Batalha' })) + '</p>' +
       (b.encerrada && b.relatorioId ? '<a class="btn btn-p" href="#/relatorio?id=' + b.relatorioId + '">' + RP.icone('relatorios') + 'Ver o relatório</a>' : '') +
       '<div style="height:var(--esp-8)"></div>';
     RP.ligarGraficoBatalha(el, b.serie, rot);
@@ -669,7 +669,7 @@
         RP.get('/batalhas').then(function (l) {
           RP.$('.bat-conteudo', el).innerHTML = l.length ? '<div class="lista">' + l.map(function (b) {
             return '<a class="lista-item" href="#/batalha?id=' + b.id + '"><span class="ico-placa">' + RP.icone(b.papel === 'defesa' ? 'escudo' : 'espada') + '</span><div style="flex:1;min-width:0"><b>' + RP.esc(b.nome) + '</b><div class="fraco">' +
-              RP.esc(b.tipoNome) + ' · ' + (b.encerrada ? 'encerrada' : 'termina em <span data-fim="' + b.fim + '">' + RP.fmtResta(b.fim - RP.agora()) + '</span>') + '</div></div>' + RP.icone('avancar', 'ico-p') + '</a>';
+              RP.esc(b.tipoNome) + ' · ' + (b.encerrada ? 'encerrada' : 'termina ' + RP.barraTempo(b.inicio, b.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Batalha' })) + '</div></div>' + RP.icone('avancar', 'ico-p') + '</a>';
           }).join('') + '</div>' : '<p class="fraco">Nenhuma batalha agora.</p>';
         });
         return;
@@ -692,7 +692,7 @@
     var l = (RP.reino && RP.reino.batalhas) || [];
     return l.map(function (b) {
       return '<a class="faixa-alerta faixa-batalha" href="#/batalha?id=' + b.id + '">' + RP.icone(b.papel === 'defesa' ? 'alerta' : 'espada') + '<span class="txt"><b>' +
-        (b.papel === 'defesa' ? 'Batalha em ' + RP.esc(b.nome) : 'Suas tropas atacam: ' + RP.esc(b.nome)) + '</b><br>' + RP.esc(b.tipoNome) + ' · termina em <span class="num" data-fim="' + b.fim + '">' + RP.fmtResta(b.fim - RP.agora()) + '</span></span>' + RP.icone('avancar', 'ico-p') + '</a>';
+        (b.papel === 'defesa' ? 'Batalha em ' + RP.esc(b.nome) : 'Suas tropas atacam: ' + RP.esc(b.nome)) + '</b><br>' + RP.esc(b.tipoNome) + ' · termina ' + RP.barraTempo(b.inicio, b.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Batalha' }) + '</span>' + RP.icone('avancar', 'ico-p') + '</a>';
     }).join('');
   }
   RP.extrasReino = RP.extrasReino || [];

@@ -63,7 +63,7 @@ public class CorrecoesUsabilidadeTestes
         var r = t.NovoReino();
         var c = Castelo(t, r);
         Guarnecer(t, r, c, "milicia", 5);
-        var destino = HexLivre(t, c.Hex, 10);
+        var destino = HexLivre(t, c.Hex, 20);
         Assert.False(Nevoas.Explorado(t.M, r.Id, destino));
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["milicia"] = 5 }, destino, OrdemMover.Id);
         var caminho = ex.Caminho.ToList();
@@ -91,7 +91,7 @@ public class CorrecoesUsabilidadeTestes
         }
         Assert.True(ex.Parado);
         // parada no destino (em névoa antes): o caminho inteiro e o entorno no raio de visão ficaram revelados
-        foreach (var h in caminho) foreach (var x in t.M.G.Area(h, 1)) Assert.True(Nevoas.Explorado(t.M, r.Id, x));
+        foreach (var h in caminho) foreach (var x in t.M.G.Area(h, 2)) Assert.True(Nevoas.Explorado(t.M, r.Id, x));
         var mp = Assert.Single(MarchasMinhas(J(VisaoMapa.Montar(t.M, r))));
         Assert.True(mp.GetProperty("parado").GetBoolean());
         Assert.True(Nulo(mp, "chegada"));
@@ -117,23 +117,23 @@ public class CorrecoesUsabilidadeTestes
         var c = Castelo(t, r);
         Guarnecer(t, r, c, "milicia", 4);
         Guarnecer(t, r, c, "arqueiro", 1);
-        Assert.Equal(1, GT.Visao(t.M, new Dictionary<string, int> { ["milicia"] = 2 }));
-        Assert.Equal(2, GT.Visao(t.M, new Dictionary<string, int> { ["milicia"] = 2, ["arqueiro"] = 1 }));
+        Assert.Equal(t.B.U["milicia"].Visao, GT.Visao(t.M, new Dictionary<string, int> { ["milicia"] = 2 }));
+        Assert.Equal(t.B.U["arqueiro"].Visao, GT.Visao(t.M, new Dictionary<string, int> { ["milicia"] = 2, ["arqueiro"] = 1 }));
         Assert.Equal(t.B.P.Visao.Tropa, GT.Visao(t.M, new Dictionary<string, int>()));
 
-        var longe = HexLivre(t, c.Hex, 8);
+        var longe = HexLivre(t, c.Hex, 16);
         var misto = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["milicia"] = 2, ["arqueiro"] = 1 }, longe, OrdemMover.Id);
-        Assert.Equal(2, misto.RaioVisao(t.M));
+        Assert.Equal(t.B.U["arqueiro"].Visao, misto.RaioVisao(t.M));
         AvancarAte(t, misto.Chegada + 1);
-        foreach (var h in t.M.G.Area(longe, 2)) Assert.True(Nevoas.Explorado(t.M, r.Id, h));
+        foreach (var h in t.M.G.Area(longe, 4)) Assert.True(Nevoas.Explorado(t.M, r.Id, h));
 
-        var outro = HexLivre(t, c.Hex, 8, pular: 6);
-        Assert.True(t.M.G.Distancia(outro, longe) > 4);
+        var outro = Enumerable.Range(0, 96).Select(p => HexLivre(t, c.Hex, 16, pular: p)).First(h => t.M.G.Distancia(h, longe) > 8);
+        Assert.True(t.M.G.Distancia(outro, longe) > 8);
         var so = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["milicia"] = 2 }, outro, OrdemMover.Id);
-        Assert.Equal(1, so.RaioVisao(t.M));
+        Assert.Equal(t.B.U["milicia"].Visao, so.RaioVisao(t.M));
         AvancarAte(t, so.Chegada + 1);
-        foreach (var h in t.M.G.Area(outro, 1)) Assert.True(Nevoas.Explorado(t.M, r.Id, h));
-        Assert.Contains(t.M.G.Area(outro, 2), h => t.M.G.Distancia(h, outro) == 2 && !Nevoas.Explorado(t.M, r.Id, h));   // a milícia só vê 1
+        foreach (var h in t.M.G.Area(outro, 2)) Assert.True(Nevoas.Explorado(t.M, r.Id, h));
+        Assert.Contains(t.M.G.Area(outro, 4), h => t.M.G.Distancia(h, outro) == 4 && !Nevoas.Explorado(t.M, r.Id, h));   // a milícia só vê 2
     }
 
     // ---------------------------------------------------------------- item 13
@@ -145,8 +145,8 @@ public class CorrecoesUsabilidadeTestes
         var r = t.NovoReino();
         var c = Castelo(t, r);
         Guarnecer(t, r, c, "lanceiro", 4);
-        var a = HexLivre(t, c.Hex, 10);
-        var b = HexLivre(t, c.Hex, 10, pular: 8);
+        var a = HexLivre(t, c.Hex, 20);
+        var b = HexLivre(t, c.Hex, 20, pular: 8);
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 4 }, a, OrdemMover.Id);
         AvancarAte(t, (ex.Partida + ex.Chegada) / 2);
         var onde = ex.HexEm(t.M.Agora);
@@ -192,7 +192,7 @@ public class CorrecoesUsabilidadeTestes
         var t = ComApi();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        var alvo = HexLivre(t, c.Hex, 3);
+        var alvo = HexLivre(t, c.Hex, 6);
         var rg = Fauna.Adicionar(t.M, new RegiaoFauna { Centro = alvo, Hex = alvo, Raio = 1, Animal = "javalis", Nivel = "baixo", Qtd = 4 });
         Guarnecer(t, r, c, "arqueiro", 10);   // força 300 ≥ 80: ilesos
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 10 }, alvo, OrdemCacar.Id);
@@ -226,7 +226,7 @@ public class CorrecoesUsabilidadeTestes
         var t = ComApi();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        var j = t.M.Jazidas.Adicionar(new Jazida { Hex = HexLivre(t, c.Hex, 3), Recurso = "prata", Inicial = 2000, Restante = 2000 });
+        var j = t.M.Jazidas.Adicionar(new Jazida { Hex = HexLivre(t, c.Hex, 6), Recurso = "prata", Inicial = 2000, Restante = 2000 });
         j.DescobertaPor.Add(r.Id);
         Guarnecer(t, r, c, "lanceiro", 5);
         var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 5 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
@@ -253,7 +253,7 @@ public class CorrecoesUsabilidadeTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
-        var alvo = HexLivre(t, c.Hex, 3);
+        var alvo = HexLivre(t, c.Hex, 6);
         Fauna.Adicionar(t.M, new RegiaoFauna { Centro = alvo, Hex = alvo, Raio = 1, Animal = "javalis", Nivel = "baixo", Qtd = 4 });
         Guarnecer(t, r, c, "arqueiro", 11);
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 10 }, alvo, OrdemCacar.Id);
@@ -262,7 +262,7 @@ public class CorrecoesUsabilidadeTestes
         var ok = Assert.Single(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "caca");
         Assert.Contains("traz " + t.B.P.Caca["javalis"].Comida + " comida", ok.Dados["resumo"]!.GetValue<string>());
         // sem presa: o bando acabou de ser abatido
-        var alvo2 = HexLivre(t, c.Hex, 3, pular: 3);
+        var alvo2 = HexLivre(t, c.Hex, 6, pular: 3);
         var rg2 = Fauna.Adicionar(t.M, new RegiaoFauna { Centro = alvo2, Hex = alvo2, Raio = 1, Animal = "javalis", Nivel = "baixo", Qtd = 4 });
         t.AvancarHoras(2);
         var ex2 = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 1 }, alvo2, OrdemCacar.Id);

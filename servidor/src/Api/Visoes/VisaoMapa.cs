@@ -36,10 +36,10 @@ public static class VisaoMapa
             var aliado = !meu && !l.Ruina && Aliado(m, r, l.ReinoId);
             if (!meu && !vis.Contains(l.Hex) && !(aliado && nevoa.MinutoVisto(l.Hex) > 0)) continue;
             if (aliado && m.Reinos.Obter(l.ReinoId) is { } dl)   // aliados se reconhecem: nome e brasão
-                objetos.Add(new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)l.Nivel, nome = l.Nome, dono = "aliado", ruina = false, reino = Espionagem.Identidade(dl) });
+                objetos.Add(new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "aliado", ruina = false, reino = Espionagem.Identidade(dl) });
             else objetos.Add(meu
-                ? new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)l.Nivel, nome = l.Nome, dono = "meu", ruina = l.Ruina }
-                : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina });
+                ? new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "meu", ruina = l.Ruina }
+                : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina });
         }
         foreach (var x in m.Marchas)
         {
@@ -56,6 +56,7 @@ public static class VisaoMapa
                 tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = aliada ? "aliado" : "desconhecido", hex = h, caminho, tempos,
                 paraMim = !aliada && ParaMim(m, r, x) ? true : (bool?)null,   // sem isso, o fim dos tempos é quando ela sai da vista
                 tamanho = Aproximado(m, x.Tropas.Values.Sum()), estandarte = x.Estandarte ? true : (bool?)null,
+                oficio = x is Explorador xe ? ReinoDePedra.Jogo.Pessoas.Oficios.DeExplorador(xe.TipoExp) : null,   // o que se vê: a pé, a cavalo, com picareta
                 reino = dm != null ? Espionagem.Identidade(dm) : null, brasao = dm?.Brasao,
             });
         }
@@ -85,6 +86,7 @@ public static class VisaoMapa
         {
             id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, estado = p.Estado, localId = p.LocalId, grupoId = p.GrupoId,
             marcas = Math.Round(p.Marcas, 2),
+            vida = Math.Round(ReinoDePedra.Jogo.Pessoas.Vidas.Atual(m, p), 1), vidaMax = ReinoDePedra.Jogo.Pessoas.Vidas.Max(m, p), vidaH = Math.Round(ReinoDePedra.Jogo.Pessoas.Vidas.PorHora(m, p), 2),
             hex = p.GrupoId is long gid && gid > 0 ? (int?)null : p.LocalId is long lid && m.Locais.Obter(lid) is { } l ? l.Hex : (int?)null,
         }).ToList();
 
@@ -132,6 +134,7 @@ public static class VisaoMapa
             pessoaIds = x.PessoaIds,
             alvo = VisaoTropas.NomeLocal(m, r, alvoId), destinoNome = VisaoTropas.NomeLocal(m, r, m.LocalNoHex(x.Destino)?.Id),
             reliquias = x.Reliquias.Count, x.Estandarte,
+            recurso = x is Exercito ec && ec.Ordem is Coletas.OrdemColetarId or Coletas.OrdemEntregarId ? ec.Dados["recurso"]?.GetValue<string>() : null,   // coleta: madeira (machado) ou pedra (picareta)
         };
     }
 

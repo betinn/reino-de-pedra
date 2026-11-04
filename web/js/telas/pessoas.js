@@ -6,7 +6,7 @@
 (function () {
   'use strict';
   var RP = window.RP, M = RP.mapaModelo;
-  var ESTADOS = { trabalhando: 'trabalhando', ociosa: 'sem trabalho', andando: 'a caminho', carregando: 'carregando', treinando: 'em treino', guarnecida: 'na guarnição', marchando: 'em marcha', ferida: 'ferida', capturada: 'capturada' };
+  var ESTADOS = { trabalhando: 'trabalhando', ociosa: 'sem trabalho', andando: 'a caminho', carregando: 'carregando', treinando: 'em treino', guarnecida: 'na guarnição', marchando: 'em marcha', ferida: 'ferida', capturada: 'capturada', coletando: 'coletando' };
   var ICONE = { ocioso: 'populacao', agricultor: 'comida', lenhador: 'madeira', pedreiro: 'pedra', mineiro: 'ferro', mensageiro: 'mensagem', milicia: 'populacao', lanceiro: 'tropas', arqueiro: 'alvo', cavalaria: 'cavalo', elite: 'cavalo', ariete: 'cerco', trebuchet: 'cerco', 'explorador-pe': 'explorador', 'explorador-cavalo': 'explorador', prospector: 'picareta', batedor: 'batedor' };
   function icone(p) { return ICONE[p.oficio] || 'populacao'; }
   function ehSoldado(p) { return !!(RP.pessoasVista && RP.pessoasVista.ehSoldado(p)); }
@@ -15,8 +15,8 @@
 
   /* ---------------------------------------------------------------- folha da pessoa */
   function textoTempo(p) {
-    if (p.estado === 'andando' && p.chegada) return ' · chega <b class="num" data-fim="' + p.chegada + '">' + RP.fmtResta(p.chegada - RP.agora()) + '</b>';
-    if (p.estado === 'treinando' && p.pronta) return ' · pront' + (p.feminina ? 'a' : 'o') + ' <b class="num" data-fim="' + p.pronta + '">' + RP.fmtResta(p.pronta - RP.agora()) + '</b>';
+    if (p.estado === 'andando' && p.chegada) return ' · chega ' + RP.barraTempo(p.partida, p.chegada, { classe: 'curta', rotulo: 'Caminhada' });
+    if (p.estado === 'treinando' && p.pronta) return ' · pront' + (p.feminina ? 'a' : 'o') + ' ' + RP.barraTempo(p.treinoInicio, p.pronta, { classe: 'curta', rotulo: 'Treino' });
     return '';
   }
   function corpoPessoa(f) {
@@ -26,7 +26,17 @@
       '<div class="info-linha"><span class="fraco">Agora</span><span>' + RP.esc(p.texto || '') + textoTempo(p) + '</span></div>' +
       (p.local ? '<div class="info-linha"><span class="fraco">Onde</span><span>' + RP.esc(p.local) + '</span></div>' : '') +
       (ehSoldado(p) ? '<div class="info-linha"><span class="fraco">Veterania</span><span>' + (vet ? vet : (p.marcas ? p.marcas + (p.marcas === 1 ? ' marca' : ' marcas') : 'recruta')) + '</span></div>' : '') +
+      vidaHTML(p) +
       '</div>';
+  }
+  /* vida: cheia, só o número; ferida, a barra e quando volta inteira (a vida se recupera sozinha com o tempo) */
+  function vidaHTML(p) {
+    if (p.vidaMax == null || p.vida == null) return '';
+    var v = Math.min(p.vidaMax, p.vida), f = v / p.vidaMax;
+    if (f >= 0.999) return '<div class="info-linha"><span class="fraco">Vida</span><span>cheia · ' + RP.num(p.vidaMax) + '</span></div>';
+    var cls = f > 0.6 ? 'barra-sucesso' : f > 0.3 ? 'barra-alerta' : 'barra-perigo';
+    return '<div class="info-linha"><span class="fraco">Vida</span><span class="vida-folha"><span class="barra ' + cls + '" role="img" aria-label="Vida ' + Math.ceil(v) + ' de ' + p.vidaMax + '"><i style="width:' + (100 * f).toFixed(0) + '%"></i></span>' +
+      '<span><b class="num">' + Math.ceil(v) + '</b> de ' + RP.num(p.vidaMax) + (p.vidaCheiaEm ? ' · inteira em <b class="num" data-fim="' + p.vidaCheiaEm + '">' + RP.fmtResta(p.vidaCheiaEm - RP.agora()) + '</b>' : '') + '</span></span></div>';
   }
   function nivelVeterania(marcas) {
     var v = RP.config.veterania, n = 0;

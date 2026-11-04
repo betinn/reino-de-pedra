@@ -33,7 +33,7 @@
   "popSemente": 3,
   "kit": {
    "madeira": 90,
-   "pedra": 40,
+   "pedra": 60,
    "comida": 90,
    "ferro": 90
   },
@@ -59,7 +59,7 @@
     "cavalo": 1,
     "prospector": 1
    },
-   "raioExplorado": 6
+   "raioExplorado": 12
   },
   "carregador": {
    "carga": 30,
@@ -69,11 +69,16 @@
    "vau": 2
   },
   "visao": {
-   "castelo": 3,
-   "local": 2,
-   "tropa": 1
+   "castelo": 6,
+   "local": 4,
+   "tropa": 2
   },
   "avistamentoH": 10,
+  "revelacaoSeg": 10,
+  "patrulha": {
+   "raio": 6,
+   "pontos": 6
+  },
   "aproximado": {
    "poucas": 4,
    "passo": 5
@@ -82,9 +87,9 @@
   "novoLocalCresc": 1.22,
   "tempoNovoLocal": 5400,
   "minPor": {
-   "Lenta": 0.5,
-   "Média": 0.33,
-   "Rápida": 0.2
+   "Lenta": 0.125,
+   "Média": 0.083,
+   "Rápida": 0.05
   },
   "terreno": {
    "planicie": 1,
@@ -97,10 +102,35 @@
   "rotaFator": 0.55,
   "reinos": 30,
   "mapa": {
-   "cols": 104,
-   "lins": 80
+   "cols": 312,
+   "lins": 240
   },
-  "vizinhoHex": 24,
+  "vizinhoHex": 72,
+  "ocupa": {
+   "castelo": 7,
+   "vila": 3,
+   "pasto": 3,
+   "serraria": 3,
+   "mina": 3,
+   "quartel": 3,
+   "armazem": 3,
+   "ferraria": 3,
+   "posto": 1
+  },
+  "mapaGen": {
+   "relevo": 18,
+   "umidade": 14,
+   "hexPorRio": 2800,
+   "rioLonge": 12,
+   "rioPassos": 600,
+   "rioMin": 16,
+   "anelLocais": 4,
+   "jazidaLonge": 8,
+   "ruinaLonge": 10,
+   "objLonge": 4,
+   "jazidaEspaco": 28,
+   "ruinaEspaco": 24
+  },
   "expPerdas": 1.5,
   "vantagem": 1.5,
   "miliciaPorPop": 1,
@@ -122,7 +152,8 @@
    "bonusAlto": 3,
    "nivelMax": 3,
    "estrutura": 80,
-   "alcanceBase": 1
+   "alcanceBase": 2,
+   "alcancePorNivel": 2
   },
   "portoesEstrutura": 100,
   "saqueQueda": 0.2,
@@ -193,7 +224,7 @@
     },
     "tempo": 240,
     "vel": "Lenta",
-    "visao": 2,
+    "visao": 4,
     "forca": 10
    },
    "cavalo": {
@@ -204,7 +235,7 @@
     },
     "tempo": 720,
     "vel": "Rápida",
-    "visao": 3,
+    "visao": 6,
     "forca": 15
    },
    "prospector": {
@@ -215,8 +246,8 @@
     },
     "tempo": 1440,
     "vel": "Lenta",
-    "visao": 1,
-    "jazidas": 2,
+    "visao": 2,
+    "jazidas": 4,
     "forca": 8
    },
    "batedor": {
@@ -227,16 +258,16 @@
     },
     "tempo": 1920,
     "vel": "Rápida",
-    "visao": 3,
+    "visao": 6,
     "forca": 20
    }
   },
   "rota": {
    "custo": {
-    "madeira": 12,
-    "pedra": 8
+    "madeira": 6,
+    "pedra": 4
    },
-   "tempo": 300
+   "tempo": 150
   },
   "ponte": {
    "custo": {
@@ -476,12 +507,12 @@
   "faunaServ": {
    "regioesPorReino": 2,
    "raio": [
-    1,
-    2
+    2,
+    4
    ],
-   "distanciaMin": 4,
-   "longeCastelo": 2,
-   "pertoReino": 3,
+   "distanciaMin": 8,
+   "longeCastelo": 4,
+   "pertoReino": 6,
    "variacao": 0.25,
    "moverH": [
     3,
@@ -507,9 +538,9 @@
    },
    "forcaCarregador": 5,
    "custoSeguro": {
-    "baixo": 4,
-    "medio": 12,
-    "alto": 40
+    "baixo": 1,
+    "medio": 3,
+    "alto": 10
    }
   },
   "cacaMin": 20,
@@ -531,7 +562,7 @@
     "folgaSeg": 60
    },
    "postura": {
-    "alcance": 1,
+    "alcance": 2,
     "revidaH": 1
    },
    "modelosMax": 10,
@@ -558,7 +589,7 @@
    "brilho": 2,
    "farol": 3
   },
-  "logisticaLongeHex": 4,
+  "logisticaLongeHex": 8,
   "ferrariaServ": {
    "eras": {
     "aco": {
@@ -836,7 +867,7 @@
    "ataque": {
     "castelo": 3,
     "espionagemH": 24,
-    "alcance": 28,
+    "alcance": 84,
     "porte": 0.6,
     "forca": 2.5,
     "fracTropas": 0.6,
@@ -845,28 +876,28 @@
    },
    "espionagem": {
     "castelo": 4,
-    "alcance": 28,
+    "alcance": 84,
     "refazerH": 24
    },
    "ocupacao": {
-    "alcance": 14,
+    "alcance": 42,
     "tropas": 3
    },
    "exploracao": {
     "distancia": [
-     4,
-     16
+     8,
+     48
     ],
     "tentativas": 6
    },
    "caca": {
     "couroMin": 40,
-    "alcance": 10,
+    "alcance": 30,
     "tropas": 4
    },
    "extracao": {
     "castelo": 5,
-    "alcance": 17,
+    "alcance": 51,
     "tropas": 4
    },
    "defesa": {
@@ -891,6 +922,55 @@
     "arqueiros": 0.25,
     "linhas": 30
    }
+  },
+  "vida": {
+   "max": {
+    "civil": 60,
+    "padrao": 100,
+    "milicia": 70,
+    "lanceiro": 110,
+    "arqueiro": 90,
+    "cavalaria": 110,
+    "elite": 130,
+    "ariete": 90,
+    "trebuchet": 90,
+    "explorador-pe": 80,
+    "explorador-cavalo": 80,
+    "prospector": 70,
+    "batedor": 90,
+    "mensageiro": 70
+   },
+   "recuperaH": 6,
+   "golpe": {
+    "baixo": 20,
+    "medio": 40,
+    "alto": 70
+   },
+   "variacao": 0.5,
+   "fuga": {
+    "cavalo": 0.6,
+    "batedor": 0.6
+   },
+   "batalha": 0.8
+  },
+  "coleta": {
+   "terrenos": {
+    "floresta": "madeira",
+    "colina": "pedra",
+    "montanha": "pedra"
+   },
+   "taxa": 4,
+   "expPessoas": 0.8,
+   "maxPessoas": 6,
+   "cargaCivil": 10,
+   "estoque": 60,
+   "recuperaH": 24,
+   "vizinhos": 4,
+   "minimo": 5,
+   "ia": {
+    "alcance": 12,
+    "tropas": 2
+   }
   }
  },
  "U": {
@@ -901,7 +981,7 @@
    "def": 15,
    "vel": "Lenta",
    "carga": 3,
-   "visao": 1,
+   "visao": 2,
    "custo": {
     "comida": 20,
     "madeira": 10
@@ -917,7 +997,7 @@
    "def": 40,
    "vel": "Lenta",
    "carga": 5,
-   "visao": 1,
+   "visao": 2,
    "custo": {
     "comida": 30,
     "madeira": 30,
@@ -934,7 +1014,7 @@
    "def": 25,
    "vel": "Média",
    "carga": 5,
-   "visao": 2,
+   "visao": 4,
    "custo": {
     "comida": 30,
     "madeira": 50,
@@ -951,7 +1031,7 @@
    "def": 30,
    "vel": "Rápida",
    "carga": 10,
-   "visao": 2,
+   "visao": 4,
    "custo": {
     "comida": 60,
     "ferro": 50,
@@ -968,7 +1048,7 @@
    "def": 40,
    "vel": "Rápida",
    "carga": 10,
-   "visao": 2,
+   "visao": 4,
    "custo": {
     "comida": 70,
     "ferro": 60,
@@ -987,7 +1067,7 @@
    "def": 10,
    "vel": "Lenta",
    "carga": 0,
-   "visao": 1,
+   "visao": 2,
    "custo": {
     "madeira": 60,
     "ferro": 15
@@ -1003,7 +1083,7 @@
    "def": 5,
    "vel": "Lenta",
    "carga": 0,
-   "visao": 1,
+   "visao": 2,
    "custo": {
     "madeira": 90,
     "pedra": 40,
@@ -1222,31 +1302,31 @@
     "hexes": 4,
     "vel": "Lenta",
     "rota": false,
-    "min": 2.7
+    "min": 0.675
    },
    {
-    "hexes": 24,
+    "hexes": 72,
     "vel": "Lenta",
     "rota": false,
-    "min": 16.200000000000003
+    "min": 12.15
    },
    {
-    "hexes": 104,
+    "hexes": 312,
     "vel": "Lenta",
     "rota": false,
-    "min": 70.2
+    "min": 52.650000000000006
    },
    {
     "hexes": 10,
     "vel": "Rápida",
     "rota": true,
-    "min": 1.4850000000000003
+    "min": 0.3712500000000001
    },
    {
     "hexes": 10,
     "vel": "Média",
     "rota": false,
-    "min": 4.455
+    "min": 1.1205
    }
   ],
   "batalhas": [
@@ -1685,7 +1765,7 @@
   "torres": [
    {
     "nivel": 1,
-    "alcance": 2,
+    "alcance": 4,
     "arqueiros": 2,
     "custo": {
      "pedra": 105,
@@ -1696,7 +1776,7 @@
    },
    {
     "nivel": 2,
-    "alcance": 3,
+    "alcance": 6,
     "arqueiros": 4,
     "custo": {
      "pedra": 189,
@@ -1707,7 +1787,7 @@
    },
    {
     "nivel": 3,
-    "alcance": 4,
+    "alcance": 8,
     "arqueiros": 6,
     "custo": {
      "pedra": 340,
@@ -1757,6 +1837,66 @@
     "recurso": "minerio",
     "tamanho": 20,
     "quantidade": 5
+   }
+  ],
+  "coleta": [
+   {
+    "pessoas": 0,
+    "porHora": 0
+   },
+   {
+    "pessoas": 1,
+    "porHora": 4
+   },
+   {
+    "pessoas": 2,
+    "porHora": 6.964404506368993
+   },
+   {
+    "pessoas": 4,
+    "porHora": 12.125732532083186
+   },
+   {
+    "pessoas": 6,
+    "porHora": 16.771850850517904
+   },
+   {
+    "pessoas": 9,
+    "porHora": 16.771850850517904
+   }
+  ],
+  "vida": [
+   {
+    "oficio": "ocioso",
+    "max": 60
+   },
+   {
+    "oficio": "agricultor",
+    "max": 60
+   },
+   {
+    "oficio": "lanceiro",
+    "max": 110
+   },
+   {
+    "oficio": "elite",
+    "max": 130
+   },
+   {
+    "oficio": "explorador-pe",
+    "max": 80
+   },
+   {
+    "oficio": "explorador-cavalo",
+    "max": 80
+   },
+   {
+    "oficio": "mensageiro",
+    "max": 70
+   },
+   {
+    "oficio": "desconhecido",
+    "max": 100
    }
   ],
   "metasOk": true

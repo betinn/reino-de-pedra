@@ -36,7 +36,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ## Mapa e exploração
 
-- Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: cerca de **104 × 80 hexágonos**; a travessia com tropa lenta leva pouco mais de 1 h (menos com rota ou cavalaria), o reino vizinho fica a 10 a 20 min e as curtas distâncias (3 a 5 hexágonos) levam 2 a 4 min. Um reino pode não encontrar todos os outros na temporada.
+- Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: **312 × 240 hexágonos pequenos** (cerca de 2.500 por reino); a travessia com tropa lenta leva perto de 1 h (menos com rota ou cavalaria), o reino vizinho fica a 10 a 15 min e as curtas distâncias (6 a 10 hexágonos) levam 1 a 2 min. Um reino pode não encontrar todos os outros na temporada.
+- **Construções ocupam vários hexágonos**, conforme o tamanho: o castelo ocupa 7 (o hexágono e o anel em volta), os outros locais 3 (o hexágono e os vizinhos de leste e oeste), o posto 1. Fundar exige o espaço inteiro explorado, sem rio e livre; tocar em qualquer parte da construção é tocar no local.
 - Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido.
 - Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
   - Planície: deslocamento rápido, comida, cavalos de raça e sal.
@@ -59,6 +60,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Quem captura um explorador vê o **reino de origem** e o **nome** da pessoa, e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado e a mesma pessoa volta para casa.
 - Só explorador **sem escolta** é capturado, ao passar à vista de tropas de outro reino; o batedor de elite só é pego espionando. Resgate pedido e não pago no prazo também liberta.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
+- **O explorador não volta sozinho.** Ao chegar ao destino, fica lá esperando nova ordem (outro lugar, rota, patrulha ou voltar), mantendo a área à vista. A rota é desenhada ponto a ponto; no fim, espera no último ponto, ou recomeça do primeiro se for um circuito.
+- Exploradores vão pela **rota segura por padrão**: desviam do perigo que o reino conhece; quem envia pode escolher a rota curta.
 
 ### Fauna hostil
 
@@ -68,7 +71,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Caçar** rende comida e materiais (couro, peles). A caçada é uma luta com o bando pela mesma regra de perdas; se sobra alguém, o grupo traz o que couber na carga.
 - Áreas exploradas mostram o **nível de perigo**, sujeito ao mesmo envelhecimento de informação da névoa.
 - Animais se movem e **reaparecem** por região ao longo do tempo; um bando abatido volta em 24 h, e área limpa não fica segura para sempre.
-- Um explorador sozinho atacado por animais morre; grupos perdem parte das tropas, e com o dobro da força dos animais passam ilesos. Carregadores e caravanas atacados perdem a mesma parte da carga.
+- Um ataque de animais **fere**: cada animal do bando ataca uma pessoa diferente do grupo e tira vida (mais quanto maior o risco para a força do grupo); morre só quem chega a zero, e os feridos seguem andando. Com o dobro da força dos animais, o grupo passa ileso. Um explorador sozinho sobrevive a um ataque, salvo no perigo alto; a cavalo (ou batedor) pode fugir do bando sem se ferir. Carregadores fogem e perdem parte da carga; caravanas perdem a mesma parte da carga.
+- A caçada é uma luta até o fim e continua pela regra de perdas.
 - Perto dos reinos iniciais a fauna é mais fraca, para não punir iniciantes.
 
 ### Rotas
@@ -130,6 +134,14 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - O grupo extrai até a carga encher (ou a jazida acabar), leva ao armazém ou castelo mais próximo e, se pedido, volta. Grupos na mesma jazida dividem o que resta. Nova ordem interrompe e leva o que já tirou.
 - O posto vira um local do reino no hexágono da jazida ou ruína; enquanto existir, outro reino não extrai nem escava ali.
 
+### Coleta de madeira e pedra
+
+- Tropas e **civis sem trabalho** podem **coletar** num hexágono explorado sem local: madeira na floresta, pedra na colina e na montanha.
+- O grupo coleta até a carga encher (um civil leva um feixe; um soldado, a carga da unidade), leva ao local próprio mais próximo que guarda o recurso (castelo, armazém ou o local que o produz) e, se pedido, volta; se o hexágono acabou, passa a um igual ali perto.
+- Até **6 pessoas por hexágono**; quanto mais gente, menos cada uma rende. Por pessoa, rende o mesmo que um trabalhador de local no começo: vale para quem está sem vaga, não substitui os locais.
+- Cada hexágono tem um estoque que **acaba** e **volta a encher** com o tempo.
+- Civis coletando estão fora do local: não defendem como milícia nem podem ser recrutados até voltar. Os animais podem feri-los.
+
 ### Relíquias lendárias
 
 - Existe **uma relíquia para cada reino** do mundo (ex.: 10 reinos, 10 relíquias). Um reino pode ter **mais de uma**.
@@ -142,7 +154,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - 1 relíquia: só a espionagem revela.
   - 2 no mesmo local: visíveis para quem já explorou a área.
   - 3 ou mais: o local vira **farol**, visível para todos, até na névoa.
-- Cada ruína antiga guarda **1 relíquia**, de tipo desconhecido até ser achada, e se esgota depois. Uma unidade já escava; mais tropas e posto encurtam, com tempo mínimo. O grupo que escava leva a relíquia ao local escolhido antes de partir.
+- Cada ruína antiga guarda **1 relíquia**, de tipo desconhecido até ser achada, e se esgota depois. Uma unidade já escava; mais tropas e posto encurtam, com tempo mínimo. Tropas mandadas depois à mesma ruína se juntam ao grupo que já escava, sem recomeçar: mais gente, menos tempo. O grupo que escava leva a relíquia ao local escolhido antes de partir.
 - Mover uma relíquia: tropas saem, buscam e levam; até ser pega, ela continua fortalecendo a origem.
 - A escavação depende do número de tropas, não da carga; interrompida, recomeça do zero. Se outro grupo acha a relíquia antes, os demais voltam.
 - Uma marcha que leva relíquia aparece com um baú para quem a vê, sem revelar o tipo.
@@ -172,7 +184,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Teto** definido por moradias (e pelo castelo). Cresce construindo moradias, cada uma mais cara que a anterior.
 - **Tropas ocupam o teto**: soldados também moram no reino. População civil + tropas ≤ teto.
 - **Nascimento com nome.** O crescimento é por tempo (mais rápido com excedente de comida; abaixo de 3 pessoas, em linha, para recrutar todos não travar o reino) e cria pessoas inteiras, uma por vez, no castelo; cada uma caminha até a vaga mais necessária.
-- **Morte com nome.** Batalha, fauna, massacre, ferimento sem ervas e execução matam pessoas específicas, e o relatório diz quem.
+- **Vida.** Toda pessoa tem vida, com o máximo pelo ofício, que volta sozinha com o tempo (inteira em algumas horas). Animais tiram vida; quem sai vivo de uma batalha sai ferido na proporção das perdas do seu lado (sem morrer por isso: quem morre na batalha continua saindo das perdas). A barra de vida aparece na folha da pessoa e, no mapa, sobre quem está ferido.
+- **Morte com nome.** Batalha, fauna (quando a vida chega a zero), massacre, ferimento sem ervas e execução matam pessoas específicas, e o relatório diz quem.
 - **Recrutar converte uma pessoa**: o treino tira um civil (quem está sem trabalho primeiro; senão, um trabalhador do local de nível mais baixo) e o devolve como soldado com o mesmo nome. Cancelar devolve o civil ao ofício anterior. Tropas mortas não retornam; feridos curados com ervas voltam (ver Combate).
 - **Carregadores são pessoas** (ver Recursos). **Milícia são as pessoas presentes** (ver Combate).
 - Objetivo: criar a decisão central entre **tropas e economia**, agora com rostos.
@@ -197,7 +210,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Teto de bônus**: armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo **+50%**. Torres e portões ficam fora do teto.
 - **Um exército é um grupo de pessoas.** O jogador forma o grupo tocando um soldado, juntando vários (modo de seleção ou laço) ou por atalho ("todos deste tipo aqui", "todo o grupo"), e dá a ele uma **missão**: mover, atacar, caçar, extrair, escavar, interceptar, guarnecer ou reforçar um aliado. Os serviços continuam aceitando quantidade por tipo (ataque rápido, modelos, IA): nesse caso o servidor escolhe as pessoas, as mais veteranas para atacar.
 - Exércitos em marcha são visíveis no mapa; o tempo de viagem depende de distância, terreno, rotas e da unidade mais lenta.
-- **Toda tropa revela a névoa** por onde passa e onde fica (parada, caçando ou extraindo), com o raio de visão da unidade de maior visão do grupo: milícia, lanceiro e máquinas de cerco 1 hexágono; arqueiro, cavalaria e cavaleiro de elite 2 (exploradores têm a visão própria). Uma marcha do próprio reino nunca some do mapa do dono.
+- Além de ir a um lugar, as tropas podem **percorrer** um caminho desenhado ponto a ponto (uma vez ou em circuito) e **patrulhar** em volta de um lugar, num circuito permanente até nova ordem.
+- **Toda tropa revela a névoa** por onde passa e onde fica (parada, caçando ou extraindo), com o raio de visão da unidade de maior visão do grupo: milícia, lanceiro e máquinas de cerco 2 hexágonos; arqueiro, cavalaria e cavaleiro de elite 4 (exploradores têm a visão própria). A névoa se abre quase ao vivo enquanto a marcha anda. Uma marcha do próprio reino nunca some do mapa do dono.
 
 ---
 
@@ -209,7 +223,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Apenas defender.
   - Atacar apenas quem atacar.
 - Postura padrão: guarnições em **apenas defender**; exércitos em campo em **atacar apenas quem atacar**.
-- Quem ataca qualquer ameaça sai contra forças hostis que passam a 1 hexágono; quem ataca apenas quem atacar só revida contra o reino que atacou seus locais ou exércitos na última hora. A guarnição sai sem a milícia e volta com o que tomou.
+- Quem ataca qualquer ameaça sai contra forças hostis que passam a até 2 hexágonos; quem ataca apenas quem atacar só revida contra o reino que atacou seus locais ou exércitos na última hora. A guarnição sai sem a milícia e volta com o que tomou.
 
 ### Reino como conjunto de alvos
 
@@ -230,7 +244,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - A milícia e o massacre usam as **pessoas civis presentes no local**: quem trabalha ali e quem está no castelo sem trabalho. O massacre mata pessoas específicas, com nome no relatório.
 - Sabotagem tira níveis; um local (que não seja o castelo) que chega ao nível 0 vira ruína sem dono. Uma melhoria na fila sobe só um nível e não passa do castelo (parada, o material fica no local): não desfaz a sabotagem. Aríetes batem só na vitória; trebuchets, de longe, mesmo na derrota.
 - Ruína e terra livre sem defesa são ocupadas na chegada, sem batalha.
-- Torres ficam a até 2 hexágonos de um local próprio.
+- Torres ficam a até 4 hexágonos de um local próprio.
 - Se um objetivo não existe no local, as tropas passam ao próximo. Recursos ocupam carga e as tropas voltam quando a carga enche; a relíquia não ocupa carga. Há a opção de completar a carga com o que houver no local.
 - O ataque rápido usa o padrão: saque, objetivos automáticos (relíquia à vista e o recurso principal do local), tática média, sem estandarte e rota curta, com as tropas do último ataque.
 - A espionagem revela também o **estoque** do alvo. O relatório mostra o resultado de cada objetivo e por que as tropas voltaram.
@@ -348,12 +362,12 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ## Experiência do jogador
 
 - **Jogo livre**: sem missões fixas ou obrigatórias; nada força o jogador a fazer algo.
-- **O reino nasce com os primeiros passos já dados**: castelo e locais acima do nível 1, moradias prontas, uma guarnição pequena (lanceiros e arqueiros com nome) e exploradores prontos no castelo (a pé, a cavalo e prospector), com o entorno do castelo já explorado. Quem entra explora, caça e prospecta na hora, sem passar a primeira sessão só esperando timers. Vale igual para reinos de IA.
+- **O reino nasce com os primeiros passos já dados**: castelo e locais acima do nível 1, moradias prontas, uma guarnição pequena (lanceiros e arqueiros com nome) e exploradores prontos no castelo (a pé, a cavalo e prospector), com o entorno do castelo já explorado. Quem entra explora, caça, prospecta e manda os civis sem trabalho e as tropas coletarem madeira e pedra na hora, sem passar a primeira sessão só esperando timers: as primeiras melhorias saem nos primeiros minutos. Vale igual para reinos de IA.
 - Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
 - **Atacar em 3 passos**: escolher a tropa, tocar no destino no mapa e confirmar. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**.
 - Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.
-- **Ver é jogar.** A Vista desenha cada pessoa do reino onde ela está (trabalhando com a ferramenta do ofício, em formação na guarnição, em coluna na marcha, treinando, ferida), com figuras pré-desenhadas por ofício e pose; com o zoom afastado, ou acima de 12 figuras no hexágono, vira uma pilha com contador. Pessoas de outros reinos aparecem só dentro da visão atual, em roupa sem cor de dono e sem nome. A foto da névoa guarda construções, não pessoas. Uma batalha em andamento aparece animada; o resultado continua vindo da fórmula.
+- **Ver é jogar.** A Vista desenha cada pessoa do reino onde ela está (trabalhando com a ferramenta do ofício, em formação na guarnição, em coluna na marcha, cavando e quebrando pedra na escavação e na extração, treinando, ferida), com bonecos 3D de forma humana (e cavalos de verdade para quem monta) renderizados uma vez por ofício, pose e direção. Castelo, locais, torres e ruínas também são construções 3D, que crescem com o nível e levam a bandeira na cor do dono. Árvores, arbustos, flores, cogumelos, juncos, rochas e picos de montanha são 3D, com tipos e tamanhos que variam de lugar para lugar. Rios têm margem, canal fundo e reflexos, vitórias-régias, pedras e uma canoa aqui e ali; a ponte é de pedra, em arco, e atravessa o rio na direção da estrada. Uma marcha mostra exatamente as pessoas que estão nela; com o zoom afastado, ou acima de 12 figuras no hexágono, vira uma pilha com contador. Pessoas de outros reinos aparecem só dentro da visão atual, em roupa sem cor de dono e sem nome. A foto da névoa guarda construções, não pessoas. Uma batalha em andamento aparece animada; o resultado continua vindo da fórmula.
 - **Tocar numa pessoa** abre a folha dela: nome, ofício, o que faz e onde, com o tempo que falta, veterania para soldados, e até 3 ações: civil "Trocar trabalho" (vagas da mais necessária à menos), "Levar para…" e "Recrutar"; soldado "Missão", "Selecionar o grupo" e "Voltar". A tela **Pessoas** lista todo mundo, com filtro por ofício e por local, e é a alternativa acessível ao toque no mapa.
 - **Selecionar um grupo**: toque único num soldado abre a folha; no modo seleção (botão, toque longo ou, no computador, Shift) cada toque soma ou tira uma pessoa e arrastar desenha um laço. A barra mostra "7 selecionados · 4 lanceiros, 3 arqueiros" e o botão **Missão**, que entra no envio de sempre: tocar no destino e confirmar. Quem está selecionado ganha um anel no chão.
 - Opções e sistemas só aparecem **quando fazem sentido** para o jogador; nada é bloqueado. Antes do gatilho, somem os menus e botões do sistema; o mundo continua igual. Ao aparecer, um aviso curto apresenta o sistema. Gatilhos:
@@ -364,6 +378,10 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Alianças: ao conhecer o primeiro reino.
   - Comércio e diplomacia: ao conhecer o primeiro reino.
   - Ferraria e eras: ao ter a primeira ferraria (fundada ou ocupada).
+- A câmera da Vista **inclina e gira** em volta do ponto olhado: botão do meio do mouse (para cima e para baixo inclina, para os lados gira) ou dois dedos (juntos sobem ou descem para inclinar, rodam para girar). Um toque no botão da câmera volta ao padrão.
+- **Sons de efeito**: cliques, folhas, ações confirmadas, notificações pela categoria e, na Vista, o trabalho e as batalhas à vista (mais alto quanto mais perto e maior o zoom). Liga, desliga e volume em Mais, no aparelho.
+- **Um painel por vez.** Telas, folhas de seleção e confirmações dividem o mesmo lugar (embaixo no celular, a coluna da direita no computador) e nunca se sobrepõem: abrir um detalhe empilha e mostra "‹ voltar".
+- Tudo que tem tempo (obras, recrutamento, ferraria, cura, escavação, extração, caça, marchas, treino) mostra uma **barra de progresso com o cronômetro** ao lado.
 - Uma tela mostra **o que precisa de atenção** (ameaças, oportunidades, filas paradas), sem obrigar nenhuma ação e sem recompensa. Os 3 mais urgentes aparecem no topo de Meu reino.
 - Espionagem também aparece ao sofrer o primeiro ataque; torres, quando forças de outro reino (não aliado) entram na visão do reino.
 

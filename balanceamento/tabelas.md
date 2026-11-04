@@ -23,7 +23,7 @@ Castelo: produz 2.5/h de cada recurso básico no nível 1 e 6.9/h no nível 10. 
 
 População: o castelo abriga 15 pessoas e cada moradia mais 3 (a primeira custa 18 madeira, 14 pedra, 4 ferro, 4 comida, cada uma 24 a mais). Reino novo: 8 pessoas. Crescimento 5%/h (logístico), +30% com sobra de comida.
 
-Reino novo com os primeiros passos já dados: castelo e locais no nível 2, 2 moradias, 4 lanceiros e 2 arqueiros no castelo, 1 a pé, 1 a cavalo, 1 prospector (exploradores prontos) e o entorno explorado até 6 hexágonos do castelo.
+Reino novo com os primeiros passos já dados: castelo e locais no nível 2, 2 moradias, 4 lanceiros e 2 arqueiros no castelo, 1 a pé, 1 a cavalo, 1 prospector (exploradores prontos) e o entorno explorado até 12 hexágonos do castelo.
 
 ## Unidades
 
@@ -31,15 +31,15 @@ Cada unidade é uma pessoa do reino (as máquinas de cerco, a equipe que as oper
 
 | Unidade | Família | Ataque | Defesa | Vence | Velocidade | Carga | Visão | Custo | Valor | Tempo | Pop. | Ataque/100 | Defesa/100 | Requisito |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Milícia | Infantaria | 5 | 15 | — | Lenta | 3 | 1 | 20 comida, 10 madeira | 30 | 2 min | 1 | 16.7 | 50 | — |
-| Lanceiro | Infantaria | 25 | 40 | Cavalaria | Lenta | 5 | 1 | 30 comida, 30 madeira, 30 ferro | 90 | 12 min | 1 | 27.8 | 44.4 | — |
-| Arqueiro | Arqueiros | 35 | 25 | Infantaria | Média | 5 | 2 | 30 comida, 50 madeira, 10 couro | 100 | 14 min | 1 | 35 | 25 | — |
-| Cavalaria | Cavalaria | 45 | 30 | Arqueiros | Rápida | 10 | 2 | 60 comida, 50 ferro, 30 couro | 170 | 24 min | 1 | 26.5 | 17.6 | — |
-| Cavaleiro de elite | Cavalaria | 60 | 40 | Arqueiros | Rápida | 10 | 2 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 250 | 32 min | 1 | 24 | 16 | Era do Aço |
-| Aríete | Cerco | 10 | 10 | torres e portões (40) | Lenta | 0 | 1 | 60 madeira, 15 ferro | 75 | 1 h | 1 | 13.3 | 13.3 | — |
-| Trebuchet | Cerco | 5 | 5 | torres e portões (90) | Lenta | 0 | 1 | 90 madeira, 40 pedra, 30 ferro | 160 | 2 h | 1 | 3.1 | 3.1 | Era do Cerco Avançado |
+| Milícia | Infantaria | 5 | 15 | — | Lenta | 3 | 2 | 20 comida, 10 madeira | 30 | 2 min | 1 | 16.7 | 50 | — |
+| Lanceiro | Infantaria | 25 | 40 | Cavalaria | Lenta | 5 | 2 | 30 comida, 30 madeira, 30 ferro | 90 | 12 min | 1 | 27.8 | 44.4 | — |
+| Arqueiro | Arqueiros | 35 | 25 | Infantaria | Média | 5 | 4 | 30 comida, 50 madeira, 10 couro | 100 | 14 min | 1 | 35 | 25 | — |
+| Cavalaria | Cavalaria | 45 | 30 | Arqueiros | Rápida | 10 | 4 | 60 comida, 50 ferro, 30 couro | 170 | 24 min | 1 | 26.5 | 17.6 | — |
+| Cavaleiro de elite | Cavalaria | 60 | 40 | Arqueiros | Rápida | 10 | 4 | 70 comida, 60 ferro, 40 couro, 1 cavalo de raça | 250 | 32 min | 1 | 24 | 16 | Era do Aço |
+| Aríete | Cerco | 10 | 10 | torres e portões (40) | Lenta | 0 | 2 | 60 madeira, 15 ferro | 75 | 1 h | 1 | 13.3 | 13.3 | — |
+| Trebuchet | Cerco | 5 | 5 | torres e portões (90) | Lenta | 0 | 2 | 90 madeira, 40 pedra, 30 ferro | 160 | 2 h | 1 | 3.1 | 3.1 | Era do Cerco Avançado |
 
-Mensageiro: 30 comida, 1 de população, 4 min, velocidade rápida (reino vizinho em 6 min). Mensagem de até 200 caracteres; recado de proposta, até 120.
+Mensageiro: 30 comida, 1 de população, 4 min, velocidade rápida (reino vizinho em 5 min). Mensagem de até 200 caracteres; recado de proposta, até 120.
 
 Veículos: carroça 60 (lenta, 15 madeira, 2 ferro); carroção 180 (média, 40 madeira, 8 ferro, 2 cavalos de raça). Carregador da requisição: 30 por pessoa, a pé.
 
@@ -47,13 +47,13 @@ Veículos: carroça 60 (lenta, 15 madeira, 2 ferro); carroção 180 (média, 40 
 
 | Distância | Exemplo | Lenta | Média | Rápida | Lenta em rota |
 |---|---|---|---|---|---|
-| 3 hex. | local vizinho do próprio reino | 2 min | 1 min | 1 min | 1 min |
-| 10 hex. | outro lado do próprio reino | 7 min | 4 min | 3 min | 4 min |
-| 24 hex. | reino vizinho | 16 min | 11 min | 6 min | 9 min |
-| 52 hex. | meio mapa | 35 min | 23 min | 14 min | 19 min |
-| 104 hex. | travessia do mapa | 1 h 10 min | 46 min | 28 min | 39 min |
+| 6 hex. | local vizinho do próprio reino | 1 min | 1 min | 0 min | 1 min |
+| 20 hex. | outro lado do próprio reino | 3 min | 2 min | 1 min | 2 min |
+| 72 hex. | reino vizinho | 12 min | 8 min | 5 min | 7 min |
+| 156 hex. | meio mapa | 26 min | 17 min | 11 min | 14 min |
+| 312 hex. | travessia do mapa | 53 min | 35 min | 21 min | 29 min |
 
-Mapa para 30 reinos: 104 × 80 hexágonos (≈ 277 por reino). Terreno médio 1.35; rota pública multiplica por 0.55.
+Mapa para 30 reinos: 312 × 240 hexágonos (≈ 2496 por reino). Terreno médio 1.35; rota pública multiplica por 0.55.
 
 ## Combates de referência
 
@@ -79,9 +79,9 @@ Valor de ataque contra valor de defesa; o vencedor perde (menor/maior)^1.5 das t
 
 | Nível | Alcance | Arqueiros no alto | Defesa somada | Custo | Tempo | Estrutura |
 |---|---|---|---|---|---|---|
-| 1 | 2 hex. | 2 | 150 | 105 pedra, 45 madeira | 40 min | 80 (2 aríetes) |
-| 2 | 3 hex. | 4 | 300 | 189 pedra, 81 madeira | 1 h 20 min | 160 (4 aríetes) |
-| 3 | 4 hex. | 6 | 450 | 340 pedra, 146 madeira | 2 h | 240 (6 aríetes) |
+| 1 | 4 hex. | 2 | 150 | 105 pedra, 45 madeira | 40 min | 80 (2 aríetes) |
+| 2 | 6 hex. | 4 | 300 | 189 pedra, 81 madeira | 1 h 20 min | 160 (4 aríetes) |
+| 3 | 8 hex. | 6 | 450 | 340 pedra, 146 madeira | 2 h | 240 (6 aríetes) |
 
 Portões do castelo: 100 de estrutura por nível (nível 3: 300, 8 aríetes ou 4 trebuchets). Aríetes batem por combate; o trebuchet bate à distância, sem entrar no alcance dos arqueiros.
 
@@ -236,12 +236,12 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5.2 por dia para recrut
 
 | Tipo | Custo | Valor | Treino | Velocidade | Visão | Força contra fauna |
 |---|---|---|---|---|---|---|
-| A pé | 40 comida | 40 | 4 min | Lenta | 2 | 10 |
-| A cavalo | 60 comida, 15 couro | 90 | 12 min | Rápida | 3 | 15 |
-| Prospector | 80 comida, 40 ferro | 120 | 24 min | Lenta | 1 (jazidas a 2) | 8 |
-| Batedor de elite | 90 comida, 30 couro | 150 | 32 min | Rápida | 3 | 20 |
+| A pé | 40 comida | 40 | 4 min | Lenta | 4 | 10 |
+| A cavalo | 60 comida, 15 couro | 90 | 12 min | Rápida | 6 | 15 |
+| Prospector | 80 comida, 40 ferro | 120 | 24 min | Lenta | 2 (jazidas a 4) | 8 |
+| Batedor de elite | 90 comida, 30 couro | 150 | 32 min | Rápida | 6 | 20 |
 
-**Rotas**: 12 madeira, 8 pedra e 5 min por hexágono, multiplicados pelo terreno (planície ×1, colina ×1.25, floresta ×1.8, montanha ×2.3, pântano ×2.8). **Ponte** (hexágono de rio): 60 madeira, 40 pedra, 30 min. Vau: grátis e mais lento. 10 hexágonos de rota em planície: 200 (1.3 h de produção do médio no dia 14).
+**Rotas**: 6 madeira, 4 pedra e 3 min por hexágono, multiplicados pelo terreno (planície ×1, colina ×1.25, floresta ×1.8, montanha ×2.3, pântano ×2.8). **Ponte** (hexágono de rio): 60 madeira, 40 pedra, 30 min. Vau: grátis e mais lento. 20 hexágonos de rota em planície (a distância de 10 hexágonos antigos): 200 (1.3 h de produção do médio no dia 14).
 
 **Espionagem**: chance de o batedor ser visto ao espionar = 15% + 10% por torre no alcance + 2.5% por tropa da guarnição, até 60%. Visto, metade das vezes é capturado (sem relatório); na outra, foge com o relatório. Em ambos os casos, o alvo vê o espião por 10 h. 10 min no local.
 
@@ -250,6 +250,57 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5.2 por dia para recrut
 | Local sem torre e sem tropas | 15% |
 | Mina com 4 lanceiros e 1 torre | 35% |
 | Castelo médio (12 tropas, 2 torres) | 60% |
+
+## Vida e fauna como dano
+
+Cada pessoa tem vida e a recupera inteira em 6 h, sem tique. Num ataque de fauna no caminho, cada animal do bando ataca uma pessoa diferente do grupo e tira 10 a 30 (baixo), 20 a 60 (médio), 35 a 105 (alto) de vida, pelo risco efetivo do grupo (a força continua reduzindo o risco e, com o dobro, o grupo passa ileso). Morre só quem chega a zero; os feridos seguem andando. O explorador sozinho a cavalo (ou batedor) foge do bando em 60% dos ataques. Carregadores perdem carga, não vida. Numa batalha, quem sobrevive perde 80% da vida máxima vezes a fração de perdas do próprio lado, sem morrer por isso.
+
+| Ofício | Vida | Recupera por hora |
+|---|---|---|
+| Civil | 60 | 10 |
+| Milícia | 70 | 11.7 |
+| Lanceiro | 110 | 18.3 |
+| Arqueiro | 90 | 15 |
+| Cavalaria | 110 | 18.3 |
+| Cavaleiro de elite | 130 | 21.7 |
+| Explorador (a pé, a cavalo) | 80 | 13.3 |
+| Prospector | 70 | 11.7 |
+| Batedor de elite | 90 | 15 |
+| Mensageiro | 70 | 11.7 |
+
+| Explorador sozinho | Morre num ataque do perigo baixo | médio | alto |
+|---|---|---|---|
+| A pé (vida 80) | 0% | 0% | 36% |
+| A cavalo (foge em 60%) | 0% | 0% | 14% |
+
+Antes, o explorador sozinho atacado morria sempre. Agora, um ataque só mata no perigo alto, e a rota segura (padrão dos exploradores) desvia do perigo que o reino conhece. Dois ataques seguidos antes de recuperar a vida podem matar.
+
+## Coleta de madeira e pedra no mapa
+
+Ordem "coletar": tropas e civis sem trabalho cortam árvores (floresta) ou quebram pedra (colina, montanha) num hexágono explorado sem local. Ritmo do grupo = 4 × pessoas^0.8 por hora, até 6 pessoas por hexágono. Um civil leva 10 (um soldado, a carga da unidade). Cada hexágono guarda 60 e se recupera inteiro em 24 h.
+
+| Grupo | Por hora | Por pessoa | Hexágono de 60 acaba em |
+|---|---|---|---|
+| 1 pessoa | 4 | 4 | 40 h |
+| 2 pessoas | 7 | 3.5 | 13 h 26 min |
+| 4 pessoas | 12.1 | 3 | 6 h 14 min |
+| 6 pessoas | 16.8 | 2.8 | 4 h 12 min |
+
+Um trabalhador de local nível 2 rende 3.9/h. A coleta vale para quem está sem trabalho (o reino novo tem 4 civis sem vaga) e para tropas paradas; não substitui os locais, que rendem mais por pessoa a partir do nível 3.
+
+### Começo (primeiras 12 h de jogo, 120 min reais a 6×)
+
+Jogador de olho no jogo: sempre que a fila fica livre, começa a melhoria mais barata que pode pagar. Com coleta, os civis sem trabalho cortam madeira e a guarnição inicial quebra pedra a 3 hexágonos do castelo. Sem carregadores nem crescimento da população.
+
+| Hora de jogo | Min reais a 6× | Sem coleta: níveis subidos · castelo · nível médio | Com coleta: níveis subidos · castelo · nível médio · coletado |
+|---|---|---|---|
+| 1 | 10 | 6 · 4 · 3 | 8 · 4 · 3.5 · 29 |
+| 2 | 20 | 7 · 4 · 3.3 | 10 · 4 · 4 · 57 |
+| 3 | 30 | 8 · 4 · 3.5 | 10 · 4 · 4 · 86 |
+| 6 | 60 | 10 · 4 · 4 | 10 · 4 · 4 · 172 |
+| 12 | 120 | 10 · 4 · 4 | 15 · 5 · 5 · 304 |
+
+Castelo nível 5: sem coleta depois de 12 h; com coleta em 6 h 3 min (61 min reais). Níveis de construção: continuam 10; os primeiros já são baratos e rápidos (2 a 16 min), o que faltava era madeira e pedra.
 
 ## Metas verificadas
 
@@ -263,9 +314,9 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5.2 por dia para recrut
 | M3a | Obra para o nível 2 leva até 2 min | 2 min | ✓ |
 | M3b | Obra para o nível 10 leva de 6 a 10 h | 8 h 32 min | ✓ |
 | M3c | 10 obras de nível 6 a 8 cobrem a noite (7 a 14 h) | 12 h 27 min | ✓ |
-| M4a | Vizinho do próprio reino (3 hex.) em até 3 min, tropa lenta | 2 min | ✓ |
-| M4b | Reino vizinho (24 hex.) entre 10 e 20 min, tropa lenta | 16 min | ✓ |
-| M4c | Travessia do mapa (104 hex.) em até 90 min, tropa lenta | 1 h 10 min | ✓ |
+| M4a | Vizinho do próprio reino (6 hex.) em até 2 min, tropa lenta | 1 min | ✓ |
+| M4b | Reino vizinho (72 hex.) entre 10 e 20 min, tropa lenta | 12 min | ✓ |
+| M4c | Travessia do mapa (312 hex.) em até 90 min, tropa lenta | 53 min | ✓ |
 | M5a | Jogador médio com 4 a 10 soldados e 15 a 25 pessoas no fim do escudo (dia 3) | 7 · 21 | ✓ |
 | M5b | Jogador médio com 20 a 30 soldados e 50 a 80 pessoas no dia 35 | 22 · 65 | ✓ |
 | M5c | Jogador ativo com 1,5 a 2,5× as tropas do médio no dia 35 | 2.4× | ✓ |
@@ -291,9 +342,14 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5.2 por dia para recrut
 | M19 | Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria | 60 > 45 · 24 < 26.5 | ✓ |
 | M20 | Reino sob escudo recebe no máximo 30% do que ele mesmo produz no escudo | 19% | ✓ |
 | M21 | Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias | 2.2 dias | ✓ |
-| M22 | Explorador sozinho corre risco em qualquer perigo; 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto | sim | ✓ |
+| M22 | Explorador sozinho é atacado em qualquer perigo, mas um ataque só mata no alto: 20% a 50% das vezes a pé, até 25% a cavalo (foge); 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto | 36% / 14% | ✓ |
 | M23 | 1 caçada por dia cobre 70% a 150% do couro que o médio usa para recrutar | 105% | ✓ |
-| M24 | 10 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14 | 1.3 h | ✓ |
+| M24 | 20 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14 | 1.3 h | ✓ |
 | M25 | Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo | 35% / 60% | ✓ |
+| M26 | Sem coleta, o reino novo sobe pelo menos 6 níveis nas 3 primeiras horas de jogo (30 min reais a 6×) | 8 níveis | ✓ |
+| M27 | Com coleta, sobe pelo menos 8 níveis nas 2 primeiras horas (20 min reais a 6×) e chega ao castelo 5 em até 8 h de jogo | 10 níveis · 6 h 3 min | ✓ |
+| M28 | Coleta rende por pessoa 0,8 a 1,5× um trabalhador de local nível 2 (vale para quem está sem trabalho, sem substituir os locais) | 1× | ✓ |
+| M29 | Um hexágono com 4 coletores se esgota em 3 a 8 h e se recupera inteiro em 12 a 36 h | 6 h 14 min · 24 h | ✓ |
+| M30 | A vida volta inteira em 4 a 8 h; um ataque do perigo alto não mata ninguém de um grupo de lanceiros | 6 h · golpe até 105 < 110 | ✓ |
 
 Todas as metas no alvo.

@@ -53,6 +53,8 @@ public class InicioTestes
         var ex = Exercitos.Enviar(t.M, r, castelo.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, HexA(t, castelo.Hex, 4), OrdemMover.Id);
         Assert.Equal(2, GT.Total(ex.Tropas));
         Assert.Equal(t.B.P.Inicio.Tropas["lanceiro"] - 2, castelo.Guarnicao["lanceiro"]);
+        t.AvancarHoras(1);
+        Exploradores.DarOrdem(t.M, r, e.Id, Exploradores.Retornar, null);   // o explorador espera no destino até mandarem voltar
         t.AvancarHoras(6);
         Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "exploracao");
         Assert.Empty(Pessoas.Conferir(t.M));

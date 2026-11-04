@@ -51,19 +51,19 @@
     var ag = RP.agora(), esp = p.estado === 'aguardando';
     return '<div class="card linha">' + S.brasao(p.com, 28) + '<span style="flex:1;min-width:0"><b>Pacto com ' + RP.esc(S.nome(p.com)) + '</b><br><small class="fraco">' + dias(p.dias) + ' · ' +
       (p.pagador === 'eu' ? 'você paga ' + RP.esc(S.cargaTxt(p.pagamento)) : p.pagador ? 'eles pagam ' + RP.esc(S.cargaTxt(p.pagamento)) : 'sem pagamento') + '</small></span>' +
-      (esp ? '<span class="selo selo-info">' + RP.icone('carroca') + 'começa em <span data-fim="' + (p.chegada || ag) + '">' + RP.fmtResta((p.chegada || ag) - ag) + '</span></span>'
-        : '<span class="selo selo-visivel">' + RP.icone('pacto') + 'termina em <span data-fim="' + p.fim + '">' + RP.fmtResta(p.fim - ag) + '</span></span>') + '</div>';
+      (esp ? '<span class="selo selo-info">' + RP.icone('carroca') + 'começa ' + RP.barraTempo(p.partida, p.chegada || ag, { classe: 'curta', cor: 'info', rotulo: 'Pagamento a caminho' }) + '</span>'
+        : '<span class="selo selo-visivel">' + RP.icone('pacto') + 'termina ' + RP.barraTempo(p.inicio, p.fim, { classe: 'curta', cor: 'sucesso', rotulo: 'Pacto em vigor' }) + '</span>') + '</div>';
   }
   function cardResgate(x) {
     var ag = RP.agora(), indo = x.chegada && x.chegada > ag;
     return '<div class="card pilha"><div class="linha"><span class="ico-placa">' + RP.icone('explorador') + '</span><span style="flex:1;min-width:0"><b>Seu ' + RP.esc(x.nome.toLowerCase()) + ' foi capturado</b><br><small class="fraco">' + RP.esc(S.nome(x.captor)) + ' pede ' + RP.esc(S.cargaTxt(x.resgate)) + ' · prazo ' + RP.fmtHora(x.ate) + '</small></span></div>' +
       '<p class="fraco" style="font-size:var(--fs-2)">Pago, a carga viaja até o castelo de quem capturou e, ao chegar, o explorador é solto. Se for roubada, ele continua preso. Sem pagamento, o captor decide; sem decisão até o prazo, ele é libertado.</p>' +
-      (indo ? '<span class="selo selo-info">' + RP.icone('carroca') + 'resgate chega em <span data-fim="' + x.chegada + '">' + RP.fmtResta(x.chegada - ag) + '</span></span>'
+      (indo ? '<span class="selo selo-info">' + RP.icone('carroca') + 'resgate chega ' + RP.barraTempo(x.partida, x.chegada, { classe: 'curta', cor: 'info', rotulo: 'Resgate a caminho' }) + '</span>'
         : x.recusado ? '<span class="selo">Você disse que não paga</span>'
         : '<div class="linha relq-acoes"><button type="button" class="btn btn-p btn-primario" data-pagar-resgate="' + x.prisioneiroId + '">' + RP.icone('carroca') + 'Pagar resgate</button><button type="button" class="btn btn-p btn-fantasma" data-recusar-resgate="' + x.prisioneiroId + '">Não pagar</button></div>') + '</div>';
   }
   function cardMinha(p) {
-    var est = p.estado === 'aberta' ? 'aguardando resposta' : p.estado === 'aceita' ? 'aceita' + (p.chegada && p.chegada > RP.agora() ? ' · cargas a caminho' : '') : p.estado === 'recusada' ? 'recusada' : p.estado === 'cancelada' ? 'cancelada' : p.estado;
+    var est = p.estado === 'aberta' ? 'aguardando resposta' : p.estado === 'aceita' ? 'aceita' + (p.chegada && p.chegada > RP.agora() ? ' · cargas chegam ' + RP.barraTempo(p.partida, p.chegada, { classe: 'curta', cor: 'info', rotulo: 'Cargas a caminho' }) : '') : p.estado === 'recusada' ? 'recusada' : p.estado === 'cancelada' ? 'cancelada' : p.estado;
     var txt = p.tipo === 'troca' ? S.cargaTxt(p.da) + ' por ' + S.cargaTxt(p.quer) : 'Pacto de ' + dias(p.dias) + (Object.keys(p.da).length ? ' · você paga ' + S.cargaTxt(p.da) : Object.keys(p.quer).length ? ' · cobra ' + S.cargaTxt(p.quer) : '');
     return '<div class="card linha">' + S.brasao(p.para, 28) + '<span style="flex:1;min-width:0"><b>' + RP.esc(txt) + '</b><br><small class="fraco">' + RP.esc(S.nome(p.para)) + ' · ' + est + '</small>' + (p.recado ? '<small class="fraco">“' + RP.esc(p.recado) + '”</small>' : '') + '</span>' +
       (p.estado === 'aberta' ? '<button type="button" class="btn btn-p btn-fantasma" data-cancelar="' + p.id + '">Cancelar</button>' : '') + '</div>';

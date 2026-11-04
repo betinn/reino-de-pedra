@@ -31,8 +31,9 @@ const P = {
   /* servidor: população civil abaixo de popSemente cresce em linha (crescPop × popSemente pessoas por hora) até chegar
      a ela e daí segue a logística: um reino que recrutou toda a população volta a crescer */
   popSemente: 3,
-  /* estoque inicial (kit) e capacidade de estoque de um local em horas de produção */
-  kit: { madeira: 90, pedra: 40, comida: 90, ferro: 90 },
+  /* estoque inicial (kit) e capacidade de estoque de um local em horas de produção. Pedra 60 (era 40): o castelo 4 pede
+     32 de pedra e, com 40, o reino novo travava nele por horas (meta M26) */
+  kit: { madeira: 90, pedra: 60, comida: 90, ferro: 90 },
   estoqueHoras: 10,
   /* servidor: estoque mínimo do castelo por recurso (o castelo também guarda o excedente quando não há armazém),
      capacidade do armazém por recurso no nível L = capN1 × capCresc^(L−1), couro inicial do kit */
@@ -41,31 +42,50 @@ const P = {
      prontas, uma guarnição pequena no castelo, exploradores prontos (um de cada tipo básico e um prospector) e o entorno do
      castelo já percorrido (raio em hexágonos). Quem entra tem o que fazer na hora: explorar, caçar, prospectar e enfileirar
      obras, sem passar a primeira hora esperando. Tropas e exploradores são pessoas além das popInicial civis e ocupam o teto. */
-  inicio: { castelo: 2, locais: 2, moradias: 2, tropas: { lanceiro: 4, arqueiro: 2 }, exploradores: { pe: 1, cavalo: 1, prospector: 1 }, raioExplorado: 6 },
+  inicio: { castelo: 2, locais: 2, moradias: 2, tropas: { lanceiro: 4, arqueiro: 2 }, exploradores: { pe: 1, cavalo: 1, prospector: 1 }, raioExplorado: 12 },
   /* servidor: carregadores da requisição (pessoas do local de origem, a pé, sem escolta; cada uma leva 30 num carrinho de mão,
      bem mais que os 5 da mochila de um soldado; com menos gente que o necessário o grupo faz mais viagens); rio sem ponte se atravessa pelo vau (× custo do terreno) */
   carregador: { carga: 30, vel: 'Lenta' }, rio: { vau: 2.0 },
   /* servidor: raio de visão (hexágonos) do castelo, dos locais e de marchas sem tropa (carregadores, caravana sem escolta);
      um exército enxerga com a maior U.visao do grupo e revela a névoa por onde passa e onde fica. Avistamentos somem depois de 10 h */
-  visao: { castelo: 3, local: 2, tropa: 1 }, avistamentoH: 10,
+  visao: { castelo: 6, local: 4, tropa: 2 }, avistamentoH: 10,
+  /* servidor: a névoa se abre ao vivo enquanto a marcha anda: um evento a cada revelacaoSeg segundos de jogo nos trechos que
+     entram em névoa nunca vista (a 6×, menos de 2 s reais), e o cliente busca o mapa a cada aviso. Ver docs/decisoes/0026 */
+  revelacaoSeg: 10,
+  /* servidor: patrulha de tropas em volta de um lugar: circuito de `pontos` pontos num anel de `raio` hexágonos (o raio da visão
+     do castelo), até nova ordem */
+  patrulha: { raio: 6, pontos: 6 },
   /* servidor: tamanho aproximado de uma força vista ("poucas" abaixo de poucas; depois, arredondado ao passo) */
   aproximado: { poucas: 4, passo: 5 },
   /* novos locais: custo e quando o jogador funda (médio) */
   custoNovoLocal: 150, novoLocalCresc: 1.22, tempoNovoLocal: 90 * 60,
   /* deslocamento: minutos por unidade de custo de terreno (tropa lenta ≈ 0,7 min por hexágono médio: 3 hexágonos em 2 min,
      reino vizinho em ≈ 16 min, travessia do mapa em ≈ 70 min). Ver docs/decisoes/0022 */
-  minPor: { Lenta: 0.5, 'Média': 0.33, 'Rápida': 0.2 },
+  /* desde a decisão 0026 (hexágono com metade do lado, mapa com 9× mais hexágonos), as tropas andam o dobro do que andavam:
+     tropa lenta ≈ 10 s por hexágono médio, local vizinho (6 hexágonos) em ≈ 1 min, reino vizinho em ≈ 12 min, travessia em ≈ 53 min */
+  minPor: { Lenta: 0.125, 'Média': 0.083, 'Rápida': 0.05 },
   terreno: { planicie: 1, colina: 1.25, floresta: 1.8, montanha: 2.3, pantano: 2.8 },
   terrenoMedio: 1.35, rotaFator: 0.55,
   /* mundo: ≈ 277 hexágonos por reino; a célula de cada reino tem ≈ 17 de lado, e o castelo vizinho fica a ≈ 17 a 24 hexágonos */
-  reinos: 30, mapa: { cols: 104, lins: 80 }, vizinhoHex: 24,
+  /* desde a decisão 0026: 312 × 240 hexágonos pequenos (metade do lado; o mundo é 1,5× maior que o de 104 × 80), ≈ 2.500 por
+     reino; a célula de cada reino tem ≈ 50 de lado e o castelo vizinho fica a ≈ 50 a 72 hexágonos */
+  reinos: 30, mapa: { cols: 312, lins: 240 }, vizinhoHex: 72,
+  /* hexágonos que cada construção ocupa: 7 = o hexágono e o anel em volta (castelo); 3 = o hexágono e os vizinhos de leste e
+     de oeste; 1 = só o hexágono. Nada se constrói nem se funda em cima de um hexágono ocupado. */
+  ocupa: { castelo: 7, vila: 3, pasto: 3, serraria: 3, mina: 3, quartel: 3, armazem: 3, ferraria: 3, posto: 1 },
+  /* geração do mapa (em hexágonos): tamanho das manchas de relevo e de umidade, um rio a cada hexPorRio hexágonos (fontes a
+     rioLonge de outro rio, até rioPassos passos, no mínimo rioMin), anel dos locais iniciais em volta do castelo, jazidas a
+     jazidaLonge e ruínas a ruinaLonge dos castelos, objetos a objLonge uns dos outros e o espaço buscado entre jazidas do
+     mesmo tipo e entre ruínas */
+  mapaGen: { relevo: 18, umidade: 14, hexPorRio: 2800, rioLonge: 12, rioPassos: 600, rioMin: 16, anelLocais: 4,
+    jazidaLonge: 8, ruinaLonge: 10, objLonge: 4, jazidaEspaco: 28, ruinaEspaco: 24 },
   /* combate. Milícia: cada civil presente no local luta (miliciaPorPop = 1: todos), com defMilicia de defesa. Quando a defesa
      perde, só miliciaBaixas dos civis que lutaram morrem na proporção das perdas (os outros fogem para dentro das casas):
      um saque vitorioso não esvazia o local; o massacre é que mata de propósito. */
   expPerdas: 1.5, vantagem: 1.5, miliciaPorPop: 1, defMilicia: 15, miliciaBaixas: 0.25,
   portoes: [0, 1.15, 1.3, 1.45, 1.6, 1.75],               /* multiplicador de defesa do castelo por nível de portões */
   /* torres: 2 arqueiros no alto por nível (uma torre nível 1 defende como 4 lanceiros) */
-  torre: { custoN1: 150, custoCresc: 1.8, tempoN1: 40 * 60, arqPorNivel: 2, bonusAlto: 3.0, alcance: n => n + 1, nivelMax: 3, estrutura: 80 },
+  torre: { custoN1: 150, custoCresc: 1.8, tempoN1: 40 * 60, arqPorNivel: 2, bonusAlto: 3.0, alcance: n => 2 * (n + 1), nivelMax: 3, estrutura: 80 },
   portoesEstrutura: 100,                                   /* pontos de estrutura por nível de portão */
   /* saque */
   saqueQueda: 0.20, saqueMinimo: 0.20,
@@ -86,13 +106,13 @@ const P = {
   cacasDia: 1,
   /* exploradores: pessoas do reino (ocupam 1 de população); força só conta contra fauna */
   exploradores: {
-    pe:         { nome: 'A pé', custo: { comida: 40 }, tempo: 240, vel: 'Lenta', visao: 2, forca: 10 },
-    cavalo:     { nome: 'A cavalo', custo: { comida: 60, couro: 15 }, tempo: 720, vel: 'Rápida', visao: 3, forca: 15 },
-    prospector: { nome: 'Prospector', custo: { comida: 80, ferro: 40 }, tempo: 1440, vel: 'Lenta', visao: 1, jazidas: 2, forca: 8 },
-    batedor:    { nome: 'Batedor de elite', custo: { comida: 90, couro: 30 }, tempo: 1920, vel: 'Rápida', visao: 3, forca: 20 }
+    pe:         { nome: 'A pé', custo: { comida: 40 }, tempo: 240, vel: 'Lenta', visao: 4, forca: 10 },
+    cavalo:     { nome: 'A cavalo', custo: { comida: 60, couro: 15 }, tempo: 720, vel: 'Rápida', visao: 6, forca: 15 },
+    prospector: { nome: 'Prospector', custo: { comida: 80, ferro: 40 }, tempo: 1440, vel: 'Lenta', visao: 2, jazidas: 4, forca: 8 },
+    batedor:    { nome: 'Batedor de elite', custo: { comida: 90, couro: 30 }, tempo: 1920, vel: 'Rápida', visao: 6, forca: 20 }
   },
   /* rotas e pontes: custo por hexágono × fator do terreno; ponte sobre rio */
-  rota: { custo: { madeira: 12, pedra: 8 }, tempo: 300 }, ponte: { custo: { madeira: 60, pedra: 40 }, tempo: 1800 },
+  rota: { custo: { madeira: 6, pedra: 4 }, tempo: 150 }, ponte: { custo: { madeira: 60, pedra: 40 }, tempo: 1800 },
   /* espionagem: chance de o batedor ser visto ao espionar um local; visto: metade das vezes é capturado (sem relatório) */
   espiao: { base: 0.15, porTorre: 0.10, porTropa: 0.025, max: 0.60, capturado: 0.5, tempoNoLocal: 600 },
   /* alianças */
@@ -174,12 +194,12 @@ const P = {
      Nível base = o da caça do animal, com 25% de chance de um nível abaixo e 25% acima. A até 3 hexágonos de um castelo
      inicial (o que o castelo vê), sempre baixo. O bando muda de hexágono dentro da região a cada 3 a 5 h. Tamanho do bando (animais desenhados no mapa). */
   faunaServ: {
-    regioesPorReino: 2, raio: [1, 2], distanciaMin: 4, longeCastelo: 2, pertoReino: 3, variacao: 0.25, moverH: [3, 5],
+    regioesPorReino: 2, raio: [2, 4], distanciaMin: 8, longeCastelo: 4, pertoReino: 6, variacao: 0.25, moverH: [3, 5],
     bando: { lobos: [2, 6], javalis: [2, 5], ursos: [1, 2], crocodilos: [2, 4] },
     /* carregadores sem escolta: força 5 por pessoa (gente sem armas, metade de uma milícia) */
     forcaCarregador: 5,
     /* rota segura: minutos extras por hexágono conforme o risco que o grupo correria ali (desvio vale a pena até ≈ 4 hexágonos) */
-    custoSeguro: { baixo: 4, medio: 12, alto: 40 }
+    custoSeguro: { baixo: 1, medio: 3, alto: 10 }
   },
   cacaMin: 20                                              /* minutos no local da caçada */,
 
@@ -193,7 +213,7 @@ const P = {
     interceptacao: { folgaSeg: 60 },
     /* posturas automáticas: quem "ataca qualquer ameaça" sai contra forças hostis que passam a até 1 hexágono (a visão de tropa);
        quem "ataca apenas quem atacar" revida contra o reino que atacou nos seus locais ou exércitos na última 1 h (a volta do ataque) */
-    postura: { alcance: 1, revidaH: 1 },
+    postura: { alcance: 2, revidaH: 1 },
     /* modelos de ataque guardados por reino (o mesmo limite da fila) e tamanho do nome */
     modelosMax: 10, modeloNome: 30
   },
@@ -210,8 +230,8 @@ const P = {
   /* visibilidade das relíquias guardadas no mesmo local: a partir de 2, brilho para quem já explorou a área;
      a partir de 3, farol para todos, até na névoa (1 relíquia: só a espionagem revela) */
   reliquiaVis: { brilho: 2, farol: 3 },
-  /* o transporte manual aparece ao fundar o primeiro local a mais de 4 hexágonos do castelo (fora da vista dele, raio 3) */
-  logisticaLongeHex: 4,
+  /* o transporte manual aparece ao fundar o primeiro local a mais de 8 hexágonos do castelo (fora da vista dele, raio 6) */
+  logisticaLongeHex: 8,
   /* ---------- ferraria, eras e equipamento lendário (servidor) ---------- */
   /* Os requisitos de eras.req, ferraria.niveis[].req e lendario.req, na forma que o servidor confere:
      era = era já pesquisada; ferraria / quartel = nível mínimo do maior local desse tipo no reino.
@@ -307,18 +327,18 @@ const P = {
        ×1,75 com o mapa de 104 × 80, a mesma escala linear: ver docs/decisoes/0022), cujo dono não está sob escudo e não é
        muito menor (maior nível conhecido dele ≥ 60% do nosso castelo); vai com 60% das tropas de ataque do castelo (ficam pelo
        menos 3) se a força de ataque passar de 2,5× a defesa estimada (guarnição como lanceiros, torres e milícia); um ataque por vez */
-    ataque: { castelo: 3, espionagemH: 24, alcance: 28, porte: 0.6, forca: 2.5, fracTropas: 0.6, reserva: 3, tatica: 'conservadora' },
+    ataque: { castelo: 3, espionagemH: 24, alcance: 84, porte: 0.6, forca: 2.5, fracTropas: 0.6, reserva: 3, tatica: 'conservadora' },
     /* espionagem: batedor a partir do castelo 4, alvo a até 28 hexágonos, cada local de novo só depois de 24 h */
-    espionagem: { castelo: 4, alcance: 28, refazerH: 24 },
+    espionagem: { castelo: 4, alcance: 84, refazerH: 24 },
     /* ocupação de ruína ou terra livre à vista, a até 14 hexágonos, com 3 lanceiros */
-    ocupacao: { alcance: 14, tropas: 3 },
+    ocupacao: { alcance: 42, tropas: 3 },
     /* exploração: um explorador a pé, mandado a um hexágono ainda não visto a 4 a 16 hexágonos do castelo (6 tentativas de sorteio) */
-    exploracao: { distancia: [4, 16], tentativas: 6 },
+    exploracao: { distancia: [8, 48], tentativas: 6 },
     /* caça enquanto o couro guardado está abaixo de 40 (um batedor de elite custa 30; com o teto antigo de 10 a IA nunca juntava couro
        para espionar, e sem espionagem não atacava): 4 lanceiros, região conhecida a até 10 hexágonos, só se passam ilesos */
-    caca: { couroMin: 40, alcance: 10, tropas: 4 },
+    caca: { couroMin: 40, alcance: 30, tropas: 4 },
     /* extração: prospector a partir do castelo 5; 4 lanceiros numa jazida conhecida a até 17 hexágonos */
-    extracao: { castelo: 5, alcance: 17, tropas: 4 },
+    extracao: { castelo: 5, alcance: 51, tropas: 4 },
     /* defesa durante a sessão: reforça um local em batalha com metade das tropas livres do castelo; a defesa recua se a força
        dela cair abaixo de metade da do ataque */
     defesa: { reforco: 0.5, recuo: 0.5 },
@@ -327,6 +347,38 @@ const P = {
     /* regência (P.regenciaH sem entrar): IA conservadora com 2 sessões por dia, sem fundar, atacar, espionar ou ocupar;
        relatório com até 30 linhas de ações e de perdas */
     regencia: { sessoes: [9, 21], militar: 0.2, mantemTrab: 1.0, fracTropas: 0.3, horizonte: 12, horizonteNoite: 12, acerto: 1.0, arqueiros: 0.25, linhas: 30 }
+  },
+  /* ---------- vida das pessoas e fauna como dano (servidor) ---------- */
+  /* Cada pessoa tem vida (máximo por ofício; civis usam "civil", o resto sem entrada usa "padrao") que volta inteira em
+     recuperaH horas, sem tique (o servidor guarda o dano e o instante). Um ataque de fauna no caminho não mata mais na hora:
+     cada animal do bando ataca uma pessoa diferente do grupo e tira golpe[risco] × (1 ± variacao) de vida (risco = o nível
+     efetivo para a força do grupo, a mesma regra de antes); morre só quem chega a zero, e os feridos seguem andando.
+     O explorador sozinho e rápido (a cavalo, batedor) foge do bando com a chance de fuga, sem dano. Carregadores e
+     remessas (gente desarmada dentro do reino) fogem: perdem carga (perdaFauna), não vida. A caçada continua com a regra de
+     perdas (é uma luta até o fim). Numa batalha, quem sobrevive perde vida na proporção das perdas do próprio lado
+     (× batalha da vida máxima), sem morrer por isso: quem morre continua saindo da fórmula de perdas. */
+  vida: {
+    max: { civil: 60, padrao: 100, milicia: 70, lanceiro: 110, arqueiro: 90, cavalaria: 110, elite: 130, ariete: 90, trebuchet: 90,
+           'explorador-pe': 80, 'explorador-cavalo': 80, prospector: 70, batedor: 90, mensageiro: 70 },
+    recuperaH: 6,
+    golpe: { baixo: 20, medio: 40, alto: 70 }, variacao: 0.5,
+    fuga: { cavalo: 0.6, batedor: 0.6 },
+    batalha: 0.8
+  },
+  /* ---------- coleta de madeira e pedra no mapa (servidor) ---------- */
+  /* Ordem "coletar": tropas e civis sem trabalho cortam árvores (floresta → madeira) ou quebram pedra (colina e montanha →
+     pedra) num hexágono explorado sem local. Ritmo do grupo por hora = taxa × pessoas^expPessoas (até maxPessoas por
+     hexágono e por reino; rende menos por pessoa quanto mais gente). Um civil leva cargaCivil num feixe ou cesto; um soldado,
+     a carga da unidade. Cheia a carga, o grupo leva ao local próprio mais próximo que guarda o recurso (castelo, armazém ou
+     o local de produção dele) e, com "repetir", volta (ou vai a um hexágono igual a até vizinhos de distância, se este
+     acabou). Cada hexágono guarda estoque e se recupera inteiro em recuperaH horas; abaixo de minimo, não vale a viagem.
+     IA: coleta quando falta madeira ou pedra para a próxima obra, num hexágono sem fauna conhecida a até alcance do
+     castelo, com os civis sem trabalho (sem eles, até tropas lanceiros). */
+  coleta: {
+    terrenos: { floresta: 'madeira', colina: 'pedra', montanha: 'pedra' },
+    taxa: 4, expPessoas: 0.8, maxPessoas: 6, cargaCivil: 10,
+    estoque: 60, recuperaH: 24, vizinhos: 4, minimo: 5,   /* vizinhos e alcance da IA na escala de hexágonos da decisão 0026 */
+    ia: { alcance: 12, tropas: 2 }
   }
 };
 
@@ -334,13 +386,13 @@ const P = {
    Cada unidade é uma pessoa (máquinas de cerco: a equipe que a opera). O tempo é o treino de uma pessoa. */
 /* fam: família para armas, armaduras e vantagens; vence: família que a unidade domina */
 const U = {
-  milicia:   { nome: 'Milícia',   fam: 'infantaria', atk: 5,  def: 15, vel: 'Lenta',  carga: 3,  visao: 1, custo: { comida: 20, madeira: 10 }, tempo: 120, pop: 1, so: 'defesa' },
-  lanceiro:  { nome: 'Lanceiro',  fam: 'infantaria', atk: 25, def: 40, vel: 'Lenta',  carga: 5,  visao: 1, custo: { comida: 30, madeira: 30, ferro: 30 }, tempo: 720, pop: 1, vence: 'cavalaria' },
-  arqueiro:  { nome: 'Arqueiro',  fam: 'arqueiros',  atk: 35, def: 25, vel: 'Média',  carga: 5,  visao: 2, custo: { comida: 30, madeira: 50, couro: 10 }, tempo: 840, pop: 1, vence: 'infantaria' },
-  cavalaria: { nome: 'Cavalaria', fam: 'cavalaria',  atk: 45, def: 30, vel: 'Rápida', carga: 10, visao: 2, custo: { comida: 60, ferro: 50, couro: 30 }, tempo: 1440, pop: 1, vence: 'arqueiros' },
-  elite:     { nome: 'Cavaleiro de elite', fam: 'cavalaria', atk: 60, def: 40, vel: 'Rápida', carga: 10, visao: 2, custo: { comida: 70, ferro: 60, couro: 40, cavalo: 1 }, tempo: 1920, pop: 1, vence: 'arqueiros', req: 'Era do Aço' },
-  ariete:    { nome: 'Aríete',    fam: 'cerco', atk: 10, def: 10, vel: 'Lenta',  carga: 0,  visao: 1, custo: { madeira: 60, ferro: 15 }, tempo: 3600, pop: 1, cerco: 40 },
-  trebuchet: { nome: 'Trebuchet', fam: 'cerco', atk: 5,  def: 5,  vel: 'Lenta',  carga: 0,  visao: 1, custo: { madeira: 90, pedra: 40, ferro: 30 }, tempo: 7200, pop: 1, cerco: 90, req: 'Era do Cerco Avançado' }
+  milicia:   { nome: 'Milícia',   fam: 'infantaria', atk: 5,  def: 15, vel: 'Lenta',  carga: 3,  visao: 2, custo: { comida: 20, madeira: 10 }, tempo: 120, pop: 1, so: 'defesa' },
+  lanceiro:  { nome: 'Lanceiro',  fam: 'infantaria', atk: 25, def: 40, vel: 'Lenta',  carga: 5,  visao: 2, custo: { comida: 30, madeira: 30, ferro: 30 }, tempo: 720, pop: 1, vence: 'cavalaria' },
+  arqueiro:  { nome: 'Arqueiro',  fam: 'arqueiros',  atk: 35, def: 25, vel: 'Média',  carga: 5,  visao: 4, custo: { comida: 30, madeira: 50, couro: 10 }, tempo: 840, pop: 1, vence: 'infantaria' },
+  cavalaria: { nome: 'Cavalaria', fam: 'cavalaria',  atk: 45, def: 30, vel: 'Rápida', carga: 10, visao: 4, custo: { comida: 60, ferro: 50, couro: 30 }, tempo: 1440, pop: 1, vence: 'arqueiros' },
+  elite:     { nome: 'Cavaleiro de elite', fam: 'cavalaria', atk: 60, def: 40, vel: 'Rápida', carga: 10, visao: 4, custo: { comida: 70, ferro: 60, couro: 40, cavalo: 1 }, tempo: 1920, pop: 1, vence: 'arqueiros', req: 'Era do Aço' },
+  ariete:    { nome: 'Aríete',    fam: 'cerco', atk: 10, def: 10, vel: 'Lenta',  carga: 0,  visao: 2, custo: { madeira: 60, ferro: 15 }, tempo: 3600, pop: 1, cerco: 40 },
+  trebuchet: { nome: 'Trebuchet', fam: 'cerco', atk: 5,  def: 5,  vel: 'Lenta',  carga: 0,  visao: 2, custo: { madeira: 90, pedra: 40, ferro: 30 }, tempo: 7200, pop: 1, cerco: 90, req: 'Era do Cerco Avançado' }
 };
 const NOME_FAM = { infantaria: 'Infantaria', arqueiros: 'Arqueiros', cavalaria: 'Cavalaria', cerco: 'Cerco' };
 const VEICULOS = { carroca: { carga: 60, vel: 'Lenta', custo: { madeira: 15, ferro: 2 } }, carrocao: { carga: 180, vel: 'Média', custo: { madeira: 40, ferro: 8, cavalo: 2 } } };
@@ -370,6 +422,16 @@ function extracaoH(g, posto, rota) {
   return P.extracao.taxa * carga * Math.pow(n, P.extracao.expTropas) * (posto ? P.extracao.posto : 1) * (rota ? P.extracao.rota : 1);
 }
 const bonusCom = b => 1 + Math.min(P.tetoBonus, b || 0);                       /* soma de bônus com teto */
+/* coleta de básicos no mapa: unidades por hora de um grupo de n pessoas (soldados e civis) */
+const coletaH = n => { const k = Math.min(P.coleta.maxPessoas, n); return k > 0 ? P.coleta.taxa * Math.pow(k, P.coleta.expPessoas) : 0; };
+/* vida máxima de uma pessoa pelo ofício */
+const OFICIOS_CIVIS = ['ocioso', 'agricultor', 'lenhador', 'pedreiro', 'mineiro'];
+const vidaMax = oficio => P.vida.max[oficio] != null ? P.vida.max[oficio] : OFICIOS_CIVIS.includes(oficio) ? P.vida.max.civil : P.vida.max.padrao;
+/* chance de um golpe de fauna do risco dado tirar pelo menos v de vida (dano uniforme entre golpe × (1 − variação) e × (1 + variação)) */
+function chanceGolpeMata(risco, v) {
+  const g = P.vida.golpe[risco], a = g * (1 - P.vida.variacao), b = g * (1 + P.vida.variacao);
+  return v >= b ? 0 : v <= a ? 1 : (b - v) / (b - a);
+}
 
 /* combate: valor de ataque contra valor de defesa; o vencedor perde (menor/maior)^1,5;
    vantagem 1,5× quando a unidade vence o tipo que domina o outro lado */
@@ -507,6 +569,44 @@ const PERFIS = {
     locaisAte: d => Math.min(18, 4 + Math.floor(d / 3)) }
 };
 
+/* ================================================================ começo (primeiras horas, minuto a minuto)
+   O reino novo (P.inicio, P.kit) com um jogador de olho no jogo: sempre que a fila de obras (uma por vez) fica livre, começa
+   a melhoria mais barata que consegue pagar (o castelo quando algum local já o alcançou). Com coleta, os civis sem trabalho
+   cortam madeira e a guarnição inicial quebra pedra a COMECO.distHex hexágonos do castelo, indo e voltando com a carga.
+   Sem carregadores nem crescimento da população (são as primeiras horas). A 6×, 1 h de jogo = 10 min reais. */
+const COMECO = { horas: 12, tabela: [1, 2, 3, 6, 12], distHex: 3, aceleracao: 6 };
+function simularComeco(comColeta) {
+  const est = Object.assign({}, P.kit);
+  const loc = TIPOS.map(t => ({ t, L: P.inicio.locais }));
+  let casteloL = P.inicio.castelo, niveis = 0, obra = null, castelo5 = null;
+  const marcos = {}, coletado = { madeira: 0, pedra: 0 };
+  const civis = P.popInicial, tropas = P.inicio.tropas;
+  const viagemH = 2 * COMECO.distHex * P.terrenoMedio * P.minPor.Lenta / 60;   /* ida e volta, em horas */
+  const efetivo = (n, carga) => n > 0 ? carga / (carga / coletaH(n) + viagemH) : 0;   /* por hora, contando a viagem */
+  const nTropas = somaQtd(tropas), cargaTropas = Object.entries(tropas).reduce((s, [k, n]) => s + n * U[k].carga, 0);
+  for (let min = 0; min < COMECO.horas * 60; min++) {
+    const vagasTot = loc.reduce((s, x) => s + vagas(x.L), 0), efic = Math.min(1, civis / vagasTot), ociosos = Math.max(0, civis - vagasTot);
+    TIPOS.forEach(k => { est[k] += castelo(casteloL) / 60; });
+    loc.forEach(x => { est[x.t] += prod(x.L) * efic / 60; });
+    if (comColeta) {
+      const m = efetivo(ociosos, ociosos * P.coleta.cargaCivil) / 60, p = efetivo(nTropas, cargaTropas) / 60;
+      est.madeira += m; est.pedra += p; coletado.madeira += m; coletado.pedra += p;
+    }
+    if (obra && min >= obra.fim) { obra.f(); niveis++; obra = null; if (casteloL >= 5 && castelo5 == null) castelo5 = (min + 1) / 60; }
+    if (!obra) {
+      const cands = [];
+      if (casteloL < P.nivelMax && loc.some(x => x.L >= casteloL)) cands.push({ c: receita(custo(casteloL + 1) * P.casteloCusto), seg: tempoObra(casteloL + 1) * P.casteloTempo, f: () => casteloL++ });
+      loc.filter(x => x.L < casteloL).forEach(x => cands.push({ c: receita(custo(x.L + 1)), seg: tempoObra(x.L + 1), f: () => x.L++ }));
+      cands.sort((a, b) => soma(a.c) - soma(b.c));
+      const ok = cands.find(o => Object.entries(o.c).every(([k, v]) => est[k] >= v));
+      if (ok) { Object.entries(ok.c).forEach(([k, v]) => { est[k] -= v; }); obra = { fim: min + ok.seg / 60, f: ok.f }; }
+    }
+    if ((min + 1) % 60 === 0) marcos[(min + 1) / 60] = { niveis, castelo: casteloL, nivelMedio: r1(loc.reduce((s, x) => s + x.L, 0) / loc.length), coletado: r0(coletado.madeira + coletado.pedra) };
+  }
+  return { marcos, coletado, castelo5 };
+}
+const comecoSem = simularComeco(false), comecoCom = simularComeco(true);
+
 /* ================================================================ saída */
 const L = [];
 const out = s => L.push(s);
@@ -545,7 +645,7 @@ out('Veículos: carroça ' + VEICULOS.carroca.carga + ' (lenta, ' + fmtC(VEICULO
 out('## Deslocamento\n');
 out('| Distância | Exemplo | Lenta | Média | Rápida | Lenta em rota |');
 out('|---|---|---|---|---|---|');
-[[3, 'local vizinho do próprio reino'], [10, 'outro lado do próprio reino'], [P.vizinhoHex, 'reino vizinho'], [P.mapa.cols / 2, 'meio mapa'], [P.mapa.cols, 'travessia do mapa']].forEach(([h, ex]) => {
+[[6, 'local vizinho do próprio reino'], [20, 'outro lado do próprio reino'], [P.vizinhoHex, 'reino vizinho'], [P.mapa.cols / 2, 'meio mapa'], [P.mapa.cols, 'travessia do mapa']].forEach(([h, ex]) => {
   out('| ' + h + ' hex. | ' + ex + ' | ' + fmtT(viagemMin(h, 'Lenta') * 60) + ' | ' + fmtT(viagemMin(h, 'Média') * 60) + ' | ' + fmtT(viagemMin(h, 'Rápida') * 60) + ' | ' + fmtT(viagemMin(h, 'Lenta', true) * 60) + ' |');
 });
 out('\nMapa para ' + P.reinos + ' reinos: ' + P.mapa.cols + ' × ' + P.mapa.lins + ' hexágonos (≈ ' + r0(P.mapa.cols * P.mapa.lins / P.reinos) + ' por reino). Terreno médio ' + P.terrenoMedio + '; rota pública multiplica por ' + P.rotaFator + '.\n');
@@ -718,13 +818,52 @@ out('**Exploradores** (pessoas do reino; 1 de população cada):\n');
 out('| Tipo | Custo | Valor | Treino | Velocidade | Visão | Força contra fauna |');
 out('|---|---|---|---|---|---|---|');
 Object.values(P.exploradores).forEach(x => out('| ' + x.nome + ' | ' + fmtC(x.custo) + ' | ' + valorDe(x.custo) + ' | ' + fmtT(x.tempo) + ' | ' + x.vel + ' | ' + x.visao + (x.jazidas ? ' (jazidas a ' + x.jazidas + ')' : '') + ' | ' + x.forca + ' |'));
-const rota10 = 10 * soma(P.rota.custo);
-out('\n**Rotas**: ' + fmtC(P.rota.custo) + ' e ' + fmtT(P.rota.tempo) + ' por hexágono, multiplicados pelo terreno (' + Object.entries(P.terreno).map(([k, v]) => ({ planicie: 'planície', pantano: 'pântano' }[k] || k) + ' ×' + v).join(', ') + '). **Ponte** (hexágono de rio): ' + fmtC(P.ponte.custo) + ', ' + fmtT(P.ponte.tempo) + '. Vau: grátis e mais lento. 10 hexágonos de rota em planície: ' + rota10 + ' (' + r1(rota10 / prodDia(14)) + ' h de produção do médio no dia 14).\n');
+const rota10 = 20 * soma(P.rota.custo);
+out('\n**Rotas**: ' + fmtC(P.rota.custo) + ' e ' + fmtT(P.rota.tempo) + ' por hexágono, multiplicados pelo terreno (' + Object.entries(P.terreno).map(([k, v]) => ({ planicie: 'planície', pantano: 'pântano' }[k] || k) + ' ×' + v).join(', ') + '). **Ponte** (hexágono de rio): ' + fmtC(P.ponte.custo) + ', ' + fmtT(P.ponte.tempo) + '. Vau: grátis e mais lento. 20 hexágonos de rota em planície (a distância de 10 hexágonos antigos): ' + rota10 + ' (' + r1(rota10 / prodDia(14)) + ' h de produção do médio no dia 14).\n');
 out('**Espionagem**: chance de o batedor ser visto ao espionar = ' + r0(P.espiao.base * 100) + '% + ' + r0(P.espiao.porTorre * 100) + '% por torre no alcance + ' + r1(P.espiao.porTropa * 100) + '% por tropa da guarnição, até ' + r0(P.espiao.max * 100) + '%. Visto, metade das vezes é capturado (sem relatório); na outra, foge com o relatório. Em ambos os casos, o alvo vê o espião por 10 h. ' + fmtT(P.espiao.tempoNoLocal) + ' no local.\n');
 out('| Alvo | Chance de ser visto |');
 out('|---|---|');
 [['Local sem torre e sem tropas', 0, 0], ['Mina com 4 lanceiros e 1 torre', 1, 4], ['Castelo médio (12 tropas, 2 torres)', 2, 12]].forEach(([rot, t, n]) => out('| ' + rot + ' | ' + r0(chanceEspiao(t, n) * 100) + '% |'));
 out('');
+
+/* ---------- vida e fauna como dano ---------- */
+const NIVEIS_F = ['baixo', 'medio', 'alto'];
+const golpeMax = n => P.vida.golpe[n] * (1 + P.vida.variacao);
+const morteExp = (oficio, n) => chanceGolpeMata(n, vidaMax(oficio));                       /* explorador sozinho: 1 golpe por ataque */
+const morteCavalo = n => (1 - P.vida.fuga.cavalo) * morteExp('explorador-cavalo', n);
+out('## Vida e fauna como dano\n');
+out('Cada pessoa tem vida e a recupera inteira em ' + P.vida.recuperaH + ' h, sem tique. Num ataque de fauna no caminho, cada animal do bando ataca uma pessoa diferente do grupo e tira ' +
+  NIVEIS_F.map(n => r0(P.vida.golpe[n] * (1 - P.vida.variacao)) + ' a ' + r0(golpeMax(n)) + ' (' + NIVEL_NOME[n] + ')').join(', ') + ' de vida, pelo risco efetivo do grupo (a força continua reduzindo o risco e, com o dobro, o grupo passa ileso). ' +
+  'Morre só quem chega a zero; os feridos seguem andando. O explorador sozinho a cavalo (ou batedor) foge do bando em ' + r0(P.vida.fuga.cavalo * 100) + '% dos ataques. Carregadores perdem carga, não vida. ' +
+  'Numa batalha, quem sobrevive perde ' + r0(P.vida.batalha * 100) + '% da vida máxima vezes a fração de perdas do próprio lado, sem morrer por isso.\n');
+out('| Ofício | Vida | Recupera por hora |');
+out('|---|---|---|');
+[['Civil', 'ocioso'], ['Milícia', 'milicia'], ['Lanceiro', 'lanceiro'], ['Arqueiro', 'arqueiro'], ['Cavalaria', 'cavalaria'], ['Cavaleiro de elite', 'elite'], ['Explorador (a pé, a cavalo)', 'explorador-pe'], ['Prospector', 'prospector'], ['Batedor de elite', 'batedor'], ['Mensageiro', 'mensageiro']]
+  .forEach(([rot, k]) => out('| ' + rot + ' | ' + vidaMax(k) + ' | ' + r1(vidaMax(k) / P.vida.recuperaH) + ' |'));
+out('\n| Explorador sozinho | Morre num ataque do perigo baixo | médio | alto |');
+out('|---|---|---|---|');
+out('| A pé (vida ' + vidaMax('explorador-pe') + ') | ' + NIVEIS_F.map(n => r0(morteExp('explorador-pe', n) * 100) + '%').join(' | ') + ' |');
+out('| A cavalo (foge em ' + r0(P.vida.fuga.cavalo * 100) + '%) | ' + NIVEIS_F.map(n => r0(morteCavalo(n) * 100) + '%').join(' | ') + ' |');
+out('\nAntes, o explorador sozinho atacado morria sempre. Agora, um ataque só mata no perigo alto, e a rota segura (padrão dos exploradores) desvia do perigo que o reino conhece. Dois ataques seguidos antes de recuperar a vida podem matar.\n');
+
+/* ---------- coleta e começo ---------- */
+const ritmoPorPessoa = coletaH(1), trabN2 = prod(2) / vagas(2);
+const esgota4 = P.coleta.estoque / (coletaH(4) - P.coleta.estoque / P.coleta.recuperaH);
+out('## Coleta de madeira e pedra no mapa\n');
+out('Ordem "coletar": tropas e civis sem trabalho cortam árvores (floresta) ou quebram pedra (colina, montanha) num hexágono explorado sem local. Ritmo do grupo = ' + P.coleta.taxa + ' × pessoas^' + P.coleta.expPessoas +
+  ' por hora, até ' + P.coleta.maxPessoas + ' pessoas por hexágono. Um civil leva ' + P.coleta.cargaCivil + ' (um soldado, a carga da unidade). Cada hexágono guarda ' + P.coleta.estoque + ' e se recupera inteiro em ' + P.coleta.recuperaH + ' h.\n');
+out('| Grupo | Por hora | Por pessoa | Hexágono de ' + P.coleta.estoque + ' acaba em |');
+out('|---|---|---|---|');
+[1, 2, 4, 6].forEach(n => { const v = coletaH(n), liq = v - P.coleta.estoque / P.coleta.recuperaH; out('| ' + n + (n === 1 ? ' pessoa' : ' pessoas') + ' | ' + r1(v) + ' | ' + r1(v / n) + ' | ' + (liq > 0 ? fmtT(P.coleta.estoque / liq * 3600) : 'não acaba') + ' |'); });
+out('\nUm trabalhador de local nível 2 rende ' + r1(trabN2) + '/h. A coleta vale para quem está sem trabalho (o reino novo tem ' + (P.popInicial - TIPOS.length * vagas(P.inicio.locais)) + ' civis sem vaga) e para tropas paradas; não substitui os locais, que rendem mais por pessoa a partir do nível ' + (Array.from({ length: P.nivelMax }, (_, i) => i + 1).find(L => prod(L) / vagas(L) > ritmoPorPessoa) || '—') + '.\n');
+const realMin = h => r0(h * 60 / COMECO.aceleracao);
+out('### Começo (primeiras ' + COMECO.horas + ' h de jogo, ' + realMin(COMECO.horas) + ' min reais a ' + COMECO.aceleracao + '×)\n');
+out('Jogador de olho no jogo: sempre que a fila fica livre, começa a melhoria mais barata que pode pagar. Com coleta, os civis sem trabalho cortam madeira e a guarnição inicial quebra pedra a ' + COMECO.distHex + ' hexágonos do castelo. Sem carregadores nem crescimento da população.\n');
+out('| Hora de jogo | Min reais a ' + COMECO.aceleracao + '× | Sem coleta: níveis subidos · castelo · nível médio | Com coleta: níveis subidos · castelo · nível médio · coletado |');
+out('|---|---|---|---|');
+COMECO.tabela.forEach(h => { const a = comecoSem.marcos[h], b = comecoCom.marcos[h]; out('| ' + h + ' | ' + realMin(h) + ' | ' + a.niveis + ' · ' + a.castelo + ' · ' + a.nivelMedio + ' | ' + b.niveis + ' · ' + b.castelo + ' · ' + b.nivelMedio + ' · ' + b.coletado + ' |'); });
+const fmtC5 = s => s.castelo5 != null ? 'em ' + fmtT(s.castelo5 * 3600) + ' (' + realMin(s.castelo5) + ' min reais)' : 'depois de ' + COMECO.horas + ' h';
+out('\nCastelo nível 5: sem coleta ' + fmtC5(comecoSem) + '; com coleta ' + fmtC5(comecoCom) + '. Níveis de construção: continuam ' + P.nivelMax + '; os primeiros já são baratos e rápidos (2 a 16 min), o que faltava era madeira e pedra.\n');
 
 /* ================================================================ metas */
 const kitLanceiros = Math.floor(Math.min(...Object.keys(U.lanceiro.custo).map(k => P.kit[k] / U.lanceiro.custo[k])));
@@ -739,7 +878,7 @@ const metas = [
   ['M3a', 'Obra para o nível 2 leva até 2 min', fmtT(tempoObra(2)), tempoObra(2) <= 120],
   ['M3b', 'Obra para o nível 10 leva de 6 a 10 h', fmtT(tempoObra(10)), tempoObra(10) >= 6 * 3600 && tempoObra(10) <= 10 * 3600],
   ['M3c', '10 obras de nível 6 a 8 cobrem a noite (7 a 14 h)', fmtT((tempoObra(6) + tempoObra(7) + tempoObra(8)) / 3 * 10), (tempoObra(6) + tempoObra(7) + tempoObra(8)) / 3 * 10 >= 7 * 3600 && (tempoObra(6) + tempoObra(7) + tempoObra(8)) / 3 * 10 <= 14 * 3600],
-  ['M4a', 'Vizinho do próprio reino (3 hex.) em até 3 min, tropa lenta', fmtT(viagemMin(3, 'Lenta') * 60), viagemMin(3, 'Lenta') <= 3],
+  ['M4a', 'Vizinho do próprio reino (6 hex.) em até 2 min, tropa lenta', fmtT(viagemMin(6, 'Lenta') * 60), viagemMin(6, 'Lenta') <= 2],
   ['M4b', 'Reino vizinho (' + P.vizinhoHex + ' hex.) entre 10 e 20 min, tropa lenta', fmtT(viagemMin(P.vizinhoHex, 'Lenta') * 60), viagemMin(P.vizinhoHex, 'Lenta') >= 10 && viagemMin(P.vizinhoHex, 'Lenta') <= 20],
   ['M4c', 'Travessia do mapa (' + P.mapa.cols + ' hex.) em até 90 min, tropa lenta', fmtT(viagemMin(P.mapa.cols, 'Lenta') * 60), viagemMin(P.mapa.cols, 'Lenta') <= 90],
   ['M5a', 'Jogador médio com 4 a 10 soldados e 15 a 25 pessoas no fim do escudo (dia 3)', sims.medio.log[3].tropas + ' · ' + sims.medio.log[3].pop, sims.medio.log[3].tropas >= 4 && sims.medio.log[3].tropas <= 10 && sims.medio.log[3].pop >= 15 && sims.medio.log[3].pop <= 25],
@@ -769,12 +908,21 @@ const metas = [
     U.elite.atk > U.cavalaria.atk && U.elite.atk / valorDe(U.elite.custo) < U.cavalaria.atk / valorDe(U.cavalaria.custo)],
   ['M20', 'Reino sob escudo recebe no máximo 30% do que ele mesmo produz no escudo', r0(100 * recebivelNovato / sims.medio.prodEscudo) + '%', recebivelNovato / sims.medio.prodEscudo <= 0.3],
   ['M21', 'Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias', quedaS.recupCastelo != null ? quedaS.recupCastelo + ' dias' : 'não volta', quedaS.recupCastelo >= 2 && quedaS.recupCastelo <= 6],
-  ['M22', 'Explorador sozinho corre risco em qualquer perigo; 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto',
-    ['baixo', 'medio', 'alto'].every(n => riscoFauna(n, P.exploradores.cavalo.forca) !== 'nenhum') && riscoFauna('baixo', forcaFauna({ lanceiro: 2 })) === 'nenhum' && riscoFauna('alto', forcaFauna({ arqueiro: 12 })) === 'nenhum' ? 'sim' : 'não',
-    ['baixo', 'medio', 'alto'].every(n => riscoFauna(n, P.exploradores.cavalo.forca) !== 'nenhum') && riscoFauna('baixo', forcaFauna({ lanceiro: 2 })) === 'nenhum' && riscoFauna('alto', forcaFauna({ arqueiro: 12 })) === 'nenhum'],
+  ['M22', 'Explorador sozinho é atacado em qualquer perigo, mas um ataque só mata no alto: 20% a 50% das vezes a pé, até 25% a cavalo (foge); 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto',
+    r0(morteExp('explorador-pe', 'alto') * 100) + '% / ' + r0(morteCavalo('alto') * 100) + '%',
+    ['baixo', 'medio', 'alto'].every(n => riscoFauna(n, P.exploradores.pe.forca) !== 'nenhum') && morteExp('explorador-pe', 'baixo') === 0 && morteExp('explorador-pe', 'medio') === 0
+      && morteExp('explorador-pe', 'alto') >= 0.2 && morteExp('explorador-pe', 'alto') <= 0.5 && morteCavalo('alto') <= 0.25
+      && riscoFauna('baixo', forcaFauna({ lanceiro: 2 })) === 'nenhum' && riscoFauna('alto', forcaFauna({ arqueiro: 12 })) === 'nenhum'],
   ['M23', P.cacasDia + ' caçada' + (P.cacasDia > 1 ? 's' : '') + ' por dia cobre' + (P.cacasDia > 1 ? 'm' : '') + ' 70% a 150% do couro que o médio usa para recrutar', r0(100 * P.cacasDia * couroMedioCaca() / couroDemanda) + '%', (x => x >= 0.7 && x <= 1.5)(P.cacasDia * couroMedioCaca() / couroDemanda)],
-  ['M24', '10 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14', r1(rota10 / prodDia(14)) + ' h', (x => x >= 1 && x <= 3)(rota10 / prodDia(14))],
-  ['M25', 'Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo', r0(chanceEspiao(1, 4) * 100) + '% / ' + r0(chanceEspiao(2, 12) * 100) + '%', chanceEspiao(1, 4) >= 0.25 && chanceEspiao(1, 4) <= 0.4 && chanceEspiao(2, 12) >= P.espiao.max]
+  ['M24', '20 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14', r1(rota10 / prodDia(14)) + ' h', (x => x >= 1 && x <= 3)(rota10 / prodDia(14))],
+  ['M25', 'Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo', r0(chanceEspiao(1, 4) * 100) + '% / ' + r0(chanceEspiao(2, 12) * 100) + '%', chanceEspiao(1, 4) >= 0.25 && chanceEspiao(1, 4) <= 0.4 && chanceEspiao(2, 12) >= P.espiao.max],
+  ['M26', 'Sem coleta, o reino novo sobe pelo menos 6 níveis nas 3 primeiras horas de jogo (30 min reais a 6×)', comecoSem.marcos[3].niveis + ' níveis', comecoSem.marcos[3].niveis >= 6],
+  ['M27', 'Com coleta, sobe pelo menos 8 níveis nas 2 primeiras horas (20 min reais a 6×) e chega ao castelo 5 em até 8 h de jogo', comecoCom.marcos[2].niveis + ' níveis · ' + (comecoCom.castelo5 != null ? fmtT(comecoCom.castelo5 * 3600) : 'não chega'),
+    comecoCom.marcos[2].niveis >= 8 && comecoCom.castelo5 != null && comecoCom.castelo5 <= 8 && (comecoSem.castelo5 == null || comecoSem.castelo5 > comecoCom.castelo5)],
+  ['M28', 'Coleta rende por pessoa 0,8 a 1,5× um trabalhador de local nível 2 (vale para quem está sem trabalho, sem substituir os locais)', r1(ritmoPorPessoa / trabN2) + '×', (x => x >= 0.8 && x <= 1.5)(ritmoPorPessoa / trabN2)],
+  ['M29', 'Um hexágono com 4 coletores se esgota em 3 a 8 h e se recupera inteiro em 12 a 36 h', fmtT(esgota4 * 3600) + ' · ' + P.coleta.recuperaH + ' h', esgota4 >= 3 && esgota4 <= 8 && P.coleta.recuperaH >= 12 && P.coleta.recuperaH <= 36],
+  ['M30', 'A vida volta inteira em 4 a 8 h; um ataque do perigo alto não mata ninguém de um grupo de lanceiros', P.vida.recuperaH + ' h · golpe até ' + r0(golpeMax('alto')) + ' < ' + vidaMax('lanceiro'),
+    P.vida.recuperaH >= 4 && P.vida.recuperaH <= 8 && golpeMax('alto') < vidaMax('lanceiro')]
 ];
 out('## Metas verificadas\n');
 out('| | Meta | Resultado | |');
@@ -788,7 +936,8 @@ out('\n' + (falhas ? falhas + ' meta(s) fora do alvo.' : 'Todas as metas no alvo
    usados pelos testes do servidor para conferir que as fórmulas dele batem com as daqui. */
 if (process.argv.includes('--json')) {
   const Pj = JSON.parse(JSON.stringify(P));
-  Pj.torre.alcanceBase = P.torre.alcance(0);                 /* alcance = nível + alcanceBase */
+  Pj.torre.alcanceBase = P.torre.alcance(0);                 /* alcance = nível × alcancePorNivel + alcanceBase */
+  Pj.torre.alcancePorNivel = P.torre.alcance(1) - P.torre.alcance(0);
   const niveis = Array.from({ length: P.nivelMax }, (_, i) => i + 1);
   const ref = {
     producao: niveis.map(prod), castelo: niveis.map(castelo),
@@ -808,6 +957,8 @@ if (process.argv.includes('--json')) {
     torres: Array.from({ length: P.torre.nivelMax }, (_, i) => i + 1).map(n => { const c = P.torre.custoN1 * Math.pow(P.torre.custoCresc, n - 1);
       return { nivel: n, alcance: P.torre.alcance(n), arqueiros: n * P.torre.arqPorNivel, custo: { pedra: r0(c * 0.7), madeira: r0(c * 0.3) }, tempo: P.torre.tempoN1 * n, estrutura: n * P.torre.estrutura }; }),
     jazidas: Object.keys(VAL).map(k => ({ recurso: k, tamanho: tamJazida(k), quantidade: nJazidas(k) })),
+    coleta: [0, 1, 2, 4, 6, 9].map(n => ({ pessoas: n, porHora: coletaH(n) })),
+    vida: ['ocioso', 'agricultor', 'lanceiro', 'elite', 'explorador-pe', 'explorador-cavalo', 'mensageiro', 'desconhecido'].map(o => ({ oficio: o, max: vidaMax(o) })),
     metasOk: falhas === 0
   };
   process.stdout.write(JSON.stringify({ gerado: 'node balanceamento/modelo.js --json', P: Pj, U, VEICULOS, referencia: ref }, null, 1) + '\n');

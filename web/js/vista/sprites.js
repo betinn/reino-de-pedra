@@ -67,9 +67,58 @@
     return cv;
   }
 
+  /* boneco 3D (RP.bonecos, módulo bonecos.js): quando o sprite dele já existe, é ele que aparece; enquanto não, a figura 2D */
+  function boneco(c, x, y, t, o, tipo) {
+    var B = RP.bonecos;
+    if (!B || !B.pronto) return false;
+    var s = tipo === 'montado' ? B.montado(o, t) : B.pessoa(o, t);
+    if (!s) return false;
+    var cx = B.CX[tipo];
+    c.drawImage(s, x - cx.W / 2, y - cx.ALT, cx.W, cx.ALT + cx.PE);
+    return true;
+  }
+  /* o cavalo da arte 2D vira o cavalo 3D (com o cavaleiro montado), onde quer que seja desenhado */
+  var cavalo2D = A.cavalo;
+  A.cavalo = function (c, x, y, t, pal, o) {
+    if (o && !o.boi && boneco(c, x, y, t, o, 'montado')) return;
+    cavalo2D(c, x, y, t, pal, o);
+  };
+
+  /* construções 3D (RP.estruturas, módulo estruturas.js): castelo, locais, ruínas e ruína antiga viram o sprite 3D quando
+     ele existe; informação antiga (paleta esmaecida) sai mais apagada. Fundação na fila (ruína sem ruina) continua 2D. */
+  function estrutura(c, s, cx, pal) {
+    var antigo = pal && pal !== A.P;
+    if (antigo) c.globalAlpha = 0.72;
+    c.drawImage(s, -cx.W / 2, -cx.ALT, cx.W, cx.ALT + cx.PE);
+    if (antigo) c.globalAlpha = 1;
+  }
+  function E3() { var E = RP.estruturas; return E && E.pronto ? E : null; }
+  var local2D = A.local, ruina2D = A.ruina, jazida2D = A.jazida;
+  A.local = function (c, x, t, pal, cor, anim) {
+    var E = E3(), o = E && Object.assign({}, x, { cor: cor }), s = E && E.local(o);
+    if (s) { estrutura(c, s, E.caixaLocal(o), pal); return; }
+    local2D(c, x, t, pal, cor, anim);
+  };
+  A.ruina = function (c, x, t, pal) {
+    var E = E3(), s = E && x && x.ruina ? E.local({ tipo: x.tipo, ruina: true }) : null;
+    if (s) { estrutura(c, s, E.CX.ruina, pal); return; }
+    ruina2D(c, x, t, pal);
+  };
+  A.jazida = function (c, recurso, t, pal, anim, esgotada) {
+    var E = E3(), s = E && recurso === 'ruina' ? E.ruinaAntiga(!!esgotada) : null;
+    if (s) {
+      estrutura(c, s, E.CX.ruina, pal);
+      /* brilho da relíquia ainda escondida */
+      if (anim && !esgotada) for (var i = 0; i < 4; i++) { var a = (t * 0.25 + i / 4) % 1; A.elipse(c, Math.sin(i * 2 + t) * 10, -14 - a * 26, 1, 1, 'rgba(222,180,255,' + (1 - a).toFixed(2) + ')'); }
+      return;
+    }
+    jazida2D(c, recurso, t, pal, anim, esgotada);
+  };
+
   RP.sprites = {
     ESC: ESC, FRAMES: FRAMES,
     pessoa: function (c, x, y, t, o) {
+      if (boneco(c, x, y, t, o, 'pessoa')) return;
       var r = ritmo(o), frame = 0;
       if (r) { frame = Math.floor(((t * r + (o.fase || 0)) / (2 * Math.PI)) * FRAMES) % FRAMES; if (frame < 0) frame += FRAMES; }
       c.drawImage(sprite(o, frame), x - W / 2, y - ALT, W, ALT + PE);

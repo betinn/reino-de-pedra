@@ -26,9 +26,51 @@ public abstract partial class Marcha
     /// <summary>Marcha furtiva: outros reinos não a veem no mapa (batedor de elite).</summary>
     [JsonIgnore] public virtual bool Furtiva => false;
 
-    /// <summary>Força contra fauna: soma de (ataque + defesa)/2 das tropas; carregadores contam por pessoa.</summary>
+    /// <summary>Força contra fauna: soma de (ataque + defesa)/2 das tropas; carregadores e civis que coletam contam por pessoa.</summary>
     public virtual double ForcaContraFauna(Mundo m) =>
-        this is Carregadores c ? c.Pessoas * m.P.FaunaServ.ForcaCarregador : GT.ForcaFauna(m, Tropas);
+        this is Carregadores c ? c.Pessoas * m.P.FaunaServ.ForcaCarregador
+            : GT.ForcaFauna(m, Tropas) + Pessoas.Pessoas.CivisColetando(m, this) * m.P.FaunaServ.ForcaCarregador;
+
+    /// <summary>
+    /// Quem a fauna fere nesta marcha: todas as pessoas dela (soldados, explorador, civis que coletam). Carregadores, gente
+    /// desarmada dentro do reino, fogem: perdem carga, não vida.
+    /// </summary>
+    public virtual IEnumerable<Pessoas.Pessoa> AlvosDeFauna(Mundo m) =>
+        this is Carregadores ? [] : Pessoas.Pessoas.DaMarcha(m, this);
+
+    /// <summary>
+    /// Ataque de fauna no caminho, como dano: cada um de <paramref name="animais"/> ataca uma pessoa diferente e tira
+    /// <c>P.vida.golpe[risco]</c> × (1 ± <c>P.vida.variacao</c>) de vida. Morre só quem chega a zero (sai do mundo aqui, com
+    /// nome); quem leva relíquia não some inteiro na mata (o último fica com um pouco de vida). A carga perde
+    /// <paramref name="perdaCarga"/>. <see cref="AtaqueSofrido.Acabou"/>: não sobrou ninguém (quem chama encerra a marcha).
+    /// </summary>
+    public AtaqueSofrido SofrerGolpes(Mundo m, string risco, int animais, double perdaCarga)
+    {
+        if (Id != 0) Pessoas.Pessoas.Sincronizar(m, this);
+        var alvos = AlvosDeFauna(m).ToList();
+        var tinha = alvos.Count;
+        m.Sorte.Embaralhar(alvos);
+        var golpe = m.P.Vida.Golpe.GetValueOrDefault(risco);
+        var v = m.P.Vida.Variacao;
+        var mortos = new List<Pessoas.Pessoa>();
+        var feridos = new List<Pessoas.Pessoa>();
+        var vivos = alvos.Count;
+        foreach (var p in alvos.Take(Math.Max(1, animais)))
+        {
+            var dano = golpe * (1 - v + 2 * v * m.Sorte.Real());
+            var ultimo = Reliquias.Count > 0 && vivos <= 1;
+            if (Pessoas.Vidas.Ferir(m, p, dano, semMorrer: ultimo)) { mortos.Add(p); vivos--; }
+            else feridos.Add(p);
+        }
+        var porUnidade = Pessoas.Pessoas.Contar(m, mortos);
+        var nomes = mortos.Select(p => p.Nome).ToList();
+        var rotulos = feridos.Select(p => Pessoas.Vidas.Rotulo(m, p)).ToList();
+        foreach (var p in mortos) { Pessoas.Pessoas.Remover(m, p); PessoaIds.Remove(p.Id); }   // civis não saem da marcha pelo Remover
+        var carga = new Recursos();
+        if (perdaCarga > 0) foreach (var (k, q) in Carga.ToList()) carga.Somar(k, Carga.Retirar(k, q * perdaCarga));
+        m.Sujar(this);
+        return new AtaqueSofrido(nomes, porUnidade, rotulos, carga, tinha > 0 && PessoaIds.Count == 0 && GT.Total(Tropas) == 0, mortos.Select(p => p.Id).ToList());
+    }
 
     /// <summary>Chamado ao revelar cada hexágono do caminho (o prospector descobre jazidas aqui).</summary>
     public virtual void AoPassar(Mundo m, int hex, long quando) { }
@@ -76,7 +118,7 @@ public abstract partial class Marcha
     }
 
     /// <summary>
-    /// Agenda a revelação ao vivo do caminho novo: um evento em cada trecho que entra em névoa nunca vista (no máximo um por
+    /// Agenda a revelação ao vivo do caminho novo: um evento em cada trecho que entra em névoa nunca vista (no máximo um a cada
     /// minuto) e um logo antes da chegada. Entre os eventos, o que a marcha já viu entra na névoa quando o reino consulta o mapa
     /// (<see cref="Nevoas.VisiveisAgora"/>). Os eventos vão para <see cref="EventosCaminho"/> (cancelados se o caminho mudar).
     /// </summary>
@@ -86,9 +128,10 @@ public abstract partial class Marcha
         var nevoa = Nevoas.De(m, ReinoId);
         var raio = RaioVisao(m);
         long? ultimo = null;
+        var intervalo = (long)Math.Max(1000, m.P.RevelacaoSeg * 1000);   // P.revelacaoSeg: a névoa se abre quase ao vivo
         for (var i = 1; i < Caminho.Count - 1; i++)
         {
-            if ((ultimo != null && Tempos[i] - ultimo.Value < T.Min) || Tempos[i] >= Chegada - 1) continue;
+            if ((ultimo != null && Tempos[i] - ultimo.Value < intervalo) || Tempos[i] >= Chegada - 1) continue;
             if (!m.G.Area(Caminho[i], raio).Any(x => nevoa.MinutoVisto(x) == 0)) continue;
             ultimo = Tempos[i];
             EventosCaminho.Add(m.Agendar(new RevelarCaminhoEvento { MarchaId = Id, Partida = Partida, Quando = Tempos[i] }).Id);
@@ -109,6 +152,12 @@ public abstract partial class Marcha
 
 /// <summary>O que uma marcha perdeu num ataque de fauna. <see cref="Acabou"/>: não sobrou ninguém.</summary>
 public sealed record PerdaFauna(Dictionary<string, int> Mortos, Recursos Carga, bool Acabou, List<string>? Nomes = null);
+
+/// <summary>
+/// Um ataque de fauna no caminho (dano): nomes de quem morreu, mortos por unidade (só soldados), feridos ("Inês (30 de 80)"),
+/// carga perdida e se não sobrou ninguém. <see cref="MortosIds"/>: ids de quem morreu (o explorador sabe se foi ele).
+/// </summary>
+public sealed record AtaqueSofrido(List<string> Mortos, Dictionary<string, int> MortosPorUnidade, List<string> Feridos, Recursos Carga, bool Acabou, List<long> MortosIds);
 
 /// <summary>
 /// Revela o caminho de uma marcha até este instante (ao entrar em névoa nunca vista) ou inteiro, logo antes de ela chegar

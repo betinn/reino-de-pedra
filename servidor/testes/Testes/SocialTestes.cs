@@ -260,7 +260,7 @@ public class SocialTestes
         var rems2 = Remessas.Do(t.M, Comercio.Pedido, p2.Id).ToList();
         var cl = t.M.Locais[ladrao.CasteloId];
         cl.Guarnicao["cavalaria"] = 10;
-        var lad = Exercitos.Enviar(t.M, ladrao, cl.Id, G(("cavalaria", 10)), t.M.G.Vizinhos(cl.Hex).First(h => !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
+        var lad = Exercitos.Enviar(t.M, ladrao, cl.Id, G(("cavalaria", 10)), t.M.G.Area(cl.Hex, 2).First(h => !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
         foreach (var x in rems2) x.AoSerVencida(t.M, lad);
         Assert.Empty(Remessas.Do(t.M, Comercio.Pedido, p2.Id));
         Assert.Equal(100, lad.Carga.Qtd("madeira"), 3);   // 10 cavaleiros levam 100
@@ -423,7 +423,7 @@ public class SocialTestes
         Assert.Equal(b.Id, rem.ReinoId);
         var cc = t.M.Locais[c.CasteloId];
         cc.Guarnicao["lanceiro"] = 5;
-        var lad = Exercitos.Enviar(t.M, c, cc.Id, G(("lanceiro", 5)), t.M.G.Vizinhos(cc.Hex).First(h => !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
+        var lad = Exercitos.Enviar(t.M, c, cc.Id, G(("lanceiro", 5)), t.M.G.Area(cc.Hex, 2).First(h => !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
         rem.AoSerVencida(t.M, lad);
         Assert.Null(t.M.Pactos.Obter(pc.Id));
         Assert.False(Comercio.PactoAtivo(t.M, a.Id, b.Id));
@@ -540,7 +540,7 @@ public class SocialTestes
         var t = new MundoTeste();
         var a = t.NovoReino();
         var c = t.M.Locais[a.CasteloId];
-        var area = t.M.G.Area(c.Hex, 3).ToList();
+        var area = t.M.G.Area(c.Hex, 6).ToList();
         Assert.Throws<RegraException>(() => Bandeiras.Colocar(t.M, a, area[0], "aviso", "ok"));   // curto demais
         Assert.Throws<RegraException>(() => Bandeiras.Colocar(t.M, a, area[0], "aviso", new string('x', t.M.P.Social.Bandeiras.Caracteres + 1)));
         Assert.Throws<RegraException>(() => Bandeiras.Colocar(t.M, a, area[0], "bobagem", "Passagem livre"));
@@ -560,7 +560,7 @@ public class SocialTestes
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino();
         var cb = t.M.Locais[b.CasteloId];
-        var h = t.M.G.Vizinhos(cb.Hex).First(x => !t.M.Mapa.Rio[x] && t.M.LocalNoHex(x) == null);
+        var h = t.M.G.Area(cb.Hex, 2).First(x => !t.M.Mapa.Rio[x] && t.M.LocalNoHex(x) == null);
         Assert.Throws<RegraException>(() => Bandeiras.Colocar(t.M, a, h, "ameaca", "Esta estrada é nossa"));   // a ainda não explorou ali
         Nevoas.RevelarArea(t.M, a.Id, h, 0);
         var band = Bandeiras.Colocar(t.M, a, h, "ameaca", "Esta estrada é nossa");

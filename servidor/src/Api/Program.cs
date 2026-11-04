@@ -90,7 +90,7 @@ namespace ReinoDePedra.Api
                 o.EnableForHttps = true;
                 o.Providers.Add<BrotliCompressionProvider>();
                 o.Providers.Add<GzipCompressionProvider>();
-                o.MimeTypes = ["application/json", "text/html", "text/css", "text/javascript", "application/javascript", "image/svg+xml"];
+                o.MimeTypes = ["application/json", "text/html", "text/css", "text/javascript", "application/javascript", "image/svg+xml", "model/gltf-binary"];
             });
             builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
             builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
@@ -115,7 +115,7 @@ namespace ReinoDePedra.Api
                 h["X-Frame-Options"] = "DENY";
                 h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
                 if (!h.ContainsKey("Content-Security-Policy"))
-                    h["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'";
+                    h["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'";
                 try { await next(); }
                 catch (RegraException e) when (!ctx.Response.HasStarted)
                 {
@@ -139,6 +139,7 @@ namespace ReinoDePedra.Api
                 app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = arquivos });
                 var tipos = new FileExtensionContentTypeProvider();
                 tipos.Mappings[".webmanifest"] = "application/manifest+json";
+                tipos.Mappings[".glb"] = "model/gltf-binary";
                 app.UseStaticFiles(new StaticFileOptions
                 {
                     FileProvider = arquivos, ContentTypeProvider = tipos,

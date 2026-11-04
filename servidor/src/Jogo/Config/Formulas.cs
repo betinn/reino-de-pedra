@@ -42,7 +42,7 @@ public sealed class Formulas(Balanceamento b)
         return new() { ["pedra"] = ArredJs(c * 0.7), ["madeira"] = ArredJs(c * 0.3) };
     }
     public double TempoTorre(int n) => P.Torre.TempoN1 * n;
-    public int AlcanceTorre(int n) => n + P.Torre.AlcanceBase;
+    public int AlcanceTorre(int n) => n * P.Torre.AlcancePorNivel + P.Torre.AlcanceBase;
 
     public double CapacidadeArmazem(int L) => P.Armazem.CapN1 * Math.Pow(P.Armazem.CapCresc, L - 1);
 
@@ -72,6 +72,17 @@ public sealed class Formulas(Balanceamento b)
         var carga = g.Sum(kv => kv.Value * B.U[kv.Key].Carga) / (double)total;
         return P.Extracao.Taxa * carga * Math.Pow(n, P.Extracao.ExpTropas) * (posto ? P.Extracao.Posto : 1) * (rota ? P.Extracao.Rota : 1);
     }
+
+    /// <summary>Unidades por hora que um grupo de <paramref name="pessoas"/> coleta (madeira ou pedra) num hexágono.</summary>
+    public double ColetaH(int pessoas)
+    {
+        var n = Math.Min(P.Coleta.MaxPessoas, pessoas);
+        return n > 0 ? P.Coleta.Taxa * Math.Pow(n, P.Coleta.ExpPessoas) : 0;
+    }
+
+    /// <summary>Vida máxima de quem tem o ofício (civis sem entrada própria usam "civil"; os outros, "padrao").</summary>
+    public double VidaMax(string oficio, bool civil) =>
+        P.Vida.Max.TryGetValue(oficio, out var v) ? v : P.Vida.Max[civil ? "civil" : "padrao"];
 
     /// <summary>Multiplicador de uma soma de bônus de combate, limitada ao teto.</summary>
     public double BonusCom(double b) => 1 + Math.Min(P.TetoBonus, b);

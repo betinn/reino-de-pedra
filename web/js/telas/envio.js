@@ -23,7 +23,19 @@
     mover: { rotulo: 'Mover tropas para cá', verbo: 'Mover', icone: 'seta', titulo: 'Mover para cá',
       descricao: function () { return linha('Ordem', 'Vão até lá e ficam no lugar') + linha('Comportamento', 'Revidar: defendem e saem atrás de quem atacar'); } },
     reforcar: { rotulo: 'Reforçar', verbo: 'Reforçar', icone: 'escudo', titulo: 'Reforçar',
-      descricao: function () { return linha('Ordem', 'Entram na defesa do local ao chegar'); } }
+      descricao: function () { return linha('Ordem', 'Entram na defesa do local ao chegar'); } },
+    /* percurso desenhado: cada toque acrescenta um ponto; em circuito, recomeça do primeiro até nova ordem */
+    percorrer: { rotulo: 'Percurso: passar por aqui', verbo: 'Percorrer', icone: 'seta', titulo: 'Percurso',
+      descricao: function () {
+        var n = (est.pontos || []).length;
+        return linha('Pontos', n + (n === 1 ? ' ponto' : ' pontos') + ' · ' + (est.circuito ? 'em circuito, até nova ordem' : 'param no último')) +
+          '<ol class="percurso-pontos">' + (est.pontos || []).map(function (h, i) { return '<li>Hexágono ' + H.c(h) + ', ' + H.l(h) + ' <button type="button" class="btn-link" data-envio-tirar-ponto="' + i + '">tirar</button></li>'; }).join('') + '</ol>';
+      },
+      dados: function () { return { pontos: (est.pontos || []).slice(), circuito: !!est.circuito }; } },
+    /* patrulha: rondam num anel em volta do lugar, até nova ordem */
+    patrulhar: { rotulo: 'Patrulhar em volta daqui', verbo: 'Patrulhar', icone: 'alvo', titulo: 'Patrulhar',
+      descricao: function () { return linha('Ordem', 'Rondam em volta deste lugar até nova ordem') + linha('Comportamento', 'Mantêm a área à vista; mude para "atacar qualquer ameaça" para saírem contra quem passar'); },
+      dados: function () { return {}; } }
   };
   function linha(r, v) { return '<div class="info-linha"><span class="fraco">' + r + '</span><span>' + v + '</span></div>'; }
   function defOrdem(id) { return ORDENS_BASE[id] || RP.ordensEnvio.filter(function (o) { return o.ordem === id; })[0]; }
@@ -99,8 +111,11 @@
       return html;
     }
     var local = obj.filter(function (o) { return o.tipo === 'local'; })[0], botoes = [];
+    if (est.pontos && est.pontos.length) botoes.push('percorrer');   /* desenhando um percurso: o toque acrescenta o ponto */
     if (local && local.dono === 'meu' && !local.ruina) { if (local.id !== est.de) botoes.push('reforcar'); }
     else if (!local) botoes.push('mover');
+    if (botoes.indexOf('percorrer') < 0) botoes.push('percorrer');
+    botoes.push('patrulhar');
     RP.ordensEnvio.forEach(function (o) { try { if (o.quando(h, dados, est)) botoes.push(o.ordem); } catch (e) { console.error(e); } });
     if (!botoes.length) return '<p class="fraco">Escolha um local seu ou um hexágono livre.</p>';
     return botoes.map(function (id, i) {
@@ -124,6 +139,11 @@
       '<span class="rota-tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(r.min * 60) + '</span></button>';
   }
   function confirmar(h, ordem) {
+    if (ordem === 'percorrer') {
+      est.pontos = est.pontos || [];
+      if (est.pontos[est.pontos.length - 1] !== h) est.pontos.push(h);
+      h = est.pontos[0];
+    } else est.pontos = null;
     est.hex = h; est.ordem = ordem;
     var corpo = est.marchaId ? { marchaId: est.marchaId, destinoHex: h } : est.pessoas ? { deLocalId: est.de, pessoas: est.pessoas, destinoHex: h } : { deLocalId: est.de, tropas: est.grupo, destinoHex: h };
     if (!RP.somaGrupo(grupoAtual())) { folhaGrupo(); return; }
@@ -178,7 +198,10 @@
       corpo: corpo,
       acoes: '<button type="button" class="btn btn-p btn-primario' + (p.curta.ok ? '' : ' btn-inativo') + '" data-envio-confirmar>' + RP.icone(d.icone || 'seta') + RP.esc(d.verbo || d.rotulo) + '</button>' +
         (est.de ? '<button type="button" class="btn btn-p" data-envio-tropas>' + RP.icone('tropas') + 'Tropas</button>' : '') +
-        '<button type="button" class="btn btn-p btn-fantasma" data-envio-trocar>' + RP.icone('alvo') + 'Trocar destino</button>'
+        (est.ordem === 'percorrer'
+          ? '<button type="button" class="btn btn-p" data-envio-ponto>' + RP.icone('alvo') + 'Mais um ponto</button>' +
+            '<button type="button" class="btn btn-p btn-fantasma" data-envio-circuito aria-pressed="' + !!est.circuito + '">' + RP.icone('seta') + (est.circuito ? 'Circuito: sim' : 'Circuito: não') + '</button>'
+          : '<button type="button" class="btn btn-p btn-fantasma" data-envio-trocar>' + RP.icone('alvo') + 'Trocar destino</button>')
     });
   }
   function enviar() {
@@ -286,6 +309,13 @@
     if ((b = e.target.closest('[data-envio-ordem]'))) { confirmar(+b.getAttribute('data-envio-hex'), b.getAttribute('data-envio-ordem')); return; }
     if ((b = e.target.closest('[data-caminho]')) && est.previa) { est.seguro = b.getAttribute('data-caminho') === 'segura'; folhaConfirmar(); return; }
     if (e.target.closest('[data-envio-trocar]')) { RP.fecharFolha(); est.hex = null; RP.aviso({ titulo: 'Toque no novo destino', icone: 'alvo', ms: 1600 }); return; }
+    if (e.target.closest('[data-envio-ponto]')) { RP.fecharFolha(); RP.aviso({ titulo: 'Toque no próximo ponto', texto: 'Escolha "Percurso: passar por aqui".', icone: 'alvo', ms: 1800 }); return; }
+    if (e.target.closest('[data-envio-circuito]')) { est.circuito = !est.circuito; folhaConfirmar(); return; }
+    if ((b = e.target.closest('[data-envio-tirar-ponto]'))) {
+      est.pontos.splice(+b.getAttribute('data-envio-tirar-ponto'), 1);
+      if (!est.pontos.length) { RP.fecharFolha(); est.hex = null; return; }
+      confirmar(est.pontos[0], 'percorrer'); return;
+    }
     if (e.target.closest('[data-envio-confirmar]')) { if (est.previa && est.previa.curta.ok) enviar(); }
   });
 

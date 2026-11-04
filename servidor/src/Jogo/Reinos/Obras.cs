@@ -66,10 +66,19 @@ public static class Obras
         if (!Fundaveis.TryGetValue(tipo, out var f)) return "Tipo de local desconhecido.";
         if (!m.G.Valido(hex)) return "Hexágono fora do mapa.";
         if (!Nevoas.Explorado(m, r.Id, hex)) return "Explore a área antes de fundar.";
-        if (m.Mapa.Rio[hex]) return "Não dá para fundar sobre o rio.";
         if (!f.terrenos.Contains(m.Mapa.Terrenos[hex])) return "Este terreno não serve para esse local.";
-        if (!HexLivrePara(m, r, hex)) return "O hexágono não está livre.";
-        if (r.Fila(Fila).Itens.Any(i => i.Tipo == ObraFundar.Id && i.Hex == hex)) return "Já há uma fundação na fila para este hexágono.";
+        // a construção ocupa a pegada inteira (P.ocupa): todos os hexágonos dela precisam caber no mapa, estar explorados e livres
+        var pegada = Pegada.Hexes(m, f.tipo, hex).ToList();
+        if (pegada.Count < Pegada.Tamanho(m, f.tipo)) return "O local não cabe aqui: fica na borda do mapa.";
+        foreach (var h in pegada)
+        {
+            if (!Nevoas.Explorado(m, r.Id, h)) return "Explore a área antes de fundar.";
+            if (m.Mapa.Rio[h]) return "Não dá para fundar sobre o rio.";
+            if (!HexLivrePara(m, r, h)) return "Não há espaço livre para o local aqui.";
+        }
+        var naFila = r.Fila(Fila).Itens.Where(i => i.Tipo == ObraFundar.Id && i.Param != null && Fundaveis.ContainsKey(i.Param))
+            .SelectMany(i => Pegada.Hexes(m, Fundaveis[i.Param!].tipo, i.Hex)).ToHashSet();
+        if (pegada.Any(naFila.Contains)) return "Já há uma fundação na fila neste lugar.";
         return null;
     }
 
@@ -100,6 +109,10 @@ public static class Obras
     public static bool HexLivreParaObra(Mundo m, Reino r, int hex) =>
         m.LocalNoHex(hex) == null && !m.Ruinas.Any(x => x.Hex == hex) && !m.Jazidas.Any(j => j.Hex == hex && j.DescobertaPor.Contains(r.Id))
         && !HexOcupado.Any(f => f(m, hex));
+
+    /// <summary>A pegada inteira do local está livre na conclusão da obra.</summary>
+    public static bool PegadaLivreParaObra(Mundo m, Reino r, TipoLocal tipo, int hex) =>
+        Pegada.Hexes(m, tipo, hex).All(h => HexLivreParaObra(m, r, h)) && Pegada.Hexes(m, tipo, hex).Count() == Pegada.Tamanho(m, tipo);
 
     public static ItemFila Fundar(Mundo m, Reino r, string tipo, int hex)
     {
@@ -190,9 +203,9 @@ public sealed class ObraFundar : ITipoItemFila
     public void Concluir(Mundo m, Reino r, ItemFila item)
     {
         var (tipo, produz, _) = Obras.Fundaveis[item.Param!];
-        if (!Obras.HexLivreParaObra(m, r, item.Hex))
+        if (!Obras.PegadaLivreParaObra(m, r, tipo, item.Hex))
         {
-            // alguém ocupou o hexágono antes: o material volta ao castelo
+            // alguém ocupou o lugar antes: o material volta ao castelo
             var c = m.Locais.Obter(r.CasteloId);
             if (c != null) { c.Estoque.Somar(item.Entregue); m.Sujar(c); }
             return;

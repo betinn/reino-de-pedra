@@ -162,7 +162,7 @@ public static class ExtrasCombate
                 if (b.Encerrada) continue;
                 var minha = b.AtacanteId == r.Id || b.DefensorId == r.Id;
                 if (!minha && !vis.Contains(b.Hex)) continue;
-                lista.Add(new { tipo = "batalha", id = minha ? b.Id : (long?)null, hex = b.Hex, fim = b.FimPrevisto, papel = minha ? VisaoCombate.Papel(b, r) : null });
+                lista.Add(new { tipo = "batalha", id = minha ? b.Id : (long?)null, hex = b.Hex, inicio = b.Inicio, fim = b.FimPrevisto, papel = minha ? VisaoCombate.Papel(b, r) : null });
             }
             return lista;
         });

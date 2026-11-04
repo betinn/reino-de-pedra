@@ -172,7 +172,7 @@ public class GuerraTestes
         Assert.Equal(8, GT.Total(c.Guarnicao));
         Assert.Equal(1.5, Veterania.DoLocal(t.M, c), 6);   // 4 veteranos com 3 e 4 recrutas com 0
         // quem sai leva as próprias marcas: os mais veteranos saem primeiro
-        var ex = Exercitos.Enviar(t.M, r, c.Id, G(("arqueiro", 2)), t.M.G.Area(c.Hex, 1).First(h => h != c.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
+        var ex = Exercitos.Enviar(t.M, r, c.Id, G(("arqueiro", 2)), t.M.G.Area(c.Hex, 2).First(h => h != c.Hex && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null), OrdemMover.Id);
         Assert.Equal(3, Veterania.DaMarcha(t.M, ex), 6);
         Assert.Equal(1, Veterania.DoLocal(t.M, c), 6);   // ficaram 2 com 3 e 4 com 0
         // um exército veterano que volta entra na média
@@ -283,7 +283,7 @@ public class GuerraTestes
     // ---------------------------------------------------------------- interceptação
 
     /// <summary>Exército do defensor saindo de uma mina à vista do atacante rumo a um ponto longe.</summary>
-    private static (CombateCenario s, Local mina, Exercito alvo) Marcha(int lanceiros = 10, int dist = 10)
+    private static (CombateCenario s, Local mina, Exercito alvo) Marcha(int lanceiros = 10, int dist = 30)
     {
         var s = new CombateCenario();
         var mina = s.Alvo(TipoLocal.Mina, G(("lanceiro", lanceiros)), 0);
@@ -305,7 +305,7 @@ public class GuerraTestes
         Assert.True(e.Nos <= e.Eles - T.DeSegundos(s.M.P.Guerra.Interceptacao.FolgaSeg));
         Assert.True(e.Indice < alvo.Caminho.Count - 1);
         // lentos demais não alcançam
-        Assert.Null(Interceptacoes.Calcular(s.M, s.HexLivre(alvo.Origem, 25), G(("ariete", 1)), alvo));
+        Assert.Null(Interceptacoes.Calcular(s.M, s.HexLivre(alvo.Origem, 75), G(("ariete", 1)), alvo));
         var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, tropas, e.Hex, OrdemInterceptar.Id, false, new JsonObject { ["marchaId"] = alvo.Id });
         Assert.Equal(e.Hex, ex.Destino);
         s.AvancarAte(ex.Chegada);
@@ -360,10 +360,10 @@ public class GuerraTestes
         c.Postura = postura;
         if (atacouAntes) Revide.Registrar(s.M, s.Atk.Id, s.Def.Id);
         // destino cujo caminho passa a 1 do castelo antes do fim
-        foreach (var d in s.M.G.Area(c.Hex, 4).Where(h => s.M.G.Distancia(h, c.Hex) >= 3 && Obras.HexLivre(s.M, h) && !s.M.Mapa.Rio[h]))
+        foreach (var d in s.M.G.Area(c.Hex, 8).Where(h => s.M.G.Distancia(h, c.Hex) >= 6 && Obras.HexLivre(s.M, h) && !s.M.Mapa.Rio[h]))
         {
             var rota = Caminhos.Calcular(s.M, mina.Hex, d, "Lenta");
-            var i = rota.Hexes.ToList().FindIndex(h => s.M.G.Distancia(h, c.Hex) <= 1);
+            var i = rota.Hexes.ToList().FindIndex(h => s.M.G.Distancia(h, c.Hex) <= 2);
             if (rota.Hexes[^1] != d || i < 1 || i >= rota.Hexes.Count - 1) continue;
             var alvo = Exercitos.Enviar(s.M, s.Def, mina.Id, G(("lanceiro", 10)), d, OrdemMover.Id);
             alvo.Carga.Somar("ferro", 200);
@@ -426,7 +426,7 @@ public class GuerraTestes
         var s = new CombateCenario();
         var mina = s.Alvo(TipoLocal.Mina, G(("lanceiro", 10)), 0);
         var visao = ForcasVistas.Visao(s.M, s.Atk.Id);
-        var destino = s.M.G.Area(mina.Hex, 12).First(h => s.M.G.Distancia(h, mina.Hex) >= 10 && !visao.Contains(h) && Obras.HexLivre(s.M, h) && !s.M.Mapa.Rio[h]
+        var destino = s.M.G.Area(mina.Hex, 24).First(h => s.M.G.Distancia(h, mina.Hex) >= 20 && !visao.Contains(h) && Obras.HexLivre(s.M, h) && !s.M.Mapa.Rio[h]
             && Caminhos.Calcular(s.M, mina.Hex, h, "Lenta").Hexes[^1] == h);
         var alvo = Exercitos.Enviar(s.M, s.Def, mina.Id, G(("lanceiro", 10)), destino, OrdemMover.Id);
         var sai = alvo.Caminho.FindIndex(h => !visao.Contains(h));

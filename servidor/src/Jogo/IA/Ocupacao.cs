@@ -157,7 +157,7 @@ public static class Ocupacao
             foreach (var rel in Reliquias.NoLocal(m, l.Id)) { rel.ReinoId = 0; m.Sujar(rel); }
             if (l.Tipo == TipoLocal.Castelo)
             {
-                l.Ruina = true; l.Nivel = 1; l.Tipo = TipoLocal.Vila; l.Produz = "comida"; l.Nome = "Ruínas de castelo";
+                l.Ruina = true; l.Nivel = 1; l.Tipo = TipoLocal.Vila; l.Produz = "comida"; l.Nome = "Ruínas de castelo"; m.Reindexar(l);
                 l.Portoes = 0; l.EstruturaPortoes = 0; l.Moradias = 0; l.Estoque = new();
             }
             else l.Moradias = 0;
