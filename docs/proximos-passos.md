@@ -48,8 +48,7 @@ A decisão [0026](decisoes/0026-mapa-maior-e-bonecos-3d.md) entregou o mapa de 3
 3. **Construções 3D: acabamento.** As construções são 3D (Kenney), mas estáticas: falta animar o moinho, a fumaça e a roda d'água, e dar aos níveis mais altos peças próprias além da torre de menagem. Jazidas, obras (andaime) e fundações continuam na arte 2D.
 4. **Bonecos no celular de verdade.** O render dos sprites tem orçamento de 7 ms por quadro e cai na figura 2D enquanto o sprite não existe; medir num aparelho fraco quanto tempo leva para a cena encher e, se precisar, pré-renderizar as poses mais comuns na carga.
 5. **Névoa sem buscar o mapa inteiro.** Cada aviso "mapa" ainda busca o `GET /mapa` completo (comprimido); um pedido só com o que mudou desde a última busca deixaria a revelação ao vivo mais leve.
-6. **Percurso desenhado no mapa.** O envio lista os pontos do percurso e da patrulha na folha; desenhar a linha do percurso e o anel da patrulha no mapa enquanto se escolhe.
-7. **Banco antigo.** Um banco gravado com o mapa de 104 × 80 não serve para 312 × 240 (locais, névoas e fotos em índices do mapa antigo): em desenvolvimento, apague `reino.db` antes de subir; em produção, a troca entra com o reset de temporada.
+6. **Banco antigo.** Um banco gravado com o mapa de 104 × 80 não serve para 312 × 240 (locais, névoas e fotos em índices do mapa antigo): em desenvolvimento, apague `reino.db` antes de subir; em produção, a troca entra com o reset de temporada.
 
 ## Pessoas no mapa: pendências
 
