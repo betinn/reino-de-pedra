@@ -46,7 +46,7 @@ public sealed class Exercito : Marcha
     /// <summary>Parado no destino, sem evento de chegada.</summary>
     [JsonIgnore] public bool Parado => EventoId == null;
 
-    public double CargaMax(Mundo m) => GT.Carga(m, Tropas);
+    public double CargaMax(Mundo m) => GT.Carga(m, Tropas) + Pessoas.Pessoas.CivisColetando(m, this) * m.P.Coleta.CargaCivil;   // civis que coletam levam um feixe
 
     /// <summary>Enxerga (e revela a névoa) com a maior visão entre as unidades do grupo.</summary>
     public override int RaioVisao(Mundo m) => GT.Visao(m, Tropas);

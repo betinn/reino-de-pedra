@@ -4,6 +4,7 @@ using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Social;
+using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
 namespace ReinoDePedra.Jogo.Exploracao
 {
@@ -256,48 +257,74 @@ namespace ReinoDePedra.Jogo.Exploracao
             }
         }
 
-        /// <summary>Ataque de fauna a uma marcha: perde 5% (força acima do limite) ou 25% (abaixo); explorador sozinho morre.</summary>
+        /// <summary>
+        /// Ataque de fauna a uma marcha, como dano (<see cref="Marcha.SofrerGolpes"/>): cada animal ataca uma pessoa do grupo e
+        /// tira vida pelo risco efetivo; morre só quem chega a zero. A carga perde 5% (força acima do limite) ou 25% (abaixo).
+        /// O explorador sozinho e rápido (P.vida.fuga) foge sem dano. Morto o explorador, a escolta que sobra volta para casa.
+        /// </summary>
         public static void Atacar(Mundo m, Marcha mc, RegiaoFauna rg, int hex, int nivel)
         {
             var nome = NomeDe(nivel)!;
             var forca = mc.ForcaContraFauna(m);
             var limite = m.P.Fauna[nome];
             if (forca >= 2 * limite) return;
-            var perda = forca >= limite ? m.P.PerdaFauna.Acima : m.P.PerdaFauna.Abaixo;
+            var risco = m.F.RiscoFauna(nome, forca);
+            if (risco == "nenhum") return;
+            var perdaCarga = forca >= limite ? m.P.PerdaFauna.Acima : m.P.PerdaFauna.Abaixo;
             mc.RevelarPercorrido(m, m.Agora);
             var r = m.Reinos.Obter(mc.ReinoId);
-            var quem = mc is Explorador ex0 && m.Pessoas.Obter(ex0.PessoaId) is { } px ? px.Nome : null;
-            var p = mc.SofrerFauna(m, perda);
-            var animal = NomeAnimal.GetValueOrDefault(rg.Animal, rg.Animal);
+            var exp = mc as Explorador;
+            var quem = exp != null && m.Pessoas.Obter(exp.PessoaId) is { } px ? px.Nome : null;
+            var animal = NomeAnimal.GetValueOrDefault(rg.Animal, rg.Animal).ToLowerInvariant();
             var linhas = new JsonArray
             {
                 Linha("Onde", "hexágono " + m.G.C(hex) + ", " + m.G.L(hex)),
-                Linha("Perigo", NomeNivel[nome] + " · " + animal.ToLowerInvariant()),
+                Linha("Perigo", NomeNivel[nome] + " · " + animal),
             };
-            string titulo, resumo;
-            if (mc is Explorador e && p.Acabou)
+            if (exp != null && GT.Total(exp.Tropas) == 0 && m.P.Vida.Fuga.TryGetValue(exp.TipoExp, out var fuga) && m.Sorte.Chance(fuga))
             {
-                titulo = e.NomeTipo(m) + (quem != null ? " " + quem : "") + " morto por " + animal.ToLowerInvariant();
-                resumo = "Um explorador sozinho atacado por animais não volta. Prefira a rota segura ou leve escolta.";
-                if (quem != null) linhas.Add(Linha("Quem", quem));
+                if (r != null)
+                    Registros.Relatar(m, r.Id, "fauna", exp.NomeTipo(m) + (quem != null ? " " + quem : "") + " fugiu de " + animal, new JsonObject
+                    {
+                        ["resumo"] = "Rápido, escapou do bando sem se ferir e segue a ordem.", ["linhas"] = linhas, ["hex"] = hex,
+                    }, "exploracao");
+                return;
+            }
+            var a = mc.SofrerGolpes(m, risco, Math.Max(1, rg.Qtd), perdaCarga);
+            var morreuExplorador = exp != null && a.MortosIds.Contains(exp.PessoaId);
+            string titulo, resumo;
+            if (exp != null && morreuExplorador)
+            {
+                titulo = exp.NomeTipo(m) + (quem != null ? " " + quem : "") + " morto por " + animal;
+                resumo = "Os animais tiraram toda a vida do explorador." + (a.Acabou ? "" : " A escolta que sobrou volta para casa.") + " Prefira a rota segura ou leve escolta.";
+            }
+            else if (exp != null && GT.Total(exp.Tropas) == 0)
+            {
+                titulo = exp.NomeTipo(m) + (quem != null ? " " + quem : "") + " ferido por " + animal;
+                resumo = "Sobreviveu ao ataque e segue a ordem, ferido. A vida volta com o tempo; outro ataque antes disso pode matar.";
             }
             else
             {
-                titulo = "Ataque de " + animal.ToLowerInvariant();
+                titulo = "Ataque de " + animal;
                 var partes = new List<string>();
-                if (p.Mortos.Count > 0) partes.Add("perdeu " + Reinos.Tropas.Partes(m, p.Mortos));
-                var cg = p.Carga.Arredondado();
+                if (a.Feridos.Count > 0) partes.Add(a.Feridos.Count + (a.Feridos.Count == 1 ? " ferido" : " feridos"));
+                if (a.Mortos.Count > 0) partes.Add(a.Mortos.Count + (a.Mortos.Count == 1 ? " morto" : " mortos"));
+                var cg = a.Carga.Arredondado();
                 if (cg.Count > 0) partes.Add("perdeu " + string.Join(", ", cg.Select(kv => kv.Value + " " + Logistica.NomeRecurso(kv.Key))));
-                resumo = (mc is Carregadores ? "Os carregadores" : "O grupo") + " foi atacado" + (partes.Count > 0 ? " e " + string.Join(" e ", partes) : "") + ".";
-                if (p.Acabou) resumo += " Ninguém sobrou.";
-                if (p.Mortos.Count > 0) linhas.Add(Linha("Baixas", Reinos.Tropas.Partes(m, p.Mortos) + (p.Nomes is { Count: > 0 } ? ": " + Pessoas.Pessoas.Nomear(p.Nomes) : "")));
+                resumo = (mc is Carregadores ? "Os carregadores fugiram" : "O grupo foi atacado") + (partes.Count > 0 ? ": " + string.Join(", ", partes) : "") + ".";
+                if (a.Acabou) resumo += " Ninguém sobrou.";
+                else if (a.Feridos.Count > 0) resumo += " Os feridos seguem andando; a vida volta com o tempo.";
             }
-            if (mc is Carregadores c && r != null && c.ItemId is long item && p.Carga.Count > 0)
-                Logistica.Repor(m, r, c.Fila, item, p.Carga);
-            if (p.Acabou) mc.Encerrar(m);
+            if (a.Mortos.Count > 0) linhas.Add(Linha("Mortos", (a.MortosPorUnidade.Count > 0 ? Reinos.Tropas.Partes(m, a.MortosPorUnidade) + ": " : "") + Pessoas.Pessoas.Nomear(a.Mortos)));
+            if (a.Feridos.Count > 0) linhas.Add(Linha("Feridos", string.Join(", ", a.Feridos)));
+            if (mc is Carregadores c && r != null && c.ItemId is long item && a.Carga.Count > 0)
+                Logistica.Repor(m, r, c.Fila, item, a.Carga);
+            if (a.Acabou) mc.Encerrar(m);
+            else if (exp != null && morreuExplorador) Exploradores.IrParaCasa(m, exp);
             if (r != null)
                 Registros.Relatar(m, r.Id, "fauna", titulo, new JsonObject { ["resumo"] = resumo, ["linhas"] = linhas, ["hex"] = hex }, "exploracao");
             m.Avisar(mc.ReinoId, "reino");
+            m.Avisar(mc.ReinoId, "mapa");
         }
 
         internal static JsonObject Linha(string rotulo, string valor) => new() { ["rotulo"] = rotulo, ["valor"] = valor };

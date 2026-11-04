@@ -179,9 +179,9 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         // ---------------------------------------------------------------- envio e ordens
 
-        /// <summary>Manda um explorador livre do castelo com uma ordem. Escolta opcional, tirada da guarnição do castelo.</summary>
+        /// <summary>Manda um explorador livre do castelo com uma ordem. Escolta opcional, tirada da guarnição do castelo. Rota segura por padrão (desvia do perigo conhecido).</summary>
         public static Explorador Enviar(Mundo m, Reino r, string tipo, string ordem, int? destino, IReadOnlyList<int>? pontos = null,
-            bool seguro = false, IReadOnlyDictionary<string, int>? escolta = null)
+            bool seguro = true, IReadOnlyDictionary<string, int>? escolta = null)
         {
             Tipo(m, tipo);
             var casa = m.Locais.Obter(r.CasteloId);

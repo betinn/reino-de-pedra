@@ -293,7 +293,7 @@ public static partial class Pessoas
     {
         var p = Da(m, r, pessoaId);
         if (!p.EhCivil) throw new RegraException("Só civis trocam de trabalho.");
-        if (p.Estado is Estados.Carregando or Estados.Treinando) throw new RegraException(p.Nome + " está " + (p.Estado == Estados.Carregando ? "carregando" : "em treino") + " e termina antes de mudar.");
+        if (p.Estado is Estados.Carregando or Estados.Treinando or Estados.Coletando) throw new RegraException(p.Nome + " está " + (p.Estado switch { Estados.Carregando => "carregando", Estados.Coletando => "coletando", _ => "em treino" }) + " e termina antes de mudar.");
         var l = m.Locais.Obter(localId);
         if (l == null || l.ReinoId != r.Id) throw new RegraException("Local não é seu.", 404);
         if (l.Ruina) throw new RegraException("O local está em ruínas.");

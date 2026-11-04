@@ -9,7 +9,7 @@ namespace ReinoDePedra.Jogo.Pessoas;
 /// (<see cref="Reino.Pop"/> é mantido por <see cref="Pessoas"/>); soldados, exploradores e mensageiros são pessoas com
 /// o ofício da unidade. Índices por reino e por local ficam no <see cref="Mundo"/>.
 /// </summary>
-public sealed class Pessoa : Documento
+public sealed partial class Pessoa : Documento
 {
     public long ReinoId { get; set; }
     public string Nome { get; set; } = "";
@@ -89,4 +89,6 @@ public static class Estados
 {
     public const string Trabalhando = "trabalhando", Ociosa = "ociosa", Andando = "andando", Carregando = "carregando", Treinando = "treinando";
     public const string Guarnecida = "guarnecida", Marchando = "marchando", Ferida = "ferida", Capturada = "capturada";
+    /// <summary>Civil sem trabalho coletando madeira ou pedra no mapa, com um exército (ordem "coletar").</summary>
+    public const string Coletando = "coletando";
 }

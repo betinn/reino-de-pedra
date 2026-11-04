@@ -110,6 +110,14 @@ public static class VisaoTropas
             var fim = e.ExtraiEventoId is long ev ? m.Eventos.Obter(ev)?.Quando : null;
             return new { tipo = "extracao", recurso = j?.Recurso, coletado = e.Carga.Arredondado(), destino = dep?.local.Nome, fim };
         }
+        if (e.ColetaPontoId is long pid)
+        {
+            var pc = m.PontosColeta.Obter(pid);
+            if (pc != null) Coletas.Liquidar(m, pc);   // a carga do grupo fica em dia (a coleta não tem tique)
+            var dep = pc == null ? null : Coletas.Deposito(m, e.ReinoId, pc.Hex, e.Vel, pc.Recurso, new OpcoesCaminho { ReinoId = e.ReinoId });
+            var fim = e.ColetaEventoId is long ev ? m.Eventos.Obter(ev)?.Quando : null;
+            return new { tipo = "coleta", recurso = pc?.Recurso, coletado = e.Carga.Arredondado(), destino = dep?.local.Nome, fim };
+        }
         if (e.EscavaRuinaId != null)
         {
             var did = e.Dados["destinoLocalId"]?.GetValue<long>();

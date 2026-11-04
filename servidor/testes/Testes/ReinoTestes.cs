@@ -137,6 +137,8 @@ public class ReinoTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = t.M.Locais[r.CasteloId];
+        Economia.Atualizar(t.M, r);
+        c.Estoque["pedra"] = 10;   // o kit já paga o primeiro local: falta pedra de propósito
         var antes = c.Estoque.Qtd("madeira");
         // um hexágono explorado e livre, de planície
         var hex = t.M.G.Area(c.Hex, 3).First(h => Obras.HexLivre(t.M, h) && !t.M.Mapa.Rio[h] && t.M.Mapa.Terrenos[h] == Jogo.Mapa.Terreno.Planicie);

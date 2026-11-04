@@ -86,6 +86,7 @@ public static class VisaoMapa
         {
             id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, estado = p.Estado, localId = p.LocalId, grupoId = p.GrupoId,
             marcas = Math.Round(p.Marcas, 2),
+            vida = Math.Round(ReinoDePedra.Jogo.Pessoas.Vidas.Atual(m, p), 1), vidaMax = ReinoDePedra.Jogo.Pessoas.Vidas.Max(m, p), vidaH = Math.Round(ReinoDePedra.Jogo.Pessoas.Vidas.PorHora(m, p), 2),
             hex = p.GrupoId is long gid && gid > 0 ? (int?)null : p.LocalId is long lid && m.Locais.Obter(lid) is { } l ? l.Hex : (int?)null,
         }).ToList();
 
@@ -133,6 +134,7 @@ public static class VisaoMapa
             pessoaIds = x.PessoaIds,
             alvo = VisaoTropas.NomeLocal(m, r, alvoId), destinoNome = VisaoTropas.NomeLocal(m, r, m.LocalNoHex(x.Destino)?.Id),
             reliquias = x.Reliquias.Count, x.Estandarte,
+            recurso = x is Exercito ec && ec.Ordem is Coletas.OrdemColetarId or Coletas.OrdemEntregarId ? ec.Dados["recurso"]?.GetValue<string>() : null,   // coleta: madeira (machado) ou pedra (picareta)
         };
     }
 
