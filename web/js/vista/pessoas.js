@@ -79,6 +79,19 @@
     S.pessoa(c, 0, 0, t, op(o));
   }
 
+  /* vida de agora (a recuperação anda entre as cargas do mapa) e barra sobre a figura de quem está ferido (cheia, não aparece) */
+  function vidaAgora(p) {
+    if (!p || p.vidaMax == null || p.vida == null) return null;
+    var d = M.dados, h = d && d.recebidoEm ? Math.max(0, RP.agora() - d.recebidoEm) / 3600000 : 0;
+    return Math.min(p.vidaMax, p.vida + (p.vidaH || 0) * h);
+  }
+  function barraVida(c, p, y) {
+    var v = vidaAgora(p); if (v == null || v >= p.vidaMax - 0.05) return;
+    var f = Math.max(0, v / p.vidaMax), Cs = A.cores(), w = 14, yy = y == null ? -31 : y;
+    c.fillStyle = 'rgba(20,16,12,0.7)'; c.fillRect(-w / 2 - 1, yy - 1, w + 2, 4);
+    c.fillStyle = f > 0.6 ? Cs.sucesso : f > 0.3 ? Cs.alerta : Cs.perigo; c.fillRect(-w / 2, yy, w * f, 2);
+  }
+
   function anel(c, cor) {
     c.strokeStyle = cor; c.lineWidth = 1.6; c.globalAlpha = 0.9;
     c.beginPath(); c.ellipse(0, 0.8, 8, 8 * A.K * 0.55, 0, 0, 6.2832); c.stroke(); c.globalAlpha = 1;
@@ -116,6 +129,7 @@
             q.obj(pp.x, pp.y);
             if (selecionada) anel(c, Cs.selecao);
             figura(c, p, q.t, dir, q.cor, false);
+            barraVida(c, p);
           }, alvo: q.alvo(pp.x, pp.y, 14, 28, ['pessoa', p.id], p) });
           var tp = q.cena.tela(pp.x, pp.y);
           ultimos.push({ id: p.id, x: tp.x, y: tp.y, hex: h });
@@ -138,6 +152,9 @@
     ehSoldado: ehSoldado,
     ehExplorador: ehExplorador,
     /* figura de uma pessoa fora dos locais (marchas): figura(c, pessoa, t, dir, cor, cru, extra) */
-    figura: figura
+    figura: figura,
+    /* barra de vida sobre a figura (só de quem está ferido) e a vida de agora de uma pessoa do mapa */
+    barraVida: barraVida,
+    vidaAgora: vidaAgora
   };
 })();
