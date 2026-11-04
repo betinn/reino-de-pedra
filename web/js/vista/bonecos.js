@@ -17,7 +17,8 @@ const BASE = new URL('../../modelos/', import.meta.url).href;
 
 /* caixas dos sprites em unidades do mundo (as mesmas de RP.sprites para a pessoa: largura, altura acima do pé, folga abaixo) */
 const CX = { pessoa: { W: 40, ALT: 44, PE: 6 }, montado: { W: 60, ALT: 50, PE: 8 } };
-const RES = 4, SS = 2, MAX = 420, ORCAMENTO_MS = 7, FRAMES = 8;
+/* pixels por unidade do mundo: 4 em tela densa (celular, retina), 3 nas outras; teto do cache ≈ 30 MB */
+const RES = (window.devicePixelRatio || 1) >= 1.5 ? 4 : 3, SS = 2, MAX = 300, ORCAMENTO_MS = 7, FRAMES = 8;
 const ALTURA_MODELO = 376, ALTURA_PESSOA = 22.5, UNID = ALTURA_PESSOA / ALTURA_MODELO;   /* unidades do mundo por unidade do modelo */
 const CABECA = 0.74;   /* a cabeça do modelo é de desenho animado; menor, o corpo fica com proporção de gente */
 /* duração do ciclo de cada pose (s) */
