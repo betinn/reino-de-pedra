@@ -68,3 +68,5 @@ Com o mapa de 312 × 240, hexágonos menores e construções em vários hexágon
 | Banco | 5,5 MB | 5,4 MB |
 
 O que cresceu: a sessão de IA (A* e Dijkstra numa grade 9× maior, e os alcances da IA em hexágonos 3× maiores) e a revelação da névoa em intervalos de 10 s de jogo. O que caiu: a névoa gravada comprimida (deflate) tirou a cópia em base64 de 4 bytes por hexágono da memória e do banco. Tudo segue três ordens de grandeza abaixo do orçamento; se a sessão de IA virar problema, limitar o Dijkstra ao alcance da decisão é o primeiro passo.
+
+Com tudo junto (mapa de 312 × 240, vida e coleta da [0028](decisoes/0028-vida-e-coleta.md)), 10 dias, 30 reinos (25 de IA), testes em Debug: 5 665 eventos por dia de jogo, 11,1 s de CPU por dia (1 959 µs por evento), sessão de IA de 63 ms, 0,0128% de um núcleo, pico de 64 MB de memória gerenciada, 7 952 documentos e banco de 5,6 MB.
