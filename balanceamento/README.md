@@ -35,6 +35,9 @@ Em relação à primeira versão do modelo (castelo com teto 300, exércitos de 
 | Retorno de uma melhoria | Primeira em **≈ 6 h**; a do nível 10 em **≈ 13 dias** (investimento de fim de temporada) |
 | Pessoas e exército | Jogador médio: **21 pessoas e 7 soldados** no fim do escudo, **65 pessoas e 22 soldados** no dia 35. Ativo: 2,4× as tropas; termina a temporada com ≈ 135 pessoas |
 | Unidade básica | Lanceiro: 90 recursos, 12 min, carga 5 |
+| Começo | Kit com 90 de madeira e **60 de pedra**. Sem coleta, 8 níveis nas 3 primeiras horas (30 min reais a 6×); com coleta, **10 níveis em 2 h** e o castelo 5 em 6 h |
+| Vida | Civil 60, lanceiro 110, explorador 80...; volta inteira em **6 h**, sem tique |
+| Coleta | 4 por hora por pessoa (`4 × pessoas^0,8`), até 6 por hexágono; o hexágono guarda 60 e volta em 24 h |
 | Viagem (tropa lenta) | Vizinho do reino (3 hex.) **2 min**; reino vizinho (24 hex.) **16 min**; travessia do mapa (104 hex.) **1 h 10 min** |
 | Combate | Para tomar um local, cerca de **1,5× a força da defesa**; um castelo médio resiste a 20 tropas e cai com cerca de **2×** |
 | Torre | Nível 1: 2 arqueiros no alto, alcance 2, 150 recursos; com ela (nível 2), o mesmo ataque que tomaria o local perde |
@@ -228,7 +231,7 @@ Tabelas completas (valiosos, extração, eras, ferraria, queda do castelo) em [`
 | Tema | Valor |
 |---|---|
 | Fauna | Força 50 / 110 / 180 (baixo, médio, alto), bandos de 1 a 6 animais. Com o dobro, passa ileso; acima do limite, risco um nível menor |
-| Ataque de fauna | Chance por região atravessada: baixo 10%, médio 25%, alto 50%. Atacado, o grupo perde 5% (acima do limite) ou 25% (abaixo); explorador sozinho morre |
+| Ataque de fauna | Chance por região atravessada: baixo 10%, médio 25%, alto 50%. Atacado, cada animal fere uma pessoa: 10 a 30 de vida (baixo), 20 a 60 (médio), 35 a 105 (alto), pelo risco efetivo; morre quem chega a zero. Explorador a cavalo foge em 60%. A carga perde 5% (acima do limite) ou 25% (abaixo) |
 | Caça (por bando) | Javalis 12 comida, 4 couro, 1 pele · lobos 5, 3, 4 · ursos 9, 6, 6 · crocodilos 5, 9, 0. 20 min no local; o bando volta em 24 h |
 | Exploradores | 1 pessoa cada. A pé 40 comida, 4 min, visão 2 · a cavalo 60 comida e 15 couro, 12 min, visão 3 · prospector 80 comida e 40 ferro, 24 min, visão 1 (jazidas a 2) · batedor 90 comida e 30 couro, 32 min, visão 3 |
 | Rotas | 12 madeira e 8 pedra, 5 min por hexágono, × terreno (floresta 1,8; montanha 2,3; pântano 2,8). Ponte: 60 madeira, 40 pedra, 30 min |
@@ -242,10 +245,35 @@ Por quê:
 
 | | Meta | Resultado |
 |---|---|---|
-| M22 | Explorador sozinho corre risco em qualquer perigo; 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto | ✓ |
-| M23 | 1 caçada por dia cobre 70% a 150% do couro que o médio usa para recrutar | 110% |
+| M22 | Explorador sozinho é atacado em qualquer perigo, mas um ataque só mata no alto (20% a 50% a pé, até 25% a cavalo); 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto | 36% / 14% |
+| M23 | 1 caçada por dia cobre 70% a 150% do couro que o médio usa para recrutar | 105% |
 | M24 | 10 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14 | 1,3 h |
 | M25 | Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo | 35% / 60% |
+
+## Vida, coleta e começo
+
+Testado a 6×: o explorador morria no primeiro animal, e o reino novo subia uns 5 níveis e travava no castelo 4 por falta de pedra, com 4 civis sem vaga parados no castelo ([decisão 0028](../docs/decisoes/0028-vida-e-coleta.md)).
+
+| Tema | Valor |
+|---|---|
+| Vida | Por ofício: civil 60, milícia 70, lanceiro 110, arqueiro 90, cavalaria 110, elite 130, explorador 80, prospector 70, batedor 90. Volta inteira em 6 h, em linha |
+| Fauna | Cada animal fere uma pessoa diferente: golpe de 20 (baixo), 40 (médio) ou 70 (alto) ± 50%, pelo risco efetivo do grupo. Explorador a pé morre num ataque só no alto (36%); a cavalo foge em 60% (14%). Um golpe do alto nunca tira a vida inteira de um lanceiro |
+| Batalha | Quem sobrevive perde 80% × a fração de perdas do lado, sem morrer por isso |
+| Coleta | `4 × pessoas^0,8` por hora (1 pessoa 4, 4 pessoas 12, 6 pessoas 17), até 6 por hexágono. Civil leva 10. Hexágono de 60, volta inteiro em 24 h: 4 coletores o esgotam em ≈ 6 h |
+| Começo | Kit de pedra 60 (era 40). Sem coleta: 6 níveis na 1ª hora, 8 em 3 h, trava no castelo 4. Com coleta (4 civis sem vaga na madeira, a guarnição inicial na pedra): 8 na 1ª hora, 10 em 2 h, castelo 5 em 6 h |
+
+Por quê:
+- **Vida em vez de morte certa**: o jogador vê o dano, tem chance de sobreviver e o tempo cura. A força do grupo continua decidindo o risco, e o dobro continua passando ileso: as metas de fauna (M22) mudam só no que acontece num ataque.
+- **Coleta rende como um trabalhador do começo** (M28: 1× um trabalhador de local nível 2): vale para quem está sem vaga e para tropas paradas, sem substituir os locais, que passam a render mais por pessoa a partir do nível 3. A viagem, a fauna, o hexágono que acaba e o rendimento decrescente impedem que vire recurso de graça.
+- **Mais níveis de construção, não**: os primeiros níveis já levam 2 a 16 min e custam pouco; faltava madeira e pedra. Mais níveis mudariam a temporada inteira (M2, M3, M5).
+
+| | Meta | Resultado |
+|---|---|---|
+| M26 | Sem coleta, o reino novo sobe pelo menos 6 níveis nas 3 primeiras horas (30 min reais a 6×) | 8 |
+| M27 | Com coleta, pelo menos 8 níveis nas 2 primeiras horas e o castelo 5 em até 8 h | 10 · 6 h 6 min |
+| M28 | Coleta rende por pessoa 0,8 a 1,5× um trabalhador de local nível 2 | 1× |
+| M29 | Um hexágono com 4 coletores se esgota em 3 a 8 h e se recupera em 12 a 36 h | 6 h 14 min · 24 h |
+| M30 | A vida volta em 4 a 8 h; um ataque do perigo alto não mata ninguém de um grupo de lanceiros | 6 h · 105 < 110 |
 
 ## Como mudar um número
 

@@ -28,5 +28,6 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0023](0023-concha-jogo-sempre-visivel.md) | Concha do cliente: mundo sempre à vista como tela de fundo, painel baixo/coluna, folha sem véu com até 3 ações, navegação por destinos, câmera inclinável, formatação de tempo segura |
 | [0024](0024-pessoas.md) | Pessoas no mapa e números menores: escala ÷10 nos recursos e 25× nas pessoas, pessoa como documento com nome e ofício, vagas por local, contagens derivadas, carregadores e milícia como pessoas, marchas com ids |
 | [0025](0025-primeiros-passos.md) | Reino novo com os primeiros passos já dados: níveis, moradias, guarnição e exploradores prontos e entorno explorado (`P.inicio`); início vazio nos cenários de teste |
+| [0028](0028-vida-e-coleta.md) | Vida das pessoas sem tique (dano e instante), fauna como dano com fuga do explorador rápido, sobreviventes de batalha feridos; coleta de madeira e pedra no mapa por tropas e civis sem trabalho, com hexágono que se esgota e se recupera; começo mais rápido |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

@@ -11,9 +11,19 @@ O que ficou pendente na primeira etapa de implementação e como testar o jogo. 
 - Temporada curta, para ver o fim e o reset: `REINO_TEMPORADA_MIN=<minutos>`.
 - Sem reinos de IA: `REINO_IA=0`. Mapa fixo: `REINO_SEMENTE=42`.
 - Dois jogadores: duas janelas anônimas com contas diferentes (o mesmo navegador compartilha o cookie).
-- Testes automáticos: `cd servidor && dotnet test` (329 testes, inclusive o de carga com 30 reinos). `CombateApiTestes.Previa_envio_batalha_anonima_recuo_relatorio_e_defesas_pela_api` falhou uma vez em três rodadas da suíte inteira e passa sozinho: investigar (provável dependência do mapa sorteado ou da IA no cenário).
+- Testes automáticos: `cd servidor && dotnet test` (338 testes, inclusive o de carga com 30 reinos). `CombateApiTestes.Previa_envio_batalha_anonima_recuo_relatorio_e_defesas_pela_api` falhou uma vez em três rodadas da suíte inteira e passa sozinho: investigar (provável dependência do mapa sorteado ou da IA no cenário).
 - Tempo acelerado: o cliente anda junto com o servidor (`aceleracao` em `GET /mundo`). Para julgar o ritmo, prefira 6× a 60× (ver a sessão de ritmo em [`correcoes-usabilidade.md`](correcoes-usabilidade.md)).
 - Saúde do servidor: `GET /api/v1/saude` (eventos na agenda, conexões, memória).
+
+## Vida e coleta: pendências
+
+O item 17 (vida e fauna) e o 18 (coleta e começo mais rápido) do teste a 6× foram feitos ([decisão 0028](decisoes/0028-vida-e-coleta.md)). Ficou para depois:
+
+1. **Cura de vida**: hoje a vida só volta com o tempo, igual em qualquer lugar. Avaliar recuperar mais rápido dentro de um local (ou com ervas), o que exige guardar onde a pessoa estava em cada trecho.
+2. **Veredito da fauna no envio** (`RP.faunaVereditoHTML`) ainda fala da regra de perdas da caçada ("perde parte"); para um grupo que só passa pela região, mostrar o dano esperado e quem pode morrer.
+3. **Coleta pela seleção**: o envio pelo mapa leva só tropas; civis sem trabalho vão pela tela de coleta. Permitir selecionar civis no laço para a missão "coletar".
+4. **IA**: coleta só com os civis do castelo e uma carga por sessão; não usa armazém próximo nem tropas ociosas de outros locais.
+5. **Modelo**: a simulação de 70 dias não inclui a coleta (só a do começo); medir o efeito dela no meio da temporada.
 
 ## Regras ainda incompletas
 
