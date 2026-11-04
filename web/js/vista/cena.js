@@ -727,6 +727,7 @@
       figurasDaMarcha(m, revelado).forEach(function (f, i) {
         add(i ? pt(10 + Math.floor((i - 1) / 2) * 9, ((i % 2) * 2 - 1) * 6) : pos, function () {
           RP.pessoasVista.figura(c, f, t, dir, cor, !revelado, { andando: andaE, ang: pos.ang });
+          if (propria) RP.pessoasVista.barraVida(c, f);
         });
       });
     } else if (tipo === 'mensageiro') {
@@ -750,9 +751,11 @@
           p = { x: pos.x + Math.cos(a) * r * 1.3, y: pos.y + Math.sin(a) * r * 0.6 + 4 };
         } else p = pt(fila * 10 - Math.sin(t * 2 + i) * 0.6, col * 8);
         var extra = parada ? trabalhoDe(trab, i, p, pos) : { andando: true, ang: pos.ang };
-        if (!parada && m.cargaUsada > 0 && f.oficio !== 'cavalaria' && f.oficio !== 'elite') extra.carga = i % 2 ? 'saco' : 'minerio';
+        if (trab === 'coletar' && m.recurso === 'madeira') { extra.trabalho = null; extra.ferramenta = 'machado'; }   /* madeira: machado; pedra: picareta */
+        if (!parada && m.cargaUsada > 0 && f.oficio !== 'cavalaria' && f.oficio !== 'elite') extra.carga = m.recurso === 'madeira' ? 'tronco' : i % 2 ? 'saco' : 'minerio';
         add(p, function () {
           RP.pessoasVista.figura(c, f, t, extra.dir || dir, revelado ? cor : P.hostil, !revelado, extra);
+          if (propria) RP.pessoasVista.barraVida(c, f);
           if (i === 0 && revelado && !trab && nfig > 2) A.bandeira(c, -dir * 2, -26, 18, cor, t, 10, 7);
         });
       })(i, figs[i]);

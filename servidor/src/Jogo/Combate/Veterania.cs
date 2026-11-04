@@ -68,7 +68,9 @@ namespace ReinoDePedra.Jogo.Combate
         /// <summary>Aplica o resultado a cada sobrevivente do grupo.</summary>
         public static void Aplicar(Mundo m, IEnumerable<Pessoa> ps, bool venceu, double fracPerdas, double forcaPropria, double forcaInimiga)
         {
-            foreach (var p in ps)
+            var lista = ps.ToList();
+            Vidas.AposBatalha(m, lista, fracPerdas);   // os sobreviventes saem da batalha feridos, na proporção das perdas do lado
+            foreach (var p in lista)
             {
                 var novo = Aplicar(m, p.Marcas, venceu, fracPerdas, forcaPropria, forcaInimiga);
                 if (Math.Abs(novo - p.Marcas) > 1e-9) { p.Marcas = novo; m.Sujar(p); }

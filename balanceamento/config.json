@@ -33,7 +33,7 @@
   "popSemente": 3,
   "kit": {
    "madeira": 90,
-   "pedra": 40,
+   "pedra": 60,
    "comida": 90,
    "ferro": 90
   },
@@ -922,6 +922,55 @@
     "arqueiros": 0.25,
     "linhas": 30
    }
+  },
+  "vida": {
+   "max": {
+    "civil": 60,
+    "padrao": 100,
+    "milicia": 70,
+    "lanceiro": 110,
+    "arqueiro": 90,
+    "cavalaria": 110,
+    "elite": 130,
+    "ariete": 90,
+    "trebuchet": 90,
+    "explorador-pe": 80,
+    "explorador-cavalo": 80,
+    "prospector": 70,
+    "batedor": 90,
+    "mensageiro": 70
+   },
+   "recuperaH": 6,
+   "golpe": {
+    "baixo": 20,
+    "medio": 40,
+    "alto": 70
+   },
+   "variacao": 0.5,
+   "fuga": {
+    "cavalo": 0.6,
+    "batedor": 0.6
+   },
+   "batalha": 0.8
+  },
+  "coleta": {
+   "terrenos": {
+    "floresta": "madeira",
+    "colina": "pedra",
+    "montanha": "pedra"
+   },
+   "taxa": 4,
+   "expPessoas": 0.8,
+   "maxPessoas": 6,
+   "cargaCivil": 10,
+   "estoque": 60,
+   "recuperaH": 24,
+   "vizinhos": 4,
+   "minimo": 5,
+   "ia": {
+    "alcance": 12,
+    "tropas": 2
+   }
   }
  },
  "U": {
@@ -1788,6 +1837,66 @@
     "recurso": "minerio",
     "tamanho": 20,
     "quantidade": 5
+   }
+  ],
+  "coleta": [
+   {
+    "pessoas": 0,
+    "porHora": 0
+   },
+   {
+    "pessoas": 1,
+    "porHora": 4
+   },
+   {
+    "pessoas": 2,
+    "porHora": 6.964404506368993
+   },
+   {
+    "pessoas": 4,
+    "porHora": 12.125732532083186
+   },
+   {
+    "pessoas": 6,
+    "porHora": 16.771850850517904
+   },
+   {
+    "pessoas": 9,
+    "porHora": 16.771850850517904
+   }
+  ],
+  "vida": [
+   {
+    "oficio": "ocioso",
+    "max": 60
+   },
+   {
+    "oficio": "agricultor",
+    "max": 60
+   },
+   {
+    "oficio": "lanceiro",
+    "max": 110
+   },
+   {
+    "oficio": "elite",
+    "max": 130
+   },
+   {
+    "oficio": "explorador-pe",
+    "max": 80
+   },
+   {
+    "oficio": "explorador-cavalo",
+    "max": 80
+   },
+   {
+    "oficio": "mensageiro",
+    "max": 70
+   },
+   {
+    "oficio": "desconhecido",
+    "max": 100
    }
   ],
   "metasOk": true

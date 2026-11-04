@@ -17,3 +17,8 @@
 .lc-pessoas circle { fill: var(--ent-fundo); stroke: var(--selecao); stroke-width: 1.4; }
 .lc-pessoas text { fill: var(--ent-texto); font: 700 9px var(--fonte-texto); text-anchor: middle; font-variant-numeric: tabular-nums; }
 [data-zoom="zoom-longe"] .lc-pessoas, [data-zoom="zoom-mundo"] .lc-pessoas { display: none; }
+
+/* vida na folha da pessoa: barra curta ao lado do número (só quando está abaixo do máximo) */
+.vida-folha { display: inline-flex; align-items: center; gap: var(--esp-2); flex-wrap: wrap; }
+.vida-folha .barra { width: 84px; height: 8px; }
+.barra-alerta > i { background: var(--cor-alerta); }

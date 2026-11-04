@@ -80,7 +80,7 @@ public static class VisaoTropas
         {
             e.Id, e.Ordem, estado = Estado(m, e, trabalho), trabalho,
             podeOrdem = bloqueio == null, bloqueio,   // o painel da marcha mostra o motivo (ex.: em batalha) em vez de deixar a ordem falhar
-            tropas = e.Tropas, total = GT.Total(e.Tropas), resumo = GT.Partes(m, e.Tropas),
+            tropas = e.Tropas, total = GT.Total(e.Tropas), resumo = GT.Partes(m, e.Tropas), civis = PS.CivisColetando(m, e),   // civis sem trabalho que coletam com o grupo
             pessoas = PS.SoldadosDaMarcha(m, e).OrderBy(p => p.Oficio).ThenBy(p => p.Id).Select(p => VisaoPessoas.Curta(m, p)).ToList(),
             marcas = Math.Round(Veterania.DaMarcha(m, e), 2),
             carga = e.Carga.Arredondado(), cargaMax = e.CargaMax(m), cargaUsada = Math.Floor(e.Carga.Total), e.Vel, e.Postura, e.Seguro,
@@ -116,6 +116,14 @@ public static class VisaoTropas
             var dep = Extracoes.Deposito(m, e.ReinoId, e.HexEm(m.Agora), e.Vel, op);
             var fim = e.ExtraiEventoId is long ev ? m.Eventos.Obter(ev)?.Quando : null;
             return new { tipo = "extracao", recurso = j?.Recurso, coletado = e.Carga.Arredondado(), destino = dep?.local.Nome, inicio = InicioExtracao(m, e, j), fim };
+        }
+        if (e.ColetaPontoId is long pid)
+        {
+            var pc = m.PontosColeta.Obter(pid);
+            if (pc != null) Coletas.Liquidar(m, pc);   // a carga do grupo fica em dia (a coleta não tem tique)
+            var dep = pc == null ? null : Coletas.Deposito(m, e.ReinoId, pc.Hex, e.Vel, pc.Recurso, new OpcoesCaminho { ReinoId = e.ReinoId });
+            var fim = e.ColetaEventoId is long ev ? m.Eventos.Obter(ev)?.Quando : null;
+            return new { tipo = "coleta", recurso = pc?.Recurso, coletado = e.Carga.Arredondado(), destino = dep?.local.Nome, fim };
         }
         if (e.EscavaRuinaId != null)
         {

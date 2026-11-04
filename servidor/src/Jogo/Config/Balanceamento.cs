@@ -188,7 +188,49 @@ public sealed class ParametrosP
     public AgoraServP AgoraServ { get; init; } = new();
     // ---------- reinos de IA, meta de ocupação, regência e IA comerciante (servidor) ----------
     public IAP IA { get; init; } = new();
+    // ---------- vida das pessoas e fauna como dano (servidor) ----------
+    public VidaP Vida { get; init; } = new();
+    // ---------- coleta de madeira e pedra no mapa (servidor) ----------
+    public ColetaP Coleta { get; init; } = new();
 }
+
+// ---------- vida das pessoas e fauna como dano (servidor) ----------
+public sealed class VidaP
+{
+    /// <summary>Vida máxima por ofício; civis sem entrada usam "civil", o resto "padrao".</summary>
+    public Dictionary<string, double> Max { get; init; } = new();
+    /// <summary>Horas para a vida voltar do zero ao máximo (sem tique).</summary>
+    public double RecuperaH { get; init; }
+    /// <summary>Dano de cada animal que ataca, pelo risco efetivo ("baixo", "medio", "alto").</summary>
+    public Dictionary<string, double> Golpe { get; init; } = new();
+    /// <summary>Cada golpe tira de (1 − variação) a (1 + variação) do valor.</summary>
+    public double Variacao { get; init; }
+    /// <summary>Tipo de explorador → chance de fugir do bando sem dano (só sozinho).</summary>
+    public Dictionary<string, double> Fuga { get; init; } = new();
+    /// <summary>Sobreviventes de uma batalha perdem esta fração da vida máxima × a fração de perdas do lado (sem morrer).</summary>
+    public double Batalha { get; init; }
+}
+
+// ---------- coleta de madeira e pedra no mapa (servidor) ----------
+public sealed class ColetaP
+{
+    /// <summary>Terreno → recurso coletado ("floresta" → "madeira", "colina" e "montanha" → "pedra").</summary>
+    public Dictionary<string, string> Terrenos { get; init; } = new();
+    public double Taxa { get; init; }
+    public double ExpPessoas { get; init; }
+    public int MaxPessoas { get; init; }
+    /// <summary>Carga de um civil coletando (feixe ou cesto).</summary>
+    public double CargaCivil { get; init; }
+    /// <summary>Quanto cada hexágono guarda e em quantas horas se recupera inteiro.</summary>
+    public double Estoque { get; init; }
+    public double RecuperaH { get; init; }
+    /// <summary>Distância (hexágonos) em que "repetir" procura outro hexágono igual quando este acabou.</summary>
+    public int Vizinhos { get; init; }
+    /// <summary>Abaixo disto o hexágono não vale a viagem.</summary>
+    public double Minimo { get; init; }
+    public ColetaIAP Ia { get; init; } = new();
+}
+public sealed class ColetaIAP { public int Alcance { get; init; } public int Tropas { get; init; } }
 
 // ---------- temporada, legado, ranking e "precisa de você" (servidor) ----------
 public sealed class TemporadaServP

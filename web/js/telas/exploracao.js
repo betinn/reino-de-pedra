@@ -88,7 +88,7 @@
   document.addEventListener('rp:tela', function (ev) { if (ev.detail !== 'mapa' && ev.detail !== 'exploradores') escolhendo = null; });
 
   /* ---------------------------------------------------------------- estado do formulário */
-  var ex = { tipo: 'cavalo', ordem: 'explorar', alvo: null, pontos: [], circuito: false, seguro: false, comEscolta: false, escolta: {}, previa: null, ativo: null, chave: '' };
+  var ex = { tipo: 'cavalo', ordem: 'explorar', alvo: null, pontos: [], circuito: false, seguro: true,   /* rota segura por padrão: desvia do perigo conhecido */ comEscolta: false, escolta: {}, previa: null, ativo: null, chave: '' };
 
   function tiposVisiveis(d) { return d.tipos.filter(function (t) { return t.id !== 'batedor' || RP.sistema('espionagem'); }); }
   function destinoAtual() { return ex.ordem === 'rota' ? ex.pontos[0] : ex.alvo; }
@@ -219,9 +219,9 @@
       else if (!p.curta.ok) h += '<p class="fraco">Sem caminho possível até o destino.</p>';
       else {
         var mesma = p.segura.ok && p.segura.hexes === p.curta.hexes && p.segura.min === p.curta.min;
-        if (mesma || !p.segura.ok) ex.seguro = false;
-        var esc = ex.seguro ? p.segura : p.curta;
-        h += '<div class="pilha">' + RP.opcaoCaminhoExp('curta', p.curta, ex.seguro) + (mesma ? '' : RP.opcaoCaminhoExp('segura', p.segura, ex.seguro)) + '</div>' +
+        var seg = ex.seguro && !mesma && p.segura.ok;   /* a escolha do jogador fica guardada para o próximo destino */
+        var esc = seg ? p.segura : p.curta;
+        h += '<div class="pilha">' + RP.opcaoCaminhoExp('curta', p.curta, seg) + (mesma ? '' : RP.opcaoCaminhoExp('segura', p.segura, seg)) + '</div>' +
           (mesma ? '<p class="fraco" style="font-size:var(--fs-2)">A rota curta já é a mais segura que se conhece.</p>' : '') +
           RP.blocoRisco(esc.risco, sozinho) + '<p class="fraco" style="font-size:var(--fs-2)">Força do grupo contra fauna: ' + RP.num(p.forca) + '.</p>';
       }

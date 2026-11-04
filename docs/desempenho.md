@@ -51,6 +51,8 @@ Com as pessoas como documentos ([0024](decisoes/0024-pessoas.md): cada civil, so
 
 Os eventos a mais são os deslocamentos de pessoas (nascimentos, trocas de vaga, carregadores que voltam); a memória caiu com a escala ÷10 dos recursos e a população em dezenas (menos tropas, menos marchas). Um reino de 120 pessoas e 30 reinos dão cerca de 3 600 documentos de pessoa, dentro do orçamento.
 
+Com a vida das pessoas e a coleta de madeira e pedra ([0028](decisoes/0028-vida-e-coleta.md)), 10 dias, 30 reinos (25 de IA): 4 786 eventos por dia de jogo (+16%: viagens de coleta da IA e civis voltando para casa), 1,33 s de CPU por dia (278 µs por evento), sessão de IA de 4,8 ms, 0,0015% de um núcleo, pico de 33,8 MB, 9 865 documentos e banco de 4,6 MB. A vida não cria eventos (é calculada quando alguém olha). Castelo médio da IA no dia 10: 8,0.
+
 Limites afirmados no teste: menos de 43 s de CPU por dia de jogo (0,05% de um núcleo), pico de memória gerenciada abaixo de 400 MB e banco abaixo de 64 MB.
 
 Com o mapa de 312 × 240, hexágonos menores e construções em vários hexágonos ([0026](decisoes/0026-mapa-maior-e-bonecos-3d.md)), medido de novo em 10 dias (mesma máquina, testes em Debug):

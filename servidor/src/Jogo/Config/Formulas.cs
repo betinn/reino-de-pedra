@@ -73,6 +73,17 @@ public sealed class Formulas(Balanceamento b)
         return P.Extracao.Taxa * carga * Math.Pow(n, P.Extracao.ExpTropas) * (posto ? P.Extracao.Posto : 1) * (rota ? P.Extracao.Rota : 1);
     }
 
+    /// <summary>Unidades por hora que um grupo de <paramref name="pessoas"/> coleta (madeira ou pedra) num hexágono.</summary>
+    public double ColetaH(int pessoas)
+    {
+        var n = Math.Min(P.Coleta.MaxPessoas, pessoas);
+        return n > 0 ? P.Coleta.Taxa * Math.Pow(n, P.Coleta.ExpPessoas) : 0;
+    }
+
+    /// <summary>Vida máxima de quem tem o ofício (civis sem entrada própria usam "civil"; os outros, "padrao").</summary>
+    public double VidaMax(string oficio, bool civil) =>
+        P.Vida.Max.TryGetValue(oficio, out var v) ? v : P.Vida.Max[civil ? "civil" : "padrao"];
+
     /// <summary>Multiplicador de uma soma de bônus de combate, limitada ao teto.</summary>
     public double BonusCom(double b) => 1 + Math.Min(P.TetoBonus, b);
 

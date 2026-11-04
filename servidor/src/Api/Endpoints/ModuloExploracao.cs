@@ -9,7 +9,8 @@ using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 namespace ReinoDePedra.Api.Endpoints;
 
 public sealed record PedidoTreinarExplorador(string Tipo, int Qtd);
-public sealed record PedidoEnviarExplorador(string Tipo, string? Ordem, int? DestinoHex, int? C, int? L, List<int>? Pontos, bool Seguro, Dictionary<string, int>? Escolta, bool Circuito = false);
+/// <summary>Envio de explorador. <c>Seguro</c> vem ligado por padrão: o explorador desvia do perigo que o reino conhece (quem envia pode desligar).</summary>
+public sealed record PedidoEnviarExplorador(string Tipo, string? Ordem, int? DestinoHex, int? C, int? L, List<int>? Pontos, bool? Seguro, Dictionary<string, int>? Escolta, bool Circuito = false);
 public sealed record PedidoOrdemExplorador(string Ordem, int? DestinoHex, int? C, int? L, List<int>? Pontos, bool? Seguro, bool Circuito = false);
 public sealed record PedidoPreviaExploracao(string? Tipo, long? DeLocalId, Dictionary<string, int>? Tropas, Dictionary<string, int>? Escolta, long? MarchaId, int? DestinoHex, int? C, int? L);
 public sealed record PedidoPrisioneiro(string Acao, Dictionary<string, double>? Resgate);
@@ -45,7 +46,7 @@ public sealed class ModuloExploracao : IModuloApi
             return Results.Json(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
-                var e = Exploradores.Enviar(m, r, p.Tipo ?? "", p.Ordem ?? Exploradores.Explorar, HexOuNulo(m, p.DestinoHex, p.C, p.L), p.Pontos, p.Seguro, p.Escolta, p.Circuito);
+                var e = Exploradores.Enviar(m, r, p.Tipo ?? "", p.Ordem ?? Exploradores.Explorar, HexOuNulo(m, p.DestinoHex, p.C, p.L), p.Pontos, p.Seguro ?? true, p.Escolta, p.Circuito);
                 return VisaoExploracao.Explorador(m, e);
             }), Json.Web, statusCode: 201);
         });

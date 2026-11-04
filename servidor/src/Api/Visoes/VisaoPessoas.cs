@@ -73,6 +73,7 @@ public static class VisaoPessoas
             grupoId = p.GrupoId, chegada = mc != null && mc.EventoId != null ? mc.Chegada : (long?)null, pronta,
             partida = mc != null && mc.EventoId != null ? mc.Partida : (long?)null, treinoInicio,   // inícios das barras de tempo
             texto = Texto(m, r, p, l, mc), marcas = Math.Round(p.Marcas, 2), nasceuEm = p.NasceuEm,
+            vida = Math.Round(Vidas.Atual(m, p), 1), vidaMax = Vidas.Max(m, p), vidaH = Math.Round(Vidas.PorHora(m, p), 2), vidaCheiaEm = Vidas.CheiaEm(m, p),
         };
     }
 
@@ -102,13 +103,21 @@ public static class VisaoPessoas
             case Estados.Guarnecida: return "Na guarnição" + (l != null ? " de " + l.Nome : "");
             case Estados.Marchando: return "Em marcha";
             case Estados.Ferida: return "Ferida, esperando ervas";
+            case Estados.Coletando:
+            {
+                var rec = mc is Exercito ec ? ec.Dados["recurso"]?.GetValue<string>() : null;
+                var nomeRec = rec != null ? Logistica.NomeRecurso(rec) : "material";
+                if (mc is Exercito ee && ee.Ordem == ReinoDePedra.Jogo.Valiosos.Coletas.OrdemEntregarId)
+                    return "Levando " + nomeRec + " para " + (ee.AlvoLocalId is long a && m.Locais.Obter(a) is { } dep ? dep.Nome : "casa");
+                return (rec == "madeira" ? "Cortando madeira" : rec == "pedra" ? "Quebrando pedra" : "Coletando") + " no mapa";
+            }
             case Estados.Capturada: return "Capturada por outro reino";
             default: return Oficios.Nome(p);
         }
     }
 
     /// <summary>Resumo de uma pessoa dentro de uma guarnição ou exército.</summary>
-    public static object Curta(Mundo m, Pessoa p) => new { id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, oficioNome = Oficios.Nome(p), estado = p.Estado, marcas = Math.Round(p.Marcas, 2) };
+    public static object Curta(Mundo m, Pessoa p) => new { id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, oficioNome = Oficios.Nome(p), estado = p.Estado, marcas = Math.Round(p.Marcas, 2), vida = Math.Round(Vidas.Atual(m, p), 1), vidaMax = Vidas.Max(m, p) };
 
     public static string NomeOficio(string oficio, bool feminina) => Oficios.Nome(new Pessoa { Oficio = oficio, Feminina = feminina });
 }

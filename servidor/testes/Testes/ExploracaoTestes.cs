@@ -228,52 +228,85 @@ public class ExploracaoTestes
     }
 
     [Fact]
-    public void Grupo_pequeno_atacado_pela_fauna_perde_25_por_cento()
+    public void Grupo_atacado_pela_fauna_fica_ferido_e_segue_andando()
     {
         var (t, r, c, alvo) = MundoComRegiaoLonge();
         Regiao(t, alvo, "ursos", "alto");
-        Guarnecer(t, r, c, "lanceiro", 4);   // força 130 < 300
+        Guarnecer(t, r, c, "lanceiro", 4);   // força 130 < 180: risco alto
         t.M.Sorte = Sorte(x => x < t.B.P.AtaqueFauna["alto"]);
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 4 }, alvo, OrdemMover.Id);
         Assert.Contains(t.M.Eventos, ev => ev is AtaqueFaunaEvento a && a.MarchaId == ex.Id);
         AvancarAte(t, ex.Chegada + 1);
-        Assert.Equal(3, ex.Tropas["lanceiro"]);
+        // cada urso fere um lanceiro diferente, e um golpe do perigo alto não tira a vida inteira de um lanceiro: ninguém morre
+        Assert.Equal(4, ex.Tropas["lanceiro"]);
+        var feridos = Pessoas.SoldadosDaMarcha(t.M, ex).Where(p => Vidas.Ferida(t.M, p)).ToList();
+        Assert.Equal(4, feridos.Count);
+        Assert.All(feridos, p => Assert.InRange(Vidas.Atual(t.M, p), 1, Vidas.Max(t.M, p) - t.B.P.Vida.Golpe["alto"] * (1 - t.B.P.Vida.Variacao) + 0.01));
         var rel = Assert.Single(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna");
         Assert.Contains("ursos", rel.Titulo);
+        Assert.Contains("ferido", rel.Dados["resumo"]!.GetValue<string>());
     }
 
     [Fact]
-    public void Grupo_acima_do_limite_perde_5_por_cento_e_com_o_dobro_passa_ileso()
+    public void Grupo_acima_do_limite_sofre_o_risco_menor_e_com_o_dobro_passa_ileso()
     {
         var (t, r, c, alvo) = MundoComRegiaoLonge();
         Regiao(t, alvo, "lobos", "alto");
         Guarnecer(t, r, c, "lanceiro", 40);
-        // 10 lanceiros = 325: acima do limite (300), risco cai para médio
+        // 10 lanceiros = 325: acima do limite (180), risco cai para médio; 4 lobos ferem 4 lanceiros, cada um com golpe do médio
         t.M.Sorte = Sorte(x => x < t.B.P.AtaqueFauna["medio"]);
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, alvo, OrdemMover.Id);
         AvancarAte(t, ex.Chegada + 1);
-        Assert.Equal(9, ex.Tropas["lanceiro"]);
-        // 20 lanceiros = 650 ≥ 600: nem sorteia
+        Assert.Equal(10, ex.Tropas["lanceiro"]);
+        var feridos = Pessoas.SoldadosDaMarcha(t.M, ex).Where(p => Vidas.Ferida(t.M, p)).ToList();
+        Assert.Equal(4, feridos.Count);
+        var maxGolpe = t.B.P.Vida.Golpe["medio"] * (1 + t.B.P.Vida.Variacao);
+        Assert.All(feridos, p => Assert.True(Vidas.Max(t.M, p) - Vidas.Atual(t.M, p) <= maxGolpe + 0.01));
+        // 20 lanceiros = 650 ≥ 360: nem sorteia
         t.M.Sorte = Sorte(x => x < 0.001);
         var forte = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 20 }, alvo, OrdemMover.Id);
         Assert.DoesNotContain(t.M.Eventos, ev => ev is AtaqueFaunaEvento a && a.MarchaId == forte.Id);
         AvancarAte(t, forte.Chegada + 1);
         Assert.Equal(20, forte.Tropas["lanceiro"]);
+        Assert.DoesNotContain(Pessoas.SoldadosDaMarcha(t.M, forte), p => Vidas.Ferida(t.M, p));
     }
 
     [Fact]
-    public void Explorador_sozinho_atacado_pela_fauna_morre()
+    public void Explorador_sozinho_sobrevive_ferido_e_morre_so_quando_a_vida_acaba()
     {
         var (t, r, c, alvo) = MundoComRegiaoLonge();
-        Regiao(t, alvo, "lobos", "medio");
-        r.ExploradoresLivres["cavalo"] = 1;
-        t.M.Sorte = Sorte(x => x < t.B.P.AtaqueFauna["medio"]);
-        var e = Exploradores.Enviar(t.M, r, "cavalo", Exploradores.Explorar, alvo);
-        t.AvancarHoras(6);
+        var rg = Regiao(t, alvo, "lobos", "medio");
+        r.ExploradoresLivres["pe"] = 1;
+        var e = Exploradores.Enviar(t.M, r, "pe", Exploradores.Explorar, alvo);
+        Assert.True(e.Seguro);   // a rota segura é o padrão dos exploradores
+        var p = t.M.Pessoas.Obter(e.PessoaId)!;
+        Fauna.Atacar(t.M, e, rg, alvo, 2);
+        // um golpe do perigo médio (20 a 60) não tira a vida inteira (80): segue ferido
+        Assert.Contains(e, t.M.Marchas);
+        Assert.True(Vidas.Ferida(t.M, p));
+        Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna" && (x.Titulo.Contains("ferido") || x.Titulo.Contains("ferida")));
+        // com pouca vida, o próximo ataque mata
+        p.Dano = Vidas.Max(t.M, p) - 1; p.DanoEm = t.M.Agora;
+        Fauna.Atacar(t.M, e, rg, alvo, 2);
         Assert.DoesNotContain(e, t.M.Marchas);
-        Assert.False(r.ExploradoresLivres.ContainsKey("cavalo"));
-        Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna" && x.Titulo.Contains("morto"));
+        Assert.Null(t.M.Pessoas.Obter(p.Id));
+        Assert.False(r.ExploradoresLivres.ContainsKey("pe"));
+        Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna" && (x.Titulo.Contains("morto") || x.Titulo.Contains("morta")) && x.Titulo.Contains(p.Nome));
         Assert.Equal(0, Economia.Tropas(t.M, r));   // ninguém mais ocupa o teto
+    }
+
+    [Fact]
+    public void Explorador_a_cavalo_foge_do_bando_sem_dano()
+    {
+        var (t, r, c, alvo) = MundoComRegiaoLonge();
+        var rg = Regiao(t, alvo, "ursos", "alto");
+        r.ExploradoresLivres["cavalo"] = 1;
+        var e = Exploradores.Enviar(t.M, r, "cavalo", Exploradores.Explorar, alvo);
+        t.M.Sorte = Sorte(x => x < t.B.P.Vida.Fuga["cavalo"]);
+        Fauna.Atacar(t.M, e, rg, alvo, 3);
+        Assert.Contains(e, t.M.Marchas);
+        Assert.False(Vidas.Ferida(t.M, t.M.Pessoas.Obter(e.PessoaId)!));
+        Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "fauna" && x.Titulo.Contains("fugiu"));
     }
 
     [Fact]
