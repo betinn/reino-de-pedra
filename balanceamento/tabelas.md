@@ -251,6 +251,57 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5.2 por dia para recrut
 | Mina com 4 lanceiros e 1 torre | 35% |
 | Castelo médio (12 tropas, 2 torres) | 60% |
 
+## Vida e fauna como dano
+
+Cada pessoa tem vida e a recupera inteira em 6 h, sem tique. Num ataque de fauna no caminho, cada animal do bando ataca uma pessoa diferente do grupo e tira 10 a 30 (baixo), 20 a 60 (médio), 35 a 105 (alto) de vida, pelo risco efetivo do grupo (a força continua reduzindo o risco e, com o dobro, o grupo passa ileso). Morre só quem chega a zero; os feridos seguem andando. O explorador sozinho a cavalo (ou batedor) foge do bando em 60% dos ataques. Carregadores perdem carga, não vida. Numa batalha, quem sobrevive perde 80% da vida máxima vezes a fração de perdas do próprio lado, sem morrer por isso.
+
+| Ofício | Vida | Recupera por hora |
+|---|---|---|
+| Civil | 60 | 10 |
+| Milícia | 70 | 11.7 |
+| Lanceiro | 110 | 18.3 |
+| Arqueiro | 90 | 15 |
+| Cavalaria | 110 | 18.3 |
+| Cavaleiro de elite | 130 | 21.7 |
+| Explorador (a pé, a cavalo) | 80 | 13.3 |
+| Prospector | 70 | 11.7 |
+| Batedor de elite | 90 | 15 |
+| Mensageiro | 70 | 11.7 |
+
+| Explorador sozinho | Morre num ataque do perigo baixo | médio | alto |
+|---|---|---|---|
+| A pé (vida 80) | 0% | 0% | 36% |
+| A cavalo (foge em 60%) | 0% | 0% | 14% |
+
+Antes, o explorador sozinho atacado morria sempre. Agora, um ataque só mata no perigo alto, e a rota segura (padrão dos exploradores) desvia do perigo que o reino conhece. Dois ataques seguidos antes de recuperar a vida podem matar.
+
+## Coleta de madeira e pedra no mapa
+
+Ordem "coletar": tropas e civis sem trabalho cortam árvores (floresta) ou quebram pedra (colina, montanha) num hexágono explorado sem local. Ritmo do grupo = 4 × pessoas^0.8 por hora, até 6 pessoas por hexágono. Um civil leva 10 (um soldado, a carga da unidade). Cada hexágono guarda 60 e se recupera inteiro em 24 h.
+
+| Grupo | Por hora | Por pessoa | Hexágono de 60 acaba em |
+|---|---|---|---|
+| 1 pessoa | 4 | 4 | 40 h |
+| 2 pessoas | 7 | 3.5 | 13 h 26 min |
+| 4 pessoas | 12.1 | 3 | 6 h 14 min |
+| 6 pessoas | 16.8 | 2.8 | 4 h 12 min |
+
+Um trabalhador de local nível 2 rende 3.9/h. A coleta vale para quem está sem trabalho (o reino novo tem 4 civis sem vaga) e para tropas paradas; não substitui os locais, que rendem mais por pessoa a partir do nível 3.
+
+### Começo (primeiras 12 h de jogo, 120 min reais a 6×)
+
+Jogador de olho no jogo: sempre que a fila fica livre, começa a melhoria mais barata que pode pagar. Com coleta, os civis sem trabalho cortam madeira e a guarnição inicial quebra pedra a 3 hexágonos do castelo. Sem carregadores nem crescimento da população.
+
+| Hora de jogo | Min reais a 6× | Sem coleta: níveis subidos · castelo · nível médio | Com coleta: níveis subidos · castelo · nível médio · coletado |
+|---|---|---|---|
+| 1 | 10 | 6 · 4 · 3 | 8 · 4 · 3.5 · 28 |
+| 2 | 20 | 7 · 4 · 3.3 | 10 · 4 · 4 · 56 |
+| 3 | 30 | 8 · 4 · 3.5 | 10 · 4 · 4 · 84 |
+| 6 | 60 | 10 · 4 · 4 | 10 · 4 · 4 · 168 |
+| 12 | 120 | 10 · 4 · 4 | 15 · 5 · 5 · 298 |
+
+Castelo nível 5: sem coleta depois de 12 h; com coleta em 6 h 6 min (61 min reais). Níveis de construção: continuam 10; os primeiros já são baratos e rápidos (2 a 16 min), o que faltava era madeira e pedra.
+
 ## Metas verificadas
 
 | | Meta | Resultado | |
@@ -291,9 +342,14 @@ Couro: 1 caçada por dia rende ≈ 5.5; o médio usa ≈ 5.2 por dia para recrut
 | M19 | Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria | 60 > 45 · 24 < 26.5 | ✓ |
 | M20 | Reino sob escudo recebe no máximo 30% do que ele mesmo produz no escudo | 19% | ✓ |
 | M21 | Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias | 2.2 dias | ✓ |
-| M22 | Explorador sozinho corre risco em qualquer perigo; 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto | sim | ✓ |
+| M22 | Explorador sozinho é atacado em qualquer perigo, mas um ataque só mata no alto: 20% a 50% das vezes a pé, até 25% a cavalo (foge); 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto | 36% / 14% | ✓ |
 | M23 | 1 caçada por dia cobre 70% a 150% do couro que o médio usa para recrutar | 105% | ✓ |
 | M24 | 10 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14 | 1.3 h | ✓ |
 | M25 | Espionar um local defendido: 25% a 40% de ser visto; um castelo médio chega ao máximo | 35% / 60% | ✓ |
+| M26 | Sem coleta, o reino novo sobe pelo menos 6 níveis nas 3 primeiras horas de jogo (30 min reais a 6×) | 8 níveis | ✓ |
+| M27 | Com coleta, sobe pelo menos 8 níveis nas 2 primeiras horas (20 min reais a 6×) e chega ao castelo 5 em até 8 h de jogo | 10 níveis · 6 h 6 min | ✓ |
+| M28 | Coleta rende por pessoa 0,8 a 1,5× um trabalhador de local nível 2 (vale para quem está sem trabalho, sem substituir os locais) | 1× | ✓ |
+| M29 | Um hexágono com 4 coletores se esgota em 3 a 8 h e se recupera inteiro em 12 a 36 h | 6 h 14 min · 24 h | ✓ |
+| M30 | A vida volta inteira em 4 a 8 h; um ataque do perigo alto não mata ninguém de um grupo de lanceiros | 6 h · golpe até 105 < 110 | ✓ |
 
 Todas as metas no alvo.
