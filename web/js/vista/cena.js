@@ -159,7 +159,8 @@
   };
   /* O toque vale para o hexágono sob o ponteiro. A caixa de um objeto (castelo alto, marcha) passa da borda do
      hexágono dele; ela só ganha quando o objeto está no hexágono tocado, ou quando o toque cai no próprio objeto
-     (marcha, que fica entre hexágonos) ou em hexágono sem nada. Ao escolher destino (opt.escolhendoHex), nunca
+     (marcha, que fica entre hexágonos) ou em hexágono sem nada. Pessoa e corpo de marcha ganham antes de tudo, para o
+     toque achar a tropa mesmo atrás de uma árvore ou de um local. Ao escolher destino (opt.escolhendoHex), nunca
      troca o hexágono tocado pelo vizinho. */
   C.tocar = function (x, y) {
     if (!this.opt.aoTocar) return;
@@ -177,9 +178,16 @@
       if (x >= a.x0 && x <= a.x1 && y >= a.y0 && y <= a.y1) dentro.push(a);
     }
     if (!dentro.length) return null;
+    var escolhendo = this.opt.escolhendoHex && this.opt.escolhendoHex();
+    /* tocar numa pessoa ou no corpo de uma marcha abre ela, mesmo atrás de árvore ou na frente de outro local: a caixa
+       dela é a própria figura, e o chão sob o dedo pode ser o hexágono de trás. A primeira da lista é a desenhada
+       por cima. Ao escolher destino, vale o hexágono, como antes. */
+    if (!escolhendo) {
+      for (i = 0; i < dentro.length; i++) if (dentro[i].ent && dentro[i].ent[0] === 'pessoa') return dentro[i];
+      for (i = 0; i < dentro.length; i++) if (dentro[i].ent && dentro[i].ent[0] === 'marcha' && dentro[i].perto(x, y)) return dentro[i];
+    }
     for (i = 0; i < dentro.length; i++) if (dentro[i].hex === h) return dentro[i];
     for (i = 0; i < dentro.length; i++) if (dentro[i].ent && dentro[i].ent[0] === 'marcha' && dentro[i].perto(x, y)) return dentro[i];
-    var escolhendo = this.opt.escolhendoHex && this.opt.escolhendoHex();
     if (escolhendo || this.temAlvoNoHex(h)) return null;
     return dentro[0];
   };
