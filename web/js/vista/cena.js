@@ -260,6 +260,14 @@
     if (vs.length === 1) return Math.atan2(a.y - ce.y, a.x - ce.x);
     return Math.atan2(b.y - a.y, b.x - a.x);
   }
+  /* ponte: segue a estrada; sem estrada dos lados, atravessa o rio (perpendicular ao curso) */
+  function anguloPonte(h) {
+    if (H.vizinhos(h).some(function (v) { return M.rota(v); })) return anguloRota(h);
+    var d = M.dados, ce = H.centroH(h), rs = H.vizinhos(h).filter(function (v) { return d.rio[v]; });
+    if (!rs.length) return 0;
+    var a = H.centroH(rs[0]), b = rs[1] != null ? H.centroH(rs[1]) : ce;
+    return (rs.length === 1 ? Math.atan2(a.y - ce.y, a.x - ce.x) : Math.atan2(b.y - a.y, b.x - a.x)) + Math.PI / 2;
+  }
 
   function desenharEstatico(c, V, r, camadas) {
     var d = M.dados;
@@ -324,17 +332,25 @@
     }
     /* rios e estradas (só sobre o que é conhecido) */
     c.lineCap = 'round'; c.lineJoin = 'round';
-    c.strokeStyle = P.aguaMargem; c.lineWidth = 24 * E * 1.2; c.stroke(d.curvaRios);
-    c.strokeStyle = P.agua; c.lineWidth = 16 * E * 1.2; c.stroke(d.curvaRios);
-    c.strokeStyle = 'rgba(30,70,110,.35)'; c.lineWidth = 6 * E * 1.2; c.stroke(d.curvaRios);
+    /* rio em camadas: margem de terra úmida, borda rasa clara, água, canal fundo escuro no meio e reflexos */
+    c.strokeStyle = 'rgba(92,78,50,0.5)'; c.lineWidth = 31 * E * 1.2; c.stroke(d.curvaRios);
+    c.strokeStyle = 'rgba(120,150,96,0.45)'; c.lineWidth = 27 * E * 1.2; c.stroke(d.curvaRios);
+    c.strokeStyle = P.aguaMargem; c.lineWidth = 23 * E * 1.2; c.stroke(d.curvaRios);
+    c.strokeStyle = P.agua; c.lineWidth = 17 * E * 1.2; c.stroke(d.curvaRios);
+    c.strokeStyle = 'rgba(22,58,98,.42)'; c.lineWidth = 9 * E * 1.2; c.stroke(d.curvaRios);
+    c.strokeStyle = 'rgba(16,44,78,.35)'; c.lineWidth = 4 * E * 1.2; c.stroke(d.curvaRios);
+    c.setLineDash([3, 11]); c.strokeStyle = 'rgba(220,240,255,.22)'; c.lineWidth = 1.4; c.stroke(d.curvaRios); c.setLineDash([]);
     c.strokeStyle = P.estradaBorda; c.lineWidth = 12 * E * 1.2; c.stroke(d.curvaRotas);
     c.strokeStyle = P.estrada; c.lineWidth = 8.5 * E * 1.2; c.stroke(d.curvaRotas);
     c.setLineDash([2, 7]); c.strokeStyle = 'rgba(90,70,40,.35)'; c.lineWidth = 1.2; c.stroke(d.curvaRotas); c.setLineDash([]);
     /* pontes (de madeira) e vaus (pedras), planos no chão */
     conhecidos.forEach(function (x) {
       if (!x.rio || !d.rotaH[x.h]) return;
-      if (d.ponteH[x.h]) {
-        c.save(); c.translate(x.ce.x, x.ce.y); c.rotate(anguloRota(x.h)); c.scale(E * 1.2, E * 1.2);
+      if (d.ponteH[x.h] && RP.natureza && RP.natureza.pronto) {
+        /* ponte 3D em arco, de pedra, na direção da estrada: desenhada em pé, junto dos outros objetos */
+        itens.push({ y: x.ce.y + 1, x: x.ce.x, f: 'ponte', ang: anguloPonte(x.h), pal: x.pal });
+      } else if (d.ponteH[x.h]) {
+        c.save(); c.translate(x.ce.x, x.ce.y); c.rotate(anguloPonte(x.h)); c.scale(E * 1.2, E * 1.2);
         c.fillStyle = P.madeiraEsc; c.fillRect(-20, -8, 40, 16); c.fillStyle = P.madeiraLuz; c.fillRect(-19, -6.5, 38, 13);
         c.strokeStyle = P.madeiraEsc; c.lineWidth = 0.8; for (var q = -16; q <= 16; q += 4) { c.beginPath(); c.moveTo(q, -6.5); c.lineTo(q, 6.5); c.stroke(); }
         c.restore();
@@ -345,7 +361,21 @@
 
     /* vegetação e relevo (objetos em pé, ordenados por profundidade) */
     conhecidos.forEach(function (x) {
-      if (x.rio) return;
+      if (x.rio) {
+        /* na água: vitórias-régias, pedras e, raramente, uma canoa (nunca sobre a ponte ou o vau) */
+        var hr = A.hash(x.c, x.l, 230), dx = (A.hash(x.c, x.l, 231) - 0.5) * 8 * E, dy = (A.hash(x.c, x.l, 232) - 0.5) * 5 * E;
+        if (d.rotaH[x.h]) return;
+        if (hr < 0.16) itens.push({ y: x.ce.y + dy, x: x.ce.x + dx, f: 'agua', s: 1, pal: x.pal });
+        else if (hr < 0.24) itens.push({ y: x.ce.y + dy, x: x.ce.x + dx, f: 'pedraRio', s: 0.6, pal: x.pal });
+        else if (hr > 0.985) itens.push({ y: x.ce.y, x: x.ce.x, f: 'canoa', s: 1, pal: x.pal });
+        return;
+      }
+      /* margem: juncos e pedras do lado que dá para o rio */
+      var vr = H.vizinhos(x.h).filter(function (v) { return d.rio[v] && d.ter[v]; })[0];
+      if (vr != null && !ocupado(x.h) && A.hash(x.c, x.l, 240) < 0.45) {
+        var cv = H.centroH(vr);
+        itens.push({ y: x.ce.y + (cv.y - x.ce.y) * 0.45, x: x.ce.x + (cv.x - x.ce.x) * 0.45, f: 'margem', s: 1, pal: x.pal });
+      }
       var pal = x.pal, i, px, py, cheio = ocupado(x.h), rota = d.rotaH[x.h];
       function livre(xx, yy) { return !cheio; }
       if (x.t === 'floresta') {
@@ -391,9 +421,10 @@
       }
       obj(c, V, it.x, it.y);
       /* vegetação e relevo 3D (RP.natureza): variante e tamanho tirados da posição, para cada lugar ter sempre a mesma */
+      if (it.f === 'ponte' && RP.natureza && RP.natureza.ponte(c, it.ang, it.pal !== P)) return;
       if (RP.natureza && RP.natureza.pronto) {
         var hv = A.hash(Math.round(it.x * 10), Math.round(it.y * 10), 7), hs = A.hash(Math.round(it.x * 10), Math.round(it.y * 10), 11);
-        var esc = it.f === 'pic' ? it.s * (0.65 + hs * 0.9) : it.f === 'mon' ? 0.7 + hs * 0.7 : it.f === 'mor' ? 0.6 + hs * 0.7 : it.f === 'roc' ? 0.6 + hs * 0.5 : it.f === 'arb' || it.f === 'jun' ? 0.8 + hs * 0.5 : it.s * (0.8 + hs * 0.45);
+        var esc = it.f === 'pic' ? it.s * (0.65 + hs * 0.9) : it.f === 'mon' ? 0.7 + hs * 0.7 : it.f === 'mor' ? 0.6 + hs * 0.7 : it.f === 'roc' ? 0.6 + hs * 0.5 : it.f === 'arb' || it.f === 'jun' || it.f === 'margem' || it.f === 'agua' ? 0.8 + hs * 0.5 : it.f === 'pedraRio' || it.f === 'canoa' ? 0.9 + hs * 0.3 : it.s * (0.8 + hs * 0.45);
         if (RP.natureza.desenhar(c, it.f, hv, esc, it.pal !== P)) return;
       }
       if (it.f === 'con') A.arvoreConifera(c, 0, 0, it.s, it.pal, it.alt);
@@ -402,7 +433,7 @@
       else if (it.f === 'mon') A.monte(c, 0, 0, 44, 18, it.pal);
       else if (it.f === 'roc' || it.f === 'mor') A.rocha(c, 0, 0, it.s, it.pal);
       else if (it.f === 'pic') A.pico(c, 0, 0, 56 * it.s, 52 * it.s, it.pal);
-      else if (it.f === 'jun') A.junco(c, 0, 0, 1, it.pal);
+      else if (it.f === 'jun' || it.f === 'margem') A.junco(c, 0, 0, 1, it.pal);
     });
     c.setTransform(1, 0, 0, 1, 0, 0);
   }
