@@ -444,7 +444,7 @@
       '<button type="button" class="btn btn-icone" data-zoom="1.5" aria-label="Aproximar">' + RP.icone('mais') + '</button>' +
       '<button type="button" class="btn btn-icone" data-zoom="0.6667" aria-label="Afastar">' + RP.icone('menos') + '</button>' +
       '<button type="button" class="btn btn-icone" data-centrar-castelo aria-label="Centralizar no castelo">' + RP.icone('alvo') + '</button>' +
-      '<button type="button" class="btn btn-icone" data-inclinar aria-label="Inclinação da câmera: toque para voltar ao padrão. Arraste com o botão do meio ou com dois dedos para inclinar." title="Inclinação: botão do meio ou dois dedos; toque para voltar ao padrão">' + RP.icone('vista') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-inclinar aria-label="Câmera: toque para voltar ao padrão. Com o botão do meio, arraste para cima e para baixo para inclinar e para os lados para girar; com dois dedos, suba ou desça para inclinar e rode para girar." title="Câmera: botão do meio ou dois dedos inclinam e giram; toque para voltar ao padrão">' + RP.icone('vista') + '</button>' +
       '<button type="button" class="btn btn-icone" data-selecao aria-pressed="false" aria-label="Modo seleção: toque nas pessoas ou arraste um laço" title="Modo seleção (ou Shift)">' + RP.icone('populacao') + '</button>' +
       '<button type="button" class="btn btn-icone" data-camadas aria-label="Camadas e legenda">' + RP.icone('camadas') + '</button></div>' +
       '<div class="modo-mapa abas" role="group" aria-label="Tipo de visão">' +
@@ -485,8 +485,9 @@
       else if (e.target.closest('[data-centrar-castelo]')) irCastelo(true);
       else if (e.target.closest('[data-inclinar]')) {
         if (modo !== 'cena') { definirModo('cena'); return; }
-        var padrao = cena.inclinar(null);
-        RP.aviso({ titulo: padrao ? 'Câmera no padrão' : 'Inclinação', texto: 'Arraste com o botão do meio ou com dois dedos para inclinar.', icone: 'vista', ms: 2200 });
+        var padrao = cena.inclinar(null) && Math.abs(cena.giro()) < 1e-4;
+        cena.girar(null);
+        RP.aviso({ titulo: padrao ? 'Câmera no padrão' : 'Câmera de volta ao padrão', texto: 'Botão do meio: arraste para cima e para baixo para inclinar, para os lados para girar. No celular, dois dedos.', icone: 'vista', ms: 2600 });
       }
       else if (e.target.closest('[data-camadas]')) abrirCamadas();
       else if ((b = e.target.closest('[data-modo-btn]'))) { var md = b.getAttribute('data-modo-btn'); if (md !== modo) definirModo(md); }

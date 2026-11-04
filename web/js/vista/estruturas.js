@@ -26,6 +26,7 @@ const cache = new Map();
 let renderer, cena, camera, grupo, mat;
 const pecas = {};
 let gasto = 0, quadroAtual = -1;
+const ultimo = new Map();   /* chave sem a câmera → último sprite feito (ponte entre dois giros) */
 
 async function carregar() {
   const L = new GLTFLoader();
@@ -244,7 +245,8 @@ const GIRO = -32 * Math.PI / 180;
 function render(cx, montar, o) {
   while (grupo.children.length) grupo.remove(grupo.children[0]);
   montar(o);
-  grupo.rotation.y = o && o.semGiro ? 0 : GIRO;
+  /* giro da câmera (AZ3D): o conjunto gira ao contrário, para mostrar o lado que a câmera vê */
+  grupo.rotation.y = (o && o.semGiro ? 0 : GIRO) - ((RP.arte && RP.arte.AZ3D) || 0);
   grupo.scale.setScalar(cx.esc || 1);
   const k = (RP.arte && RP.arte.K) || 0.62, el = Math.asin(Math.min(0.95, k)), ce = Math.cos(el);
   camera.left = -cx.W / 2; camera.right = cx.W / 2; camera.top = cx.ALT * ce; camera.bottom = -cx.PE * ce; camera.updateProjectionMatrix();
@@ -263,17 +265,18 @@ function render(cx, montar, o) {
 }
 function obter(chave, cx, montar, o) {
   if (!E.pronto) return null;
-  const k = chave + '|' + ((RP.arte && RP.arte.K) || 0).toFixed(2);
+  const k = chave + '|' + ((RP.arte && RP.arte.K) || 0).toFixed(2) + '|' + ((RP.arte && RP.arte.AZ3D) || 0).toFixed(3);
   const s = cache.get(k);
   if (s) return s;
   const agora = performance.now(), q = Math.floor(agora / 16);
   if (q !== quadroAtual) { quadroAtual = q; gasto = 0; }
-  if (gasto > ORCAMENTO_MS) return null;
+  /* sem tempo neste quadro: a mesma construção no ângulo anterior da câmera, enquanto a nova não sai */
+  if (gasto > ORCAMENTO_MS) return ultimo.get(chave) || null;
   let novo;
   try { novo = render(cx, montar, o); } catch (e) { console.error(e); E.pronto = false; E.falhou = true; return null; }
   gasto += performance.now() - agora;
   if (cache.size >= MAX) cache.delete(cache.keys().next().value);
-  cache.set(k, novo);
+  cache.set(k, novo); ultimo.set(chave, novo);
   return novo;
 }
 /* faixas de nível: o desenho só muda em alguns níveis (não vale um sprite por nível) */
@@ -290,6 +293,6 @@ E.torre = function (nivel, cor) { return obter(['torre', Math.min(3, nivel || 1)
 /* altura (unidades do mundo, na tela) do passadiço da torre de nível n, onde ficam os arqueiros */
 E.alturaTorre = function (n) { const k = (RP.arte && RP.arte.K) || 0.62, ce = Math.cos(Math.asin(Math.min(0.95, k))); return ESC.castelo * 1.1 * CX.torre.esc * (Math.max(1, Math.min(3, n || 1)) + 1) * ce; };
 E.carregar = carregar;
-if (RP.arte && RP.arte.aoMudarK) RP.arte.aoMudarK.push(() => cache.clear());
+if (RP.arte && RP.arte.aoMudarK) RP.arte.aoMudarK.push(() => { cache.clear(); ultimo.clear(); });
 
 carregar().catch(e => { console.warn('construções 3D indisponíveis; a Vista usa a arte 2D.', e); E.falhou = true; });

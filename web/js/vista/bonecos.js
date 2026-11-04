@@ -336,7 +336,8 @@ function poseDe(o) {
 }
 /* 8 direções: 0 = olhando para a direita da tela, no sentido horário (a tela tem y para baixo) */
 function direcao(o) {
-  if (o.ang != null) return ((Math.round(o.ang / (Math.PI / 4)) % 8) + 8) % 8;
+  /* o.ang é a direção no chão do mapa; com a câmera girada, na tela ela vira ang + AZ3D */
+  if (o.ang != null) { const a = o.ang + ((RP.arte && RP.arte.AZ3D) || 0); return ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8; }
   return (o.dir || 1) > 0 ? 1 : 3;
 }
 function virar(grupo, d) { const a = d * Math.PI / 4; grupo.rotation.set(0, Math.atan2(Math.cos(a), Math.sin(a)), 0); }

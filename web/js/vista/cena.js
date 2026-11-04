@@ -23,6 +23,21 @@
   document.addEventListener('rp:natureza', function () { ativas.forEach(function (c) { c.invalidar(); }); });
   var kSalvo = parseFloat(RP.pref('inclinacao'));
   if (isFinite(kSalvo) && kSalvo > 0) A.definirK(kSalvo);
+  /* giro da câmera: AZ radianos em volta do ponto olhado. O mundo gira por AZ antes de ser achatado por K:
+     tela = centro + R(AZ)·(ponto − câmera), com y multiplicado por K. CO e SE guardam cos e sen. */
+  var AZ = 0, CO = 1, SE = 0;
+  function aplicarAz(az) { AZ = az; CO = Math.cos(az); SE = Math.sin(az); }
+  A.aoMudarAz.push(function (az) { aplicarAz(az); var t = performance.now(); ativas.forEach(function (c) { c.ultimoGiro = t; c.invalidar(); }); });
+  /* enquanto a câmera gira, o chão é refeito a cada quadro: só a área da tela, sem margem (bem mais barato) */
+  function girando(c) { return performance.now() - (c.ultimoGiro || 0) < 280; }
+  var azSalvo = parseFloat(RP.pref('giro'));
+  if (isFinite(azSalvo) && azSalvo) A.definirAz(azSalvo, true);
+  aplicarAz(A.AZ);
+  /* do mapa para a câmera (girado, ainda sem achatar) e de volta */
+  function girarV(x, y) { return { x: x * CO - y * SE, y: x * SE + y * CO }; }
+  function desgirarV(x, y) { return { x: x * CO + y * SE, y: -x * SE + y * CO }; }
+  /* profundidade de um ponto do mapa na tela (maior = mais na frente) */
+  function prof(x, y) { return x * SE + y * CO; }
 
   function Cena(cv, opt) {
     this.cv = cv; this.ctx = cv.getContext('2d'); this.opt = opt || {};
@@ -55,12 +70,17 @@
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
     if (w !== this.w || h !== this.h) { this.w = w; this.h = h; this.cv.width = Math.round(w * this.dpr); this.cv.height = Math.round(h * this.dpr); this.ci = null; }
   };
-  C.tela = function (x, y) { return { x: (x - this.cam.x) * this.cam.s + this.w / 2, y: (y - this.cam.y) * K * this.cam.s + this.h / 2 }; };
-  C.mundo = function (sx, sy) { return { x: (sx - this.w / 2) / this.cam.s + this.cam.x, y: (sy - this.h / 2) / (K * this.cam.s) + this.cam.y }; };
+  C.tela = function (x, y) { var g = girarV(x - this.cam.x, y - this.cam.y); return { x: g.x * this.cam.s + this.w / 2, y: g.y * K * this.cam.s + this.h / 2 }; };
+  C.mundo = function (sx, sy) { var d = desgirarV((sx - this.w / 2) / this.cam.s, (sy - this.h / 2) / (K * this.cam.s)); return { x: d.x + this.cam.x, y: d.y + this.cam.y }; };
   C.centro = function () { return { x: this.cam.x, y: this.cam.y }; };
-  C.retanguloMundo = function () {
-    var s = this.cam.s; return { x: this.cam.x - this.w / (2 * s), y: this.cam.y - this.h / (2 * K * s), w: this.w / s, h: this.h / (K * s) };
-  };
+  /* retângulo do mapa (alinhado aos eixos) que contém tudo o que aparece na tela; com a câmera girada, é a caixa
+     em volta do losango visto */
+  C.retanguloMundo = function () { return caixaVista(this.cam.x, this.cam.y, this.w / this.cam.s, this.h / (K * this.cam.s)); };
+  function caixaVista(cx, cy, vw, vh) {
+    var hx = (Math.abs(CO) * vw + Math.abs(SE) * vh) / 2, hy = (Math.abs(SE) * vw + Math.abs(CO) * vh) / 2;
+    return { x: cx - hx, y: cy - hy, w: hx * 2, h: hy * 2 };
+  }
+  C.giro = function () { return AZ; };
   C.limitar = function () {
     var lim = this.opt.limites;
     if (lim) { this.cam.x = Math.max(lim.x0, Math.min(lim.x1, this.cam.x)); this.cam.y = Math.max(lim.y0, Math.min(lim.y1, this.cam.y)); }
@@ -77,7 +97,7 @@
     this.redimensionar();
     s = Math.max(SMIN, Math.min(SMAX, s || this.cam.s));
     fy = fy == null ? 0.5 : fy;
-    var alvo = { s: s, x: wx, y: wy - (this.h * fy - this.h / 2) / (K * s) };
+    var d = desgirarV(0, (this.h * fy - this.h / 2) / (K * s)), alvo = { s: s, x: wx - d.x, y: wy - d.y };
     if (animar === false || !this.rodando) { cancelAnimationFrame(this.anim); this.cam = alvo; this.mudou(); return; }
     this.animarPara(alvo, 380);
   };
@@ -104,6 +124,15 @@
     return Math.abs(novo - A.K_PADRAO) < 1e-4;
   };
   C.inclinarPor = function (dyPx) { this.inclinar(A.K - dyPx * 0.0028); };
+  /* gira a câmera em volta do centro da tela (az em radianos; null volta ao norte para cima) */
+  C.girar = function (az) {
+    az = az == null ? 0 : az;
+    A.definirAz(az, az === 0);
+    RP.pref('giro', String(A.AZ));
+    if (!this.rodando) this.quadro(performance.now());
+    if (this.opt.aoMover) this.opt.aoMover();
+  };
+  C.girarPor = function (rad) { this.girar(A.AZ + rad); };
   C.ligarGestos = function () {
     var self = this, p0 = null, avisado = false, lacando = false, ponto = null;
     function modoSel() { return !!(self.opt.modoSelecao && self.opt.modoSelecao()); }
@@ -111,6 +140,7 @@
       inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; lacando = modoSel(); ponto = null; },
       inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; lacando = false; self.laco = null; },
       inclinar: function (dy) { self.inclinarPor(dy); },
+      girar: function (rad) { self.girarPor(rad); },
       /* no modo seleção (ou com Shift), arrastar desenha um laço em vez de mover a câmera */
       arrasto: function (dx, dy) {
         if (lacando) {
@@ -120,14 +150,16 @@
           if (!self.rodando) self.quadro(performance.now());
           return;
         }
-        self.cam.x -= dx / self.cam.s; self.cam.y -= dy / (K * self.cam.s); self.mudou();
+        var d = desgirarV(dx / self.cam.s, dy / (K * self.cam.s));
+        self.cam.x -= d.x; self.cam.y -= d.y; self.mudou();
       },
       toqueLongo: function (x, y) { if (self.opt.aoToqueLongo) self.opt.aoToqueLongo(x, y); },
       pinca: function (f, mx, my, mx0, my0) {
-        var wx = (mx0 - self.w / 2) / p0.s + p0.x, wy = (my0 - self.h / 2) / (K * p0.s) + p0.y, ns = p0.s * f;
+        var d0 = desgirarV((mx0 - self.w / 2) / p0.s, (my0 - self.h / 2) / (K * p0.s)), wx = d0.x + p0.x, wy = d0.y + p0.y, ns = p0.s * f;
         if (ns < SMIN * 0.8 && self.opt.aoAfastarDemais) { if (!avisado) { avisado = true; self.opt.aoAfastarDemais(); } return; }
         ns = Math.max(SMIN, Math.min(SMAX, ns));
-        self.cam = { s: ns, x: wx - (mx - self.w / 2) / ns, y: wy - (my - self.h / 2) / (K * ns) };
+        var d1 = desgirarV((mx - self.w / 2) / ns, (my - self.h / 2) / (K * ns));
+        self.cam = { s: ns, x: wx - d1.x, y: wy - d1.y };
         self.mudou();
       },
       roda: function (f, x, y) {
@@ -135,7 +167,8 @@
         if (ns < SMIN * 0.9 && self.opt.aoAfastarDemais) { self.opt.aoAfastarDemais(); return; }
         ns = Math.max(SMIN, Math.min(SMAX, ns));
         var w = self.mundo(x, y);
-        self.cam = { s: ns, x: w.x - (x - self.w / 2) / ns, y: w.y - (y - self.h / 2) / (K * ns) };
+        var d2 = desgirarV((x - self.w / 2) / ns, (y - self.h / 2) / (K * ns));
+        self.cam = { s: ns, x: w.x - d2.x, y: w.y - d2.y };
         self.mudou();
       },
       toque: function (x, y) { self.tocar(x, y); },
@@ -226,26 +259,30 @@
   /* ---------------------------------------------------------------- cache estático */
   C.precisaCache = function () {
     var r = this.ci;
-    if (!r || r.versao !== M.versao) return true;
-    var v = this.retanguloMundo();
-    if (v.x < r.x || v.y < r.y || v.x + v.w > r.x + r.w || v.y + v.h > r.y + r.h) return true;
-    var rel = this.cam.s / r.s;
+    if (!r || r.versao !== M.versao || r.az !== AZ) return true;
+    if (r.rapido && !girando(this)) return true;   /* o giro parou: refaz com a margem de sempre */
+    /* a tela cabe no cache? (na câmera girada, em pixels do cache) */
+    var g = girarV(this.cam.x - r.cx, this.cam.y - r.cy), rel = this.cam.s / r.s;
+    if (Math.abs(g.x * r.s) + this.w / (2 * rel) > r.cw / 2 || Math.abs(g.y * K * r.s) + this.h / (2 * rel) > r.ch / 2) return true;
     return !this.gesto && (rel > 1.12 || rel < 0.9) && performance.now() - this.ultimaMudanca > 160;
   };
   C.construirCache = function () {
-    var s = this.cam.s, MG = 0.45;
+    var rapido = girando(this), s = this.cam.s, MG = rapido ? 0.04 : 0.45;
     var cw = this.w * (1 + 2 * MG), ch = this.h * (1 + 2 * MG);
     var dprC = Math.min(this.dpr, Math.sqrt(9e6 / (cw * ch)));
     this.cache.width = Math.round(cw * dprC); this.cache.height = Math.round(ch * dprC);
-    var rw = cw / s, rh = ch / (K * s);
-    var r = { x: this.cam.x - rw / 2, y: this.cam.y - rh / 2, w: rw, h: rh, s: s, cw: cw, ch: ch, versao: M.versao };
+    /* o cache é a vista da câmera (girada e achatada) com margem; r.x..r.h é a caixa do mapa que ele cobre */
+    var cx = this.cam.x, cy = this.cam.y, r = caixaVista(cx, cy, cw / s, ch / (K * s));
+    r.cx = cx; r.cy = cy; r.s = s; r.cw = cw; r.ch = ch; r.versao = M.versao; r.az = AZ; r.rapido = rapido;
     this.ci = r;
-    var S = s * dprC;
-    desenharEstatico(this.cctx, { S: S, ox: -r.x * S, oy: -r.y * S * K, pw: this.cache.width, ph: this.cache.height }, r, this.opt.camadas || RP.mapa.camadas || {});
+    var S = s * dprC, g = girarV(cx, cy);
+    desenharEstatico(this.cctx, { S: S, ox: this.cache.width / 2 - g.x * S, oy: this.cache.height / 2 - g.y * S * K, pw: this.cache.width, ph: this.cache.height }, r, this.opt.camadas || RP.mapa.camadas || {});
   };
 
-  function chao(c, V) { c.setTransform(V.S, 0, 0, V.S * K, V.ox, V.oy); }
-  function obj(c, V, x, y) { c.setTransform(V.S, 0, 0, V.S, V.ox + x * V.S, V.oy + y * V.S * K); }
+  /* chão: o mapa girado por AZ e achatado por K. obj: um objeto em pé (sprite) com o pé no ponto (x, y) do mapa;
+     ele não gira nem achata, só vai para a posição projetada. V.ox/V.oy põem a câmera no centro. */
+  function chao(c, V) { c.setTransform(V.S * CO, V.S * K * SE, -V.S * SE, V.S * K * CO, V.ox, V.oy); }
+  function obj(c, V, x, y) { c.setTransform(V.S, 0, 0, V.S, V.ox + (x * CO - y * SE) * V.S, V.oy + (x * SE + y * CO) * V.S * K); }
   function hexesNoRetangulo(r, margem) {
     var c0 = Math.max(0, Math.floor(r.x / H.W) - margem), c1 = Math.min(H.COLS - 1, Math.ceil((r.x + r.w) / H.W) + margem);
     var l0 = Math.max(0, Math.floor(r.y / H.VS) - margem), l1 = Math.min(H.LINS - 1, Math.ceil((r.y + r.h) / H.VS) + margem + 2);
@@ -415,7 +452,7 @@
       var ce = H.centroH(h);
       itens.push({ y: ce.y + H.R * 0.55, x: ce.x, f: 'nev', c: H.c(h), l: H.l(h) });
     });
-    itens.sort(function (a, b) { return a.y - b.y; });
+    ordenar(itens, 0);
     var pf = A.puff();
     itens.forEach(function (it) {
       if (it.f === 'nev') {
@@ -431,7 +468,9 @@
     });
     c.setTransform(1, 0, 0, 1, 0, 0);
     /* o que fica em pé e pode tapar quem passa atrás: o quadro animado redesenha estes por cima das figuras */
-    r.altos = itens.filter(function (it) { return ALTURA_TAPA[it.f]; }).sort(function (a, b) { return a.x - b.x; });
+    r.altos = itens.filter(function (it) { return ALTURA_TAPA[it.f]; });
+    r.altos.forEach(function (it) { var g = girarV(it.x, it.y); it.gx = g.x; it.gy = g.y; });
+    r.altos.sort(function (a, b) { return a.gx - b.gx; });
   }
 
   /* uma peça de vegetação ou relevo, com o pé em (it.x, it.y); usada no cache do chão e, para as que tapam figuras, no
@@ -464,12 +503,13 @@
     if (!altos || !altos.length || !itens.length) return;
     var fig = itens.filter(function (q) { return q.x != null; });
     var MEIA_FIG = 14, MAX_DX = 34 * 1.6 + MEIA_FIG, postos = new Set();
-    function primeiro(x) { var a = 0, b = altos.length; while (a < b) { var m = (a + b) >> 1; if (altos[m].x < x) a = m + 1; else b = m; } return a; }
+    /* tudo na câmera girada (gx para a direita da tela, gy para baixo, antes de achatar) */
+    function primeiro(x) { var a = 0, b = altos.length; while (a < b) { var m = (a + b) >> 1; if (altos[m].gx < x) a = m + 1; else b = m; } return a; }
     /* a peça tapa a figura quando o pé dela fica abaixo do pé da figura na tela (está na frente), o topo dela passa
        do pé da figura (a distância na tela, achatada por K, é menor que a altura da peça) e as larguras se cruzam */
     function tapa(t, x, y) {
       var dim = ALTURA_TAPA[t.f], e = (t.s || 1) * 1.6;
-      return t.y > y && (t.y - y) * K < dim[0] * e && Math.abs(t.x - x) < dim[1] * e + MEIA_FIG;
+      return t.gy > y && (t.gy - y) * K < dim[0] * e && Math.abs(t.gx - x) < dim[1] * e + MEIA_FIG;
     }
     function por(t) {
       if (postos.has(t)) return;
@@ -477,8 +517,14 @@
       itens.push({ y: t.y, x: t.x, d: function () { desenharNatureza(c, V, t); } });
     }
     fig.forEach(function (q) {
-      for (var i = primeiro(q.x - MAX_DX); i < altos.length && altos[i].x < q.x + MAX_DX; i++) if (tapa(altos[i], q.x, q.y)) { por(altos[i]); q.tapada = true; }
+      var g = girarV(q.x, q.y);
+      for (var i = primeiro(g.x - MAX_DX); i < altos.length && altos[i].gx < g.x + MAX_DX; i++) if (tapa(altos[i], g.x, g.y)) { por(altos[i]); q.tapada = true; }
     });
+  }
+  /* ordem de desenho: de trás para a frente na tela (o pé mais alto primeiro). Item sem x usa o x da câmera. */
+  function ordenar(itens, xPadrao) {
+    itens.forEach(function (it) { it.p = prof(it.x != null ? it.x : xPadrao, it.y); });
+    itens.sort(function (a, b) { return a.p - b.p; });
   }
 
   /* ---------------------------------------------------------------- vida: trabalho nos seus locais */
@@ -518,13 +564,13 @@
     var r = this.ci, esc = s / r.s;
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.fillStyle = P.nevoa; c.fillRect(0, 0, this.cv.width, this.cv.height);
-    var o0 = this.tela(r.x, r.y);
+    var o0 = this.tela(r.cx, r.cy);
     c.imageSmoothingEnabled = true;
-    c.drawImage(this.cache, o0.x * dpr, o0.y * dpr, r.cw * esc * dpr, r.ch * esc * dpr);
+    c.drawImage(this.cache, (o0.x - r.cw * esc / 2) * dpr, (o0.y - r.ch * esc / 2) * dpr, r.cw * esc * dpr, r.ch * esc * dpr);
     this.alvos = [];
     if (!d) return;
 
-    var V = { S: s * dpr, ox: (this.w / 2 - this.cam.x * s) * dpr, oy: (this.h / 2 - this.cam.y * K * s) * dpr };
+    var gc = girarV(this.cam.x, this.cam.y), V = { S: s * dpr, ox: (this.w / 2 - gc.x * s) * dpr, oy: (this.h / 2 - gc.y * K * s) * dpr };
     var vis = this.retanguloMundo(), cam = { x0: vis.x - 80, x1: vis.x + vis.w + 80, y0: vis.y - 60, y1: vis.y + vis.h + 120 };
     function naTela(x, y) { return x > cam.x0 && x < cam.x1 && y > cam.y0 && y < cam.y1; }
     var camadas = this.opt.camadas || MAPA.camadas || {};
@@ -690,7 +736,7 @@
     });
 
     intercalarNatureza(c, V, r.altos, itens);
-    itens.sort(function (a, b) { return a.y - b.y; });
+    ordenar(itens, this.cam.x);
     itens.forEach(function (it) {
       it.d();
       if (it.alvo) { var a = it.alvo; self.alvos.push(alvoTela(self, a.x, a.y, a.w, a.h, a.ent, a.obj)); }
@@ -767,7 +813,7 @@
   }
   /* o que cada um faz no trabalho do exército parado: escavar (pá e picareta), extrair e coletar (picareta ou machado), caçar */
   function trabalhoDe(trab, i, p, centro) {
-    var o = { dir: p.x <= centro.x ? 1 : -1 };
+    var o = { dir: girarV(p.x - centro.x, p.y - centro.y).x <= 0 ? 1 : -1 };
     if (!trab) return o;
     o.lanca = false; o.escudo = null; o.arco = false;
     if (trab === 'escavar') o.trabalho = i % 2 ? 'picareta' : 'pa';
@@ -782,7 +828,7 @@
     var Cs = A.cores(), MAPA = RP.mapa, propria = m.dono === 'meu' || m.dono === 'aliado';
     var revelado = propria || !!(m.estandarte && (m.cor || m.brasao));
     var cor = revelado ? A.corDono(m.dono, m) : P.hostil;
-    var dir = Math.cos(pos.ang) >= 0 ? 1 : -1, ux = Math.cos(pos.ang), uy = Math.sin(pos.ang);
+    var dir = Math.cos(pos.ang + AZ) >= 0 ? 1 : -1, ux = Math.cos(pos.ang), uy = Math.sin(pos.ang);
     var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
     function add(p, fn) { itens.push({ y: p.y, x: p.x, silhueta: true, d: function () { obj(c, V, p.x, p.y); fn(); } }); }

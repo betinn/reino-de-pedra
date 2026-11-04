@@ -583,4 +583,22 @@
     K = Math.max(K_MIN, Math.min(K_MAX, k)); RP.arte.K = K;
     RP.arte.aoMudarK.forEach(function (f) { try { f(K); } catch (e) { console.error(e); } });
   };
+  /* giro da câmera em volta do ponto olhado (radianos; 0 = norte do mapa para cima). AZ muda a cada movimento e só
+     reprojeta o chão e as posições (aoMudarAz). Os sprites 3D (bonecos, construções, vegetação) são renderizados de
+     novo no ângulo AZ3D, que só acompanha AZ quando o giro para por um instante (aoFixarAz): renderizar tudo a cada
+     quadro do arrasto travaria a tela. */
+  RP.arte.AZ = 0; RP.arte.AZ3D = 0; RP.arte.aoMudarAz = []; RP.arte.aoFixarAz = [];
+  var fixarAz = 0;
+  RP.arte.definirAz = function (az, ja) {
+    az = Math.atan2(Math.sin(az), Math.cos(az));
+    RP.arte.AZ = az;
+    RP.arte.aoMudarAz.forEach(function (f) { try { f(az); } catch (e) { console.error(e); } });
+    clearTimeout(fixarAz);
+    function fixar() {
+      if (Math.abs(RP.arte.AZ3D - RP.arte.AZ) < 1e-4) return;
+      RP.arte.AZ3D = RP.arte.AZ;
+      RP.arte.aoFixarAz.forEach(function (f) { try { f(RP.arte.AZ3D); } catch (e) { console.error(e); } });
+    }
+    if (ja) fixar(); else fixarAz = setTimeout(fixar, 260);
+  };
 })();

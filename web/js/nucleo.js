@@ -74,15 +74,16 @@
   RP.gestos = function (el, h) {
     var pts = new Map(), arr = null, pin = null, toq = null, meio = null, longo = 0;
     function rel(e) { var r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
-    /* botão do meio do mouse: arrastar inclina a câmera (sem o rolar automático do navegador) */
+    /* botão do meio do mouse: arrastar para cima e para baixo inclina a câmera; para os lados, gira
+       (sem o rolar automático do navegador) */
     el.addEventListener('mousedown', function (e) { if (e.button === 1) e.preventDefault(); });
     el.addEventListener('auxclick', function (e) { if (e.button === 1) e.preventDefault(); });
     el.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button === 1) {
         e.preventDefault();
-        if (!h.inclinar) return;
+        if (!h.inclinar && !h.girar) return;
         try { el.setPointerCapture(e.pointerId); } catch (er) { /* ignora */ }
-        meio = { id: e.pointerId, y: e.clientY };
+        meio = { id: e.pointerId, x: e.clientX, y: e.clientY, modo: null };
         return;
       }
       if (e.isPrimary) { pts.clear(); pin = null; } /* novo gesto: descarta ponteiros que não terminaram */
@@ -96,27 +97,40 @@
       }
       else if (pts.size === 2) {
         var a = Array.from(pts.values());
-        pin = { d: Math.max(1, Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y)), mx: (a[0].x + a[1].x) / 2, my: (a[0].y + a[1].y) / 2, ultMy: (a[0].y + a[1].y) / 2, modo: null };
+        var ang0 = Math.atan2(a[1].y - a[0].y, a[1].x - a[0].x);
+        pin = { d: Math.max(1, Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y)), mx: (a[0].x + a[1].x) / 2, my: (a[0].y + a[1].y) / 2, ultMy: (a[0].y + a[1].y) / 2, ang: ang0, ultAng: ang0, modo: null };
         toq = null; arr = null;
         if (h.inicioPinca) h.inicioPinca();
       }
     });
     el.addEventListener('pointermove', function (e) {
-      if (meio && e.pointerId === meio.id) { h.inclinar(e.clientY - meio.y); meio.y = e.clientY; return; }
+      if (meio && e.pointerId === meio.id) {
+        /* decide pelo primeiro movimento claro: vertical inclina, horizontal gira (um por arrasto, para não misturar) */
+        var mdx = e.clientX - meio.x, mdy = e.clientY - meio.y;
+        if (!meio.modo && Math.max(Math.abs(mdx), Math.abs(mdy)) > 6) meio.modo = Math.abs(mdx) > Math.abs(mdy) && h.girar ? 'girar' : 'inclinar';
+        if (meio.modo === 'inclinar' && h.inclinar) { h.inclinar(mdy); meio.x = e.clientX; meio.y = e.clientY; }
+        else if (meio.modo === 'girar') { h.girar(mdx * 0.006); meio.x = e.clientX; meio.y = e.clientY; }
+        return;
+      }
       if (!pts.has(e.pointerId)) return;
       var p = rel(e);
       pts.set(e.pointerId, p);
       if (pin && pts.size >= 2) {
         var a = Array.from(pts.values());
         var d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), my = (a[0].y + a[1].y) / 2;
-        /* dois dedos: a distância muda → zoom (pinça); os dois sobem ou descem juntos → inclinar. Decide uma vez por gesto. */
-        if (!pin.modo && h.inclinar) {
-          if (Math.abs(d - pin.d) > 14) pin.modo = 'pinca';
-          else if (Math.abs(my - pin.my) > 14) pin.modo = 'inclinar';
+        /* dois dedos: a distância muda → zoom (pinça); os dois sobem ou descem juntos → inclinar; os dois rodam em
+           volta do meio → girar. Decide uma vez por gesto. */
+        var ang = Math.atan2(a[1].y - a[0].y, a[1].x - a[0].x), dAng = Math.atan2(Math.sin(ang - pin.ang), Math.cos(ang - pin.ang));
+        if (!pin.modo && (h.inclinar || h.girar)) {
+          if (h.girar && Math.abs(dAng) > 0.2) pin.modo = 'girar';
+          else if (Math.abs(d - pin.d) > 14) pin.modo = 'pinca';
+          else if (h.inclinar && Math.abs(my - pin.my) > 14) pin.modo = 'inclinar';
         }
+        if (pin.modo === 'girar') { h.girar(Math.atan2(Math.sin(ang - pin.ultAng), Math.cos(ang - pin.ultAng))); pin.ultAng = ang; return; }
+        pin.ultAng = ang;
         if (pin.modo === 'inclinar') { h.inclinar(my - pin.ultMy); pin.ultMy = my; return; }
         pin.ultMy = my;
-        if (pin.modo === 'pinca' || !h.inclinar) h.pinca(d / pin.d, (a[0].x + a[1].x) / 2, my, pin.mx, pin.my);
+        if (pin.modo === 'pinca' || (!h.inclinar && !h.girar)) h.pinca(d / pin.d, (a[0].x + a[1].x) / 2, my, pin.mx, pin.my);
       } else if (arr) {
         var dx = p.x - arr.x, dy = p.y - arr.y;
         if (toq && Math.hypot(p.x - toq.x, p.y - toq.y) > 8) toq.movido = true;

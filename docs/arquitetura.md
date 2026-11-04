@@ -187,7 +187,7 @@ Valem para toda tela nova ou refeita (ver [decisão 0023](decisoes/0023-concha-j
 - Siga `prototipo/design-system.md` e reaproveite CSS, ícones e arte do protótipo. Estilos novos em `web/css/jogo.css` (ou arquivo próprio do sistema), sempre com os tokens.
 - Tempo no cliente: `RP.agora()` (relógio do servidor, na mesma aceleração dele: `aceleracao` de `GET /mundo`, só > 1 no teste local). Estoques andam sozinhos entre atualizações (`RP.qtdRecurso`).
 - Toque no mundo: a Vista e o Mapa medem o canvas por `ResizeObserver` (a coluna do painel muda a largura com transição) e de novo a cada toque. Na Vista, o objeto só ganha o toque no hexágono dele; escolhendo destino (`escolhendoHex`), vale sempre o hexágono do chão.
-- Mundo: `web/js/vista/` (modelo do `/mapa`, arte, Vista 2.5D, Mapa tático). Objetos novos no mapa ganham desenho registrando `RP.mapa.tiposObjeto[tipo]` (e `RP.mapa.tiposMarcha`, `RP.mapa.perigoHex`, `extrasFolhaHex`...) no arquivo do próprio sistema; ver [decisão 0017](decisoes/0017-vista-e-mapa-no-cliente.md). A inclinação da câmera é do jogador (`RP.arte.definirK`, `Cena.inclinar`).
+- Mundo: `web/js/vista/` (modelo do `/mapa`, arte, Vista 2.5D, Mapa tático). Objetos novos no mapa ganham desenho registrando `RP.mapa.tiposObjeto[tipo]` (e `RP.mapa.tiposMarcha`, `RP.mapa.perigoHex`, `extrasFolhaHex`...) no arquivo do próprio sistema; ver [decisão 0017](decisoes/0017-vista-e-mapa-no-cliente.md). A inclinação e o giro da câmera são do jogador (`RP.arte.definirK`/`Cena.inclinar` e `RP.arte.definirAz`/`Cena.girar`); quem desenha no chão da Vista usa `chao`/`obj` ou `Cena.tela`/`mundo`, nunca a conta de projeção na mão.
 
 ## Testes
 

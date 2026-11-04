@@ -83,7 +83,7 @@ function copia(nome, v) {
 
 function render(nome, esc, giro, v) {
   const obj = copia(nome, v);
-  obj.scale.setScalar(esc); obj.rotation.y = giro * Math.PI / 180;
+  obj.scale.setScalar(esc); obj.rotation.y = giro * Math.PI / 180 - ((RP.arte && RP.arte.AZ3D) || 0);
   cena.add(obj); obj.updateMatrixWorld(true);
   const bb = new THREE.Box3().setFromObject(obj), tam = bb.getSize(new THREE.Vector3());
   const k = (RP.arte && RP.arte.K) || 0.62, el = Math.asin(Math.min(0.95, k)), ce = Math.cos(el), se = Math.sin(el);
@@ -143,11 +143,13 @@ N.ponte = function (c, ang, antigo) {
   if (antigo) c.globalAlpha = 1;
   return true;
 };
-/* inclinar a câmera muda a vista de cima: refaz as variantes e avisa as cenas */
-if (RP.arte && RP.arte.aoMudarK) RP.arte.aoMudarK.push(() => {
+/* inclinar ou girar a câmera muda o que se vê de cada peça: refaz as variantes e avisa as cenas */
+function refazer() {
   if (!N.pronto) return;
   clearTimeout(N._k);
   N._k = setTimeout(() => { gerarTodos().then(() => document.dispatchEvent(new CustomEvent('rp:natureza'))); }, 250);
-});
+}
+if (RP.arte && RP.arte.aoMudarK) RP.arte.aoMudarK.push(refazer);
+if (RP.arte && RP.arte.aoFixarAz) RP.arte.aoFixarAz.push(refazer);
 
 carregar().catch(e => { console.warn('vegetação 3D indisponível; a Vista usa a arte 2D.', e); N.falhou = true; });

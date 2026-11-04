@@ -43,8 +43,9 @@
 
   function desenharCamada(ctx, dados, cam) {
     var c = camada(dados); if (!c || !perigoLigado) return;
-    var cv = ctx.canvas, w = cv.clientWidth / cam.z, hh = cv.clientHeight / cam.z;
-    var x0 = cam.x - w / 2 - H.W, x1 = cam.x + w / 2 + H.W, y0 = cam.y - hh / 2 - H.R * 2, y1 = cam.y + hh / 2 + H.R * 2;
+    /* raio que cobre a tela em qualquer giro e inclinação da câmera */
+    var cv = ctx.canvas, w = cv.clientWidth / cam.z, hh = cv.clientHeight / (cam.z * ((RP.arte && RP.arte.K) || 1)), rv = Math.hypot(w, hh) / 2;
+    var x0 = cam.x - rv - H.W, x1 = cam.x + rv + H.W, y0 = cam.y - rv - H.R * 2, y1 = cam.y + rv + H.R * 2;
     for (var h = 0; h < c.niveis.length; h++) {
       var n = +c.niveis[h]; if (!n) continue;
       var p = H.centroH(h); if (p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
