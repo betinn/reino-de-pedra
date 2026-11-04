@@ -19,6 +19,8 @@
   });
   /* inclinação da câmera: K vem da arte e muda quando o jogador inclina (lembrada no aparelho) */
   A.aoMudarK.push(function (k) { K = k; ativas.forEach(function (c) { c.invalidar(); }); });
+  /* a vegetação 3D ficou pronta (ou foi refeita): o cache do chão é refeito com ela */
+  document.addEventListener('rp:natureza', function () { ativas.forEach(function (c) { c.invalidar(); }); });
   var kSalvo = parseFloat(RP.pref('inclinacao'));
   if (isFinite(kSalvo) && kSalvo > 0) A.definirK(kSalvo);
 
@@ -363,7 +365,7 @@
       } else if (x.t === 'montanha') {
         /* picos em parte dos hexágonos (com hexágonos pequenos, um pico em cada um viraria um paliteiro) */
         if (!cheio && A.hash(x.c, x.l, 183) > 0.45) itens.push({ y: x.ce.y + 6 * E, x: x.ce.x + (A.hash(x.c, x.l, 180) - 0.5) * 10 * E, f: 'pic', s: 0.75 + A.hash(x.c, x.l, 181) * 0.45, pal: pal });
-        else if (!cheio) itens.push({ y: x.ce.y + 8 * E, x: x.ce.x - 6 * E, f: 'roc', s: 0.8, pal: pal });
+        else if (!cheio) itens.push({ y: x.ce.y + 8 * E, x: x.ce.x - 6 * E, f: A.hash(x.c, x.l, 184) > 0.3 ? 'mor' : 'roc', s: 0.8, pal: pal });
       } else if (x.t === 'pantano') {
         for (i = 0; i < 2; i++) { px = x.ce.x + (A.hash(x.c, x.l, 190 + i) - 0.5) * 40 * E; py = x.ce.y + (A.hash(x.c, x.l, 195 + i) - 0.5) * 30 * E; if (livre(px, py)) itens.push({ y: py, x: px, f: 'jun', s: 1, pal: pal }); }
         if (A.hash(x.c, x.l, 199) > 0.85 && livre(x.ce.x + 8 * E, x.ce.y + 4 * E)) itens.push({ y: x.ce.y + 4 * E, x: x.ce.x + 8 * E, f: 'fol', s: 0.7, pal: pal });
@@ -388,11 +390,17 @@
         return;
       }
       obj(c, V, it.x, it.y);
+      /* vegetação e relevo 3D (RP.natureza): variante e tamanho tirados da posição, para cada lugar ter sempre a mesma */
+      if (RP.natureza && RP.natureza.pronto) {
+        var hv = A.hash(Math.round(it.x * 10), Math.round(it.y * 10), 7), hs = A.hash(Math.round(it.x * 10), Math.round(it.y * 10), 11);
+        var esc = it.f === 'pic' ? it.s * (0.65 + hs * 0.9) : it.f === 'mon' ? 0.7 + hs * 0.7 : it.f === 'mor' ? 0.6 + hs * 0.7 : it.f === 'roc' ? 0.6 + hs * 0.5 : it.f === 'arb' || it.f === 'jun' ? 0.8 + hs * 0.5 : it.s * (0.8 + hs * 0.45);
+        if (RP.natureza.desenhar(c, it.f, hv, esc, it.pal !== P)) return;
+      }
       if (it.f === 'con') A.arvoreConifera(c, 0, 0, it.s, it.pal, it.alt);
       else if (it.f === 'fol') A.arvoreFolhosa(c, 0, 0, it.s, it.pal);
       else if (it.f === 'arb') A.arbusto(c, 0, 0, it.s, it.pal, it.pal.flor2);
       else if (it.f === 'mon') A.monte(c, 0, 0, 44, 18, it.pal);
-      else if (it.f === 'roc') A.rocha(c, 0, 0, it.s, it.pal);
+      else if (it.f === 'roc' || it.f === 'mor') A.rocha(c, 0, 0, it.s, it.pal);
       else if (it.f === 'pic') A.pico(c, 0, 0, 56 * it.s, 52 * it.s, it.pal);
       else if (it.f === 'jun') A.junco(c, 0, 0, 1, it.pal);
     });

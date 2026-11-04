@@ -44,11 +44,12 @@ O item 17 (vida e fauna) e o 18 (coleta e começo mais rápido) do teste a 6× f
 A decisão [0026](decisoes/0026-mapa-maior-e-bonecos-3d.md) entregou o mapa de 312 × 240 com hexágonos menores, construções em vários hexágonos, explorador que espera no destino, percursos e patrulha, escavação somada, névoa quase ao vivo e os bonecos 3D. Ficou para depois:
 
 1. **Animais em 3D.** Lobos, javalis, ursos e crocodilos ainda são a arte 2D; o pacote animado de Quaternius (CC0) tem lobo e outros bichos que servem para o mesmo esquema de sprites.
-2. **Construções 3D: acabamento.** As construções são 3D (Kenney), mas estáticas: falta animar o moinho, a fumaça e a roda d'água, e dar aos níveis mais altos peças próprias além da torre de menagem. Jazidas, obras (andaime) e fundações continuam na arte 2D.
-3. **Bonecos no celular de verdade.** O render dos sprites tem orçamento de 7 ms por quadro e cai na figura 2D enquanto o sprite não existe; medir num aparelho fraco quanto tempo leva para a cena encher e, se precisar, pré-renderizar as poses mais comuns na carga.
-4. **Névoa sem buscar o mapa inteiro.** Cada aviso "mapa" ainda busca o `GET /mapa` completo (comprimido); um pedido só com o que mudou desde a última busca deixaria a revelação ao vivo mais leve.
-5. **Percurso desenhado no mapa.** O envio lista os pontos do percurso e da patrulha na folha; desenhar a linha do percurso e o anel da patrulha no mapa enquanto se escolhe.
-6. **Banco antigo.** Um banco gravado com o mapa de 104 × 80 não serve para 312 × 240 (locais, névoas e fotos em índices do mapa antigo): em desenvolvimento, apague `reino.db` antes de subir; em produção, a troca entra com o reset de temporada.
+2. **Natureza 3D no celular.** São ≈ 140 sprites gerados no carregamento (e de novo ao inclinar a câmera); medir o tempo num aparelho fraco e, se pesar, gerar só os do bioma à vista.
+3. **Construções 3D: acabamento.** As construções são 3D (Kenney), mas estáticas: falta animar o moinho, a fumaça e a roda d'água, e dar aos níveis mais altos peças próprias além da torre de menagem. Jazidas, obras (andaime) e fundações continuam na arte 2D.
+4. **Bonecos no celular de verdade.** O render dos sprites tem orçamento de 7 ms por quadro e cai na figura 2D enquanto o sprite não existe; medir num aparelho fraco quanto tempo leva para a cena encher e, se precisar, pré-renderizar as poses mais comuns na carga.
+5. **Névoa sem buscar o mapa inteiro.** Cada aviso "mapa" ainda busca o `GET /mapa` completo (comprimido); um pedido só com o que mudou desde a última busca deixaria a revelação ao vivo mais leve.
+6. **Percurso desenhado no mapa.** O envio lista os pontos do percurso e da patrulha na folha; desenhar a linha do percurso e o anel da patrulha no mapa enquanto se escolhe.
+7. **Banco antigo.** Um banco gravado com o mapa de 104 × 80 não serve para 312 × 240 (locais, névoas e fotos em índices do mapa antigo): em desenvolvimento, apague `reino.db` antes de subir; em produção, a troca entra com o reset de temporada.
 
 ## Pessoas no mapa: pendências
 
