@@ -67,7 +67,10 @@
         c.beginPath(); c.ellipse(0, 0, r, r * A.K, 0, 0, 6.2832); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
       }
       c.globalAlpha = o.emObra ? 0.5 : 1;
-      A.torre(c, 0, 0, 8, ht, info.pal);
+      /* torre 3D (RP.estruturas) quando o sprite existe; os arqueiros ficam no alto dela */
+      var E = RP.estruturas, s = E && E.pronto ? E.torre(nv, cor) : null;
+      if (s) { var cx = E.CX.torre; c.drawImage(s, -cx.W / 2, -cx.ALT, cx.W, cx.ALT + cx.PE); ht = E.alturaTorre(nv); }
+      else A.torre(c, 0, 0, 8, ht, info.pal);
       if (info.anim && !o.emObra) for (var q = 0; q < nA; q++) A.pessoa(c, (q - (nA - 1) / 2) * 4.5, -ht + 1, info.t, A.P, { roupa: cor, cinto: '#2b2520', dir: q % 2 ? -1 : 1, arco: true, fase: q * 1.3, capacete: A.P.metal });
       c.globalAlpha = 1;
     },
