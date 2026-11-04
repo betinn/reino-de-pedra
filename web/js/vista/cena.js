@@ -661,6 +661,33 @@
     }
   };
 
+  /* pessoas de uma marcha, uma por figura: as próprias pelo nome (pessoaIds); sem os nomes, pelas tropas; de outros
+     reinos, pelo tamanho aproximado que o servidor manda ("poucas", "≈ 10"). Nunca uma formação fixa. */
+  var MAX_MARCHA = 16;
+  function figurasDaMarcha(m, revelado) {
+    var lista = [];
+    (m.pessoaIds || []).forEach(function (id) { var p = M.pessoa(id); if (p) lista.push(p); });
+    if (lista.length) return lista;
+    var tr = m.tropas || {}, k = 0;
+    Object.keys(tr).forEach(function (u) { for (var i = 0; i < tr[u]; i++) lista.push({ id: m.id * 100 + k++, oficio: u, estado: 'marcha' }); });
+    if (/explor|batedor|prospector/.test(String(m.marcha))) lista.unshift({ id: m.id * 100 + 99, oficio: m.oficio || 'explorador-pe', estado: 'marcha' });
+    if (lista.length) return lista;
+    var tam = String(m.tamanho || ''), n = /\d+/.test(tam) ? +tam.match(/\d+/)[0] : 3;
+    for (var j = 0; j < Math.max(1, n); j++) lista.push({ id: m.id * 100 + j, oficio: j % 3 === 1 ? 'arqueiro' : 'lanceiro', estado: 'marcha' });
+    return lista;
+  }
+  /* o que cada um faz no trabalho do exército parado: escavar (pá e picareta), extrair e coletar (picareta ou machado), caçar */
+  function trabalhoDe(trab, i, p, centro) {
+    var o = { dir: p.x <= centro.x ? 1 : -1 };
+    if (!trab) return o;
+    o.lanca = false; o.escudo = null; o.arco = false;
+    if (trab === 'escavar') o.trabalho = i % 2 ? 'picareta' : 'pa';
+    else if (trab === 'extrair') o.trabalho = 'picareta';
+    else if (trab === 'coletar') o.trabalho = i % 3 === 2 ? 'martelo' : 'picareta';
+    else if (trab === 'cacar') { o.lanca = true; o.estocada = true; }
+    return o;
+  }
+
   /* uma marcha na Vista: formação, carregadores, explorador... Forças sem estandarte: cinza, sem bandeira */
   C.desenharMarcha = function (c, V, m, pos, t, ag, itens, rot) {
     var Cs = A.cores(), MAPA = RP.mapa, propria = m.dono === 'meu' || m.dono === 'aliado';
@@ -694,34 +721,46 @@
       })(j);
       prefixo = (np === 1 ? 'Pessoa' : np + ' pessoas') + ' · ';
     } else if (/explor|batedor|prospector/.test(tipo)) {
-      add(pos, function () {
-        if (/cavalo/.test(tipo)) A.cavalo(c, 0, 0, t, P, { cor: P.cavalo[3], dir: dir, andando: true, galope: true, cavaleiro: cor });
-        else if (/batedor/.test(tipo)) RP.sprites.pessoa(c, 0, 0, t, { roupa: '#2f3a2c', capuz: '#26301f', dir: dir, andando: true, fase: 0.3 });
-        else RP.sprites.pessoa(c, 0, 0, t, { roupa: '#6b5a3a', dir: dir, andando: true, carga: /prospector/.test(tipo) ? 'picareta' : null });
+      /* o explorador é uma pessoa da marcha (oficio explorador-cavalo, prospector...); a escolta vem atrás, uma figura por pessoa */
+      var andaE = !(m.parado || (cheg && cheg <= ag));
+      figurasDaMarcha(m, revelado).forEach(function (f, i) {
+        add(i ? pt(10 + Math.floor((i - 1) / 2) * 9, ((i % 2) * 2 - 1) * 6) : pos, function () {
+          RP.pessoasVista.figura(c, f, t, dir, cor, !revelado, { andando: andaE, ang: pos.ang });
+        });
       });
     } else if (tipo === 'mensageiro') {
       /* bandeira branca: evidente que não é ataque */
-      add(pos, function () { A.cavalo(c, 0, 0, t, P, { cor: P.cavalo[1], dir: dir, andando: true, galope: true, cavaleiro: revelado ? cor : '#6b6458' }); A.bandeira(c, -dir * 4, -20, 20, '#f3efe4', t, 11, 8); });
+      add(pos, function () { A.cavalo(c, 0, 0, t, P, { pelagem: 3, semente: m.id, dir: dir, ang: pos.ang, andando: true, galope: true, cavaleiro: revelado ? cor : '#6b6458', bandeira: '#f3efe4' }); });
       prefixo = 'Mensageiro · ';
     } else if (tipo === 'caravana') {
       var nv = 2;
       for (var q = 0; q < nv; q++) (function (q) { add(pt(q * 22, 0), function () { A.carroca(c, t, P, dir, revelado ? cor : '#8a8174', q * 1.7); }); })(q);
       prefixo = 'Caravana · ';
-    } else if (/caca|extra|escava/.test(tipo)) {
-      for (var z = 0; z < 4; z++) (function (z) {
-        add(pt(z * 9, ((z % 2) * 2 - 1) * 4), function () { RP.sprites.pessoa(c, 0, 0, t, { roupa: revelado ? cor : P.hostil, cinto: P.cinto, dir: dir, andando: true, fase: z * 1.3, carga: z % 2 ? 'picareta' : 'saco', capacete: P.metal }); });
-      })(z);
     } else {
-      var hostil = !revelado, nf = hostil ? 9 : 7;
-      for (var i = 0; i < nf; i++) (function (i) {
-        var fila = Math.floor(i / 3), col = i % 3 - 1, av = Math.sin(t * 2 + i) * 0.8;
-        add(pt(fila * 11 - av, col * 8), function () {
-          RP.sprites.pessoa(c, 0, 0, t, { roupa: cor, cinto: P.cinto, dir: dir, andando: true, fase: i * 0.9, capacete: hostil ? P.hostilEsc : P.metal, lanca: i % 3 !== 1, escudo: hostil ? P.hostilEscudo : cor });
-          if (i === 1 && revelado) A.bandeira(c, -dir * 2, -12, 18, cor, t, 10, 7);
+      /* exército: exatamente as pessoas da marcha (as próprias pelo nome; as de outros reinos, pelo tamanho aproximado) */
+      var figs = figurasDaMarcha(m, revelado), nfig = Math.min(figs.length, MAX_MARCHA);
+      var parada = !!(m.parado || (cheg && cheg <= ag && propria)), trab = m.estado === 'trabalhando' ? m.ordem : null;
+      var porFila = nfig <= 3 ? nfig : nfig <= 8 ? 3 : 4;
+      for (var i = 0; i < nfig; i++) (function (i, f) {
+        var fila = Math.floor(i / porFila), col = i % porFila - (Math.min(porFila, nfig) - 1) / 2, p;
+        if (parada) {
+          /* parados ou trabalhando: espalhados em volta do ponto, de frente para ele */
+          var a = (i / Math.max(1, nfig)) * 6.2832 + 0.4, r = nfig === 1 ? 0 : 9 + (i % 2) * 4;
+          p = { x: pos.x + Math.cos(a) * r * 1.3, y: pos.y + Math.sin(a) * r * 0.6 + 4 };
+        } else p = pt(fila * 10 - Math.sin(t * 2 + i) * 0.6, col * 8);
+        var extra = parada ? trabalhoDe(trab, i, p, pos) : { andando: true, ang: pos.ang };
+        if (!parada && m.cargaUsada > 0 && f.oficio !== 'cavalaria' && f.oficio !== 'elite') extra.carga = i % 2 ? 'saco' : 'minerio';
+        add(p, function () {
+          RP.pessoasVista.figura(c, f, t, extra.dir || dir, revelado ? cor : P.hostil, !revelado, extra);
+          if (i === 0 && revelado && !trab && nfig > 2) A.bandeira(c, -dir * 2, -26, 18, cor, t, 10, 7);
         });
-      })(i);
-      var po = pt(30, 0);
-      itens.push({ y: pos.y + 6, d: function () { obj(c, V, po.x, po.y); for (var w = 0; w < 3; w++) { var a = (t * 0.8 + w / 3) % 1; A.elipse(c, Math.sin(w * 3) * 6 - dir * a * 6, -a * 6, 4 + a * 6, 2 + a * 3, 'rgba(160,140,110,' + (0.3 * (1 - a)).toFixed(2) + ')'); } } });
+      })(i, figs[i]);
+      if (figs.length > nfig) prefixo = figs.length + ' · ';
+      if (trab) prefixo = ({ escavar: 'Escavando', extrair: 'Extraindo', cacar: 'Caçando', coletar: 'Coletando' }[trab] || 'Trabalhando') + ' · ' + prefixo;
+      if (!parada) {
+        var po = pt(10 + Math.ceil(nfig / Math.max(1, porFila)) * 10, 0);
+        itens.push({ y: pos.y + 6, d: function () { obj(c, V, po.x, po.y); for (var w = 0; w < 3; w++) { var a = (t * 0.8 + w / 3) % 1; A.elipse(c, Math.sin(w * 3) * 6 - dir * a * 6, -a * 6, 4 + a * 6, 2 + a * 3, 'rgba(160,140,110,' + (0.3 * (1 - a)).toFixed(2) + ')'); } } });
+      }
     }
     if (m.reliquia) { var pb = pt(12, 0); add({ x: pb.x, y: pb.y + 1 }, function () { A.bauReliquia(c, t, P, m.reliquia.tipo || 'desconhecido'); }); prefixo = 'Relíquia · '; }
     var desconhecida = !revelado && tipo !== 'mensageiro';

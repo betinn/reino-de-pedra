@@ -139,6 +139,7 @@ namespace ReinoDePedra.Api
                 app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = arquivos });
                 var tipos = new FileExtensionContentTypeProvider();
                 tipos.Mappings[".webmanifest"] = "application/manifest+json";
+                tipos.Mappings[".glb"] = "model/gltf-binary";
                 app.UseStaticFiles(new StaticFileOptions
                 {
                     FileProvider = arquivos, ContentTypeProvider = tipos,

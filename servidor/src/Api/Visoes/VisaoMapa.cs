@@ -56,6 +56,7 @@ public static class VisaoMapa
                 tipo = "marcha", id = x.Id, marcha = x.Tipo, dono = aliada ? "aliado" : "desconhecido", hex = h, caminho, tempos,
                 paraMim = !aliada && ParaMim(m, r, x) ? true : (bool?)null,   // sem isso, o fim dos tempos é quando ela sai da vista
                 tamanho = Aproximado(m, x.Tropas.Values.Sum()), estandarte = x.Estandarte ? true : (bool?)null,
+                oficio = x is Explorador xe ? ReinoDePedra.Jogo.Pessoas.Oficios.DeExplorador(xe.TipoExp) : null,   // o que se vê: a pé, a cavalo, com picareta
                 reino = dm != null ? Espionagem.Identidade(dm) : null, brasao = dm?.Brasao,
             });
         }

@@ -67,9 +67,27 @@
     return cv;
   }
 
+  /* boneco 3D (RP.bonecos, módulo bonecos.js): quando o sprite dele já existe, é ele que aparece; enquanto não, a figura 2D */
+  function boneco(c, x, y, t, o, tipo) {
+    var B = RP.bonecos;
+    if (!B || !B.pronto) return false;
+    var s = tipo === 'montado' ? B.montado(o, t) : B.pessoa(o, t);
+    if (!s) return false;
+    var cx = B.CX[tipo];
+    c.drawImage(s, x - cx.W / 2, y - cx.ALT, cx.W, cx.ALT + cx.PE);
+    return true;
+  }
+  /* o cavalo da arte 2D vira o cavalo 3D (com o cavaleiro montado), onde quer que seja desenhado */
+  var cavalo2D = A.cavalo;
+  A.cavalo = function (c, x, y, t, pal, o) {
+    if (o && !o.boi && boneco(c, x, y, t, o, 'montado')) return;
+    cavalo2D(c, x, y, t, pal, o);
+  };
+
   RP.sprites = {
     ESC: ESC, FRAMES: FRAMES,
     pessoa: function (c, x, y, t, o) {
+      if (boneco(c, x, y, t, o, 'pessoa')) return;
       var r = ritmo(o), frame = 0;
       if (r) { frame = Math.floor(((t * r + (o.fase || 0)) / (2 * Math.PI)) * FRAMES) % FRAMES; if (frame < 0) frame += FRAMES; }
       c.drawImage(sprite(o, frame), x - W / 2, y - ALT, W, ALT + PE);
