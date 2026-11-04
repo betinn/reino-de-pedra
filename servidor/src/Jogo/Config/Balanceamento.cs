@@ -380,7 +380,7 @@ public sealed class VagasP { public double PorNivel { get; init; } public int Mi
 public sealed class AproximadoP { public int Poucas { get; init; } public int Passo { get; init; } }
 public sealed class VisaoP { public int Castelo { get; init; } public int Local { get; init; } public int Tropa { get; init; } }
 public sealed class MapaP { public int Cols { get; init; } public int Lins { get; init; } }
-public sealed class PatrulhaP { public int Raio { get; init; } = 6; public int Pontos { get; init; } = 6; }
+public sealed class PatrulhaP { public int MaxHexes { get; init; } = 200; }
 public sealed class MapaGenP
 {
     public double Relevo { get; init; } public double Umidade { get; init; } public int HexPorRio { get; init; } public int RioLonge { get; init; }

@@ -76,8 +76,7 @@
   "avistamentoH": 10,
   "revelacaoSeg": 10,
   "patrulha": {
-   "raio": 6,
-   "pontos": 6
+   "maxHexes": 200
   },
   "aproximado": {
    "poucas": 4,

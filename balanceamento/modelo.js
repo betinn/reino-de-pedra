@@ -52,9 +52,9 @@ const P = {
   /* servidor: a névoa se abre ao vivo enquanto a marcha anda: um evento a cada revelacaoSeg segundos de jogo nos trechos que
      entram em névoa nunca vista (a 6×, menos de 2 s reais), e o cliente busca o mapa a cada aviso. Ver docs/decisoes/0026 */
   revelacaoSeg: 10,
-  /* servidor: patrulha de tropas em volta de um lugar: circuito de `pontos` pontos num anel de `raio` hexágonos (o raio da visão
-     do castelo), até nova ordem */
-  patrulha: { raio: 6, pontos: 6 },
+  /* servidor: a linha que o jogador desenha para um percurso ou uma patrulha tem no máximo maxHexes hexágonos (≈ 30 min de
+     tropa lenta por volta). Ver docs/decisoes/0029 */
+  patrulha: { maxHexes: 200 },
   /* servidor: tamanho aproximado de uma força vista ("poucas" abaixo de poucas; depois, arredondado ao passo) */
   aproximado: { poucas: 4, passo: 5 },
   /* novos locais: custo e quando o jogador funda (médio) */

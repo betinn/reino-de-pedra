@@ -6,10 +6,11 @@ using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 namespace ReinoDePedra.Jogo.Marchas;
 
 /// <summary>
-/// Percursos de tropas: rota desenhada pelo jogador (pontos em ordem, opcionalmente em circuito) e patrulha permanente em
-/// volta de um lugar (um circuito de pontos num anel em volta do centro). As duas seguem até nova ordem ou, a rota sem
-/// circuito, até o último ponto, onde as tropas ficam paradas. Os pontos ficam em <see cref="Exercito.Dados"/>:
-/// <c>pontos</c> (hexágonos), <c>ponto</c> (índice do ponto para onde vão) e <c>circuito</c>.
+/// Percursos de tropas: a linha exata que o jogador desenhou, hexágono a hexágono. As tropas vão até o primeiro ponto pelo
+/// caminho de sempre e depois seguem a linha sem desviar (<see cref="Caminhos.Seguir"/>). O percurso acaba no último ponto; a
+/// patrulha repete até nova ordem, em ida e volta numa linha aberta ou em volta de um circuito fechado. Em
+/// <see cref="Exercito.Dados"/>: <c>pontos</c> (a linha inteira, vizinhos em sequência), <c>ponto</c> (0 indo ao começo, 1 já
+/// na linha), <c>circuito</c> (fecha a linha, do fim ao começo) e <c>sentido</c> (1 ou -1, na ida e volta).
 /// </summary>
 public static class Percursos
 {
@@ -21,94 +22,90 @@ public static class Percursos
         ex.Dados["pontos"] = new JsonArray(pontos.Select(h => (JsonNode)h).ToArray());
         ex.Dados["ponto"] = 0;
         ex.Dados["circuito"] = circuito;
+        ex.Dados["sentido"] = 1;
     }
 
-    /// <summary>Confere os pontos (no mapa, até o máximo da fila) e os grava; o primeiro é o destino da ordem.</summary>
-    public static void Validar(Mundo m, Exercito ex, int destino, bool circuitoPadrao)
+    /// <summary>Liga os pontos em linha reta onde houver falha (quem desenha no mapa manda a linha já inteira) e tira repetições seguidas.</summary>
+    public static List<int> Ligar(Mundo m, IReadOnlyList<int> pontos)
     {
-        var ps = Pontos(ex);
-        if (ps.Count == 0) ps.Add(destino);
-        if (ps[0] != destino) ps.Insert(0, destino);
-        if (ps.Count > Fila.Maximo) throw new RegraException("O percurso tem no máximo " + Fila.Maximo + " pontos.");
-        if (ps.Any(h => !m.G.Valido(h))) throw new RegraException("Ponto fora do mapa.");
-        for (var i = ps.Count - 1; i > 0; i--) if (ps[i] == ps[i - 1]) ps.RemoveAt(i);
-        var circuito = ex.Dados["circuito"]?.GetValue<bool>() ?? circuitoPadrao;
-        Gravar(ex, ps, circuito && ps.Count > 1);
-    }
-
-    /// <summary>Chegou a um ponto: vai ao próximo; no fim, recomeça (circuito) ou para.</summary>
-    public static void Proximo(Mundo m, Exercito ex, string titulo)
-    {
-        var ps = Pontos(ex);
-        var i = (ex.Dados["ponto"]?.GetValue<int>() ?? 0) + 1;
-        var circuito = ex.Dados["circuito"]?.GetValue<bool>() == true;
-        if (i >= ps.Count && circuito) i = 0;
-        var aqui = ex.HexEm(m.Agora);
-        while (i < ps.Count && ps[i] == aqui) i++;
-        if (i < ps.Count)
+        var linha = new List<int>();
+        foreach (var h in pontos)
         {
-            try
+            if (linha.Count == 0) { linha.Add(h); continue; }
+            if (linha[^1] != h) linha.AddRange(m.G.Reta(linha[^1], h).Skip(1));
+        }
+        return linha;
+    }
+
+    /// <summary>Confere a linha (no mapa, até <c>P.patrulha.maxHexes</c>) e a grava inteira; o destino da ordem é o primeiro ponto.</summary>
+    public static void Validar(Mundo m, Exercito ex, int destino, int minimo)
+    {
+        var ps = Pontos(ex);
+        if (ps.Count == 0 || ps[0] != destino) ps.Insert(0, destino);
+        if (ps.Any(h => !m.G.Valido(h))) throw new RegraException("Ponto fora do mapa.");
+        var circuito = ex.Dados["circuito"]?.GetValue<bool>() == true;
+        var linha = Ligar(m, circuito ? ps.Append(ps[0]).ToList() : ps);
+        if (linha.Count < minimo) throw new RegraException("Desenhe a linha no mapa: pelo menos dois hexágonos.");
+        if (linha.Count > m.P.Patrulha.MaxHexes) throw new RegraException("A linha tem no máximo " + m.P.Patrulha.MaxHexes + " hexágonos.");
+        Gravar(ex, linha, circuito && linha.Count > 1);
+    }
+
+    /// <summary>Caminho da partida: a própria linha, se as tropas já estão no começo dela; senão, até o começo.</summary>
+    public static Rota Trajeto(Mundo m, Exercito ex, int de)
+    {
+        var ps = Pontos(ex);
+        if (ps[0] != de) return Exercitos.Rota(m, ex, de, ps[0]);
+        if (ps.Count < 2) throw new RegraException("As tropas já estão aqui.");
+        ex.Dados["ponto"] = 1;
+        return Caminhos.Seguir(m, ps, ex.Vel, new OpcoesCaminho { ReinoId = ex.ReinoId });
+    }
+
+    /// <summary>Chegou ao começo ou ao fim da linha: entra nela, repete (<paramref name="repete"/>) ou para.</summary>
+    public static void Proximo(Mundo m, Exercito ex, bool repete, string titulo)
+    {
+        var ps = Pontos(ex);
+        var aqui = ex.HexEm(m.Agora);
+        var naLinha = ex.Dados["ponto"]?.GetValue<int>() == 1;
+        var sentido = ex.Dados["sentido"]?.GetValue<int>() ?? 1;
+        if (ps.Count >= 2 && (!naLinha || repete))
+        {
+            if (naLinha && ps[0] != ps[^1]) sentido = -sentido;   // linha aberta: dá meia-volta no fim
+            var trecho = sentido > 0 ? ps : Enumerable.Reverse(ps).ToList();
+            if (trecho[0] == aqui)
             {
-                var rota = Exercitos.Rota(m, ex, aqui, ps[i]);
-                ex.Dados["ponto"] = i;
+                ex.Dados["ponto"] = 1; ex.Dados["sentido"] = sentido;
                 ex.Retornando = false;
-                ex.Partir(m, rota);
+                ex.Partir(m, Caminhos.Seguir(m, trecho, ex.Vel, new OpcoesCaminho { ReinoId = ex.ReinoId }));
                 return;
             }
-            catch (RegraException) { /* sem caminho: param no ponto em que estão */ }
         }
         ex.Ordem = OrdemMover.Id;
         ex.Parar(m);
         Exercitos.Avisar(m, ex, titulo, GT.Partes(m, ex.Tropas) + " · paradas no hexágono " + m.G.C(aqui) + ", " + m.G.L(aqui));
     }
-
-    /// <summary>Circuito de patrulha: <c>P.patrulha.pontos</c> pontos no anel de raio <c>P.patrulha.raio</c> em volta do centro, em ordem de ângulo.</summary>
-    public static List<int> Anel(Mundo m, int centro, int? raio = null)
-    {
-        var r = Math.Max(1, raio ?? m.P.Patrulha.Raio);
-        var g = m.G;
-        (double x, double y) P(int h) => (g.C(h) + 0.5 * (g.L(h) & 1), g.L(h) * 0.866);
-        var (cx, cy) = P(centro);
-        var anel = g.Area(centro, r).Where(h => g.Distancia(h, centro) == r && !m.Mapa.Rio[h])
-            .OrderBy(h => Math.Atan2(P(h).y - cy, P(h).x - cx)).ToList();
-        if (anel.Count == 0) return [centro];
-        var n = Math.Clamp(m.P.Patrulha.Pontos, 3, anel.Count);
-        return Enumerable.Range(0, n).Select(k => anel[k * anel.Count / n]).ToList();
-    }
 }
 
-/// <summary>Percorre os pontos desenhados pelo jogador (<c>Dados.pontos</c>, o primeiro é o destino); com <c>Dados.circuito</c>, recomeça no fim.</summary>
+/// <summary>Segue uma vez a linha desenhada (<c>Dados.pontos</c>, o primeiro é o destino) e para no último ponto; com <c>Dados.circuito</c>, fecha a linha e repete.</summary>
 public sealed class OrdemPercorrer : IOrdemExercito
 {
     public const string Id = "percorrer";
     public string Ordem => Id;
-    public void Validar(Mundo m, Reino r, Exercito ex, int destino) => Percursos.Validar(m, ex, destino, false);
-    public void Chegou(Mundo m, Exercito ex) => Percursos.Proximo(m, ex, "Percurso concluído");
+    public bool NoMesmoHex => true;
+    public void Validar(Mundo m, Reino r, Exercito ex, int destino) => Percursos.Validar(m, ex, destino, 1);
+    public Rota Trajeto(Mundo m, Exercito ex, int destino, int de) => Percursos.Trajeto(m, ex, de);
+    public void Chegou(Mundo m, Exercito ex) => Percursos.Proximo(m, ex, ex.Dados["circuito"]?.GetValue<bool>() == true, "Percurso concluído");
 }
 
 /// <summary>
-/// Patrulha permanente em volta de um lugar: o destino é o centro; as tropas andam num circuito de pontos em volta dele até
-/// nova ordem, mantendo a área à vista (e, com a postura "atacar qualquer ameaça", saindo contra quem passar).
+/// Patrulha permanente na linha desenhada: as tropas andam por ela até nova ordem, mantendo a área à vista (e, com a postura
+/// "atacar qualquer ameaça", saindo contra quem passar). Linha aberta: vão e voltam por ela. Fechada: dão a volta.
 /// </summary>
 public sealed class OrdemPatrulhar : IOrdemExercito
 {
     public const string Id = "patrulhar";
     public string Ordem => Id;
-    public void Validar(Mundo m, Reino r, Exercito ex, int destino)
-    {
-        var anel = Percursos.Anel(m, destino, ex.Dados["raio"]?.GetValue<int>());
-        // começa pelo ponto do anel mais perto de onde as tropas estão; o destino da ordem é trocado por ele em Exercitos
-        Percursos.Gravar(ex, anel, true);
-        ex.Dados["centro"] = destino;
-    }
-    /// <summary>Entra no circuito pelo ponto do anel mais perto de onde as tropas estão.</summary>
-    public int Primeiro(Mundo m, Exercito ex, int destino, int de)
-    {
-        var ps = Percursos.Pontos(ex);
-        if (ps.Count == 0) return destino;
-        var i = Enumerable.Range(0, ps.Count).OrderBy(k => m.G.Distancia(ps[k], de)).First();
-        Percursos.Gravar(ex, ps.Skip(i).Concat(ps.Take(i)).ToList(), true);
-        return ps[i];
-    }
-    public void Chegou(Mundo m, Exercito ex) => Percursos.Proximo(m, ex, "Patrulha interrompida");
+    public bool NoMesmoHex => true;
+    public void Validar(Mundo m, Reino r, Exercito ex, int destino) => Percursos.Validar(m, ex, destino, 2);
+    public Rota Trajeto(Mundo m, Exercito ex, int destino, int de) => Percursos.Trajeto(m, ex, de);
+    public void Chegou(Mundo m, Exercito ex) => Percursos.Proximo(m, ex, true, "Patrulha interrompida");
 }
