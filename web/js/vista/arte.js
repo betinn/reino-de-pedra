@@ -583,9 +583,9 @@
     K = Math.max(K_MIN, Math.min(K_MAX, k)); RP.arte.K = K;
     RP.arte.aoMudarK.forEach(function (f) { try { f(K); } catch (e) { console.error(e); } });
   };
-  /* giro da câmera em volta do ponto olhado (radianos; 0 = norte do mapa para cima). AZ reprojeta só o chão e as posições
-     (aoMudarAz). Construções e vegetação ficam em pé, sempre com o mesmo sprite: não giram com o mapa e nada salta ao
-     soltar o giro. Pessoas escolhem entre os 8 sprites de direção pelo AZ de agora. */
+  /* giro da câmera em volta do ponto olhado (radianos; 0 = norte do mapa para cima). AZ reprojeta o chão e as posições
+     (aoMudarAz). Construções giram em 3D ao vivo, por passos (estruturas.js); pessoas escolhem entre os 8 sprites de direção
+     pelo AZ de agora; a vegetação fica em pé, sempre com o mesmo sprite. */
   RP.arte.AZ = 0; RP.arte.aoMudarAz = [];
   RP.arte.definirAz = function (az) {
     az = Math.atan2(Math.sin(az), Math.cos(az));
