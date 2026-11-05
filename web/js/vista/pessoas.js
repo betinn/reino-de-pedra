@@ -92,7 +92,7 @@
   }
   function barraVida(c, p, y) {
     var v = vidaAgora(p); if (v == null || v >= p.vidaMax - 0.05) return;
-    var f = Math.max(0, v / p.vidaMax), Cs = A.cores(), w = 14, yy = y == null ? -31 : y;
+    var f = Math.max(0, v / p.vidaMax), Cs = A.cores(), w = 14, yy = y == null ? -A.emPe(24) - 6 : y;
     c.fillStyle = 'rgba(20,16,12,0.7)'; c.fillRect(-w / 2 - 1, yy - 1, w + 2, 4);
     c.fillStyle = f > 0.6 ? Cs.sucesso : f > 0.3 ? Cs.alerta : Cs.perigo; c.fillRect(-w / 2, yy, w * f, 2);
   }

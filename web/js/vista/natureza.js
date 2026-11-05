@@ -86,7 +86,7 @@ function render(nome, esc, giro, v) {
   obj.scale.setScalar(esc); obj.rotation.y = giro * Math.PI / 180;
   cena.add(obj); obj.updateMatrixWorld(true);
   const bb = new THREE.Box3().setFromObject(obj), tam = bb.getSize(new THREE.Vector3());
-  const k = (RP.arte && RP.arte.K) || 0.62, el = Math.asin(Math.min(0.95, k)), ce = Math.cos(el), se = Math.sin(el);
+  const k = (RP.arte && RP.arte.K3D) || 0.62, el = Math.asin(Math.min(0.95, k)), ce = Math.cos(el), se = Math.sin(el);
   /* caixa na tela, em unidades do mundo: largura do objeto e altura projetada (pé no chão em y = 0) */
   const meia = Math.max(Math.abs(bb.min.x), Math.abs(bb.max.x)) + 2, prof = Math.max(Math.abs(bb.min.z), Math.abs(bb.max.z));
   const alt = bb.max.y * ce + prof * se + 2, pe = prof * se + 3;
@@ -144,8 +144,10 @@ N.ponte = function (c, ang, antigo) {
   return true;
 };
 /* inclinar a câmera muda o que se vê de cada peça: refaz as variantes e avisa as cenas (o giro não muda: a vegetação fica em pé) */
+let kFeito = 0;
 function refazer() {
-  if (!N.pronto) return;
+  if (!N.pronto || RP.arte.K3D === kFeito) return;
+  kFeito = RP.arte.K3D;
   clearTimeout(N._k);
   N._k = setTimeout(() => { gerarTodos().then(() => document.dispatchEvent(new CustomEvent('rp:natureza'))); }, 250);
 }

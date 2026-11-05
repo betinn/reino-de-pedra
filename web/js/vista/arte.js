@@ -578,9 +578,21 @@
     materiais: materiais, cerca: cerca, pilula: pilula,
     K_PADRAO: K_PADRAO, K_MIN: K_MIN, K_MAX: K_MAX, aoMudarK: []
   };
+  /* inclinação dos sprites 3D: K em passos, para inclinar não refazer tudo a cada movimento do arrasto. kVizinhos: as outras
+     inclinações, da mais perto para a mais longe, para usar um sprite pronto enquanto o novo não sai. */
+  var PASSO_K3D = 0.04;
+  RP.arte.K3D = K_PADRAO;
+  RP.arte.kVizinhos = function () {
+    var out = [], n = Math.ceil((K_MAX - K_MIN) / PASSO_K3D);
+    for (var d = 1; d <= n; d++) [d, -d].forEach(function (s) { var k = RP.arte.K3D + s * PASSO_K3D; if (k > K_MIN - PASSO_K3D && k < K_MAX + PASSO_K3D) out.push(k.toFixed(2)); });
+    return out;
+  };
+  /* altura na tela de algo em pé com h unidades: visto de cima, o que é alto encurta */
+  RP.arte.emPe = function (h) { return h * Math.cos(Math.asin(Math.min(0.95, K))); };
   /* inclinação da câmera: muda o achatamento do chão para toda a arte; quem desenha ouve em aoMudarK */
   RP.arte.definirK = function (k) {
     K = Math.max(K_MIN, Math.min(K_MAX, k)); RP.arte.K = K;
+    RP.arte.K3D = K_PADRAO + Math.round((K - K_PADRAO) / PASSO_K3D) * PASSO_K3D;
     RP.arte.aoMudarK.forEach(function (f) { try { f(K); } catch (e) { console.error(e); } });
   };
   /* giro da câmera em volta do ponto olhado (radianos; 0 = norte do mapa para cima). AZ reprojeta o chão e as posições

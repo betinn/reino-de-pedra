@@ -18,7 +18,7 @@
     ativas.forEach(function (c) { if (document.hidden) c.pausar(); else c.continuar(); });
   });
   /* inclinação da câmera: K vem da arte e muda quando o jogador inclina (lembrada no aparelho) */
-  A.aoMudarK.push(function (k) { K = k; ativas.forEach(function (c) { c.invalidar(); }); });
+  A.aoMudarK.push(function (k) { K = k; var t = performance.now(); ativas.forEach(function (c) { c.ultimoGiro = t; c.invalidar(); }); });
   /* a vegetação 3D ficou pronta (ou foi refeita): o cache do chão é refeito com ela */
   document.addEventListener('rp:natureza', function () { ativas.forEach(function (c) { c.invalidar(); }); });
   var kSalvo = parseFloat(RP.pref('inclinacao'));
@@ -28,7 +28,7 @@
   var AZ = 0, CO = 1, SE = 0;
   function aplicarAz(az) { AZ = az; CO = Math.cos(az); SE = Math.sin(az); }
   A.aoMudarAz.push(function (az) { aplicarAz(az); var t = performance.now(); ativas.forEach(function (c) { c.ultimoGiro = t; c.invalidar(); }); });
-  /* enquanto a câmera gira, o chão é refeito a cada quadro: só a área da tela, sem margem (bem mais barato) */
+  /* enquanto a câmera gira ou inclina, o chão é refeito a cada quadro: só a área da tela, sem margem (bem mais barato) */
   function girando(c) { return performance.now() - (c.ultimoGiro || 0) < 280; }
   var azSalvo = parseFloat(RP.pref('giro'));
   if (isFinite(azSalvo) && azSalvo) A.definirAz(azSalvo);
@@ -908,7 +908,7 @@
           marcar(f);
           RP.pessoasVista.figura(c, f, t, extra.dir || dir, revelado ? cor : P.hostil, !revelado, extra);
           if (propria) RP.pessoasVista.barraVida(c, f);
-          if (i === 0 && revelado && !trab && nfig > 2) A.bandeira(c, -dir * 2, -26, 18, cor, t, 10, 7);
+          if (i === 0 && revelado && !trab && nfig > 2) A.bandeira(c, -dir * 2, -A.emPe(26), 18, cor, t, 10, 7);
         }, parada && trab && trab !== 'cacar' ? (extra.ferramenta === 'machado' ? 'machado' : 'picareta') : null);
       })(i, figs[i]);
       if (figs.length > nfig) prefixo = figs.length + ' · ';
