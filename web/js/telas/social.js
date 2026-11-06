@@ -193,7 +193,7 @@
       RP.fecharFolha();
       RP.modal({
         titulo: 'Derrubar esta bandeira?',
-        corpo: '<p class="suave">Escolha as tropas e toque na bandeira: elas vão até lá, derrubam e voltam. O dono é avisado, mas não sabe quem foi (a não ser com estandarte).</p>',
+        corpo: '<p class="suave">Escolha as tropas e clique na bandeira: elas vão até lá, derrubam e voltam. O dono é avisado, mas não sabe quem foi (a não ser com estandarte).</p>',
         acoes: [{ rotulo: RP.icone('tropas') + 'Escolher tropas', classe: 'btn-primario', acao: function () {
           RP.ir('mapa?centro=' + hex);
           setTimeout(function () { if (RP.envio) RP.envio.iniciar({}); }, 80);
@@ -222,7 +222,7 @@
     RP.get('/bandeiras').then(function (d) {
       dadosB = d;
       RP.$('.band-conteudo', el).innerHTML =
-        '<div class="secao-titulo" style="margin-top:0">Suas bandeiras · ' + d.minhas.length + ' de ' + d.max + '</div><div class="pilha">' + (d.minhas.length ? d.minhas.map(function (b) { return itemBandeira(b, true); }).join('') : S.vazio('Nenhuma bandeira colocada. Toque num hexágono do mapa e escolha Bandeira.')) + '</div>' +
+        '<div class="secao-titulo" style="margin-top:0">Suas bandeiras · ' + d.minhas.length + ' de ' + d.max + '</div><div class="pilha">' + (d.minhas.length ? d.minhas.map(function (b) { return itemBandeira(b, true); }).join('') : S.vazio('Nenhuma bandeira colocada. Clique num hexágono do mapa e escolha Bandeira.')) + '</div>' +
         '<div class="secao-titulo">Vistas por você</div><div class="pilha">' + (d.vistas.length ? d.vistas.map(function (b) { return itemBandeira(b, false); }).join('') : S.vazio('Nenhuma bandeira de outro reino à vista.')) + '</div>' +
         RP.comoFunciona('<p>Bandeiras são sinais para outros jogadores: valor social, sem efeito no jogo. <b>Sempre mostram quem as colocou.</b></p><p>Qualquer jogador pode derrubá-las com tropas no local; você é avisado, sem saber quem foi.</p>') + '<div style="height:120px"></div>';
     }).catch(function (e) { RP.$('.band-conteudo', el).innerHTML = S.vazio(RP.esc(e.message)); });
@@ -272,7 +272,7 @@
         var b;
         if ((b = e.target.closest('[data-tipo-bandeira]'))) { nova.tipo = b.getAttribute('data-tipo-bandeira'); desenharNova(el); return; }
         if (e.target.closest('[data-colocar]')) {
-          if (!nova.alvo) { RP.aviso({ titulo: 'Escolha o lugar', texto: 'Toque num hexágono do mapa e escolha Bandeira.', icone: 'mapa', tipo: 'alerta' }); return; }
+          if (!nova.alvo) { RP.aviso({ titulo: 'Escolha o lugar', texto: 'Clique num hexágono do mapa e escolha Bandeira.', icone: 'mapa', tipo: 'alerta' }); return; }
           var min = (dadosB && dadosB.minimo) || 3;
           if (nova.texto.trim().length < min) { RP.aviso({ titulo: 'Escreva o recado', texto: 'Pelo menos ' + min + ' letras.', icone: 'info', tipo: 'alerta' }); RP.$('#texto-bandeira', el).focus(); return; }
           RP.tentar(RP.post('/bandeiras', { c: nova.alvo[0], l: nova.alvo[1], tipo: nova.tipo, recado: nova.texto.trim() })).then(function (x) {

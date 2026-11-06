@@ -114,12 +114,17 @@
       subtitulo: '<span class="fraco">' + RP.nomeTipoLocal(l) + ' · Nível ' + l.nivel + '</span>',
       icone: '<span class="ico-placa folha-ico dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span>',
       corpo: corpo,
-      acoes: (m && !m.bloqueio ? '<button type="button" class="btn btn-p btn-primario" data-melhorar="' + l.id + '">' + RP.icone('martelo') + 'Melhorar</button>' : '') +
-        (l.tipo === 'castelo' || l.tipo === 'vila' ? '<button type="button" class="btn btn-p" data-moradia="' + l.id + '">' + RP.icone('moradia') + 'Moradia</button>' : '') +
-        '<a class="btn btn-p" href="#/mapa?foco=' + l.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a>' +
-        RP.acoesFolhaLocal.map(function (f) { return f(l) || ''; }).join('') +
-        '<a class="btn btn-p" href="#/posturas?local=' + l.id + '">' + RP.icone('escudo') + 'Comportamento</a>'
+      acoes: RP.acoesLocal(l)
     });
+  };
+  /* os botões de um local seu (folha e menu de contexto), com as teclas */
+  RP.acoesLocal = function (l) {
+    var m = l.melhoria;
+    return (m && !m.bloqueio ? '<button type="button" class="btn btn-p btn-primario" data-melhorar="' + l.id + '" data-tecla="U">' + RP.icone('martelo') + 'Melhorar</button>' : '') +
+      (l.tipo === 'castelo' || l.tipo === 'vila' ? '<button type="button" class="btn btn-p" data-moradia="' + l.id + '" data-tecla="O">' + RP.icone('moradia') + 'Moradia</button>' : '') +
+      RP.acoesFolhaLocal.map(function (f) { return f(l) || ''; }).join('') +
+      '<a class="btn btn-p" href="#/mapa?foco=' + l.hex + '" data-tecla="F">' + RP.icone('mapa') + 'Ver no mapa</a>' +
+      '<a class="btn btn-p" href="#/posturas?local=' + l.id + '" data-tecla="C">' + RP.icone('escudo') + 'Comportamento</a>';
   };
 
   document.addEventListener('click', function (e) {
@@ -154,7 +159,6 @@
     el.innerHTML =
       '<header class="topo topo-reino">' + RP.iconeReino(r, 32) +
       '<div class="topo-titulos"><h1>' + RP.esc(r.nome) + '</h1><small>' + RP.icone('temporada', 'ico-p') + (RP.mundo ? 'Temporada ' + RP.mundo.temporada + ' · ' + resta + ' dias' : '') + '</small></div>' +
-      '<button type="button" class="btn btn-fantasma btn-icone" data-painel-recolher aria-label="Recolher o painel e ver o mundo">' + RP.icone('mapa') + '</button>' +
       '</header>' +
       '<div class="conteudo-tela conteudo-reino">' +
       '<div class="acoes-tela" style="margin-top:0"><a class="btn btn-p btn-primario" href="#/construcao">' + RP.icone('martelo') + 'Construir</a>' +

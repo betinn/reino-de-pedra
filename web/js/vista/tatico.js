@@ -165,21 +165,29 @@
         self.cam = { s: ns, x: w.x - (x - self.w / 2) / ns, y: w.y - (y - self.h / 2) / ns };
         self.mudou();
       },
-      toque: function (x, y, cx, cy) { self.tocar(x, y, cx, cy); },
+      toque: function (x, y, cx, cy, duplo, shift) { self.tocar(x, y, cx, cy, { botao: 0, duplo: !!duplo, shift: !!shift }); },
+      cliqueDireito: function (x, y, cx, cy, shift) { self.tocar(x, y, cx, cy, { botao: 2, shift: !!shift }); },
+      passar: function (x, y) {
+        var r = self.el.getBoundingClientRect(), a = document.elementFromPoint(r.left + x, r.top + y);
+        self.el.classList.toggle('sobre-objeto', !!(a && a.closest && a.closest('[data-k]')));
+      },
       fim: function () { self.gesto = false; self.ultimaMudanca = performance.now(); self.pedirQuadro(); if (tracando) { tracando = false; self.opt.aoTracarFim(); } }
     });
   };
-  TP.tocar = function (x, y, cx, cy) {
+  TP.tocar = function (x, y, cx, cy, extra) {
     var d = M.dados; if (!d) return;
+    extra = extra || {};
     this.redimensionar();
     var alvo = document.elementFromPoint(cx, cy), ent = alvo && alvo.closest && alvo.closest('[data-k]');
     var w = this.mundo(x, y), h = H.pixelParaHex(w.x, w.y);
     if (ent) {
       var o = d.objetos[+ent.getAttribute('data-k')];
-      if (o) { this.opt.aoTocar({ ent: [o.tipo, o.id != null ? o.id : o._k], obj: o, hex: o.hex != null ? o.hex : h }); return; }
+      if (o) { this.opt.aoTocar({ ent: [o.tipo, o.id != null ? o.id : o._k], obj: o, hex: o.hex != null ? o.hex : h, botao: extra.botao || 0, duplo: !!extra.duplo, shift: !!extra.shift, cx: cx, cy: cy }); return; }
     }
-    if (h >= 0) this.opt.aoTocar({ hex: h });
+    if (h >= 0) this.opt.aoTocar({ hex: h, botao: extra.botao || 0, duplo: !!extra.duplo, shift: !!extra.shift, cx: cx, cy: cy });
   };
+  /* desloca a câmera em pixels da tela (teclado) */
+  TP.deslocar = function (dx, dy) { cancelAnimationFrame(this.anim); this.cam.x += dx / this.cam.s; this.cam.y += dy / this.cam.s; this.mudou(); };
 
   TP.iniciar = function () {
     this.ativo = true; if (ativos.indexOf(this) < 0) ativos.push(this);

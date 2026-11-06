@@ -139,7 +139,7 @@
     var f = RP.$('.combate-faixa', tela);
     if (!f) { f = document.createElement('div'); f.className = 'combate-faixa card'; tela.appendChild(f); }
     f.hidden = !modoTorre;
-    if (modoTorre) f.innerHTML = RP.icone('torre', 'ico-p') + '<span>Toque num hexágono livre, perto de um local seu, para erguer a <b>torre de arqueiros</b>.</span><button type="button" class="btn btn-p" data-torre-cancelar>Cancelar</button>';
+    if (modoTorre) f.innerHTML = RP.icone('torre', 'ico-p') + '<span>Clique num hexágono livre, perto de um local seu, para erguer a <b>torre de arqueiros</b>.</span><button type="button" class="btn btn-p" data-torre-cancelar>Cancelar</button>';
   }
   document.addEventListener('rp:tela', function (ev) {
     if (ev.detail !== 'mapa') { modoTorre = false; return; }
@@ -273,7 +273,7 @@
           '<button type="button" class="btn btn-icone btn-fantasma btn-mini" data-env-modelo-apagar="' + md.id + '" aria-label="Apagar o modelo ' + RP.esc(md.nome) + '">' + RP.icone('fechar') + '</button></span>';
       }).join('') +
       (modelos.modelos.length < modelos.max ? '<button type="button" class="btn btn-p btn-fantasma" data-env-salvar-modelo>' + RP.icone('mais', 'ico-p') + 'Salvar atual</button>' : '') + '</div>' +
-      '<p class="fraco env-nota">Um toque preenche tipo, tropas, objetivos e tática. Confira e envie.</p></div>';
+      '<p class="fraco env-nota">Um clique preenche tipo, tropas, objetivos e tática. Confira e envie.</p></div>';
   }
   function aplicarModelo(md, id) {
     var tipos = (env.previa && env.previa.tipos) || [];
@@ -437,7 +437,7 @@
     },
     entrar: function (el, q) {
       var hex = q.get('alvo') ? +q.get('alvo') : NaN;
-      if (!(hex >= 0)) { env = null; semAlvo(el, 'Escolha o alvo no mapa', 'Toque num local de outro reino no mapa e escolha Atacar. O envio abre aqui com o alvo escolhido.'); return; }
+      if (!(hex >= 0)) { env = null; semAlvo(el, 'Escolha o alvo no mapa', 'Clique num local de outro reino no mapa e escolha Atacar. O envio abre aqui com o alvo escolhido.'); return; }
       var rod = RP.$('.rodape-acao', el); if (rod) rod.hidden = false;
       env = { hex: hex, de: q.get('de') ? +q.get('de') : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null, modelo: null };
       desenharEnvio(el);
@@ -493,7 +493,7 @@
       (atual ? '. Agora: ' + RP.esc(rotulos.meu) + ' ' + RP.num(atual.meu) + ', ' + RP.esc(rotulos.eles) + ' ' + RP.num(atual.eles) : '') + '." data-ml="' + ml + '" data-pw="' + pw + '" data-dur="' + duracao + '">' + h + '</svg><div class="gl-dica" hidden></div></div>' +
       '<div class="legenda-grafico"><span><i class="lg-d"></i>' + RP.esc(rotulos.meu) + '</span><span><i class="lg-a"></i>' + RP.esc(rotulos.eles) + '</span><span><i class="lg-proj"></i>Tendência</span></div>';
   };
-  /* cruz + dica ao tocar/passar no gráfico */
+  /* cruz + dica ao clicar/passar no gráfico */
   RP.ligarGraficoBatalha = function (el, serie, rotulos) {
     var box = RP.$('[data-grafico-bat]', el); if (!box) return;
     var svg = RP.$('svg', box), dica = RP.$('.gl-dica', box), cruz = RP.$('.gl-cruz', svg);

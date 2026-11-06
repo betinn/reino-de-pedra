@@ -137,7 +137,7 @@
         '<a class="btn btn-p btn-primario fer-fundar" href="#/mapa?fundar=ferraria">' + RP.icone('alvo') + 'Fundar ferraria</a>') +
       ((d.fila || []).length ? filaHTML(d) : '') +
       (function () {
-        /* camadas: a próxima era fica à vista; as já feitas e as seguintes, um toque adiante */
+        /* camadas: a próxima era fica à vista; as já feitas e as seguintes, um clique adiante */
         var eras = [ERA_FERRO].concat(d.eras), prox = eras.filter(function (e) { return !e.feita; })[0];
         return '<div class="secao-titulo">Próxima era</div>' + (prox ? cardEra(prox) : '<p class="fraco">Todas as eras pesquisadas.</p>') +
           RP.secaoRecolhida('Todas as eras', '<div class="pilha">' + eras.filter(function (e) { return e !== prox; }).map(cardEra).join('') + '</div>');

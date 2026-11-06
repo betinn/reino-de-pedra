@@ -1,5 +1,5 @@
 /* Reino de Pedra — Pessoas: a folha de uma pessoa (quem é, onde está, o que faz, até 3 ações) e a tela Pessoas
-   (todo mundo, com filtro por ofício e por local), destino alternativo ao toque no mapa.
+   (todo mundo, com filtro por ofício e por local), destino alternativo ao clique no mapa.
      civil    Trocar trabalho · Levar para… · Recrutar
      soldado  Missão · Selecionar o grupo · Voltar (atalhos: todos deste tipo aqui, ver no mapa)
    Dados: GET /reino/pessoas, GET /pessoas/{id}, POST /pessoas/{id}/trabalho, POST /pessoas/{id}/mover. */
@@ -145,7 +145,7 @@
       RP.selecao.definir(ids);
       RP.fecharFolha();
       if (RP.telaAtual() !== 'mapa') RP.ir('mapa' + (p.hex != null ? '?centro=' + p.hex : ''));
-      RP.aviso({ titulo: ids.length + (ids.length === 1 ? ' selecionado' : ' selecionados'), texto: 'Toque no destino, ou em Missão na barra.', icone: 'populacao', ms: 2600 });
+      RP.aviso({ titulo: ids.length + (ids.length === 1 ? ' selecionado' : ' selecionados'), texto: 'Clique no destino, ou em Missão na barra.', icone: 'populacao', ms: 2600 });
       return;
     }
   });
@@ -205,7 +205,7 @@
     secao: 'reino',
     montar: function (el) {
       tela = el;
-      el.innerHTML = RP.topoVoltar('Pessoas', 'reino', 'Toque numa pessoa para ver o que faz e dar trabalho ou missão') + '<div class="conteudo-tela pilha pessoas-conteudo"></div>';
+      el.innerHTML = RP.topoVoltar('Pessoas', 'reino', 'Clique numa pessoa para ver o que faz e dar trabalho ou missão') + '<div class="conteudo-tela pilha pessoas-conteudo"></div>';
       el.addEventListener('click', function (e) {
         var b = e.target.closest('[data-f-oficio]');
         if (b) { filtro.oficio = b.getAttribute('data-f-oficio'); desenhar(); }

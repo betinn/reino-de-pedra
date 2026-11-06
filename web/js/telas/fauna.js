@@ -211,7 +211,7 @@
       }).join('') + linha('Ponte (rio)', RP.custoHTML(g.ponte.custo) + ' <span class="tempo">' + RP.fmtDuracao(g.ponte.tempo) + '</span>') + '</div>' : '';
       return '<p class="nota-regra">' + RP.icone('rota', 'ico-p') + '<span>Rotas são <b>ruas públicas</b>: todos usam e ganham a mesma velocidade. Num rio, a rota é uma ponte. Rotas só aparecem nas áreas que você já explorou e reduzem a presença de animais.</span></p>' +
         '<div class="card pilha"><b>Custo por hexágono</b>' + tabela + '<a class="btn btn-p" href="#/mapa">' + RP.icone('alvo') + 'Escolher no mapa</a>' +
-        '<small class="fraco">No mapa, toque num hexágono explorado e em "Construir rota aqui".</small></div>' +
+        '<small class="fraco">No mapa, clique num hexágono explorado e em "Construir rota aqui".</small></div>' +
         (obras.length ? '<div class="secao-titulo">Na fila</div><div class="card pilha">' + obras.map(function (i) { i.fila = 'obras'; return RP.itemFilaServidor(i); }).join('') + '</div>' : '');
     }
   });

@@ -44,10 +44,9 @@
     pedirMinimapa();
   }
   function centrarHex(h, animar) {
-    /* no celular a folha cobre a parte de baixo: o hexágono sobe; no computador ela é a coluna ao lado */
-    var p = H.centroH(h), fy = RP.folhaAberta() && window.innerWidth < 900 ? 0.3 : 0.5;
-    if (modo === 'cena') cena.centrar(p.x, p.y, Math.max(cena.cam.s, 1.8), fy, animar);
-    else tat.centrar(p.x, p.y, Math.max(tat.cam.s, 0.9), fy, animar);
+    var p = H.centroH(h);
+    if (modo === 'cena') cena.centrar(p.x, p.y, Math.max(cena.cam.s, 1.8), 0.5, animar);
+    else tat.centrar(p.x, p.y, Math.max(tat.cam.s, 0.9), 0.5, animar);
   }
   function irCastelo(animar) {
     var c = RP.castelo(); if (!c) return;
@@ -111,22 +110,26 @@
       '<span><b>' + RP.esc(nomeObjeto(o)) + '</b>' + (sub ? '<small>' + RP.esc(sub) + '</small>' : '') + '</span>' + RP.icone('avancar', 'ico-p') + '</button>';
   }
 
+  /* As folhas do mapa são montadas (montarHex, montarObjeto, montarMarcha...) separadas de abrir: o mesmo objeto
+     { titulo, corpo, acoes } vale para a folha na base da tela e para o menu de contexto do botão direito. */
   function folhaHex(h) {
     if (!M.dados || h < 0) return;
     if (alvoFundar) { folhaFundar(h); return; }
+    abrirFolhaMapa(montarHex(h), h);
+  }
+  function montarHex(h) {
     var e = M.estado(h), t = M.terreno(h), d = M.dados, objs = M.objetosEm(h), emEnvio = RP.envio && RP.envio.ativo();
     /* a tropa selecionada escolheu este hexágono sem pedir: fechar a folha desfaz */
     function fechou(troca) { if (!troca && RP.envio && RP.envio.implicito()) RP.envio.cancelar(); }
     var vivos = d.marchas.filter(function (m) { var p = M.posMarcha(m, RP.agora()); return p.hex === h && M.marchaVisivel(m, p); });
     if (e.v === 'desconhecido') {
-      abrirFolhaMapa({
+      return {
         titulo: 'Terra desconhecida', subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(h) + '</div>',
         icone: '<span class="ico-placa folha-ico">' + RP.icone('nevoa') + '</span>',
         corpo: '<p class="suave">Ninguém do seu reino passou por aqui. Terreno, recursos, animais e reinos só aparecem depois de explorados.</p>' +
           MAPA.extrasFolhaHex.map(function (f) { return f(h, d) || ''; }).join(''),
         acoes: MAPA.acoesFolhaHex.map(function (f) { return f(h, d) || ''; }).join(''), aoFechar: fechou
-      }, h);
-      return;
+      };
     }
     var corpo = notaAntiga(e) + '<div class="info">' + linhaInfo('Terreno', TERRENOS[t][1]) +
       (M.rio(h) ? linhaInfo('Rio', M.ponte(h) ? 'com ponte' : 'travessia pelo vau, mais lenta') : '') +
@@ -137,22 +140,25 @@
     var acoes = '';
     var livre = !objs.length && !M.rio(h);
     /* escolhendo destino, as ações são as ordens da tropa */
-    if (livre && !emEnvio) acoes += '<a class="btn btn-p btn-primario" href="#/construcao?aba=novos">' + RP.icone('castelo') + 'Fundar local</a>';
+    if (livre && !emEnvio) acoes += '<a class="btn btn-p btn-primario" href="#/construcao?aba=novos" data-tecla="B">' + RP.icone('castelo') + 'Fundar local</a>';
     var meu = objs.filter(function (o) { return o.tipo === 'local' && o.dono === 'meu'; })[0];
-    if (meu && !emEnvio) acoes += '<button type="button" class="btn btn-p btn-primario" data-local="' + meu.id + '">' + RP.icone('info') + 'Detalhes</button>';
+    if (meu && !emEnvio) acoes += '<button type="button" class="btn btn-p btn-primario" data-local="' + meu.id + '" data-tecla="I">' + RP.icone('info') + 'Detalhes</button>';
     if (!emEnvio) objs.forEach(function (o) { var tp = MAPA.tiposObjeto[o.tipo]; if (tp && tp.acoes) acoes += tp.acoes(o, d) || ''; });
     acoes += MAPA.acoesFolhaHex.map(function (f) { return f(h, d) || ''; }).join('');
-    abrirFolhaMapa({
+    return {
       titulo: nomeTerreno(h), subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(h) + '</div>',
       icone: '<span class="ico-placa folha-ico terreno-ico t-' + t + '"></span>',
       corpo: corpo, acoes: acoes, aoFechar: fechou
-    }, h);
+    };
   }
 
   function folhaObjeto(o) {
-    var d = M.dados, h = o.hex;
     if (o.tipo === 'marcha') { folhaMarcha(o); return; }
     if (o.tipo === 'local' && o.dono === 'meu' && RP.local(o.id)) { RP.folhaLocal(o.id); return; }
+    abrirFolhaMapa(montarObjeto(o), o.hex);
+  }
+  function montarObjeto(o) {
+    var d = M.dados, h = o.hex;
     var e = M.estado(h), tp = MAPA.tiposObjeto[o.tipo], corpo = notaAntiga(e) + '<div class="info">', acoes = '';
     if (o.tipo === 'local') {
       corpo += linhaInfo('Tipo', RP.esc(RP.TIPOS_LOCAL[o.local] || o.local)) + linhaInfo('Dono', donoTxt(o)) + linhaInfo('Terreno', RP.esc(nomeTerreno(h)));
@@ -169,15 +175,19 @@
     else corpo += linhaInfo('Tipo', RP.esc(o.tipo));
     corpo += '</div>';
     if (tp && tp.acoes) acoes += tp.acoes(o, d) || '';
-    acoes += '<button type="button" class="btn btn-p btn-fantasma" data-abrir-hex="' + h + '">' + RP.icone('hexagonos') + 'Hexágono</button>';
-    abrirFolhaMapa({
+    acoes += '<button type="button" class="btn btn-p btn-fantasma" data-abrir-hex="' + h + '" data-tecla="X">' + RP.icone('hexagonos') + 'Hexágono</button>';
+    return {
       titulo: RP.esc(nomeObjeto(o)), subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(h) + '</div>',
       icone: '<span class="ico-placa folha-ico' + (o.tipo === 'local' ? ' ' + RP.mapaTatico.classeDono(o.dono) : '') + '">' + RP.icone(iconeObjeto(o), o.tipo === 'jazida' ? 'r-' + o.recurso : '') + '</span>',
       corpo: corpo, acoes: acoes
-    }, h);
+    };
   }
   function folhaMarcha(o) {
     if (o.dono === 'meu') { folhaMarchaPropria(o); return; }
+    var m = montarMarchaAlheia(o);
+    abrirFolhaMapa(m, m.hex);
+  }
+  function montarMarchaAlheia(o) {
     var ag = RP.agora(), pos = M.posMarcha(o, ag), cheg = M.chegada(o), rev = RP.mapaTatico.revelada(o), def = MAPA.tiposMarcha[o.marcha] || {};
     var nome = def.nome || NOME_MARCHA[o.marcha] || 'Tropas';
     var titulo = rev ? nome : 'Forças desconhecidas';
@@ -186,11 +196,11 @@
       (cheg && fimConhecido(o) ? linhaInfo('Chegada', '<span data-fim="' + cheg + '">' + RP.fmtResta(cheg - ag) + '</span>') : '') +
       (o.caminho ? linhaInfo('Rumo', destinoTxt(o)) : '') + '</div>' +
       (rev ? '' : '<p class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Ser atacado não revela o atacante. Só o estandarte ou a espionagem mostram quem é.</span></p>');
-    abrirFolhaMapa({
-      titulo: titulo, subtitulo: '<div class="linha">' + seloEstado(M.estado(pos.hex)) + coordTxt(pos.hex) + '</div>',
+    return {
+      hex: pos.hex, titulo: titulo, subtitulo: '<div class="linha">' + seloEstado(M.estado(pos.hex)) + coordTxt(pos.hex) + '</div>',
       icone: '<span class="ico-placa folha-ico marcha-ico ' + RP.mapaTatico.classeDono(o.dono) + (rev ? '' : ' hostil') + '">' + RP.icone(RP.mapaTatico.iconeMarcha(o)) + '</span>',
       corpo: corpo, acoes: ''
-    }, pos.hex);
+    };
   }
   /* Marcha própria: sempre controlável pelo mapa, em qualquer ponto do caminho. Mostra o que é, destino, chegada e
      carga (o servidor manda carga/cargaMax/tropas/estado em GET /mapa; GET /tropas completa para exércitos), com
@@ -198,6 +208,12 @@
   var ESTADO_MARCHA = { marchando: 'em marcha', parado: 'parada', retornando: 'voltando', trabalhando: 'trabalhando' };
   function ehExplorador(tipo) { return /explor|batedor|prospector/.test(String(tipo || '')); }
   function folhaMarchaPropria(o) {
+    var m = montarMarchaPropria(o);
+    abrirFolhaMapa(m, m.hex);
+    /* exércitos: completa com GET /tropas (carga, bloqueio) se ainda não veio */
+    if (o.marcha === 'exercito' && !RP.exercito(o.id)) RP.carregarTropas().then(function () { if (RP.folhaAberta() && RP.exercito(o.id)) folhaMarchaPropria(o); }, function () { /* offline */ });
+  }
+  function montarMarchaPropria(o) {
     var ag = RP.agora(), pos = M.posMarcha(o, ag), cheg = M.chegada(o), def = MAPA.tiposMarcha[o.marcha] || {};
     var ex = o.marcha === 'exercito' ? RP.exercito(o.id) : null, d = ex || o;
     var nome = def.nome || NOME_MARCHA[o.marcha] || 'Sua marcha';
@@ -217,27 +233,25 @@
     var acoes = '';
     if (ehExplorador(o.marcha)) {
       acoes = '<a class="btn btn-p btn-primario" href="#/exploradores?ativo=' + o.id + '">' + RP.icone('seta') + 'Novo destino</a>' +
-        (estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-marcha-voltar-exp="' + o.id + '">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '');
+        (estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-marcha-voltar-exp="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '');
     } else if (o.marcha === 'exercito' || ex) {
       var pode = !d.bloqueio && d.podeOrdem !== false, divide = pode && estado !== 'trabalhando' && RP.somaGrupo(d.tropas || {}) > 1;
       acoes = (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
-        (divide ? '<button type="button" class="btn btn-p" data-tropa-separar="' + o.id + '">' + RP.icone('tropas') + 'Separar</button>' : '') +
-        (pode ? '<button type="button" class="btn btn-p" data-tropa-patrulhar="' + o.id + '">' + RP.icone('rota') + 'Patrulhar</button>' : '') +
-        (pode && estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + o.id + '">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
-        (pode && estado !== 'parado' ? '<button type="button" class="btn btn-p" data-exercito-parar="' + o.id + '" data-hex="' + pos.hex + '">' + RP.icone('alvo') + 'Parar aqui</button>' : '') +
+        (pode ? '<button type="button" class="btn btn-p" data-tropa-patrulhar="' + o.id + '" data-tecla="Q">' + RP.icone('rota') + 'Patrulhar</button>' : '') +
+        (pode && estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
+        (pode && estado !== 'parado' ? '<button type="button" class="btn btn-p" data-exercito-parar="' + o.id + '" data-hex="' + pos.hex + '" data-tecla="H">' + RP.icone('alvo') + 'Parar aqui</button>' : '') +
+        (divide ? '<button type="button" class="btn btn-p" data-tropa-separar="' + o.id + '" data-tecla="K">' + RP.icone('tropas') + 'Separar</button>' : '') +
         (!pode && d.bloqueio && RP.telas.batalha ? '<a class="btn btn-p btn-perigo" href="#/tropas">' + RP.icone('escudo') + 'Recuar</a>' : '') +
-        '<button type="button" class="btn btn-p" data-exercito="' + o.id + '">' + RP.icone('info') + 'Detalhes</button>' +
-        '<a class="btn btn-p" href="#/posturas?marcha=' + o.id + '">' + RP.icone('escudo') + 'Comportamento</a>';
+        '<button type="button" class="btn btn-p" data-exercito="' + o.id + '" data-tecla="I">' + RP.icone('info') + 'Detalhes</button>' +
+        '<a class="btn btn-p" href="#/posturas?marcha=' + o.id + '" data-tecla="C">' + RP.icone('escudo') + 'Comportamento</a>';
     } else if (o.marcha === 'caravana' && RP.telas.caravana) {
       acoes = '<a class="btn btn-p" href="#/caravana">' + RP.icone('carroca') + 'Caravanas</a>';
     }
-    abrirFolhaMapa({
-      titulo: RP.esc(nome), subtitulo: '<div class="linha"><span class="selo selo-visivel">' + RP.icone('olho') + 'Sua tropa</span>' + coordTxt(pos.hex) + '</div>',
+    return {
+      hex: pos.hex, titulo: RP.esc(nome), subtitulo: '<div class="linha"><span class="selo selo-visivel">' + RP.icone('olho') + 'Sua tropa</span>' + coordTxt(pos.hex) + '</div>',
       icone: '<span class="ico-placa folha-ico marcha-ico dono-meu">' + RP.icone(RP.mapaTatico.iconeMarcha(o)) + '</span>',
       corpo: corpo, acoes: acoes
-    }, pos.hex);
-    /* exércitos: completa com GET /tropas (carga, bloqueio) se ainda não veio */
-    if (o.marcha === 'exercito' && !ex) RP.carregarTropas().then(function () { if (RP.folhaAberta() && RP.exercito(o.id)) folhaMarchaPropria(o); }, function () { /* offline */ });
+    };
   }
   function nomeDestino(h) {
     var l = RP.reino && (RP.reino.locais || []).filter(function (x) { return x.hex === h; })[0];
@@ -272,7 +286,7 @@
     var f = tela && RP.$('.mapa-faixa', tela);
     if (!f) return;
     f.hidden = !alvoFundar;
-    if (alvoFundar) f.innerHTML = RP.icone('alvo', 'ico-p') + '<span>Toque num hexágono destacado para fundar: <b>' + RP.esc((RP.NOMES_FUNDAR || {})[alvoFundar] || alvoFundar) + '</b></span>' +
+    if (alvoFundar) f.innerHTML = RP.icone('alvo', 'ico-p') + '<span>Clique num hexágono destacado para fundar: <b>' + RP.esc((RP.NOMES_FUNDAR || {})[alvoFundar] || alvoFundar) + '</b></span>' +
       '<button type="button" class="btn btn-p" data-cancelar-fundar>Cancelar</button>';
     tela.classList.toggle('em-fundar', !!alvoFundar);
     if (tat) tat.definirFundar(alvoFundar);
@@ -314,7 +328,7 @@
     } else if ((b = e.target.closest('[data-abrir-hex]')) && ativa()) folhaHex(+b.getAttribute('data-abrir-hex'));
   });
 
-  /* a tropa que o toque achou: um soldado parado na guarnição, os soldados de uma pilha, ou um exército seu em campo (todos os soldados dele) */
+  /* a tropa que o clique achou: um soldado parado na guarnição, os soldados de uma pilha, ou um exército seu em campo (todos os soldados dele) */
   function tropaDoToque(alvo) {
     var e = alvo.ent, o = alvo.obj, PV = RP.pessoasVista;
     if (e && e[0] === 'pessoas') {
@@ -329,25 +343,140 @@
     var ids = (o.pessoaIds || []).filter(function (id) { var q = M.pessoa(id); return q && PV.ehSoldado(q); });
     return ids.length ? { ids: ids, marchaId: o.id, hex: M.posMarcha(o, RP.agora()).hex, obj: o } : null;
   }
+  /* Mouse na mesa (decisão 0030): o botão esquerdo seleciona e abre (tropa, local, pessoa, hexágono); o direito dá a
+     ordem à tropa selecionada no ponto clicado (ou abre o menu do que está sob o mouse quando nada está selecionado);
+     Shift + direito mostra todas as ordens; o duplo clique num soldado seleciona todos do mesmo tipo no lugar. */
   function aoTocar(alvo) {
     var hh = alvo.hex != null ? alvo.hex : (alvo.obj && alvo.obj.hex), E = RP.envio, S = RP.selecao, ent = alvo.ent;
+    if (alvo.botao === 2) { cliqueDireito(alvo); return; }
     if (alvoFundar) { if (hh != null && hh >= 0) folhaFundar(hh); return; }
     if (E && E.desenhando()) { if (hh != null && hh >= 0) E.ponto(hh); return; }
-    /* ordem pedida ("Novo destino", "Missão"): o toque escolhe o hexágono (a folha dele traz as ordens), nunca abre o painel do local */
+    /* ordem pedida ("Novo destino", "Missão"): o clique escolhe o hexágono (a folha dele traz as ordens), nunca abre o painel do local */
     if (E && E.ativo() && !E.implicito()) { if (hh != null && hh >= 0) folhaHex(hh); return; }
     var t = tropaDoToque(alvo);
+    /* duplo clique num soldado da guarnição: todos do mesmo tipo naquele lugar */
+    if (alvo.duplo && t && !t.marchaId && ent) {
+      var p0 = M.pessoa(t.ids[0]), iguais = (((M.dados && M.dados.pessoasPorHex) || {})[t.hex] || []).filter(function (x) { return p0 && x.oficio === p0.oficio && x.estado === 'guarnecida'; });
+      if (iguais.length) { S.definir(iguais.map(function (x) { return x.id; })); return; }
+    }
     /* no modo seleção (ou com Shift), soma ou tira da seleção */
-    if (S && (S.modo || RP.shift) && (t || (ent && ent[0] === 'pessoa'))) { S.alternarLista(t ? t.ids : [ent[1]]); return; }
+    if (S && (S.modo || RP.shift || alvo.shift) && (t || (ent && ent[0] === 'pessoa'))) { S.alternarLista(t ? t.ids : [ent[1]]); return; }
     if (t) { S.tocarTropa(t); return; }
     if (ent && ent[0] === 'pessoa') { S.focar(ent[1]); RP.folhaPessoa(ent[1]); return; }
-    var tropa = S && S.soldados();
-    if (ent && ent[0] === 'pessoas' && (!tropa || S.estaEm(ent[1]))) { RP.folhaPessoasDoHex(ent[1]); return; }
-    /* com a tropa selecionada, qualquer outro lugar é um destino */
-    if (tropa && hh != null && hh >= 0) { S.destino(hh); return; }
+    if (ent && ent[0] === 'pessoas') { RP.folhaPessoasDoHex(ent[1]); return; }
+    /* clique em qualquer outro lugar: abre o que foi clicado (a ordem para a tropa selecionada é pelo botão direito) */
     if (S && S.n() && !S.modo) S.limpar();
+    if (E && E.ativo() && E.implicito()) E.cancelar();
     if (alvo.obj) folhaObjeto(alvo.obj);
     else if (alvo.hex != null && alvo.hex >= 0) folhaHex(alvo.hex);
   }
+  function cliqueDireito(alvo) {
+    var hh = alvo.hex != null ? alvo.hex : (alvo.obj && alvo.obj.hex), E = RP.envio, S = RP.selecao, ent = alvo.ent;
+    if (alvoFundar) { if (hh != null && hh >= 0) folhaFundar(hh); return; }
+    if (E && E.desenhando()) { if (hh != null && hh >= 0) E.ponto(hh); return; }
+    var t = tropaDoToque(alvo), tropa = S && S.soldados();
+    if (tropa || (E && E.ativo())) {
+      if (hh == null || hh < 0) return;
+      /* direito em outra tropa sua em campo: juntar */
+      if (t && t.marchaId && tropa && !t.ids.every(function (id) { return S.tem(id); })) {
+        var o = S.origem();
+        if (!o.erro) { E.folhaJuntar(o, t); return; }
+      }
+      var completa = !!(RP.shift || alvo.shift);
+      if (tropa) S.ordem(hh, completa); else E.rapido(hh, completa);
+      return;
+    }
+    menuDoAlvo(alvo);
+  }
+  /* menu de contexto do que está sob o mouse: os mesmos botões da folha, sem abrir a folha */
+  function menuDoAlvo(alvo) {
+    var x = alvo.cx || 0, y = alvo.cy || 0, o = alvo.obj, ent = alvo.ent, hh = alvo.hex;
+    if (ent && ent[0] === 'pessoa') {
+      var p = M.pessoa(ent[1]);
+      RP.menuContexto({ x: x, y: y, titulo: p ? RP.esc(p.nome) : 'Pessoa', itens: [
+        { rotulo: 'Abrir', icone: 'info', tecla: 'I', acao: function () { RP.selecao.focar(ent[1]); RP.folhaPessoa(ent[1]); } },
+        p && RP.pessoasVista.ehSoldado(p) && p.estado === 'guarnecida' ? { rotulo: 'Selecionar', icone: 'populacao', acao: function () { RP.selecao.definir([p.id]); } } : null
+      ].filter(Boolean) });
+      return;
+    }
+    if (ent && ent[0] === 'pessoas') {
+      RP.menuContexto({ x: x, y: y, titulo: 'Pessoas aqui', itens: [{ rotulo: 'Ver quem está aqui', icone: 'populacao', acao: function () { RP.folhaPessoasDoHex(ent[1]); } }] });
+      return;
+    }
+    if (o && o.tipo === 'marcha') {
+      var m = o.dono === 'meu' ? montarMarchaPropria(o) : montarMarchaAlheia(o);
+      RP.menuContexto({ x: x, y: y, titulo: m.titulo, acoes: m.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-obj="' + o._k + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      return;
+    }
+    if (o && o.tipo === 'local' && o.dono === 'meu' && RP.local(o.id)) {
+      var l = RP.local(o.id);
+      RP.menuContexto({ x: x, y: y, titulo: RP.esc(l.nome), acoes: RP.acoesLocal(l) + '<button type="button" class="btn btn-fantasma" data-local="' + l.id + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      return;
+    }
+    if (o) {
+      var mo = montarObjeto(o);
+      RP.menuContexto({ x: x, y: y, titulo: mo.titulo, acoes: mo.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-obj="' + o._k + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      return;
+    }
+    if (hh != null && hh >= 0 && M.dados) {
+      var mh = montarHex(hh);
+      RP.menuContexto({ x: x, y: y, titulo: mh.titulo, acoes: mh.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-hex="' + hh + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+    }
+  }
+
+  /* ---------------------------------------------------------------- teclado: andar pelo mapa, câmera, visão, exércitos */
+  var teclasPan = {}, rafPan = 0, ultimoPan = 0;
+  var PAN = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0] };
+  function passoPan(t) {
+    rafPan = 0;
+    var dx = 0, dy = 0, k;
+    for (k in teclasPan) if (teclasPan[k] && PAN[k]) { dx += PAN[k][0]; dy += PAN[k][1]; }
+    if (!dx && !dy || !ativa()) { ultimoPan = 0; return; }
+    var dt = Math.min(50, t - (ultimoPan || t)); ultimoPan = t;
+    var v = 0.9 * dt; /* px por ms */
+    visao().deslocar(dx * v, dy * v);
+    rafPan = requestAnimationFrame(passoPan);
+  }
+  window.addEventListener('keydown', function (e) {
+    if (!ativa() || e.ctrlKey || e.metaKey || e.altKey || (e.target.closest && e.target.closest('input, textarea, select'))) return;
+    var k = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+    if (!PAN[k]) return;
+    e.preventDefault();
+    teclasPan[k] = true;
+    if (!rafPan) { ultimoPan = 0; rafPan = requestAnimationFrame(passoPan); }
+  });
+  window.addEventListener('keyup', function (e) { var k = e.key.length === 1 ? e.key.toUpperCase() : e.key; if (PAN[k]) delete teclasPan[k]; });
+  window.addEventListener('blur', function () { teclasPan = {}; });
+  ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].forEach(function (k, i) { RP.teclas.registrar(k, { descricao: ['Mapa para cima', 'Mapa para baixo', 'Mapa para a esquerda', 'Mapa para a direita'][i] + ' (ou W A S D)', grupo: 'Mapa', acao: function () {}, oculta: i > 0 }); });
+  RP.teclas.registrar('Space', { descricao: 'Centralizar no castelo', grupo: 'Mapa', acao: function () { if (ativa()) irCastelo(true); } });
+  RP.teclas.registrar('M', { descricao: 'Vista ⇄ Mapa tático', grupo: 'Mapa', acao: function () { if (ativa()) definirModo(modo === 'cena' ? 'tatico' : 'cena'); } });
+  RP.teclas.registrar('G', { descricao: 'Grade de hexágonos', grupo: 'Mapa', acao: function () { MAPA.camadas.grade = !MAPA.camadas.grade; if (tat) { tat.ci = null; tat.atualizarSvg(); tat.pedirQuadro(); } if (cena) cena.invalidar(); } });
+  RP.teclas.registrar('L', { descricao: 'Camadas e legenda', grupo: 'Mapa', acao: function () { if (ativa()) abrirCamadas(); } });
+  RP.teclas.registrar('=', { descricao: 'Aproximar (ou roda do mouse)', grupo: 'Mapa', acao: function () { if (ativa()) visao().zoomBotao(1.5); } });
+  RP.teclas.registrar('+', { descricao: 'Aproximar', grupo: 'Mapa', acao: function () { if (ativa()) visao().zoomBotao(1.5); }, oculta: true });
+  RP.teclas.registrar('-', { descricao: 'Afastar', grupo: 'Mapa', acao: function () { if (ativa()) visao().zoomBotao(0.6667); } });
+  RP.teclas.registrar('Home', { descricao: 'Câmera de volta ao padrão', grupo: 'Mapa', acao: function () { if (!ativa()) return; if (modo !== 'cena') definirModo('cena'); cena.inclinar(null); cena.girar(null); } });
+  /* Tab passa pelos exércitos em campo (e pelas guarnições com soldados): seleciona e centra */
+  var ciclo = -1;
+  function proximaTropa(e) {
+    if (!ativa() || !M.dados) return;
+    var lista = [];
+    M.dados.marchas.filter(function (o) { return o.dono === 'meu' && o.marcha === 'exercito'; }).forEach(function (o) {
+      var ids = (o.pessoaIds || []).filter(function (id) { var q = M.pessoa(id); return q && RP.pessoasVista.ehSoldado(q); });
+      if (ids.length) lista.push({ ids: ids, hex: M.posMarcha(o, RP.agora()).hex });
+    });
+    (RP.reino && RP.reino.locais || []).forEach(function (l) {
+      var ids = (((M.dados.pessoasPorHex) || {})[l.hex] || []).filter(function (x) { return RP.pessoasVista.ehSoldado(x) && x.estado === 'guarnecida'; }).map(function (x) { return x.id; });
+      if (ids.length) lista.push({ ids: ids, hex: l.hex });
+    });
+    if (!lista.length) { RP.aviso({ titulo: 'Nenhuma tropa', texto: 'Recrute no castelo ou no quartel.', icone: 'tropas', ms: 1800 }); return; }
+    ciclo = (e && e.shiftKey ? ciclo - 1 + lista.length : ciclo + 1) % lista.length;
+    var t = lista[ciclo];
+    RP.fecharFolha();
+    RP.selecao.definir(t.ids);
+    centrarHex(t.hex, true);
+  }
+  RP.teclas.registrar('Tab', { descricao: 'Próxima tropa (Shift: anterior)', grupo: 'Tropas', acao: proximaTropa });
 
   /* ---------------------------------------------------------------- faixas de ameaça */
   function atualizarFaixas() {
@@ -404,17 +533,34 @@
   });
 
   /* ---------------------------------------------------------------- minimapa */
+  /* O minimapa mostra a parte do mundo que o reino conhece (com folga), não o mundo inteiro: num mapa de 312 × 240 o
+     que se conhece no começo seria um ponto. O recorte cresce conforme a exploração e mantém a proporção da caixa. */
+  var mmOx = 0, mmOy = 0;
+  function recorteMinimapa(d, w, h) {
+    var n = H.COLS * H.LINS, i, p, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (i = 0; i < n; i++) {
+      if (!d.ter[i]) continue;
+      p = H.centroH(i);
+      if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y;
+    }
+    if (!isFinite(x0)) return { x: 0, y: 0, w: H.LARGURA, h: H.ALTURA };
+    var folga = H.W * 12, bw = Math.max(x1 - x0 + 2 * folga, H.W * 70), bh = Math.max(y1 - y0 + 2 * folga, H.VS * 50), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    /* mantém a proporção da caixa do minimapa */
+    if (bw / bh > w / h) bh = bw * h / w; else bw = bh * w / h;
+    bw = Math.min(bw, H.LARGURA); bh = Math.min(bh, H.ALTURA);
+    var rx = Math.max(0, Math.min(H.LARGURA - bw, cx - bw / 2)), ry = Math.max(0, Math.min(H.ALTURA - bh, cy - bh / 2));
+    return { x: rx, y: ry, w: bw, h: bh };
+  }
   function desenharMinimapa() {
     var d = M.dados; if (!mm || !d) return;
-    var box = mm.parentNode, w = box.clientWidth;
-    if (!w) return;
-    var h = Math.round(w * H.ALTURA / H.LARGURA);
-    if (box.style.height !== h + 'px') box.style.height = h + 'px';
+    var box = mm.parentNode, w = box.clientWidth, h = box.clientHeight;
+    if (!w || !h) return;
     var dpr = Math.min(2, window.devicePixelRatio || 1), tk = RP.mapaTatico.tokens();
     mm.width = Math.round(w * dpr); mm.height = Math.round(h * dpr);
-    mmEscala = w / H.LARGURA;
-    var c = mmCtx; c.setTransform(dpr * mmEscala, 0, 0, dpr * mmEscala, 0, 0);
-    c.fillStyle = tk.nevoa[0]; c.fillRect(0, 0, H.LARGURA, H.ALTURA);
+    var rc = recorteMinimapa(d, w, h);
+    mmEscala = w / rc.w; mmOx = rc.x; mmOy = rc.y;
+    var c = mmCtx; c.setTransform(dpr * mmEscala, 0, 0, dpr * mmEscala, -rc.x * dpr * mmEscala, -rc.y * dpr * mmEscala);
+    c.fillStyle = tk.nevoa[0]; c.fillRect(rc.x, rc.y, rc.w, rc.h);
     var n = H.COLS * H.LINS, i, p, e;
     for (i = 0; i < n; i++) {
       if (!d.ter[i]) continue;
@@ -436,7 +582,7 @@
   function desenharVistaMinimapa() {
     if (!mmVista || !mm) return;
     var r = visao().retanguloMundo(), mw = mm.clientWidth, mh = mm.clientHeight;
-    var x0 = Math.max(0, r.x * mmEscala), y0 = Math.max(0, r.y * mmEscala), x1 = Math.min(mw, (r.x + r.w) * mmEscala), y1 = Math.min(mh, (r.y + r.h) * mmEscala);
+    var x0 = Math.max(0, (r.x - mmOx) * mmEscala), y0 = Math.max(0, (r.y - mmOy) * mmEscala), x1 = Math.min(mw, (r.x + r.w - mmOx) * mmEscala), y1 = Math.min(mh, (r.y + r.h - mmOy) * mmEscala);
     mmVista.style.transform = 'translate(' + x0.toFixed(1) + 'px,' + y0.toFixed(1) + 'px)';
     mmVista.style.width = Math.max(6, x1 - x0).toFixed(1) + 'px';
     mmVista.style.height = Math.max(6, y1 - y0).toFixed(1) + 'px';
@@ -448,7 +594,7 @@
   function gestosMinimapa(box) {
     var arrastando = false;
     function ir(e) {
-      var r = mm.getBoundingClientRect(), wx = (e.clientX - r.left) / mmEscala, wy = (e.clientY - r.top) / mmEscala;
+      var r = mm.getBoundingClientRect(), wx = mmOx + (e.clientX - r.left) / mmEscala, wy = mmOy + (e.clientY - r.top) / mmEscala;
       visao().centrar(wx, wy, null, 0.5, false);
       pedirMinimapa();
     }
@@ -462,20 +608,22 @@
   function montar(el) {
     tela = el;
     el.innerHTML =
-      '<canvas class="cena-cv" aria-label="Vista do mundo. Arraste para mover, use dois dedos ou os botões para zoom. Toque em construções, tropas e hexágonos."></canvas>' +
-      '<div class="mapa-vp" role="application" aria-label="Mapa tático. Arraste para mover, use dois dedos ou os botões para zoom. Toque num hexágono para detalhes."></div>' +
-      '<div class="mapa-topo">' + RP.barraRecursos() + '<div class="mapa-faixas"></div><div class="mapa-faixa card" role="status" hidden></div></div>' +
+      '<canvas class="cena-cv" aria-label="Vista do mundo. Arraste para mover, roda do mouse para zoom. Clique em construções, tropas e hexágonos; botão direito dá ordens."></canvas>' +
+      '<div class="mapa-vp" role="application" aria-label="Mapa tático. Arraste para mover, roda do mouse para zoom. Clique num hexágono para detalhes; botão direito dá ordens."></div>' +
+      '<div class="mapa-topo"><div class="mapa-faixas"></div><div class="mapa-faixa card" role="status" hidden></div></div>' +
+      '<div class="mapa-base"></div>' +
       '<div class="mapa-controles" role="toolbar" aria-label="Controles do mapa">' +
-      '<button type="button" class="btn btn-icone" data-zoom="1.5" aria-label="Aproximar">' + RP.icone('mais') + '</button>' +
-      '<button type="button" class="btn btn-icone" data-zoom="0.6667" aria-label="Afastar">' + RP.icone('menos') + '</button>' +
-      '<button type="button" class="btn btn-icone" data-centrar-castelo aria-label="Centralizar no castelo">' + RP.icone('alvo') + '</button>' +
-      '<button type="button" class="btn btn-icone" data-inclinar aria-label="Câmera: toque para voltar ao padrão. Com o botão do meio, arraste para cima e para baixo para inclinar e para os lados para girar; com dois dedos, suba ou desça para inclinar e rode para girar." title="Câmera: botão do meio ou dois dedos inclinam e giram; toque para voltar ao padrão">' + RP.icone('vista') + '</button>' +
-      '<button type="button" class="btn btn-icone" data-selecao aria-pressed="false" aria-label="Modo seleção: toque nas pessoas ou arraste um laço" title="Modo seleção (ou Shift)">' + RP.icone('populacao') + '</button>' +
-      '<button type="button" class="btn btn-icone" data-camadas aria-label="Camadas e legenda">' + RP.icone('camadas') + '</button></div>' +
-      '<div class="modo-mapa abas" role="group" aria-label="Tipo de visão">' +
+      '<button type="button" class="btn btn-icone" data-zoom="1.5" aria-label="Aproximar" data-dica="Aproximar <kbd class=\'tecla\'>+</kbd> <small>ou a roda do mouse</small>">' + RP.icone('mais') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-zoom="0.6667" aria-label="Afastar" data-dica="Afastar <kbd class=\'tecla\'>−</kbd>">' + RP.icone('menos') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-centrar-castelo aria-label="Centralizar no castelo" data-dica="Castelo <kbd class=\'tecla\'>Espaço</kbd>">' + RP.icone('alvo') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-inclinar aria-label="Câmera de volta ao padrão" data-dica="<b>Câmera</b><small>Botão direito ou do meio arrastando: inclina e gira. Clique aqui para voltar ao padrão</small><kbd class=\'tecla\'>Home</kbd>">' + RP.icone('vista') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-selecao aria-pressed="false" aria-label="Modo seleção" data-dica="<b>Modo seleção</b><small>Clique soma ou tira; arrastar laça. Ou segure Shift</small>">' + RP.icone('populacao') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-camadas aria-label="Camadas e legenda" data-dica="Camadas e legenda <kbd class=\'tecla\'>L</kbd>">' + RP.icone('camadas') + '</button>' +
+      '<button type="button" class="btn btn-icone" data-atalhos aria-label="Atalhos" data-dica="Mouse e teclado <kbd class=\'tecla\'>F1</kbd>">' + RP.icone('info') + '</button></div>' +
+      '<div class="modo-mapa abas" role="group" aria-label="Tipo de visão" data-dica="Trocar a visão <kbd class=\'tecla\'>M</kbd>">' +
       '<button type="button" class="aba" data-modo-btn="cena" aria-pressed="true">' + RP.icone('vista') + 'Vista</button>' +
       '<button type="button" class="aba" data-modo-btn="tatico" aria-pressed="false">' + RP.icone('hexagonos') + 'Mapa</button></div>' +
-      '<div class="minimapa" role="group" aria-label="Minimapa: toque para ir até um ponto"><canvas></canvas><div class="mm-vista"></div></div>';
+      '<div class="minimapa" role="group" aria-label="Minimapa: clique para ir até um ponto"><canvas></canvas><div class="mm-vista"></div></div>';
     mm = RP.$('.minimapa canvas', el); mmCtx = mm.getContext('2d'); mmVista = RP.$('.mm-vista', el);
     cena = new RP.Cena(RP.$('.cena-cv', el), {
       interativa: true, camadas: MAPA.camadas,
@@ -489,7 +637,7 @@
       aoToqueLongo: function () { if (RP.selecao && !RP.selecao.modo && !alvoFundar && !(RP.envio && RP.envio.ativo())) RP.selecao.ativarModo(true); },
       aoAfastarDemais: function () {
         definirModo('tatico', { s: 0.75 });
-        RP.aviso({ titulo: 'Mapa tático', texto: 'Afastou além da Vista. Aproxime ou toque em Vista para voltar.', icone: 'hexagonos', ms: 2200 });
+        RP.aviso({ titulo: 'Mapa tático', texto: 'Afastou além da Vista. Aproxime, aperte M ou clique em Vista para voltar.', icone: 'hexagonos', ms: 2200 });
       }
     });
     tat = new RP.Tatico(RP.$('.mapa-vp', el), {
@@ -516,9 +664,10 @@
         if (modo !== 'cena') { definirModo('cena'); return; }
         var padrao = cena.inclinar(null) && Math.abs(cena.giro()) < 1e-4;
         cena.girar(null);
-        RP.aviso({ titulo: padrao ? 'Câmera no padrão' : 'Câmera de volta ao padrão', texto: 'Botão do meio: arraste para cima e para baixo para inclinar, para os lados para girar. No celular, dois dedos.', icone: 'vista', ms: 2600 });
+        RP.aviso({ titulo: padrao ? 'Câmera no padrão' : 'Câmera de volta ao padrão', texto: 'Botão direito ou do meio: arraste para cima e para baixo para inclinar, para os lados para girar.', icone: 'vista', ms: 2600 });
       }
       else if (e.target.closest('[data-camadas]')) abrirCamadas();
+      else if (e.target.closest('[data-atalhos]')) RP.ajudaTeclas();
       else if ((b = e.target.closest('[data-modo-btn]'))) { var md = b.getAttribute('data-modo-btn'); if (md !== modo) definirModo(md); }
       else if (e.target.closest('[data-cancelar-fundar]')) { alvoFundar = null; atualizarFaixaFundar(); RP.fecharFolha(); }
     });

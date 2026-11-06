@@ -83,7 +83,7 @@
   function escolherNoMapa(modo) {
     escolhendo = modo;
     RP.ir('mapa');
-    RP.aviso({ titulo: modo === 'ponto' ? 'Toque no próximo ponto' : 'Toque no destino', texto: 'Depois, "Escolher este destino".', icone: 'alvo', ms: 2200 });
+    RP.aviso({ titulo: modo === 'ponto' ? 'Clique no próximo ponto' : 'Clique no destino', texto: 'Depois, "Escolher este destino".', icone: 'alvo', ms: 2200 });
   }
   document.addEventListener('rp:tela', function (ev) { if (ev.detail !== 'mapa' && ev.detail !== 'exploradores') escolhendo = null; });
 
@@ -170,7 +170,7 @@
         (ex.pontos.length > 1 ? '<button type="button" class="btn btn-p btn-fantasma" data-exp-circuito aria-pressed="' + !!ex.circuito + '">' + RP.icone('seta') +
           (ex.circuito ? 'Em circuito: recomeça do primeiro ponto' : 'Uma vez só: espera no último ponto') + '</button>' : '') + '</div>';
     }
-    if (ex.alvo == null) return '<div class="card linha destino-card"><span class="ico-placa">' + RP.icone('alvo') + '</span><div style="flex:1"><b>Sem destino</b><br><small class="fraco">Toque num hexágono do mapa.</small></div><button type="button" class="btn btn-p" data-exp-escolher="destino">' + RP.icone('mapa') + 'Escolher</button></div>';
+    if (ex.alvo == null) return '<div class="card linha destino-card"><span class="ico-placa">' + RP.icone('alvo') + '</span><div style="flex:1"><b>Sem destino</b><br><small class="fraco">Clique num hexágono do mapa.</small></div><button type="button" class="btn btn-p" data-exp-escolher="destino">' + RP.icone('mapa') + 'Escolher</button></div>';
     var idade = dm && dm.idade ? dm.idade[ex.alvo] : null;
     return '<div class="card linha destino-card"><span class="ico-placa">' + RP.icone(idade === -1 ? 'nevoa' : 'alvo') + '</span><div style="flex:1;min-width:0"><b>' + RP.esc(nome(ex.alvo)) + '</b><br><small class="fraco">' +
       (idade == null ? '' : idade === -1 ? 'Nunca visto' : idade === 0 ? 'Visível agora' : 'Visto ' + RP.fmtHa(idade / 60)) + '</small></div>' +

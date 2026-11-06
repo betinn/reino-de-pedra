@@ -144,9 +144,9 @@
         icone: '<span class="ico-placa folha-ico dono-meu">' + RP.icone('tropas') + '</span>',
         corpo: corpo,
         acoes: (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + e.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
-          (pode && e.estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + e.id + '">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
-          '<a class="btn btn-p" href="#/mapa?foco=' + e.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a>' +
-          '<a class="btn btn-p" href="#/posturas?marcha=' + e.id + '">' + RP.icone('escudo') + 'Comportamento</a>'
+          (pode && e.estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + e.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
+          '<a class="btn btn-p" href="#/mapa?foco=' + e.hex + '" data-tecla="F">' + RP.icone('mapa') + 'Ver no mapa</a>' +
+          '<a class="btn btn-p" href="#/posturas?marcha=' + e.id + '" data-tecla="C">' + RP.icone('escudo') + 'Comportamento</a>'
       });
     };
     if (RP.exercito(id)) abrir(); else RP.carregarTropas().then(abrir, function () { /* aviso já mostrado */ });
@@ -170,10 +170,10 @@
   /* na folha do local: enviar as tropas paradas lá */
   RP.acoesFolhaLocal = RP.acoesFolhaLocal || [];
   RP.acoesFolhaLocal.push(function (l) {
-    return RP.somaGrupo(l.guarnicao) ? '<a class="btn btn-p" href="#/mapa?enviar=' + l.id + '">' + RP.icone('tropas') + 'Enviar tropas</a>' : '';
+    return RP.somaGrupo(l.guarnicao) ? '<a class="btn btn-p" href="#/mapa?enviar=' + l.id + '" data-tecla="E">' + RP.icone('tropas') + 'Enviar tropas</a>' : '';
   });
   RP.acoesFolhaLocal.push(function (l) {
-    return l.recruta ? '<a class="btn btn-p" href="#/recrutamento?local=' + l.id + '">' + RP.icone('tropas') + 'Recrutar</a>' : '';
+    return l.recruta ? '<a class="btn btn-p" href="#/recrutamento?local=' + l.id + '" data-tecla="T">' + RP.icone('tropas') + 'Recrutar</a>' : '';
   });
 
   /* ---------------------------------------------------------------- Tropas (hub) */
@@ -219,7 +219,7 @@
   function desenharTropas(el) {
     var t = RP.tropas, r = RP.reino;
     if (!t || !r) { RP.$('.tropas-conteudo', el).innerHTML = '<p class="fraco">Carregando…</p>'; return; }
-    var acoes = [['mapa?enviar=' + (primeiroComTropas(t) || r.casteloId), 'alvo', 'Enviar tropas', 'Toque no destino no mapa: mover ou reforçar'],
+    var acoes = [['mapa?enviar=' + (primeiroComTropas(t) || r.casteloId), 'alvo', 'Enviar tropas', 'Clique no destino no mapa: mover ou reforçar'],
       ['recrutamento', 'tropas', 'Recrutar', 'Milícia, lanceiro e arqueiro no castelo; todas no quartel'],
       ['posturas', 'escudo', 'Comportamento', 'Como cada tropa reage sem você']]
       .map(function (a) { return { href: '#/' + a[0], icone: a[1], titulo: a[2], texto: a[3] }; }).concat(RP.acoesTropas);

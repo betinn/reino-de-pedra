@@ -22,16 +22,16 @@
   <link rel="stylesheet" href="css/ferraria.css">
   <link rel="stylesheet" href="css/social.css">
   <link rel="stylesheet" href="css/temporada.css">
-  <link rel="stylesheet" href="css/concha.css">
+  <link rel="stylesheet" href="css/desktop.css">
   <link rel="stylesheet" href="css/pessoas.css">
 </head>
 <body>
-  <!-- o mundo fica atrás de tudo e nunca para; as telas são painéis que não o cobrem -->
+  <!-- o mundo ocupa a tela inteira e nunca para; barra do topo, janela e folha flutuam por cima (decisão 0030) -->
   <div id="mundo" class="mundo" hidden></div>
+  <header id="topo-jogo" class="topo-jogo" hidden></header>
   <main id="telas" class="painel"></main>
-  <button type="button" id="painel-barra" class="painel-barra" hidden><svg class="ico"><use href="#i-subir"></use></svg><span></span></button>
-  <nav class="nav" id="nav" aria-label="Navegação principal" hidden></nav>
   <div class="avisos" id="avisos" aria-live="polite"></div>
+  <div class="dica" id="dica" role="tooltip" hidden></div>
 
   <!-- ordem: base (ícones, brasão, hex, api, núcleo) → telas → início -->
   <script src="js/icones.js"></script>

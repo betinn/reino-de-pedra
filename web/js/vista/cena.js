@@ -181,7 +181,14 @@
         self.cam = { s: ns, x: w.x - d2.x, y: w.y - d2.y };
         self.mudou();
       },
-      toque: function (x, y) { self.tocar(x, y); },
+      toque: function (x, y, cx, cy, duplo, shift) { self.tocar(x, y, { botao: 0, duplo: !!duplo, cx: cx, cy: cy, shift: !!shift }); },
+      /* botão direito sem arrastar: ordem para a tropa selecionada, ou o menu do que está sob o mouse */
+      cliqueDireito: function (x, y, cx, cy, shift) { self.tocar(x, y, { botao: 2, cx: cx, cy: cy, shift: !!shift }); },
+      /* mouse passando: cursor de mão sobre o que é clicável */
+      passar: function (x, y) {
+        var w = self.mundo(x, y), h = H.pixelParaHex(w.x, w.y), a = self.alvoEm(x, y, h);
+        self.cv.classList.toggle('sobre-objeto', !!a);
+      },
       fim: function () {
         self.gesto = false; self.ultimaMudanca = performance.now();
         if (self.laco && self.laco.length > 2 && self.opt.aoLaco) self.opt.aoLaco(self.laco);
@@ -207,14 +214,21 @@
      (marcha, que fica entre hexágonos) ou em hexágono sem nada. Pessoa e corpo de marcha ganham antes de tudo, para o
      toque achar a tropa mesmo atrás de uma árvore ou de um local. Ao escolher destino (opt.escolhendoHex), nunca
      troca o hexágono tocado pelo vizinho. */
-  C.tocar = function (x, y) {
+  C.tocar = function (x, y, extra) {
     if (!this.opt.aoTocar) return;
+    extra = extra || {};
     var w0 = this.w, h0 = this.h;
     this.redimensionar();
     if (w0 !== this.w || h0 !== this.h) this.quadro(performance.now()); /* refaz os alvos na medida nova */
     var w = this.mundo(x, y), h = H.pixelParaHex(w.x, w.y), a = this.alvoEm(x, y, h);
-    if (a) { this.opt.aoTocar({ ent: a.ent, obj: a.obj, hex: a.hex }); return; }
-    if (h >= 0) this.opt.aoTocar({ hex: h });
+    if (a) { this.opt.aoTocar({ ent: a.ent, obj: a.obj, hex: a.hex, botao: extra.botao || 0, duplo: !!extra.duplo, shift: !!extra.shift, cx: extra.cx, cy: extra.cy }); return; }
+    if (h >= 0) this.opt.aoTocar({ hex: h, botao: extra.botao || 0, duplo: !!extra.duplo, shift: !!extra.shift, cx: extra.cx, cy: extra.cy });
+  };
+  /* desloca a câmera em pixels da tela (teclado) */
+  C.deslocar = function (dx, dy) {
+    cancelAnimationFrame(this.anim);
+    var d = desgirarV(dx / this.cam.s, dy / (K * this.cam.s));
+    this.cam.x += d.x; this.cam.y += d.y; this.mudou();
   };
   C.alvoEm = function (x, y, h) {
     var dentro = [], i, a;

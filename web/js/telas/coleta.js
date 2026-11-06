@@ -71,7 +71,7 @@
     var h = '<div class="nota-regra">' + RP.icone('info', 'ico-p') + '<span><b>Madeira e pedra do mapa.</b> Civis sem trabalho e tropas cortam árvores na floresta ou quebram pedra na colina e na montanha, e levam a carga ao local mais próximo que guarda o recurso. Cada hexágono acaba e volta a encher com o tempo.</span></div>';
     if (d.grupos.length) h += '<div class="secao-titulo">Em andamento</div><div class="pilha">' + d.grupos.map(grupoCard).join('') + '</div>';
     if (col.hex == null || !rec) {
-      h += '<p class="fraco" style="margin-top:var(--esp-3)">Toque num hexágono de floresta, colina ou montanha que você já explorou e escolha <b>Coletar</b>.</p>';
+      h += '<p class="fraco" style="margin-top:var(--esp-3)">Clique num hexágono de floresta, colina ou montanha que você já explorou e escolha <b>Coletar</b>.</p>';
       cont.innerHTML = h + '<div style="height:var(--esp-6)"></div>';
       RP.$('.rodape-resumo', el).innerHTML = '<div class="resumo-linha fraco">Escolha o hexágono no mapa.</div>';
       RP.$('[data-coletar]', el).classList.add('btn-inativo');

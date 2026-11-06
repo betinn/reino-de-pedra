@@ -70,7 +70,7 @@
     if (gerencia && a.membros.length < d.limite) {
       var cands = d.conhecidos.filter(function (c) { return !c.naAlianca && !(a.convites || []).some(function (v) { return v.reino && v.reino.id === c.reino.id; }); });
       h += '<div class="secao-titulo">Convidar · ' + (d.limite - a.membros.length) + ' vagas</div>' + (cands.length ? '<div class="escolhas escolhas-lista">' + cands.map(function (c) {
-        return '<button type="button" class="escolha escolha-linha" data-convidar="' + c.reino.id + '">' + S.brasao(c.reino, 30) + '<span class="escolha-txt"><b>' + RP.esc(c.reino.nome) + '</b><small class="fraco">Reino que você conhece · toque para convidar</small></span>' + RP.icone('mais', 'ico-p') + '</button>';
+        return '<button type="button" class="escolha escolha-linha" data-convidar="' + c.reino.id + '">' + S.brasao(c.reino, 30) + '<span class="escolha-txt"><b>' + RP.esc(c.reino.nome) + '</b><small class="fraco">Reino que você conhece · clique para convidar</small></span>' + RP.icone('mais', 'ico-p') + '</button>';
       }).join('') + '</div>' : S.vazio('Você só convida reinos que conhece: espionados, identificados por estandarte, bandeira ou mensagem.'));
       if ((a.convites || []).length) h += '<div class="pilha" style="margin-top:var(--esp-2)">' + a.convites.map(function (v) {
         return '<div class="card linha">' + S.brasao(v.reino, 24) + '<span style="flex:1"><b>' + RP.esc(S.nome(v.reino)) + '</b><br><small class="fraco">convidado por ' + RP.esc(v.por || '') + ' · vale até ' + RP.fmtHora(v.ate) + '</small></span><span class="selo selo-info">' + RP.icone('relogio') + 'Convite</span></div>';
@@ -83,7 +83,7 @@
     if (d.reforcos.recebidos.length || d.reforcos.meus.length) h += '<div class="secao-titulo">Reforços</div><div class="pilha">' +
       d.reforcos.recebidos.map(function (e) { return '<div class="card linha">' + S.brasao(e.reino, 28) + '<span style="flex:1;min-width:0"><b>' + RP.esc(S.nome(e.reino)) + ' defende ' + RP.esc(e.local) + '</b><br><small class="fraco">' + RP.esc(RP.partesGrupo(e.tropas)) + ' · continuam sendo dele</small></span></div>'; }).join('') +
       d.reforcos.meus.map(function (e) { return '<div class="card linha">' + S.brasao(e.aliado, 28) + '<span style="flex:1;min-width:0"><b>Suas tropas em ' + RP.esc(e.local) + '</b><br><small class="fraco">' + RP.esc(RP.partesGrupo(e.tropas)) + '</small></span><button type="button" class="btn btn-p" data-reforco-volta="' + e.localId + '">' + RP.icone('voltar') + 'Voltar</button></div>'; }).join('') + '</div>';
-    h += '<div class="secao-titulo">Seus pedidos</div><div class="pilha">' + (meus.length ? meus.map(meuPedido).join('') : S.vazio('Nenhum pedido feito. Toque em Pedir ao lado de um aliado.')) + '</div>' +
+    h += '<div class="secao-titulo">Seus pedidos</div><div class="pilha">' + (meus.length ? meus.map(meuPedido).join('') : S.vazio('Nenhum pedido feito. Clique em Pedir ao lado de um aliado.')) + '</div>' +
       '<div class="secao-titulo">Sair</div><div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Qualquer membro sai quando quiser. Ao sair ou ser expulso, vale uma <b>trégua de ' + d.treguaH + ' h</b> entre o reino e a aliança, garantida pelo jogo, e só se entra em outra aliança depois de ' + d.treguaH + ' h. A visão das marchas acaba na hora.</p>' +
       '<button type="button" class="btn btn-p btn-fantasma" data-sair-alianca>' + RP.icone('voltar') + 'Sair da aliança</button></div><div style="height:var(--esp-8)"></div>';
     return h;

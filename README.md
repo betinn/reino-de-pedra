@@ -1,6 +1,6 @@
 # Reino de Pedra
 
-**Estratégia e Conquista.** MMO de estratégia medieval, persistente e em tempo real, mobile-first.
+**Estratégia e Conquista.** MMO de estratégia medieval, persistente e em tempo real, feito para computador (mouse, teclado e monitor grande).
 
 - Regras de jogo e de negócio: [`CLAUDE.md`](CLAUDE.md)
 - Balanceamento (modelo, tabelas, metas): [`balanceamento/`](balanceamento/)
