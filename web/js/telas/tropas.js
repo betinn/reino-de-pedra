@@ -104,7 +104,7 @@
     { id: 'apenasDefender', curto: 'Só defender', icone: 'escudo', txt: 'Nunca sai do lugar. Luta só quando o próprio local é atacado.' },
     { id: 'atacarQuemAtacar', curto: 'Revidar', icone: 'alvo', txt: 'Defende e revida: sai atrás de quem atacou você na última hora.' }
   ];
-  RP.ORDENS_NOMES = { mover: 'Mover', reforcar: 'Reforçar', retornar: 'Voltar' };
+  RP.ORDENS_NOMES = { mover: 'Mover', reforcar: 'Reforçar', retornar: 'Voltar', percorrer: 'Percurso', patrulhar: 'Patrulha', juntar: 'Indo se juntar' };
 
   /* exército em campo: título curto e linha de estado */
   RP.tituloExercito = function (e) {

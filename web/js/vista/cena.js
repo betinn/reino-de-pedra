@@ -18,7 +18,7 @@
     ativas.forEach(function (c) { if (document.hidden) c.pausar(); else c.continuar(); });
   });
   /* inclinação da câmera: K vem da arte e muda quando o jogador inclina (lembrada no aparelho) */
-  A.aoMudarK.push(function (k) { K = k; ativas.forEach(function (c) { c.invalidar(); }); });
+  A.aoMudarK.push(function (k) { K = k; var t = performance.now(); ativas.forEach(function (c) { c.ultimoGiro = t; c.invalidar(); }); });
   /* a vegetação 3D ficou pronta (ou foi refeita): o cache do chão é refeito com ela */
   document.addEventListener('rp:natureza', function () { ativas.forEach(function (c) { c.invalidar(); }); });
   var kSalvo = parseFloat(RP.pref('inclinacao'));
@@ -28,10 +28,10 @@
   var AZ = 0, CO = 1, SE = 0;
   function aplicarAz(az) { AZ = az; CO = Math.cos(az); SE = Math.sin(az); }
   A.aoMudarAz.push(function (az) { aplicarAz(az); var t = performance.now(); ativas.forEach(function (c) { c.ultimoGiro = t; c.invalidar(); }); });
-  /* enquanto a câmera gira, o chão é refeito a cada quadro: só a área da tela, sem margem (bem mais barato) */
+  /* enquanto a câmera gira ou inclina, o chão é refeito a cada quadro: só a área da tela, sem margem (bem mais barato) */
   function girando(c) { return performance.now() - (c.ultimoGiro || 0) < 280; }
   var azSalvo = parseFloat(RP.pref('giro'));
-  if (isFinite(azSalvo) && azSalvo) A.definirAz(azSalvo, true);
+  if (isFinite(azSalvo) && azSalvo) A.definirAz(azSalvo);
   aplicarAz(A.AZ);
   /* do mapa para a câmera (girado, ainda sem achatar) e de volta */
   function girarV(x, y) { return { x: x * CO - y * SE, y: x * SE + y * CO }; }
@@ -127,22 +127,32 @@
   /* gira a câmera em volta do centro da tela (az em radianos; null volta ao norte para cima) */
   C.girar = function (az) {
     az = az == null ? 0 : az;
-    A.definirAz(az, az === 0);
+    A.definirAz(az);
     RP.pref('giro', String(A.AZ));
     if (!this.rodando) this.quadro(performance.now());
     if (this.opt.aoMover) this.opt.aoMover();
   };
   C.girarPor = function (rad) { this.girar(A.AZ + rad); };
   C.ligarGestos = function () {
-    var self = this, p0 = null, avisado = false, lacando = false, ponto = null;
+    var self = this, p0 = null, avisado = false, lacando = false, ponto = null, tracando = false;
     function modoSel() { return !!(self.opt.modoSelecao && self.opt.modoSelecao()); }
     RP.gestos(this.cv, {
-      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; lacando = modoSel(); ponto = null; },
-      inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; lacando = false; self.laco = null; },
+      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; tracando = !!(self.opt.desenhando && self.opt.desenhando()); lacando = !tracando && modoSel(); ponto = null; },
+      inicioPinca: function () {
+        p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; lacando = false; self.laco = null;
+        if (tracando) { tracando = false; self.opt.aoTracarFim(); }
+      },
       inclinar: function (dy) { self.inclinarPor(dy); },
       girar: function (rad) { self.girarPor(rad); },
       /* no modo seleção (ou com Shift), arrastar desenha um laço em vez de mover a câmera */
       arrasto: function (dx, dy) {
+        /* desenhando a linha de uma patrulha: arrastar risca hexágono a hexágono (dois dedos continuam movendo o zoom) */
+        if (tracando) {
+          if (!ponto) { ponto = self.ultimoToque || { x: self.w / 2, y: self.h / 2 }; tracar(ponto); }
+          ponto = { x: ponto.x + dx, y: ponto.y + dy };
+          tracar(ponto);
+          return;
+        }
         if (lacando) {
           ponto = ponto ? { x: ponto.x + dx, y: ponto.y + dy } : null;
           if (!ponto) { ponto = self.ultimoToque || { x: self.w / 2, y: self.h / 2 }; ponto = { x: ponto.x + dx, y: ponto.y + dy }; }
@@ -176,8 +186,10 @@
         self.gesto = false; self.ultimaMudanca = performance.now();
         if (self.laco && self.laco.length > 2 && self.opt.aoLaco) self.opt.aoLaco(self.laco);
         self.laco = null; lacando = false;
+        if (tracando) { tracando = false; self.opt.aoTracarFim(); }
       }
     });
+    function tracar(p) { var w = self.mundo(p.x, p.y), h = H.pixelParaHex(w.x, w.y); if (h >= 0) self.opt.aoTracar(h); }
     /* o laço começa onde o dedo pousou */
     this.cv.addEventListener('pointerdown', function (e) { var r = self.cv.getBoundingClientRect(); self.ultimoToque = { x: e.clientX - r.left, y: e.clientY - r.top }; });
   };
@@ -839,11 +851,8 @@
     var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
     function add(p, fn, som) { itens.push({ y: p.y, x: p.x, silhueta: true, som: som, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
-    /* pessoas selecionadas dentro desta marcha: anel no chão */
-    if (RP.selecao && RP.selecao.n() && m.pessoaIds && m.pessoaIds.some(function (id) { return RP.selecao.tem(id); })) {
-      itens.push({ y: pos.y - 0.1, x: pos.x, d: function () { obj(c, V, pos.x, pos.y); c.strokeStyle = Cs.selecao; c.lineWidth = 1.6; c.beginPath(); c.ellipse(0, 1, 16, 16 * K * 0.55, 0, 0, 6.2832); c.stroke(); } });
-      prefixo = 'Selecionado · ';
-    }
+    /* quem está selecionado nesta marcha: círculo azul nos pés de cada um */
+    function marcar(f) { if (RP.selecao && RP.selecao.tem(f.id)) RP.pessoasVista.anel(c, f, t); }
     if (def && def.desenharCena) {
       add(pos, function () { try { def.desenharCena(c, m, { t: t, pal: P, A: A, dir: dir, ang: pos.ang, cor: cor, revelado: revelado }); } catch (er) { console.error(er); } });
       prefixo = def.nome ? def.nome + ' · ' : '';
@@ -867,6 +876,7 @@
       var andaE = !(m.parado || (cheg && cheg <= ag));
       figurasDaMarcha(m, revelado).forEach(function (f, i) {
         add(i ? pt(10 + Math.floor((i - 1) / 2) * 9, ((i % 2) * 2 - 1) * 6) : pos, function () {
+          marcar(f);
           RP.pessoasVista.figura(c, f, t, dir, cor, !revelado, { andando: andaE, ang: pos.ang });
           if (propria) RP.pessoasVista.barraVida(c, f);
         });
@@ -895,9 +905,10 @@
         if (trab === 'coletar' && m.recurso === 'madeira') { extra.trabalho = null; extra.ferramenta = 'machado'; }   /* madeira: machado; pedra: picareta */
         if (!parada && m.cargaUsada > 0 && f.oficio !== 'cavalaria' && f.oficio !== 'elite') extra.carga = m.recurso === 'madeira' ? 'tronco' : i % 2 ? 'saco' : 'minerio';
         add(p, function () {
+          marcar(f);
           RP.pessoasVista.figura(c, f, t, extra.dir || dir, revelado ? cor : P.hostil, !revelado, extra);
           if (propria) RP.pessoasVista.barraVida(c, f);
-          if (i === 0 && revelado && !trab && nfig > 2) A.bandeira(c, -dir * 2, -26, 18, cor, t, 10, 7);
+          if (i === 0 && revelado && !trab && nfig > 2) A.bandeira(c, -dir * 2, -A.emPe(26), 18, cor, t, 10, 7);
         }, parada && trab && trab !== 'cacar' ? (extra.ferramenta === 'machado' ? 'machado' : 'picareta') : null);
       })(i, figs[i]);
       if (figs.length > nfig) prefixo = figs.length + ' · ';

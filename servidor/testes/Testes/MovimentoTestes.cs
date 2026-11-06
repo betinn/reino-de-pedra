@@ -105,26 +105,71 @@ public class MovimentoTestes
     }
 
     [Fact]
-    public void Patrulha_roda_em_volta_do_lugar_ate_nova_ordem()
+    public void Patrulha_anda_pela_linha_desenhada_ate_nova_ordem()
     {
         var t = new MundoTeste();
         var r = t.NovoReino();
         var c = Castelo(t, r);
         Guarnecer(t, r, c, "arqueiro", 3);
-        // patrulha em volta do próprio castelo, saindo dele
-        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 3 }, c.Hex, OrdemPatrulhar.Id);
-        var anel = Percursos.Pontos(ex);
-        Assert.Equal(t.B.P.Patrulha.Pontos, anel.Count);
-        Assert.All(anel, h => Assert.Equal(t.B.P.Patrulha.Raio, t.M.G.Distancia(h, c.Hex)));
-        Assert.Equal(anel[0], ex.Destino);
-        var vistos = new HashSet<int>();
-        for (var i = 0; i < 3000; i++) { t.AvancarMin(0.05); vistos.Add(ex.HexEm(t.M.Agora)); }
-        Assert.True(anel.All(vistos.Contains));
+        // a linha começa onde as tropas estão, sai do castelo e dá uma curva
+        var p1 = Livre(t, c.Hex, 6); var p2 = Livre(t, p1, 5);
+        var linha = Percursos.Ligar(t.M, [c.Hex, p1, p2]);
+        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["arqueiro"] = 3 }, c.Hex, OrdemPatrulhar.Id, false,
+            new JsonObject { ["pontos"] = new JsonArray(linha.Select(h => (JsonNode)h).ToArray()) });
+        Assert.Equal(linha, Percursos.Pontos(ex));
+        Assert.Equal(linha, ex.Caminho);   // sem desvio: o caminho é a própria linha
+        var vistos = new HashSet<int>(); var extremos = 0; var ultimo = -1;
+        for (var i = 0; i < 3000; i++)
+        {
+            t.AvancarMin(0.05);
+            var h = ex.HexEm(t.M.Agora);
+            vistos.Add(h);
+            if (h == linha[^1] && ultimo != h) extremos++;
+            ultimo = h;
+        }
+        Assert.True(vistos.SetEquals(linha), "só anda pela linha");
+        Assert.True(extremos >= 2, "vai e volta: " + extremos);
         Assert.False(ex.Parado);
         Assert.Equal(OrdemPatrulhar.Id, ex.Ordem);
         // nova ordem interrompe: parar aqui
         Exercitos.DarOrdem(t.M, r, ex.Id, OrdemMover.Id, ex.HexEm(t.M.Agora));
         Assert.True(ex.Parado);
+    }
+
+    [Fact]
+    public void Patrulha_em_circuito_fecha_a_linha_e_vai_antes_ate_o_comeco()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var c = Castelo(t, r);
+        Guarnecer(t, r, c, "lanceiro", 2);
+        var a = Livre(t, c.Hex, 8); var b = Livre(t, a, 6); var d = Livre(t, a, 6, pular: 9);
+        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, a, OrdemPatrulhar.Id, false,
+            new JsonObject { ["pontos"] = new JsonArray(a, b, d), ["circuito"] = true });
+        var linha = Percursos.Pontos(ex);
+        Assert.Equal(a, linha[0]); Assert.Equal(a, linha[^1]);
+        for (var i = 1; i < linha.Count; i++) Assert.Equal(1, t.M.G.Distancia(linha[i - 1], linha[i]));
+        Assert.Equal(a, ex.Destino);   // primeiro vai até o começo da linha, pelo caminho de sempre
+        AvancarAte(t, ex.Chegada + 1);
+        Assert.Equal(linha, ex.Caminho);
+        AvancarAte(t, ex.Chegada + 1);
+        Assert.Equal(linha, ex.Caminho);   // mesma volta, no mesmo sentido
+    }
+
+    [Fact]
+    public void Patrulha_precisa_de_uma_linha_e_respeita_o_tamanho_maximo()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var c = Castelo(t, r);
+        Guarnecer(t, r, c, "lanceiro", 2);
+        var g = new Dictionary<string, int> { ["lanceiro"] = 1 };
+        var p1 = Livre(t, c.Hex, 8);
+        Assert.Throws<RegraException>(() => Exercitos.Enviar(t.M, r, c.Id, g, p1, OrdemPatrulhar.Id));
+        var longe = t.M.G.Indice(t.M.G.C(c.Hex) > t.M.G.Cols / 2 ? 1 : t.M.G.Cols - 2, t.M.G.L(c.Hex));
+        var pontos = new JsonArray(c.Hex, longe, c.Hex, longe);
+        Assert.Throws<RegraException>(() => Exercitos.Enviar(t.M, r, c.Id, g, c.Hex, OrdemPatrulhar.Id, false, new JsonObject { ["pontos"] = pontos }));
+        Assert.Equal(2, c.Guarnicao["lanceiro"]);
     }
 
     [Fact]

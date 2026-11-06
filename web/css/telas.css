@@ -943,6 +943,10 @@ a.guia-item { color: inherit; text-decoration: none; }
   background: var(--cor-superficie); border: 2px solid var(--cor-primaria); box-shadow: var(--sombra-2, var(--sombra-1));
 }
 .ordem-barra[hidden] { display: none; }
+.ordem-botoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.em-desenho .ordem-barra { flex-wrap: wrap; }
+.em-desenho .ordem-txt { flex-basis: calc(100% - 40px); }
+.em-desenho .cena-cv, .em-desenho .mapa-vp { cursor: crosshair; }
 .ordem-ico .ico { color: var(--cor-primaria); width: 24px; height: 24px; }
 .ordem-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
 .ordem-txt small { font-size: var(--fs-1); color: var(--cor-texto-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

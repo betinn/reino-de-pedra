@@ -8,7 +8,8 @@
 .mapa-controles [data-selecao][aria-pressed="true"] { background: var(--selecao); color: var(--cor-fundo); border-color: var(--selecao); }
 
 /* lista de pessoas (tela Pessoas e folha do hexágono) */
-.pessoas-lista .pessoa-item.selecionada { outline: 2px solid var(--selecao); outline-offset: -2px; }
+.pessoas-lista button.lista-item { width: 100%; background: none; border-width: 0 0 1px; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.pessoas-lista .pessoa-item.selecionada { outline: 2px solid var(--selecao-pes); outline-offset: -2px; background: color-mix(in srgb, var(--selecao-pes) 16%, transparent); }
 .pessoas-lista .lista-item .fraco { font-size: var(--fs-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pessoas-local { width: 100%; }
 .lista-item.atual { outline: 2px solid var(--cor-primaria); outline-offset: -2px; }

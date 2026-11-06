@@ -72,7 +72,8 @@
         titulo: RP.esc(p.nome),
         subtitulo: '<span class="fraco">' + RP.esc(p.oficioNome) + ' · ' + RP.esc(ESTADOS[p.estado] || p.estado) + '</span>',
         icone: '<span class="ico-placa folha-ico dono-meu">' + RP.icone(icone(p)) + '</span>',
-        corpo: corpoPessoa(f), acoes: acoesPessoa(f)
+        corpo: corpoPessoa(f), acoes: acoesPessoa(f),
+        aoFechar: function (troca) { if (!troca && RP.selecao) RP.selecao.soltar(id); }
       });
       RP.folhaPessoa.atual = f;
     });
@@ -144,7 +145,7 @@
       RP.selecao.definir(ids);
       RP.fecharFolha();
       if (RP.telaAtual() !== 'mapa') RP.ir('mapa' + (p.hex != null ? '?centro=' + p.hex : ''));
-      RP.aviso({ titulo: ids.length + (ids.length === 1 ? ' selecionado' : ' selecionados'), texto: 'Toque em Missão na barra para dar a ordem.', icone: 'populacao', ms: 2600 });
+      RP.aviso({ titulo: ids.length + (ids.length === 1 ? ' selecionado' : ' selecionados'), texto: 'Toque no destino, ou em Missão na barra.', icone: 'populacao', ms: 2600 });
       return;
     }
   });

@@ -80,6 +80,15 @@ public static class Caminhos
         return new Rota(hexes, mins);
     }
 
+    /// <summary>O caminho exato pelos hexágonos dados, vizinhos em sequência, sem procurar outro melhor (a linha que o jogador desenhou).</summary>
+    public static Rota Seguir(Mundo m, IReadOnlyList<int> hexes, string vel, OpcoesCaminho? op = null)
+    {
+        op ??= OpcoesCaminho.Padrao;
+        var mins = new List<double>(hexes.Count) { 0 };
+        for (var i = 1; i < hexes.Count; i++) mins.Add(mins[^1] + MinutosEntrar(m, hexes[i], vel, op));
+        return new Rota(hexes, mins);
+    }
+
     /// <summary>Minutos de cada hexágono até <paramref name="destino"/> (Dijkstra reverso), para escolher origens próximas.</summary>
     public static double[] MinutosAte(Mundo m, int destino, string vel, OpcoesCaminho? op = null)
     {

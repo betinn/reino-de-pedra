@@ -6,6 +6,46 @@ namespace ReinoDePedra.Testes;
 public class TropasApiTestes
 {
     [Fact]
+    public async Task Juntar_separar_e_ordem_a_parte_da_tropa_pela_api()
+    {
+        await using var s = await ServidorTeste.Iniciar();
+        using var c = s.NovoCliente();
+        var reino = await c.ContaComReino("juntar@exemplo.com", "Elo");
+        var castelo = reino.GetProperty("casteloId").GetInt64();
+        await c.Post("recrutamento", new { localId = castelo, unidade = "lanceiro", qtd = 3 });
+        await s.Avancar(TimeSpan.FromMinutes(40));
+        var (_, r) = await c.Get("reino");
+        var hex = r.GetProperty("locais").EnumerateArray().First(l => l.GetProperty("id").GetInt64() == castelo).GetProperty("hex").GetInt32();
+        var destino = hex + 3;
+
+        var (_, x) = await c.Post("tropas/enviar", new { deLocalId = castelo, tropas = new { lanceiro = 2 }, destinoHex = destino, ordem = "mover" });
+        var (_, y) = await c.Post("tropas/enviar", new { deLocalId = castelo, tropas = new { lanceiro = 1 }, destinoHex = destino, ordem = "mover" });
+        await s.Avancar(TimeSpan.FromMinutes(10));
+        long idX = x.GetProperty("id").GetInt64(), idY = y.GetProperty("id").GetInt64();
+
+        var (stj, z) = await c.Post("tropas/juntar", new { deMarchaId = idX, paraMarchaId = idY });
+        Assert.True(stj == HttpStatusCode.OK, z.ToString());
+        Assert.Equal(idY, z.GetProperty("id").GetInt64());
+        Assert.Equal(3, z.GetProperty("total").GetInt32());
+
+        var pessoas = z.GetProperty("pessoas").EnumerateArray().Select(p => p.GetProperty("id").GetInt64()).ToList();
+        var (sts, novo) = await c.Post("tropas/" + idY + "/separar", new { pessoas = new[] { pessoas[0] } });
+        Assert.True(sts == HttpStatusCode.Created, novo.ToString());
+        Assert.Equal(1, novo.GetProperty("total").GetInt32());
+        Assert.Equal("parado", novo.GetProperty("estado").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.Post("tropas/" + idY + "/separar", new { pessoas = Array.Empty<long>() })).status);
+
+        var (sto, parte) = await c.Post("tropas/" + idY + "/ordem", new { ordem = "mover", destinoHex = hex + 6, pessoas = new[] { pessoas[1] } });
+        Assert.True(sto == HttpStatusCode.OK, parte.ToString());
+        Assert.NotEqual(idY, parte.GetProperty("id").GetInt64());
+        Assert.Equal("marchando", parte.GetProperty("estado").GetString());
+
+        var (_, tropas) = await c.Get("tropas");
+        Assert.Equal(3, tropas.GetProperty("exercitos").GetArrayLength());
+        Assert.True(tropas.GetProperty("maxLinha").GetInt32() > 0);
+    }
+
+    [Fact]
     public async Task Recrutar_enviar_voltar_e_postura_pela_api()
     {
         await using var s = await ServidorTeste.Iniciar();

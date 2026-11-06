@@ -1,7 +1,10 @@
 /* Reino de Pedra — construções 3D: castelo, locais, torres e ruínas montados com peças de kits CC0 da Kenney (Castle Kit,
    Fantasy Town Kit, Survival Kit e Graveyard Kit; ver web/modelos/LICENCAS.md) e renderizados com three.js num canvas fora da
    tela, como os bonecos (bonecos.js). Cada combinação de tipo, faixa de nível, produto, cor do dono e inclinação da câmera
-   vira um sprite uma vez; a Vista desenha o sprite e, enquanto ele não existe (ou sem WebGL), a arte 2D de antes.
+   vira um sprite uma vez; a Vista desenha o sprite e, enquanto ele não existe (ou sem WebGL), a arte 2D de antes. A construção
+   gira em 3D com a câmera, ao vivo, em passos de 10°: cada passo é um sprite. Em segundo plano, o que está na tela ganha a volta
+   inteira, do ângulo atual para os lados; o passo que faltar sai dentro do orçamento do quadro e, sem tempo, vale o passo pronto
+   mais perto. Nada espera o giro parar.
      RP.estruturas.local(o)  o = { tipo, nivel, produz, ruina, cor, moinho }  → canvas ou null
      RP.estruturas.ruinaAntiga(esgotada), RP.estruturas.torre(nivel, cor), RP.estruturas.CX[caixa] = { W, ALT, PE }
    Caixas em unidades do mundo (o hexágono tem R = 15): o castelo cobre a pegada de 7 hexágonos; os locais, a de 3. */
@@ -16,17 +19,18 @@ const KITS = ['castelo', 'vila', 'sobrevivencia', 'ruinas'];
 const ESC = { castelo: 15, vila: 22, sobrevivencia: 26, ruinas: 24 };
 const CX = {
   /* esc: escala do conjunto montado (os locais iniciais ficam a 4 hexágonos do castelo: sem encostar uns nos outros) */
-  castelo: { W: 92, ALT: 96, PE: 30, esc: 0.85 }, local: { W: 66, ALT: 56, PE: 22, esc: 0.72 }, torre: { W: 36, ALT: 84, PE: 12, esc: 0.9 },
-  ruina: { W: 60, ALT: 42, PE: 20, esc: 0.78 }
+  castelo: { W: 104, ALT: 110, PE: 46, esc: 0.85 }, local: { W: 66, ALT: 56, PE: 32, esc: 0.72 }, torre: { W: 36, ALT: 84, PE: 12, esc: 0.9 },
+  ruina: { W: 60, ALT: 42, PE: 30, esc: 0.78 }
 };
-const RES = (window.devicePixelRatio || 1) >= 1.5 ? 3 : 2.5, SS = 2, MAX = 160, ORCAMENTO_MS = 12;
+const RES = (window.devicePixelRatio || 1) >= 1.5 ? 3 : 2.5, SS = 2, MAX = 240, ORCAMENTO_MS = 12;
+const PASSOS = 36, PASSO = 2 * Math.PI / PASSOS, ADIANTE_MS = 40, VISTO_MS = 3000, INCLINANDO_MS = 300;
 
 const E = RP.estruturas = { pronto: false, falhou: false, CX, tamanho: () => cache.size, limpar: () => cache.clear() };
 const cache = new Map();
 let renderer, cena, camera, grupo, mat;
 const pecas = {};
-let gasto = 0, quadroAtual = -1;
-const ultimo = new Map();   /* chave sem a câmera → último sprite feito (ponte entre dois giros) */
+let gasto = 0, quadroAtual = -1, adiantando = 0, kFeito = 0, limpeza = 0, inclinouEm = -1e9;
+const vistas = new Map();   /* chave → { cx, montar, o, visto }: o que está na tela, para adiantar os passos vizinhos */
 
 async function carregar() {
   const L = new GLTFLoader();
@@ -242,14 +246,15 @@ function montarTorre(o) {
 /* ---------------------------------------------------------------- render */
 /* vista 3/4: o conjunto gira em torno do eixo vertical (de frente, as casas ficam chapadas) */
 const GIRO = -32 * Math.PI / 180;
-function render(cx, montar, o) {
+function render(cx, montar, o, passo) {
   while (grupo.children.length) grupo.remove(grupo.children[0]);
   montar(o);
-  /* giro da câmera (AZ3D): o conjunto gira ao contrário, para mostrar o lado que a câmera vê */
-  grupo.rotation.y = (o && o.semGiro ? 0 : GIRO) - ((RP.arte && RP.arte.AZ3D) || 0);
+  /* giro da câmera: o conjunto gira ao contrário, para mostrar o lado que a câmera vê */
+  grupo.rotation.y = GIRO - passo * PASSO;
   grupo.scale.setScalar(cx.esc || 1);
-  const k = (RP.arte && RP.arte.K) || 0.62, el = Math.asin(Math.min(0.95, k)), ce = Math.cos(el);
-  camera.left = -cx.W / 2; camera.right = cx.W / 2; camera.top = cx.ALT * ce; camera.bottom = -cx.PE * ce; camera.updateProjectionMatrix();
+  /* projeção 1:1: a caixa do sprite é a da câmera, em qualquer inclinação. Visto de cima, o que é alto encurta; nada estica */
+  const k = (RP.arte && RP.arte.K3D) || 0.62, el = Math.asin(Math.min(0.95, k));
+  camera.left = -cx.W / 2; camera.right = cx.W / 2; camera.top = cx.ALT; camera.bottom = -cx.PE; camera.updateProjectionMatrix();
   camera.position.set(0, Math.sin(el) * 2000, Math.cos(el) * 2000); camera.lookAt(0, 0, 0);
   renderer.setSize(Math.round(cx.W * RES * SS), Math.round((cx.ALT + cx.PE) * RES * SS), false);
   renderer.render(cena, camera);
@@ -257,26 +262,62 @@ function render(cx, montar, o) {
   out.width = w; out.height = h;
   const c = out.getContext('2d');
   /* contorno escuro de 1 px, como os bonecos: a construção se separa do chão */
+  const f = document.createElement('canvas'); f.width = w; f.height = h; f.getContext('2d').drawImage(renderer.domElement, 0, 0, w, h);   /* uma leitura só da GPU */
   const t = document.createElement('canvas'); t.width = w; t.height = h; const tc = t.getContext('2d');
-  tc.drawImage(renderer.domElement, 0, 0, w, h); tc.globalCompositeOperation = 'source-in'; tc.fillStyle = 'rgba(28,20,14,0.5)'; tc.fillRect(0, 0, w, h);
+  tc.drawImage(f, 0, 0); tc.globalCompositeOperation = 'source-in'; tc.fillStyle = 'rgba(28,20,14,0.5)'; tc.fillRect(0, 0, w, h);
   [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(d => c.drawImage(t, d[0], d[1]));
-  c.drawImage(renderer.domElement, 0, 0, w, h);
+  c.drawImage(f, 0, 0);
   return out;
+}
+function passoAtual() { return ((Math.round(((RP.arte && RP.arte.AZ) || 0) / PASSO) % PASSOS) + PASSOS) % PASSOS; }
+function chaveDe(chave, passo, k) { return chave + '|' + (k || ((RP.arte && RP.arte.K3D) || 0).toFixed(2)) + '|' + passo; }
+function fazer(k, cx, montar, o, passo) {
+  let novo;
+  try { novo = render(cx, montar, o, passo); } catch (e) { console.error(e); E.pronto = false; E.falhou = true; return null; }
+  if (cache.size >= MAX) cache.delete(cache.keys().next().value);
+  cache.set(k, novo);
+  return novo;
+}
+/* o passo pronto mais perto: a construção segue a câmera mesmo quando o sprite exato ainda não saiu */
+function maisPerto(chave, passo) {
+  for (let d = 1; d <= PASSOS / 2; d++) {
+    const s = cache.get(chaveDe(chave, (passo + d) % PASSOS)) || cache.get(chaveDe(chave, (passo - d + PASSOS) % PASSOS));
+    if (s) return s;
+  }
+  /* inclinando: o mesmo passo na inclinação pronta mais perto */
+  for (const k of RP.arte.kVizinhos()) { const s = cache.get(chaveDe(chave, passo, k)); if (s) return s; }
+  return null;
+}
+/* fora do quadro, um sprite por vez e com folga para o jogo: a volta inteira do que está na tela, dos passos vizinhos para os
+   mais longe, para o giro já os encontrar prontos. Para antes de encher o cache: adiantar não tira o que já está pronto. */
+function adiantar() {
+  adiantando = 0;
+  if (!E.pronto) return;
+  const agora = performance.now(), passo = passoAtual();
+  vistas.forEach((v, chave) => { if (agora - v.visto > VISTO_MS) vistas.delete(chave); });
+  if (cache.size >= MAX - 8) return;
+  for (let d = 0; d <= PASSOS / 2; d++) for (const lado of d ? [d, -d] : [0]) for (const [chave, v] of vistas) {
+    const p = (passo + lado + PASSOS) % PASSOS, k = chaveDe(chave, p);
+    if (cache.has(k)) continue;
+    fazer(k, v.cx, v.montar, v.o, p);
+    adiantando = setTimeout(adiantar, Math.max(ADIANTE_MS, 3 * (performance.now() - agora)));
+    return;
+  }
 }
 function obter(chave, cx, montar, o) {
   if (!E.pronto) return null;
-  const k = chave + '|' + ((RP.arte && RP.arte.K) || 0).toFixed(2) + '|' + ((RP.arte && RP.arte.AZ3D) || 0).toFixed(3);
+  const agora = performance.now(), passo = passoAtual(), k = chaveDe(chave, passo);
+  vistas.set(chave, { cx, montar, o, visto: agora });
+  if (!adiantando) adiantando = setTimeout(adiantar, ADIANTE_MS);
   const s = cache.get(k);
-  if (s) return s;
-  const agora = performance.now(), q = Math.floor(agora / 16);
+  if (s) { cache.delete(k); cache.set(k, s); return s; }   /* o mais usado fica por último: sai primeiro quem a câmera deixou para trás */
+  /* inclinando, nada se refaz dentro do quadro: vale a inclinação pronta mais perto, e o sprite certo sai fora do quadro */
+  if (agora - inclinouEm < INCLINANDO_MS) { const v = maisPerto(chave, passo); if (v) return v; }
+  const q = Math.floor(agora / 16);
   if (q !== quadroAtual) { quadroAtual = q; gasto = 0; }
-  /* sem tempo neste quadro: a mesma construção no ângulo anterior da câmera, enquanto a nova não sai */
-  if (gasto > ORCAMENTO_MS) return ultimo.get(chave) || null;
-  let novo;
-  try { novo = render(cx, montar, o); } catch (e) { console.error(e); E.pronto = false; E.falhou = true; return null; }
+  if (gasto > ORCAMENTO_MS) return maisPerto(chave, passo);   /* sem tempo neste quadro */
+  const novo = fazer(k, cx, montar, o, passo);
   gasto += performance.now() - agora;
-  if (cache.size >= MAX) cache.delete(cache.keys().next().value);
-  cache.set(k, novo); ultimo.set(chave, novo);
   return novo;
 }
 /* faixas de nível: o desenho só muda em alguns níveis (não vale um sprite por nível) */
@@ -291,8 +332,16 @@ E.caixaLocal = function (o) { return o.ruina ? CX.ruina : o.tipo === 'castelo' ?
 E.ruinaAntiga = function (esgotada) { return obter('antiga|' + (esgotada ? 1 : 0), CX.ruina, montarRuinaAntiga, { esgotada: esgotada }); };
 E.torre = function (nivel, cor) { return obter(['torre', Math.min(3, nivel || 1), cor || ''].join('|'), CX.torre, montarTorre, { nivel: nivel, cor: cor }); };
 /* altura (unidades do mundo, na tela) do passadiço da torre de nível n, onde ficam os arqueiros */
-E.alturaTorre = function (n) { const k = (RP.arte && RP.arte.K) || 0.62, ce = Math.cos(Math.asin(Math.min(0.95, k))); return ESC.castelo * 1.1 * CX.torre.esc * (Math.max(1, Math.min(3, n || 1)) + 1) * ce; };
+E.alturaTorre = function (n) { const k = (RP.arte && RP.arte.K3D) || 0.62, ce = Math.cos(Math.asin(Math.min(0.95, k))); return ESC.castelo * 1.1 * CX.torre.esc * (Math.max(1, Math.min(3, n || 1)) + 1) * ce; };
 E.carregar = carregar;
-if (RP.arte && RP.arte.aoMudarK) RP.arte.aoMudarK.push(() => { cache.clear(); ultimo.clear(); });
+if (RP.arte && RP.arte.aoMudarK) RP.arte.aoMudarK.push(() => {
+  /* os sprites de outras inclinações servem de ponte durante o arrasto; quando ele para, saem */
+  const k3 = RP.arte.K3D;
+  inclinouEm = performance.now();
+  if (k3 === kFeito) return;
+  kFeito = k3;
+  clearTimeout(limpeza);
+  limpeza = setTimeout(() => { const k = '|' + k3.toFixed(2) + '|'; [...cache.keys()].forEach(c => { if (!c.includes(k)) cache.delete(c); }); }, 600);
+});
 
 carregar().catch(e => { console.warn('construções 3D indisponíveis; a Vista usa a arte 2D.', e); E.falhou = true; });

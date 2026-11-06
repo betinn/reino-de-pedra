@@ -29,6 +29,19 @@
       var A = H.paraCubo(H.c(a), H.l(a)), B = H.paraCubo(H.c(b), H.l(b));
       return Math.max(Math.abs(A.x - B.x), Math.abs(A.y - B.y), Math.abs(A.z - B.z));
     },
+    /* hexágonos em linha reta de a a b, inclusive, vizinhos em sequência (igual a Grade.Reta, em Mapa/Hex.cs) */
+    reta: function (a, b) {
+      var n = H.dist(a, b), A = H.paraCubo(H.c(a), H.l(a)), B = H.paraCubo(H.c(b), H.l(b)), out = [a];
+      for (var i = 1; i <= n; i++) {
+        var t = i / n, fx = A.x + (B.x - A.x) * t + 1e-6, fy = A.y + (B.y - A.y) * t + 2e-6, fz = A.z + (B.z - A.z) * t - 3e-6;
+        var rx = Math.round(fx), ry = Math.round(fy), rz = Math.round(fz);
+        var dx = Math.abs(rx - fx), dy = Math.abs(ry - fy), dz = Math.abs(rz - fz);
+        if (dx > dy && dx > dz) rx = -ry - rz; else if (dy <= dz) rz = -rx - ry;
+        var c = rx + (rz - (rz & 1)) / 2;
+        if (H.dentro(c, rz)) out.push(H.idx(c, rz));
+      }
+      return out;
+    },
     pixelParaHex: function (px, py) {
       var x = px - W / 2, y = py - R;
       var q = ((Math.sqrt(3) / 3) * x - (1 / 3) * y) / R, r = ((2 / 3) * y) / R;

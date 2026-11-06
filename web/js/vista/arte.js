@@ -62,7 +62,7 @@
     var cs = getComputedStyle(document.documentElement), g = function (n) { return cs.getPropertyValue(n).trim(); };
     CORES = {
       meu: g('--cor-meu'), aliado: g('--cor-aliado'), desconhecido: g('--cor-desconhecido'), perigo: g('--cor-perigo'),
-      selecao: g('--selecao'), alerta: g('--cor-alerta'), sucesso: g('--cor-sucesso'), destaque: g('--cor-destaque'),
+      selecao: g('--selecao'), selecaoPes: g('--selecao-pes'), alerta: g('--cor-alerta'), sucesso: g('--cor-sucesso'), destaque: g('--cor-destaque'),
       lendario: g('--rec-lendario'), baixo: g('--perigo-baixo'), medio: g('--perigo-medio'), alto: g('--perigo-alto'),
       fonteTitulo: g('--fonte-titulo'), fonteTexto: g('--fonte-texto')
     };
@@ -578,27 +578,30 @@
     materiais: materiais, cerca: cerca, pilula: pilula,
     K_PADRAO: K_PADRAO, K_MIN: K_MIN, K_MAX: K_MAX, aoMudarK: []
   };
+  /* inclinação dos sprites 3D: K em passos, para inclinar não refazer tudo a cada movimento do arrasto. kVizinhos: as outras
+     inclinações, da mais perto para a mais longe, para usar um sprite pronto enquanto o novo não sai. */
+  var PASSO_K3D = 0.04;
+  RP.arte.K3D = K_PADRAO;
+  RP.arte.kVizinhos = function () {
+    var out = [], n = Math.ceil((K_MAX - K_MIN) / PASSO_K3D);
+    for (var d = 1; d <= n; d++) [d, -d].forEach(function (s) { var k = RP.arte.K3D + s * PASSO_K3D; if (k > K_MIN - PASSO_K3D && k < K_MAX + PASSO_K3D) out.push(k.toFixed(2)); });
+    return out;
+  };
+  /* altura na tela de algo em pé com h unidades: visto de cima, o que é alto encurta */
+  RP.arte.emPe = function (h) { return h * Math.cos(Math.asin(Math.min(0.95, K))); };
   /* inclinação da câmera: muda o achatamento do chão para toda a arte; quem desenha ouve em aoMudarK */
   RP.arte.definirK = function (k) {
     K = Math.max(K_MIN, Math.min(K_MAX, k)); RP.arte.K = K;
+    RP.arte.K3D = K_PADRAO + Math.round((K - K_PADRAO) / PASSO_K3D) * PASSO_K3D;
     RP.arte.aoMudarK.forEach(function (f) { try { f(K); } catch (e) { console.error(e); } });
   };
-  /* giro da câmera em volta do ponto olhado (radianos; 0 = norte do mapa para cima). AZ muda a cada movimento e só
-     reprojeta o chão e as posições (aoMudarAz). Os sprites 3D (bonecos, construções, vegetação) são renderizados de
-     novo no ângulo AZ3D, que só acompanha AZ quando o giro para por um instante (aoFixarAz): renderizar tudo a cada
-     quadro do arrasto travaria a tela. */
-  RP.arte.AZ = 0; RP.arte.AZ3D = 0; RP.arte.aoMudarAz = []; RP.arte.aoFixarAz = [];
-  var fixarAz = 0;
-  RP.arte.definirAz = function (az, ja) {
+  /* giro da câmera em volta do ponto olhado (radianos; 0 = norte do mapa para cima). AZ reprojeta o chão e as posições
+     (aoMudarAz). Construções giram em 3D ao vivo, por passos (estruturas.js); pessoas escolhem entre os 8 sprites de direção
+     pelo AZ de agora; a vegetação fica em pé, sempre com o mesmo sprite. */
+  RP.arte.AZ = 0; RP.arte.aoMudarAz = [];
+  RP.arte.definirAz = function (az) {
     az = Math.atan2(Math.sin(az), Math.cos(az));
     RP.arte.AZ = az;
     RP.arte.aoMudarAz.forEach(function (f) { try { f(az); } catch (e) { console.error(e); } });
-    clearTimeout(fixarAz);
-    function fixar() {
-      if (Math.abs(RP.arte.AZ3D - RP.arte.AZ) < 1e-4) return;
-      RP.arte.AZ3D = RP.arte.AZ;
-      RP.arte.aoFixarAz.forEach(function (f) { try { f(RP.arte.AZ3D); } catch (e) { console.error(e); } });
-    }
-    if (ja) fixar(); else fixarAz = setTimeout(fixar, 260);
   };
 })();

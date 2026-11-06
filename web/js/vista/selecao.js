@@ -1,9 +1,11 @@
-/* Reino de Pedra — seleção de um grupo de pessoas na Vista. Toque único num soldado abre a folha dele; o modo
-   seleção (botão nos controles do mapa, na folha, ou toque longo) faz cada toque somar ou tirar uma pessoa e o
-   arrasto desenhar um laço. No computador, Shift+clique soma e Shift+arrastar laça. Com o grupo pronto, a barra
-   mostra "7 selecionados · 4 lanceiros, 3 arqueiros" e o botão Missão, que entra no envio de tropas de sempre
-   (tocar no destino e confirmar) com as pessoas escolhidas pelo id.
-   RP.selecao: ids(), n(), tem(id), alternar(id), definir(ids), limpar(), modo, ativarModo(bool), lacar(pontosTela), missao() */
+/* Reino de Pedra — seleção de tropas e pessoas na Vista. Tocar num soldado da guarnição seleciona ele; tocar numa tropa em
+   campo seleciona ela inteira. Com a tropa selecionada, tocar num hexágono oferece "Enviar tropa", tocar em outra tropa oferece
+   juntar e tocar nela de novo abre a folha dela. O modo seleção (botão nos controles do mapa, ou toque longo) faz cada toque
+   somar ou tirar e o arrasto desenhar um laço; no computador, Shift+clique soma e Shift+arrastar laça. A barra mostra
+   "7 selecionados · 4 lanceiros, 3 arqueiros", com Missão e Patrulha. Civis não recebem ordens: o toque abre a folha e a pessoa
+   fica marcada enquanto ela estiver aberta.
+   RP.selecao: ids(), n(), tem(id), soldados(), alternar(id), alternarLista(ids), definir(ids), limpar(), focar(id), soltar(id),
+     modo, ativarModo(bool), lacar(pontosTela), origem(), destino(hex), tocarTropa(t), estaEm(hex), missao(), patrulha() */
 (function () {
   'use strict';
   var RP = window.RP, M = RP.mapaModelo;
@@ -22,7 +24,9 @@
     ids().forEach(function (id) { var p = pessoa(id); if (p && RP.pessoasVista.ehSoldado(p)) g[p.oficio] = (g[p.oficio] || 0) + 1; });
     return g;
   }
-  /* onde estão os selecionados: um local (todos guarnecidos nele), uma marcha (todos nela) ou misturados */
+  function soldados() { return n() > 0 && ids().every(function (id) { var p = pessoa(id); return p && RP.pessoasVista.ehSoldado(p); }); }
+  function marcha(id) { return ((M.dados && M.dados.marchas) || []).filter(function (x) { return x.id === id; })[0]; }
+  /* onde estão os selecionados: um local (todos guarnecidos nele), uma marcha (todos nela; parte: ids, se é só uma parte dela) ou misturados */
   function origem() {
     var locais = {}, marchas = {}, civis = 0;
     ids().forEach(function (id) {
@@ -34,7 +38,10 @@
     if (civis) return { erro: 'Só soldados recebem missão. Civis trocam de trabalho pela folha deles.' };
     if (ls.length + ms.length > 1) return { erro: 'Escolha soldados que estejam no mesmo lugar: uma guarnição ou um exército.' };
     if (ls.length === 1) return { de: +ls[0] };
-    if (ms.length === 1) return { marchaId: +ms[0] };
+    if (ms.length === 1) {
+      var mc = marcha(+ms[0]), inteira = mc && (mc.pessoaIds || []).filter(function (id) { var p = pessoa(id); return p && RP.pessoasVista.ehSoldado(p); }).every(function (id) { return !!sel[id]; });
+      return { marchaId: +ms[0], parte: inteira ? null : ids() };
+    }
     return { erro: 'Ninguém selecionado.' };
   }
 
@@ -49,9 +56,10 @@
     RP.$$('[data-selecao]', tela).forEach(function (x) { x.setAttribute('aria-pressed', String(modo)); });
     if (b.hidden) return;
     var g = grupo(), partes = RP.partesGrupo ? RP.partesGrupo(g) : '', civis = k - RP.somaGrupo(g);
-    var resumo = k ? (partes || '') + (civis ? (partes ? ', ' : '') + civis + (civis === 1 ? ' civil' : ' civis') : '') : (modo ? 'Toque nas pessoas ou arraste um laço' : '');
+    var tropa = soldados(), resumo = k ? (partes || '') + (civis ? (partes ? ', ' : '') + civis + (civis === 1 ? ' civil' : ' civis') : '') + (tropa ? ' · toque no destino' : '') : (modo ? 'Toque nas pessoas ou arraste um laço' : '');
     b.innerHTML = '<span class="ordem-ico">' + RP.icone('populacao') + '</span><span class="ordem-txt"><b>' + (k ? k + (k === 1 ? ' selecionado' : ' selecionados') : 'Modo seleção') + '</b><small>' + RP.esc(resumo) + '</small></span>' +
-      (k ? '<button type="button" class="btn btn-p btn-primario" data-selecao-missao>' + RP.icone('alvo') + 'Missão</button>' : '') +
+      (tropa ? '<button type="button" class="btn btn-p btn-primario" data-selecao-missao>' + RP.icone('alvo') + 'Missão</button>' +
+        '<button type="button" class="btn btn-p" data-selecao-patrulha>' + RP.icone('rota') + 'Patrulha</button>' : '') +
       '<button type="button" class="btn btn-p btn-fantasma btn-icone" data-selecao-limpar aria-label="Limpar seleção">' + RP.icone('fechar') + '</button>';
   }
 
@@ -65,10 +73,42 @@
   }
 
   RP.selecao = {
-    ids: ids, n: n, grupo: grupo,
+    ids: ids, n: n, grupo: grupo, soldados: soldados, origem: origem,
     get modo() { return modo; },
     tem: function (id) { return !!sel[id]; },
     alternar: function (id) { if (sel[id]) delete sel[id]; else sel[id] = true; barra(); },
+    /* soma a lista; se todos já estavam, tira */
+    alternarLista: function (lista) {
+      var todos = lista.every(function (id) { return !!sel[id]; });
+      lista.forEach(function (id) { if (todos) delete sel[id]; else sel[id] = true; });
+      barra();
+    },
+    /* marca quem está com a folha aberta (civil, ou soldado ocupado), sem virar tropa selecionada */
+    focar: function (id) { sel = {}; sel[id] = true; barra(); },
+    soltar: function (id) { if (n() === 1 && sel[id] && !soldados()) { sel = {}; barra(); } },
+    /* a seleção inclui quem está neste hexágono */
+    estaEm: function (h) { return ids().some(function (id) { var p = pessoa(id); return p && p.hex === h; }); },
+    /* a tropa selecionada recebe este hexágono como destino: abre a folha dele com "Enviar tropa" */
+    destino: function (h) {
+      var o = origem();
+      if (o.erro) { RP.aviso({ titulo: o.erro, icone: 'alerta', tipo: 'alerta' }); return; }
+      RP.envio.iniciar({ de: o.de, marchaId: o.marchaId, pessoas: o.marchaId ? o.parte : ids(), hex: h });
+    },
+    /* toque numa tropa: t = { ids, marchaId, localId, hex, obj } */
+    tocarTropa: function (t) {
+      if (RP.envio.ativo()) RP.envio.cancelar();
+      var nova = !soldados();
+      if (nova) { RP.selecao.definir(t.ids); RP.carregarTropas().catch(function () { /* offline */ }); return; }
+      if (t.ids.every(function (id) { return !!sel[id]; })) {
+        if (t.marchaId) RP.mapa.folhaObjeto(t.obj); else if (t.pilha) RP.folhaPessoasDoHex(t.hex); else RP.folhaPessoa(t.ids[0]);
+        return;
+      }
+      var o = origem();
+      if (o.erro) { RP.selecao.definir(t.ids); return; }
+      if (o.de && t.localId === o.de) { RP.selecao.somar(t.ids); return; }   /* mesma guarnição: soma ao grupo */
+      if (t.marchaId) { RP.envio.folhaJuntar(o, t); return; }
+      RP.selecao.destino(t.hex);   /* soldado de outra guarnição: a tropa vai para aquele local */
+    },
     definir: function (lista) { sel = {}; (lista || []).forEach(function (id) { sel[id] = true; }); barra(); },
     somar: function (lista) { (lista || []).forEach(function (id) { sel[id] = true; }); barra(); },
     limpar: function () { sel = {}; modo = false; barra(); },
@@ -91,8 +131,16 @@
       var o = origem();
       if (o.erro) { RP.aviso({ titulo: o.erro, icone: 'alerta', tipo: 'alerta' }); return; }
       modo = false;
-      if (o.marchaId) RP.envio.iniciar({ marchaId: o.marchaId });
+      if (o.marchaId) RP.envio.iniciar({ marchaId: o.marchaId, pessoas: o.parte });
       else RP.envio.iniciar({ de: o.de, pessoas: ids() });
+      barra();
+    },
+    /* a tropa selecionada recebe uma patrulha: desenhar a linha no mapa */
+    patrulha: function () {
+      var o = origem();
+      if (o.erro) { RP.aviso({ titulo: o.erro, icone: 'alerta', tipo: 'alerta' }); return; }
+      modo = false;
+      RP.envio.iniciar({ de: o.de, marchaId: o.marchaId, pessoas: o.marchaId ? o.parte : ids(), linha: true });
       barra();
     }
   };
@@ -100,6 +148,7 @@
   document.addEventListener('click', function (e) {
     var b;
     if (e.target.closest('[data-selecao-missao]')) RP.selecao.missao();
+    else if (e.target.closest('[data-selecao-patrulha]')) RP.selecao.patrulha();
     else if (e.target.closest('[data-selecao-limpar]')) RP.selecao.limpar();
     else if ((b = e.target.closest('[data-selecao]'))) RP.selecao.ativarModo(!modo);
   });

@@ -48,7 +48,7 @@ public static class VisaoTropas
             emTreinoPop = Recrutamento.EmTreino(m, r),
             locais, exercitos = Exercitos.De(m, r.Id).OrderBy(e => e.Id).Select(e => Exercito(m, e)).ToList(),
             emTreino, unidades,
-            ordens = Exercitos.Ordens.Values.Where(o => o.NoEnvio).Select(o => o.Ordem).ToList(),
+            ordens = Exercitos.Ordens.Values.Where(o => o.NoEnvio).Select(o => o.Ordem).ToList(), maxLinha = m.P.Patrulha.MaxHexes,
         };
     }
 

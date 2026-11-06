@@ -10,7 +10,9 @@ namespace ReinoDePedra.Api.Endpoints;
 
 public sealed record PedidoRecrutar(long LocalId, string Unidade, int Qtd);
 public sealed record PedidoEnviar(long DeLocalId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L, string? Ordem, bool Seguro, JsonObject? Dados, List<long>? Pessoas = null);
-public sealed record PedidoOrdem(string Ordem, int? DestinoHex, int? C, int? L, bool? Seguro, JsonObject? Dados);
+public sealed record PedidoOrdem(string Ordem, int? DestinoHex, int? C, int? L, bool? Seguro, JsonObject? Dados, List<long>? Pessoas = null);
+public sealed record PedidoJuntar(long ParaMarchaId, long? DeMarchaId, long? DeLocalId, Dictionary<string, int>? Tropas, bool? Seguro, List<long>? Pessoas = null);
+public sealed record PedidoSeparar(List<long>? Pessoas);
 public sealed record PedidoPostura(long? LocalId, long? MarchaId, bool? Todas, bool? TodosExercitos, string Postura);
 public sealed record PedidoPrevia(long? DeLocalId, long? MarchaId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L, List<long>? Pessoas = null);
 
@@ -83,9 +85,41 @@ public sealed class ModuloTropas : IModuloApi
             {
                 var r = Sessao.ReinoDa(m, id);
                 int? hex = p.DestinoHex ?? (p.C is int c && p.L is int l && m.G.Dentro(c, l) ? m.G.Indice(c, l) : null);
-                Exercitos.DarOrdem(m, r, marchaId, p.Ordem ?? "", hex, p.Seguro, p.Dados);
-                return m.Marchas.Obter(marchaId) is Exercito ex ? VisaoTropas.Exercito(m, ex) : new { id = marchaId, encerrado = true };
+                // com pessoas, só elas recebem a ordem: saem da tropa e vão
+                var quem = marchaId;
+                if (p.Pessoas is { Count: > 0 }) quem = Grupos.Parte(m, r, marchaId, p.Pessoas, e => { Exercitos.DarOrdem(m, r, e.Id, p.Ordem ?? "", hex, p.Seguro, p.Dados); return e; }).Id;
+                else Exercitos.DarOrdem(m, r, marchaId, p.Ordem ?? "", hex, p.Seguro, p.Dados);
+                return m.Marchas.Obter(quem) is Exercito ex ? VisaoTropas.Exercito(m, ex) : new { id = quem, encerrado = true };
             }), Json.Web);
+        });
+
+        conta.MapPost("/tropas/juntar", async (PedidoJuntar p, HttpContext ctx, Motor motor) =>
+        {
+            var id = ctx.ContaId();
+            return Results.Json(await motor.Executar(m =>
+            {
+                var r = Sessao.ReinoDa(m, id);
+                Exercito ex;
+                if (p.DeMarchaId is long de)
+                    ex = p.Pessoas is { Count: > 0 } ? Grupos.Parte(m, r, de, p.Pessoas, e => Grupos.Juntar(m, r, e.Id, p.ParaMarchaId, p.Seguro)) : Grupos.Juntar(m, r, de, p.ParaMarchaId, p.Seguro);
+                else
+                {
+                    var (tropas, escolha) = EnvioPessoas.Ler(m, r, p.DeLocalId ?? 0, p.Pessoas, p.Tropas);
+                    using var _ = escolha;
+                    ex = Grupos.Enviar(m, r, p.DeLocalId ?? 0, tropas, p.ParaMarchaId, p.Seguro == true);
+                }
+                return VisaoTropas.Exercito(m, ex);
+            }), Json.Web);
+        });
+
+        conta.MapPost("/tropas/{marchaId:long}/separar", async (long marchaId, PedidoSeparar p, HttpContext ctx, Motor motor) =>
+        {
+            var id = ctx.ContaId();
+            return Results.Json(await motor.Executar(m =>
+            {
+                var r = Sessao.ReinoDa(m, id);
+                return VisaoTropas.Exercito(m, Grupos.Separar(m, r, marchaId, p.Pessoas ?? []));
+            }), Json.Web, statusCode: 201);
         });
 
         conta.MapPut("/tropas/postura", async (PedidoPostura p, HttpContext ctx, Motor motor) =>

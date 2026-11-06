@@ -41,6 +41,26 @@ public sealed class Grade(int cols, int lins)
         var (bx, by, bz) = Cubo(C(b), L(b));
         return Math.Max(Math.Abs(ax - bx), Math.Max(Math.Abs(ay - by), Math.Abs(az - bz)));
     }
+    /// <summary>Hexágonos em linha reta de <paramref name="a"/> a <paramref name="b"/>, inclusive, vizinhos em sequência.</summary>
+    public List<int> Reta(int a, int b)
+    {
+        var n = Distancia(a, b);
+        var (ax, ay, az) = Cubo(C(a), L(a));
+        var (bx, by, bz) = Cubo(C(b), L(b));
+        var lista = new List<int>(n + 1) { a };
+        for (var i = 1; i <= n; i++)
+        {
+            // um empurrão minúsculo decide os empates na aresta entre dois hexágonos
+            var t = i / (double)n;
+            double fx = ax + (bx - ax) * t + 1e-6, fy = ay + (by - ay) * t + 2e-6, fz = az + (bz - az) * t - 3e-6;
+            double rx = Math.Round(fx), ry = Math.Round(fy), rz = Math.Round(fz);
+            double dx = Math.Abs(rx - fx), dy = Math.Abs(ry - fy), dz = Math.Abs(rz - fz);
+            if (dx > dy && dx > dz) rx = -ry - rz; else if (dy <= dz) rz = -rx - ry;
+            int l = (int)rz, c = (int)rx + (l - (l & 1)) / 2;
+            if (Dentro(c, l)) lista.Add(Indice(c, l));
+        }
+        return lista;
+    }
     /// <summary>Todos os hexágonos a até <paramref name="raio"/> de <paramref name="h"/> (inclui h).</summary>
     public IEnumerable<int> Area(int h, int raio)
     {

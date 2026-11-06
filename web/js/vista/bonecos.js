@@ -16,7 +16,7 @@ const RP = window.RP = window.RP || {};
 const BASE = new URL('../../modelos/', import.meta.url).href;
 
 /* caixas dos sprites em unidades do mundo (as mesmas de RP.sprites para a pessoa: largura, altura acima do pé, folga abaixo) */
-const CX = { pessoa: { W: 40, ALT: 44, PE: 6 }, montado: { W: 60, ALT: 50, PE: 8 } };
+const CX = { pessoa: { W: 40, ALT: 44, PE: 14 }, montado: { W: 60, ALT: 50, PE: 22 } };
 /* pixels por unidade do mundo: 4 em tela densa (celular, retina), 3 nas outras; teto do cache ≈ 30 MB */
 const RES = (window.devicePixelRatio || 1) >= 1.5 ? 4 : 3, SS = 2, MAX = 300, ORCAMENTO_MS = 7, FRAMES = 8;
 const ALTURA_MODELO = 376, ALTURA_PESSOA = 22.5, UNID = ALTURA_PESSOA / ALTURA_MODELO;   /* unidades do mundo por unidade do modelo */
@@ -336,16 +336,17 @@ function poseDe(o) {
 }
 /* 8 direções: 0 = olhando para a direita da tela, no sentido horário (a tela tem y para baixo) */
 function direcao(o) {
-  /* o.ang é a direção no chão do mapa; com a câmera girada, na tela ela vira ang + AZ3D */
-  if (o.ang != null) { const a = o.ang + ((RP.arte && RP.arte.AZ3D) || 0); return ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8; }
+  /* o.ang é a direção no chão do mapa; com a câmera girada, na tela ela vira ang + AZ */
+  if (o.ang != null) { const a = o.ang + ((RP.arte && RP.arte.AZ) || 0); return ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8; }
   return (o.dir || 1) > 0 ? 1 : 3;
 }
 function virar(grupo, d) { const a = d * Math.PI / 4; grupo.rotation.set(0, Math.atan2(Math.cos(a), Math.sin(a)), 0); }
 
 /* ---------------------------------------------------------------- render */
 function prepararCamera(cx) {
-  const k = (RP.arte && RP.arte.K) || 0.62, el = Math.asin(Math.min(0.95, k)), ce = Math.cos(el);
-  const w = cx.W / 2 / UNID, top = cx.ALT / UNID * ce, bot = cx.PE / UNID * ce;
+  /* projeção 1:1: a caixa do sprite é a da câmera, em qualquer inclinação. Visto de cima, o que é alto encurta; nada estica */
+  const k = (RP.arte && RP.arte.K3D) || 0.62, el = Math.asin(Math.min(0.95, k));
+  const w = cx.W / 2 / UNID, top = cx.ALT / UNID, bot = cx.PE / UNID;
   camera.left = -w; camera.right = w; camera.top = top; camera.bottom = -bot; camera.updateProjectionMatrix();
   camera.position.set(0, Math.sin(el) * 2000, Math.cos(el) * 2000); camera.lookAt(0, 0, 0);
   renderer.setSize(cx.W * RES * SS, (cx.ALT + cx.PE) * RES * SS, false);
@@ -353,7 +354,7 @@ function prepararCamera(cx) {
 function contorno(origem, cx, sombra) {
   const w = cx.W * RES, h = (cx.ALT + cx.PE) * RES, out = document.createElement('canvas'); out.width = w; out.height = h;
   const c = out.getContext('2d');
-  if (sombra) { c.fillStyle = 'rgba(8,10,14,0.28)'; c.beginPath(); c.ellipse(w / 2, cx.ALT * RES, sombra * RES, sombra * RES * 0.36, 0, 0, 7); c.fill(); }
+  if (sombra) { c.fillStyle = 'rgba(8,10,14,0.28)'; c.beginPath(); c.ellipse(w / 2, cx.ALT * RES, sombra * RES, sombra * RES * 0.58 * ((RP.arte && RP.arte.K3D) || 0.62), 0, 0, 7); c.fill(); }
   const t = document.createElement('canvas'); t.width = w; t.height = h; const tc = t.getContext('2d');
   tc.drawImage(origem, 0, 0, w, h); tc.globalCompositeOperation = 'source-in'; tc.fillStyle = 'rgba(28,20,14,0.55)'; tc.fillRect(0, 0, w, h);
   [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(d => c.drawImage(t, d[0], d[1]));
@@ -411,7 +412,7 @@ function chave(tipo, o, d, f) {
   const r = roupaDe(o);
   return [tipo, poseDe(o), d, f, r.tunica, r.calca, r.pele, r.cabelo, r.feminina ? 1 : 0, r.barba ? 1 : 0, r.capuz || '', r.armadura, o.capacete || '',
     o.lanca ? 1 : 0, o.escudo || '', o.arco ? 1 : 0, o.ferramenta || '', o.trabalho || '', o.carga || '', o.chapeu || '', o.bandeira || '',
-    o.cavaleiro || '', o.galope ? 1 : 0, o.andando ? 1 : 0, o.pastando ? 1 : 0, o.pelagem != null ? o.pelagem : '', o.cor || '', (RP.arte && RP.arte.K || 0).toFixed(2)].join('|');
+    o.cavaleiro || '', o.galope ? 1 : 0, o.andando ? 1 : 0, o.pastando ? 1 : 0, o.pelagem != null ? o.pelagem : '', o.cor || ''].join('|');
 }
 function quadro(o, t, pose) {
   const ciclo = CICLO[pose] || 1, fase = ((t / ciclo + (o.fase || 0) / (Math.PI * 2)) % 1 + 1) % 1;
@@ -422,12 +423,16 @@ function obter(tipo, o, t, render) {
   const d = direcao(o), pose = tipo === 'pessoa' ? poseDe(o) : (o.galope ? 'correndo' : o.andando ? 'andando' : 'parado');
   const ciclo = tipo === 'montado' ? (o.galope ? 0.6 : o.andando ? 1.05 : 2.6) : CICLO[pose];
   const fase = ((t / ciclo + (o.fase || 0) / (Math.PI * 2)) % 1 + 1) % 1, fr = Math.floor(fase * FRAMES) % FRAMES;
-  const k = chave(tipo, o, d, fr);
+  const base = chave(tipo, o, d, fr), k = base + '|' + ((RP.arte && RP.arte.K3D) || 0).toFixed(2);
   const s = cache.get(k);
   if (s) { cache.delete(k); cache.set(k, s); return s; }
   const agora = performance.now(), q = Math.floor(agora / 16);
   if (q !== quadroAtual) { quadroAtual = q; gastoQuadro = 0; }
-  if (gastoQuadro > ORCAMENTO_MS) return null;
+  if (gastoQuadro > ORCAMENTO_MS) {
+    /* sem tempo: a mesma figura na inclinação pronta mais perto (o cache guarda várias; sai quem ficou sem uso) */
+    for (const kk of RP.arte.kVizinhos()) { const v = cache.get(base + '|' + kk); if (v) return v; }
+    return null;
+  }
   let novo;
   try { novo = render(o, d, (fr + 0.5) / FRAMES); }
   catch (e) { console.error(e); B.pronto = false; B.falhou = true; return null; }
@@ -441,6 +446,5 @@ B.montado = (o, t) => obter('montado', o, t, renderMontado);
 B.renderAgora = (tipo, o, t) => { gastoQuadro = -1e9; const s = obter(tipo, o, t, tipo === 'pessoa' ? renderPessoa : renderMontado); return s; };
 B.carregar = carregar;
 /* inclinar a câmera muda o achatamento: os sprites são refeitos com a nova elevação */
-if (RP.arte && RP.arte.aoMudarK) RP.arte.aoMudarK.push(() => cache.clear());
 
 carregar().catch(e => { console.warn('bonecos 3D indisponíveis; a Vista usa as figuras 2D.', e); B.falhou = true; });
