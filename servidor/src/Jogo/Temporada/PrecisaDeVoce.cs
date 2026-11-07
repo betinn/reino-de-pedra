@@ -66,6 +66,8 @@ namespace ReinoDePedra.Jogo.Temporada
             // ---------------- oportunidades
             foreach (var p in Capturas.PresosPor(m, r.Id).Where(p => p.Estado == Capturas.Preso).OrderBy(p => p.Ate).Take(max))
                 L.Add(new(Oportunidade, "batedor", "Explorador capturado", "Peça resgate, liberte ou execute. Sem decisão, é libertado em", "#/exploradores", "Decidir", p.Ate));
+            foreach (var p in Capturas.PresosPor(m, r.Id).Where(p => p.Oferta.Count > 0).OrderBy(p => p.Ate).Take(max))
+                L.Add(new(Oportunidade, "troca", "Oferta pelo prisioneiro", "O dono oferece um pagamento. O prazo acaba em", "#/exploradores", "Responder", p.Ate));
             foreach (var p in Comercio.Abertas(m, r.Id).OrderBy(p => p.Ate).Take(max))
             {
                 var t = p.Tipo == Comercio.Pedido ? "Pedido de recursos de um aliado" : p.Tipo == Comercio.PactoT ? "Proposta de pacto" : "Proposta de troca";

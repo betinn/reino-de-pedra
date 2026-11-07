@@ -40,13 +40,23 @@ public static class VisaoExploracao
                 p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), pessoa = p.Nome, p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
                 resgate = p.Resgate.Arredondado(),
                 origem = m.Reinos.Obter(p.DonoId) is { } d ? Espionagem.Identidade(d) : null,
+                oferta = p.Oferta.Count > 0 ? p.Oferta.Arredondado() : null, p.OfertaEm,
+                ofertaValor = p.Oferta.Count > 0 ? Math.Round(Jogo.Social.Remessas.Valor(m, p.Oferta)) : (double?)null,
+                resgateValor = p.Resgate.Count > 0 ? Math.Round(Jogo.Social.Remessas.Valor(m, p.Resgate)) : (double?)null,
+                pagamento = Capturas.PagamentoACaminho(m, p),
+                cela = Capturas.Onde(m, p) is { } cl ? new { cl.Id, cl.Nome, cl.Hex } : null,
             }).ToList(),
             capturados = Capturas.PresosDe(m, r.Id).OrderBy(p => p.Ate).Select(p => new
             {
                 p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), pessoa = p.Nome, p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
                 resgate = p.Estado == Capturas.ResgatePedido ? p.Resgate.Arredondado() : null,
-                // quem capturou só aparece se pediu resgate (o pedido revela quem pede)
-                captor = p.Estado == Capturas.ResgatePedido && m.Reinos.Obter(p.CaptorId) is { } c ? Espionagem.Identidade(c) : null,
+                // quem capturou só aparece se ele se revelou: pediu resgate, aceitou a oferta ou um batedor o viu com o preso
+                captor = (p.CaptorRevelado || p.Estado == Capturas.ResgatePedido) && m.Reinos.Obter(p.CaptorId) is { } c ? Espionagem.Identidade(c) : null,
+                oferta = p.Oferta.Count > 0 ? p.Oferta.Arredondado() : null, p.OfertaEm,
+                pagamento = Capturas.PagamentoACaminho(m, p),
+                // onde está preso: só se o dono sabe (pego espionando aquele local, ou um batedor o viu lá)
+                cela = p.LocalConhecido && Capturas.Onde(m, p) is { } cl ? new { cl.Hex, c = m.G.C(cl.Hex), l = m.G.L(cl.Hex), nome = Jogo.Combate.Ataques.NomeAlvo(cl) } : null,
+                levado = !p.LocalConhecido && Capturas.Onde(m, p) is { } cl2 && cl2.Hex != p.Hex ? m.G.Direcao(p.Hex, cl2.Hex) : null,
             }).ToList(),
             bandos = Bandos(m, r),
             regras = new

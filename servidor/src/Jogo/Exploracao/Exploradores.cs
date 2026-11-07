@@ -459,9 +459,10 @@ namespace ReinoDePedra.Jogo.Exploracao
         {
             if (m.Marchas.Obter(MarchaId) is not Explorador e || e.Partida != Partida || GT.Total(e.Tropas) > 0) return;
             if (m.Reinos.Obter(CaptorId) is not { Ativo: true } captor) return;
-            if (LocalId is long lid && (m.Locais.Obter(lid) is not { } l || l.ReinoId != CaptorId || l.TropasNaGuarnicao == 0)) return;
+            Local? viu = null;
+            if (LocalId is long lid && ((viu = m.Locais.Obter(lid)) is null || viu.ReinoId != CaptorId || viu.TropasNaGuarnicao == 0)) return;
             e.RevelarPercorrido(m, m.Agora);
-            Capturas.Capturar(m, e, captor, Hex);
+            Capturas.Capturar(m, e, captor, Hex, viu);
         }
     }
 }

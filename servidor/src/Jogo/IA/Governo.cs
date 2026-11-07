@@ -88,6 +88,14 @@ public static class Governo
             }
             Tentar(() => Capturas.Decidir(m, r, p.Id, "libertar"));
         }
+        // oferta do dono (ou contraproposta ao resgate pedido): aceita se paga pelo menos o que o explorador custa
+        // (o comerciante, com a margem dele); senão recusa e o pedido de antes continua valendo
+        foreach (var p in Capturas.PresosPor(m, r.Id).Where(x => x.Oferta.Count > 0).ToList())
+        {
+            var custo = m.P.Exploradores.TryGetValue(p.TipoExp, out var x) ? Social.Remessas.Valor(m, x.Custo) : 0;
+            var minimo = custo * (r.PerfilIA == "comerciante" ? 1 + m.P.Comercio.MargemIA : 1);
+            Tentar(() => Capturas.Decidir(m, r, p.Id, Social.Remessas.Valor(m, p.Oferta) + 1e-6 >= minimo ? "aceitar" : "recusar"));
+        }
     }
 
     // ---------------------------------------------------------------- obras

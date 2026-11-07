@@ -59,6 +59,9 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Cada explorador é **uma pessoa do reino, com nome** (treinada no castelo a partir de um civil). Pode ser capturado ou morto; o relatório diz quem.
 - Quem captura um explorador vê o **reino de origem** e o **nome** da pessoa, e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado e a mesma pessoa volta para casa.
 - Só explorador **sem escolta** é capturado, ao passar à vista de tropas de outro reino; o batedor de elite só é pego espionando. Resgate pedido e não pago no prazo também liberta.
+- O preso fica num **local de quem capturou**: a guarnição que o viu, o local espionado ou, se foram tropas em campo, o local do captor mais perto de onde ele foi pego.
+- **O dono negocia** sem precisar saber quem capturou: oferece um pagamento ou contrapropõe o resgate pedido; quem capturou aceita, recusa ou pede outro valor. Aceita, o pagamento sai na hora, viaja visível e pode ser roubado; ao chegar, o explorador é solto. Pedir resgate e aceitar a oferta revelam quem capturou; oferecer e recusar, não.
+- **Resgate à força**: qualquer ataque vitorioso no local onde ele está preso o liberta, e ele volta para casa. O dono sabe onde ele foi pego e para que direção foi levado; o local exato, só se ele foi pego espionando aquele local ou se um batedor espiona o local e o vê lá (a espionagem mostra os presos e revela o captor). Local tomado ou arruinado solta todos os presos dali.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
 - **Seguir rota se desenha no mapa**: escolhida a ordem, cada clique num hexágono é um ponto, sem diálogo. A linha no chão é o caminho real, pela rota segura ou curta, e o tracejado vai do último ponto ao mouse. Enter envia, Z desfaz, O fecha o circuito, Esc cancela.
 - **O explorador não volta sozinho.** Ao chegar ao destino, fica lá esperando nova ordem (outro lugar, rota, patrulha ou voltar), mantendo a área à vista. A rota é desenhada ponto a ponto; no fim, espera no último ponto, ou recomeça do primeiro se for um circuito.
@@ -253,6 +256,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Se um objetivo não existe no local, as tropas passam ao próximo. Recursos ocupam carga e as tropas voltam quando a carga enche; a relíquia não ocupa carga. Há a opção de completar a carga com o que houver no local.
 - O ataque rápido usa o padrão: saque, objetivos automáticos (relíquia à vista e o recurso principal do local), tática média, sem estandarte e rota curta, com as tropas do último ataque.
 - A espionagem revela também o **estoque** do alvo. O relatório mostra o resultado de cada objetivo e por que as tropas voltaram.
+- **Força inimiga antes da batalha**: o envio de ataque mostra a guarnição do local por unidade, a milícia (civis presentes), as torres e os portões, e a batalha estimada pela mesma fórmula contra as tropas escolhidas (força dos dois lados, perdas, vantagem ou desvantagem). À vista agora, vale o que se vê, sem os bônus de defesa; fora da vista, o último relatório de espionagem, com a idade, que também revela os bônus. Sem nenhum dos dois, só as torres conhecidas. Não revela o dono, o escudo nem o pacto.
+- **Reconhecer**: as tropas vão em direção ao local e param à vista dele, a até 3 hexágonos (ou a visão do grupo, se menor), sem atacar. O relatório traz a força estimada; dali, o jogador ataca ou manda voltar.
 
 ### Defesa
 

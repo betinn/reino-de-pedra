@@ -651,6 +651,9 @@ public class ExploracaoTestes
         Assert.DoesNotContain(e, t.M.Marchas);
         var preso = Assert.Single(t.M.Prisioneiros);
         Assert.Equal(b.Id, preso.CaptorId);
+        Assert.Equal(cb.Id, preso.LocalId);   // fica preso no local espionado
+        Assert.True(preso.LocalConhecido);    // e o dono sabe onde
+        Assert.False(preso.CaptorRevelado);   // mas não de quem é o local
         Assert.DoesNotContain(t.M.Relatorios, x => x.ReinoId == a.Id && x.Tipo == "espionagem");
         var av = Assert.Single(Avistamentos.De(t.M, b.Id));
         Assert.Equal("espiao", av.Tipo);

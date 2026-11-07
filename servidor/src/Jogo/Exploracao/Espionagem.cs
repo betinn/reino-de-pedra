@@ -16,6 +16,11 @@ namespace ReinoDePedra.Jogo.Exploracao
         public int Torres { get; set; }
         /// <summary>Civis presentes no local na hora (a milícia que a IA estima).</summary>
         public int Milicia { get; set; }
+        /// <summary>Guarnição por unidade, civis presentes, nível dos portões e bônus de defesa (armaduras, veterania, relíquias) vistos.</summary>
+        public Dictionary<string, int> Guarnicao { get; set; } = new();
+        public int Civis { get; set; }
+        public int Portoes { get; set; }
+        public double BonusD { get; set; }
     }
 
     /// <summary>
@@ -68,7 +73,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             if (visto)
             {
                 Avistamentos.Registrar(m, dono.Id, l.Hex, "espiao", "Espião visto perto de " + l.Nome);
-                if (m.Sorte.Chance(m.P.Espiao.Capturado)) { Capturas.Capturar(m, e, dono, l.Hex); return; }
+                if (m.Sorte.Chance(m.P.Espiao.Capturado)) { Capturas.Capturar(m, e, dono, l.Hex, l); return; }
             }
             Relatar(m, r, dono, l, torres, chance, visto);
             Exploradores.IrParaCasa(m, e);
@@ -104,7 +109,13 @@ namespace ReinoDePedra.Jogo.Exploracao
                 ["visto"] = visto, ["chance"] = Math.Round(chance, 3), ["hex"] = l.Hex, ["linhas"] = linhas,
             };
             foreach (var f in ExtrasRelatorio) f(m, dono, l, dados);
-            r.LocaisEspionados[l.Id] = new LocalEspionado { DonoId = dono.Id, Nivel = l.Nivel, Quando = m.Agora, Tropas = l.TropasNaGuarnicao, Torres = torres, Milicia = (int)Math.Round(milicia) };
+            Capturas.NoRelatorio(m, r, l, dados);
+            r.LocaisEspionados[l.Id] = new LocalEspionado
+            {
+                DonoId = dono.Id, Nivel = l.Nivel, Quando = m.Agora, Tropas = l.TropasNaGuarnicao, Torres = torres, Milicia = (int)Math.Round(milicia),
+                Guarnicao = Reinos.Tropas.Limpo(l.Guarnicao), Civis = (int)Combate.Combates.PopDoLocal(m, dono, l),
+                Portoes = l.Tipo == TipoLocal.Castelo ? l.Portoes : 0, BonusD = Combate.Bonus.SomaDefesa(m, l),
+            };
             m.Sujar(r);
             Conhecimento.Conhecer(m, r, dono, "espionagem");
             m.Avisar(r.Id, "mapa");

@@ -37,6 +37,9 @@ public static class SistemaCombate
             : []);
         // os arqueiros no alto enxergam o alcance da torre
         Nevoas.FontesDeVisao.Add((mm, reinoId) => Defesas.DoReino(mm, reinoId).SelectMany(t => mm.G.Area(t.Hex, Defesas.Alcance(mm, t))).ToList());
+        // resgate à força: vencer no local onde estão presos liberta os exploradores do atacante; local perdido solta os presos
+        Combates.AoTerminar.Add(Capturas.AoTerminarBatalha);
+        Quedas.AoCair += (mm, _, _, _) => Capturas.Conferir(mm);
     });
 }
 

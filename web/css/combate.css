@@ -16,3 +16,6 @@
 .combate-faixa span { flex: 1; font-size: var(--fs-2); }
 .lc-corpo .selo-perigo { align-self: flex-start; }
 .bat-acoes[hidden] { display: none; }
+.forca-inimiga .bat-lado b { font-size: 26px; }
+.forca-inimiga .linha-entre { flex-wrap: wrap; gap: var(--esp-2); }
+.forca-inimiga .barra-dupla { margin-top: var(--esp-1); }

@@ -60,7 +60,7 @@
       '<p class="fraco" style="font-size:var(--fs-2)">Pago, a carga viaja até o castelo de quem capturou e, ao chegar, o explorador é solto. Se for roubada, ele continua preso. Sem pagamento, o captor decide; sem decisão até o prazo, ele é libertado.</p>' +
       (indo ? '<span class="selo selo-info">' + RP.icone('carroca') + 'resgate chega ' + RP.barraTempo(x.partida, x.chegada, { classe: 'curta', cor: 'info', rotulo: 'Resgate a caminho' }) + '</span>'
         : x.recusado ? '<span class="selo">Você disse que não paga</span>'
-        : '<div class="linha relq-acoes"><button type="button" class="btn btn-p btn-primario" data-pagar-resgate="' + x.prisioneiroId + '">' + RP.icone('carroca') + 'Pagar resgate</button><button type="button" class="btn btn-p btn-fantasma" data-recusar-resgate="' + x.prisioneiroId + '">Não pagar</button></div>') + '</div>';
+        : '<div class="linha relq-acoes"><button type="button" class="btn btn-p btn-primario" data-pagar-resgate="' + x.prisioneiroId + '">' + RP.icone('carroca') + 'Pagar resgate</button><a class="btn btn-p" href="#/exploradores">' + RP.icone('troca') + 'Contrapropor ou resgatar</a><button type="button" class="btn btn-p btn-fantasma" data-recusar-resgate="' + x.prisioneiroId + '">Não pagar</button></div>') + '</div>';
   }
   function cardMinha(p) {
     var est = p.estado === 'aberta' ? 'aguardando resposta' : p.estado === 'aceita' ? 'aceita' + (p.chegada && p.chegada > RP.agora() ? ' · cargas chegam ' + RP.barraTempo(p.partida, p.chegada, { classe: 'curta', cor: 'info', rotulo: 'Cargas a caminho' }) : '') : p.estado === 'recusada' ? 'recusada' : p.estado === 'cancelada' ? 'cancelada' : p.estado;

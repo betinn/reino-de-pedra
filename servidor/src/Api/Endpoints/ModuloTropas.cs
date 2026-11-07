@@ -68,13 +68,14 @@ public sealed class ModuloTropas : IModuloApi
                 if (p.MarchaId is long mid)
                 {
                     var ex = Exercitos.Do(m, r, mid);
-                    return VisaoTropas.Previa(m, r, ex.HexEm(m.Agora), para, ex.Tropas);
+                    return VisaoTropas.Previa(m, r, ex.HexEm(m.Agora), para, ex.Tropas, Jogo.Combate.Bonus.SomaAtaque(m, ex));
                 }
                 var l = m.Locais.Obter(p.DeLocalId ?? 0);
                 if (l == null || l.ReinoId != r.Id) throw new RegraException("Local não é seu.", 404);
                 var (tropas, escolha) = EnvioPessoas.Ler(m, r, l.Id, p.Pessoas, p.Tropas);
                 using var _ = escolha;
-                return VisaoTropas.Previa(m, r, l.Hex, para, GT.Validar(m, l, tropas));
+                var g = GT.Validar(m, l, tropas);
+                return VisaoTropas.Previa(m, r, l.Hex, para, g, Jogo.Combate.Reconhecimentos.BonusDoLocal(m, r, l, g));
             }), Json.Web);
         });
 
