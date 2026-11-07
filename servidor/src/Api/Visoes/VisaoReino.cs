@@ -19,12 +19,16 @@ public static class VisaoReino
         var filas = r.Filas.ToDictionary(kv => kv.Key, kv => kv.Value.Itens.Select(i => Item(m, r, i)).ToList());
         var n = Economia.Moradias(m, r) + r.Fila(Obras.Fila).Itens.Count(i => i.Tipo == ObraMoradia.Id);
         var f = r.Fundados + r.Fila(Obras.Fila).Itens.Count(i => i.Tipo == ObraFundar.Id);
+        var ritmo = Economia.RitmoPopulacao(m, r);
         var dados = new Dictionary<string, object?>
         {
             ["id"] = r.Id, ["nome"] = r.Nome, ["brasao"] = r.Brasao, ["iconeProprio"] = r.IconeProprio, ["iconeVersao"] = r.IconeVersao,
             ["agora"] = agora, ["escudoAte"] = r.EscudoAte > agora ? r.EscudoAte : null,
             ["casteloId"] = r.CasteloId, ["nivelCastelo"] = castelo?.Nivel ?? 0,
             ["pop"] = Math.Floor(r.Pop), ["teto"] = Economia.Teto(m, r), ["tropas"] = Economia.Tropas(m, r),
+            // ritmo da população (barra do topo): pessoas por hora agora, quando nasce a próxima e se a comida dá o bônus
+            ["popHora"] = Math.Round(ritmo.porHora, 2), ["popProxima"] = ritmo.proxima,
+            ["popComidaSobra"] = ritmo.sobra, ["popBonusComida"] = m.P.BonusComida,
             ["trabalhadores"] = Economia.TrabalhadoresNecessarios(m, r), ["trabalhando"] = Economia.Trabalhando(m, r), ["eficiencia"] = Math.Round(ef, 3),
             ["pessoas"] = m.PessoasDe(r.Id).Count(),
             ["moradias"] = Economia.Moradias(m, r),

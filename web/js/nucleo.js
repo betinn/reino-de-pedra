@@ -334,10 +334,24 @@
       '<small>' + (taxa ? '+' + RP.num(taxa) + ' por hora' + (enche != null ? (enche <= 0 ? ' · estoque cheio, produção parada' : ' · enche em ' + RP.fmtDuracao(enche / 1000)) : '') : 'nenhum local produz') + '</small>' +
       '<small>Clique: produção e estoques do reino</small>';
   }
+  /* ritmo da população: "+0,4/h", ou "parado" quando não cresce (teto cheio) */
+  RP.popHoraTxt = function (r) {
+    var v = (r && r.popHora) || 0;
+    if (v <= 0) return 'parado';
+    return '+' + v.toLocaleString('pt-BR', { maximumFractionDigits: v < 0.1 ? 2 : 1 }) + '/h';
+  };
+  function dicaPop() {
+    var r = RP.reino; if (!r) return '<b>População</b>';
+    var livre = r.teto - r.pop - r.tropas, bonus = Math.round(100 * (r.popBonusComida || 0));
+    return '<b>População</b><span>' + RP.esc(RP.num(r.pop) + ' civis + ' + RP.num(r.tropas) + ' soldados de ' + RP.num(r.teto) + ' moradores') + '</span>' +
+      '<small>' + (r.popHora > 0 ? 'Cresce ' + RP.popHoraTxt(r).replace('/h', ' por hora') + (r.popProxima ? ' · próxima pessoa em ' + RP.fmtResta(r.popProxima - RP.agora()) : '') : 'Não cresce: o teto está cheio. Construa moradias.') + '</small>' +
+      '<small>' + (r.popComidaSobra ? 'Comida de sobra: cresce ' + bonus + '% mais rápido.' : 'Com comida acima do dobro da produção do castelo, cresce ' + bonus + '% mais rápido.') + (livre > 0 && r.popHora > 0 ? ' Quanto mais perto do teto, mais devagar.' : '') + '</small>' +
+      '<small>Clique: Meu reino</small>';
+  }
   function mostrarDica(el) {
     if (!dicaEl) dicaEl = RP.$('#dica');
     if (!dicaEl) return;
-    var html = el.hasAttribute('data-dica-rec') ? dicaRecurso(el.getAttribute('data-dica-rec')) : el.hasAttribute('data-dica-pop') ? '<b>População</b><span>' + RP.esc(RP.reino ? RP.num(RP.reino.pop) + ' civis + ' + RP.num(RP.reino.tropas) + ' soldados de ' + RP.num(RP.reino.teto) + ' moradores' : '') + '</span><small>Clique: Meu reino</small>' : el.getAttribute('data-dica');
+    var html = el.hasAttribute('data-dica-rec') ? dicaRecurso(el.getAttribute('data-dica-rec')) : el.hasAttribute('data-dica-pop') ? dicaPop() : el.getAttribute('data-dica');
     if (!html) return;
     dicaEl.innerHTML = html; dicaEl.hidden = false;
     var r = el.getBoundingClientRect(), w = dicaEl.offsetWidth, h = dicaEl.offsetHeight;
@@ -692,7 +706,7 @@
         RP.icone(k, 'r-' + k) + '<span class="rec-num" data-rec="' + k + '" data-local="*" data-curto>' + RP.numCurto(q) + '</span>' + (taxa ? '<span class="rec-taxa">+' + RP.numCurto(taxa) + '/h</span>' : '') + '</button>';
     });
     h += '<button class="rec" type="button" data-ir="reino" data-dica-pop aria-label="População">' + RP.icone('populacao', 'r-populacao') +
-      '<span class="rec-num" data-pop data-curto>' + RP.numCurto(r ? r.pop : 0) + '</span>' + (r ? '<span class="rec-taxa">de ' + RP.numCurto(r.teto) + '</span>' : '') + '</button>';
+      '<span class="rec-num" data-pop data-curto>' + RP.numCurto(r ? r.pop : 0) + '</span>' + (r ? '<span class="rec-taxa">de ' + RP.numCurto(r.teto) + ' · ' + RP.popHoraTxt(r) + '</span>' : '') + '</button>';
     if (!opt.semSino) h += '<button class="btn-sino" type="button" data-abrir-notificacoes aria-label="Notificações (' + RP.naoLidas + ' novas)">' +
       RP.icone('sino') + '<span class="contador"' + (RP.naoLidas ? '' : ' hidden') + '>' + RP.naoLidas + '</span></button>';
     return h + '</div>';

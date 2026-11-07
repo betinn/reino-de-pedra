@@ -142,11 +142,7 @@ public static class Economia
             }
         // população: logística, fechada no intervalo; teto livre = teto − tropas. A parte fracionária fica guardada
         // (PopFracao) e cada vez que fecha 1 nasce uma pessoa com nome, que vai para a vaga mais necessária.
-        var castelo = m.Locais.Obter(r.CasteloId);
-        var sobra = castelo != null && comidaH > m.F.ProducaoCastelo(castelo.Nivel) * 2;
-        var livreTeto = Math.Max(1, Teto(m, r) - Tropas(m, r));
-        var taxaPop = m.P.CrescPop * (sobra ? 1 + m.P.BonusComida : 1);
-        foreach (var f in ModificadoresCrescimento) taxaPop *= f(m, r);
+        var (livreTeto, taxaPop, _) = Crescimento(m, r, comidaH);
         var atual = r.Pop + r.PopFracao;
         var depois = Logistica(atual, livreTeto, taxaPop, dtH, m.P.PopSemente);
         r.AtualizadoEm = agora;
@@ -157,6 +153,39 @@ public static class Economia
             r.PopFracao = Math.Max(0, depois - Math.Floor(depois + 1e-9));
             if (nascem > 0) Pessoas.Pessoas.Nascer(m, r, nascem);
         }
+    }
+
+    /// <summary>
+    /// Parâmetros do crescimento da população: teto livre (teto − tropas), taxa por hora (com o bônus de comida de sobra e
+    /// os modificadores) e se há comida de sobra (produção de comida acima do dobro da do castelo).
+    /// </summary>
+    public static (double livreTeto, double taxa, bool sobra) Crescimento(Mundo m, Reino r, double? comidaH = null)
+    {
+        var comida = comidaH ?? m.LocaisDe(r.Id).Sum(l => TaxaLocal(m, r, l).Qtd("comida"));
+        var castelo = m.Locais.Obter(r.CasteloId);
+        var sobra = castelo != null && comida > m.F.ProducaoCastelo(castelo.Nivel) * 2;
+        var livreTeto = Math.Max(1, Teto(m, r) - Tropas(m, r));
+        var taxa = m.P.CrescPop * (sobra ? 1 + m.P.BonusComida : 1);
+        foreach (var f in ModificadoresCrescimento) taxa *= f(m, r);
+        return (livreTeto, taxa, sobra);
+    }
+
+    /// <summary>
+    /// Ritmo atual da população, para mostrar: pessoas por hora (o que cresce na próxima hora), quando nasce a próxima
+    /// pessoa (instante, ou null se não cresce) e se há comida de sobra.
+    /// </summary>
+    public static (double porHora, long? proxima, bool sobra) RitmoPopulacao(Mundo m, Reino r)
+    {
+        var (livre, taxa, sobra) = Crescimento(m, r);
+        var atual = r.Pop + r.PopFracao;
+        double Em(double h) => Logistica(atual, livre, taxa, h, m.P.PopSemente);
+        var porHora = Math.Max(0, Em(1) - atual);
+        var alvo = Math.Floor(r.Pop + 1e-9) + 1;
+        if (porHora <= 1e-9 || Em(10000) < alvo - 1e-9) return (porHora, null, sobra);
+        double lo = 0, hi = 1;
+        while (Em(hi) < alvo && hi < 10000) hi *= 2;
+        for (var i = 0; i < 50; i++) { var mid = (lo + hi) / 2; if (Em(mid) >= alvo) hi = mid; else lo = mid; }
+        return (porHora, r.AtualizadoEm + (long)Math.Ceiling(hi * T.Hora), sobra);
     }
 
     /// <summary>Multiplicadores da taxa de crescimento da população do reino (legado: relíquia de crescimento).</summary>
