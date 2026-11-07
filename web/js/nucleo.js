@@ -438,6 +438,7 @@
       if (m) { m.dispatchEvent(new CustomEvent('rp:fechar-modal')); return; }
       if (RP.$('.atalhos-fundo')) { RP.$('.atalhos-fundo').remove(); return; }
       if (RP.folhaAberta()) { RP.fecharFolha(); return; }
+      if (RP.rotaExp && RP.rotaExp.ativa()) { RP.rotaExp.cancelar(); return; }
       if (RP.selecao && (RP.selecao.n() || RP.selecao.modo)) { RP.selecao.limpar(); return; }
       if (RP.envio && RP.envio.ativo()) { RP.envio.cancelar(); return; }
       if (RP.painel.aberto) { RP.ir('mapa'); return; }

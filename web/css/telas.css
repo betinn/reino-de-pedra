@@ -944,13 +944,21 @@ a.guia-item { color: inherit; text-decoration: none; }
 }
 .ordem-barra[hidden] { display: none; }
 .ordem-botoes { display: flex; flex-wrap: wrap; gap: 6px; }
-.em-desenho .ordem-barra { flex-wrap: wrap; }
-.em-desenho .ordem-txt { flex-basis: calc(100% - 40px); }
-.em-desenho .cena-cv, .em-desenho .mapa-vp { cursor: crosshair; }
+.em-desenho .ordem-barra, .em-rota .rota-barra { flex-wrap: wrap; }
+.em-desenho .ordem-txt, .em-rota .ordem-txt { flex-basis: calc(100% - 40px); }
+.em-desenho .cena-cv, .em-desenho .mapa-vp, .em-rota .cena-cv, .em-rota .mapa-vp { cursor: crosshair; }
+.envio-atalhos { display: flex; gap: 6px; margin-bottom: var(--esp-2); }
+.envio-resumo { margin-top: var(--esp-2); }
+.envio-resumo p { margin: 0; }
+/* envio rápido: painel mais largo e linhas de uma altura só, para ver todas as tropas sem rolar */
+.folha:has(.envio-resumo) { width: 760px; max-width: calc(100vw - 32px); max-height: min(62vh, 480px); }
+.folha:has(.envio-resumo) .folha-corpo { overflow-x: hidden; }
+.folha:has(.envio-resumo) .grupo-linha small { display: none; }
+.folha:has(.envio-resumo) .card.pilha { padding: var(--esp-2) var(--esp-3); gap: 4px; }
 .ordem-ico .ico { color: var(--cor-primaria); width: 24px; height: 24px; }
 .ordem-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
 .ordem-txt small { font-size: var(--fs-1); color: var(--cor-texto-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.em-ordem .faixa-alerta, .em-ordem .faixa-mais, .em-ordem .faixas-extra { display: none; }
+.em-ordem .faixa-alerta, .em-ordem .faixa-mais, .em-ordem .faixas-extra, .em-rota .faixa-alerta, .em-rota .faixa-mais, .em-rota .faixas-extra { display: none; }
 @media (prefers-reduced-motion: no-preference) { .ordem-ico .ico { animation: pulso 1.6s ease-in-out infinite; } }
 
 /* ---------------------------------------------------------------- ferraria, eras, feridos e bônus */

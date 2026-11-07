@@ -223,7 +223,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                 if (ps.Count == 0 && destino is int d0) ps.Add(d0);
                 while (ps.Count > 0 && ps[0] == de) ps.RemoveAt(0);
                 if (ps.Count == 0) throw new RegraException("Escolha os pontos da rota.");
-                if (ps.Count > Fila.Maximo) throw new RegraException("A rota tem no máximo " + Fila.Maximo + " pontos.");
+                if (ps.Count > m.P.Patrulha.MaxHexes) throw new RegraException("A rota tem no máximo " + m.P.Patrulha.MaxHexes + " pontos.");
                 if (ps.Any(h => !m.G.Valido(h))) throw new RegraException("Ponto fora do mapa.");
                 e.Ordem = ordem; e.Pontos = ps; e.Ponto = 0; e.Alvo = ps[^1];
                 return ps[0];

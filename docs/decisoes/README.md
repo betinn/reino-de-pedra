@@ -33,5 +33,6 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0028](0028-vida-e-coleta.md) | Vida das pessoas sem tique (dano e instante), fauna como dano com fuga do explorador rápido, sobreviventes de batalha feridos; coleta de madeira e pedra no mapa por tropas e civis sem trabalho, com hexágono que se esgota e se recupera; começo mais rápido |
 | [0029](0029-tropas-no-mapa.md) | Tropas no mapa: construções que giram em 3D por passos, círculo azul na seleção, envio em 3 toques sem prévia, juntar e separar tropas (`Marchas/Grupos.cs`, ordem `juntar`) e patrulha pela linha exata desenhada no mapa (`Caminhos.Seguir`, `P.patrulha.maxHexes`) |
 | [0030](0030-mesa-desktop.md) | Mesa de jogo para computador: mundo na tela inteira, botão esquerdo seleciona e direito ordena, menu de contexto, dicas, atalhos (`RP.teclas`, F1), grupos de controle, janela flutuante para as telas, painel de seleção na base, minimapa recortado ao conhecido; `desktop.css` no lugar de `concha.css` |
+| [0031](0031-rota-desenhada-envio-rapido-nevoa.md) | Rota do explorador desenhada com um clique por ponto, envio rápido de tropas pelo botão direito e névoa mais leve na Vista |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

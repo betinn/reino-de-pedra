@@ -33,7 +33,7 @@
     cavalo: ['#7a4e2c', '#3a2a20', '#cfc4b2', '#9a6a3e'],
     ouro: '#f0c440', prata: '#dfe5eb', gema: '#6fd3e3', sal: '#f4f1ea', lend: '#c98cf0', erva1: '#9a6fd0', erva2: '#5fb6c9',
     aco: '#b9c4cf', minerioFerro: '#6d7a88', minerioPedra: '#c3bdb2',
-    nevoa: '#232830',
+    nevoa: '#3b434d',
     hostil: '#3d4149', hostilEsc: '#2d3036', hostilEscudo: '#4b4f57', cinto: '#1e1b18'
   };
   function rgb(h) { var n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
@@ -43,9 +43,9 @@
     var r = [0, 1, 2].map(function (i) { var dess = x[i] + (g - x[i]) * 0.55; return Math.round(dess + (y[i] - dess) * t); });
     return '#' + r.map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join('');
   }
-  /* paleta da informação antiga: dessaturada e escurecida (42% de #30363f) */
+  /* paleta da informação antiga: dessaturada, com um tom discreto da névoa (26% de #3b434d) */
   var PA = {};
-  Object.keys(P).forEach(function (k) { PA[k] = Array.isArray(P[k]) ? P[k].map(function (c) { return mix(c, '#30363f', 0.42); }) : mix(P[k], '#30363f', 0.42); });
+  Object.keys(P).forEach(function (k) { PA[k] = Array.isArray(P[k]) ? P[k].map(function (c) { return mix(c, '#3b434d', 0.26); }) : mix(P[k], '#3b434d', 0.26); });
 
   /* ruído determinístico inteiro (igual ao protótipo), para a arte não "tremer" entre quadros */
   function hash(x, y, s) {
@@ -91,6 +91,17 @@
     gr.addColorStop(0, 'rgba(120,128,142,.85)'); gr.addColorStop(0.55, 'rgba(88,96,110,.5)'); gr.addColorStop(1, 'rgba(60,66,78,0)');
     g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
     return PUFF;
+  }
+
+  /* borda da névoa: a cor do desconhecido, cheia no meio e sumindo em volta (funde o mapa conhecido com a névoa) */
+  var BORDA = null;
+  function nevoaBorda() {
+    if (BORDA) return BORDA;
+    BORDA = document.createElement('canvas'); BORDA.width = BORDA.height = 128;
+    var g = BORDA.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64), n = rgb(P.nevoa).join(',');
+    gr.addColorStop(0, 'rgba(' + n + ',.95)'); gr.addColorStop(0.45, 'rgba(' + n + ',.8)'); gr.addColorStop(0.75, 'rgba(' + n + ',.28)'); gr.addColorStop(1, 'rgba(' + n + ',0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    return BORDA;
   }
 
   /* ================================================================ primitivas */
@@ -571,7 +582,7 @@
 
   RP.arte = {
     K: K, OB: OB, P: P, PA: PA, mix: mix, hash: hash, cores: cores, corDono: corDono, corNivel: corNivel, tintura: tintura, CRU: CRU, COR_REL: COR_REL,
-    puff: puff, gz: gz, elipse: elipse, poli: poli, linha: linha, sombra: sombra, caixa: caixa, ameias: ameias, casa: casa, torre: torre,
+    puff: puff, nevoaBorda: nevoaBorda, gz: gz, elipse: elipse, poli: poli, linha: linha, sombra: sombra, caixa: caixa, ameias: ameias, casa: casa, torre: torre,
     bandeira: bandeira, arvoreConifera: arvoreConifera, arvoreFolhosa: arvoreFolhosa, arbusto: arbusto, rocha: rocha, monte: monte, pico: pico,
     junco: junco, fumaca: fumaca, brilho: brilho, pedestalReliquia: pedestalReliquia, bauReliquia: bauReliquia, pessoa: pessoa, cavalo: cavalo,
     carroca: carroca, animal: animal, local: local, ruina: ruina, jazida: jazida, placaPerigo: placaPerigo, marco: marco, andaime: andaime,

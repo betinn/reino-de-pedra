@@ -20,7 +20,7 @@
   };
   var ORDENS = {
     explorar: { nome: 'Explorar área', txt: 'Vai até o destino revelando o caminho e volta ao castelo.' },
-    rota: { nome: 'Seguir rota', txt: 'Passa pelos pontos, em ordem, e espera no último. Em circuito, recomeça do primeiro até nova ordem.' },
+    rota: { nome: 'Seguir rota', txt: 'Cada clique no mapa é um ponto. Passa por eles, em ordem, e espera no último; em circuito, recomeça do primeiro até nova ordem.' },
     aguardar: { nome: 'Esperando ordens', txt: 'Chegou ao destino e espera: mande explorar outro lugar, seguir rota, patrulhar ou voltar.' },
     patrulhar: { nome: 'Patrulhar', txt: 'Vai e volta entre o ponto de partida e o destino até nova ordem, mantendo a área à vista.' },
     espionar: { nome: 'Espionar', txt: 'Fica alguns minutos no local de outro reino e traz dono, defesa, estoque e relíquias.' },
@@ -79,13 +79,16 @@
   };
 
   /* ---------------------------------------------------------------- escolher o destino no mapa */
-  var escolhendo = null;   /* 'destino' | 'ponto' */
+  var escolhendo = null;   /* 'destino' */
   function escolherNoMapa(modo) {
     escolhendo = modo;
     RP.ir('mapa');
-    RP.aviso({ titulo: modo === 'ponto' ? 'Clique no próximo ponto' : 'Clique no destino', texto: 'Depois, "Escolher este destino".', icone: 'alvo', ms: 2200 });
+    RP.aviso({ titulo: 'Clique no destino', texto: 'Depois, "Escolher este destino".', icone: 'alvo', ms: 2200 });
   }
-  document.addEventListener('rp:tela', function (ev) { if (ev.detail !== 'mapa' && ev.detail !== 'exploradores') escolhendo = null; });
+  document.addEventListener('rp:tela', function (ev) {
+    if (ev.detail !== 'mapa' && ev.detail !== 'exploradores') escolhendo = null;
+    if (rota && ev.detail !== 'mapa') pararRota();   /* outra janela encerra o desenho; os pontos ficam na ordem */
+  });
 
   /* ---------------------------------------------------------------- estado do formulário */
   var ex = { tipo: 'cavalo', ordem: 'explorar', alvo: null, pontos: [], circuito: false, seguro: true,   /* rota segura por padrão: desvia do perigo conhecido */ comEscolta: false, escolta: {}, previa: null, ativo: null, chave: '' };
@@ -96,6 +99,7 @@
   function pedirPrevia(el) {
     var h = destinoAtual();
     var corpo = ex.ativo ? { marchaId: ex.ativo, destinoHex: h } : { tipo: ex.tipo, destinoHex: h, escolta: ex.comEscolta ? ex.escolta : {} };
+    if (ex.ordem === 'rota') corpo.pontos = ex.pontos;   /* o caminho inteiro, de ponto em ponto */
     var chave = JSON.stringify(corpo);
     if (h == null) { ex.previa = null; ex.chave = ''; return; }
     if (chave === ex.chave) return;
@@ -166,7 +170,7 @@
       return '<div class="card pilha destino-card">' + (ex.pontos.length ? ex.pontos.map(function (h, i) {
         return '<div class="linha-entre"><span class="linha"><span class="obj-n">' + (i + 1) + '</span>' + RP.esc(nome(h)) + '</span><button type="button" class="btn btn-icone btn-fantasma" data-exp-tirar="' + i + '" aria-label="Tirar o ponto ' + (i + 1) + '">' + RP.icone('fechar') + '</button></div>';
       }).join('') : '<p class="fraco">Nenhum ponto ainda.</p>') +
-        '<button type="button" class="btn btn-p" data-exp-escolher="ponto">' + RP.icone('mais') + 'Adicionar ponto no mapa</button>' +
+        '<button type="button" class="btn btn-p" data-exp-desenhar>' + RP.icone('mapa') + (ex.pontos.length ? 'Continuar no mapa' : 'Desenhar no mapa') + '</button>' +
         (ex.pontos.length > 1 ? '<button type="button" class="btn btn-p btn-fantasma" data-exp-circuito aria-pressed="' + !!ex.circuito + '">' + RP.icone('seta') +
           (ex.circuito ? 'Em circuito: recomeça do primeiro ponto' : 'Uma vez só: espera no último ponto') + '</button>' : '') + '</div>';
     }
@@ -250,17 +254,145 @@
     if (destinoAtual() == null) { RP.aviso({ titulo: 'Escolha o destino', icone: 'alvo', tipo: 'alerta' }); return; }
     if (!ativo && (!tipo || !tipo.livres)) { RP.aviso({ titulo: 'Nenhum ' + (tipo ? tipo.nome.toLowerCase() : 'explorador') + ' livre', texto: 'Treine um novo ou espere um voltar.', icone: 'explorador', tipo: 'alerta' }); return; }
     if (!p || !p.curta || !p.curta.ok) return;
+    ordenar(function () {
+      RP.exploracao.carregar().then(function () { desenhar(el); }, function () { /* offline */ });
+      void d;
+    });
+  }
+  /* manda a ordem do formulário: novo explorador ou nova ordem ao que está em campo */
+  function ordenar(feito) {
+    var ativo = ex.ativo && RP.exploracao.ativo(ex.ativo);
     var corpo = { ordem: ex.ordem, destinoHex: ex.ordem === 'rota' ? null : ex.alvo, pontos: ex.ordem === 'rota' ? ex.pontos : null, circuito: ex.ordem === 'rota' && !!ex.circuito, seguro: !!ex.seguro };
     var req = ativo ? RP.post('/exploradores/' + ativo.id + '/ordem', corpo)
       : RP.post('/exploradores/enviar', Object.assign({ tipo: ex.tipo, escolta: ex.comEscolta ? ex.escolta : null }, corpo));
     RP.tentar(req).then(function (e) {
       RP.aviso({ titulo: ativo ? 'Nova ordem dada' : 'Explorador enviado', texto: e && e.chegada ? 'Chega ' + RP.fmtEm(e.chegada) + '.' : '', icone: RP.ICONE_EXPLORADOR[ex.tipo] || 'explorador', tipo: 'sucesso' });
       ex.ativo = null; ex.escolta = {}; ex.comEscolta = false; ex.chave = '';
-      RP.exploracao.carregar().then(function () { desenhar(el); }, function () { /* offline */ });
       RP.recarregarReino();
-      void d;
+      feito();
     });
   }
+
+  /* ---------------------------------------------------------------- rota desenhada no mapa
+     "Seguir rota" entra num modo de desenho: cada clique (esquerdo ou direito) num hexágono é um ponto, sem diálogo. A barra
+     do topo envia (Enter), desfaz (Z), fecha o circuito (O) e cancela (Esc). A linha no chão é o caminho que o explorador
+     fará de verdade (a prévia com os pontos, rota segura por padrão); o tracejado leva do último ponto ao mouse. */
+  var rota = null;   /* { antes, previa, feitos, chave, hover } */
+  function origemRota() {
+    var a = ex.ativo && RP.exploracao.ativo(ex.ativo), d = RP.exploracao.dados;
+    return a ? a.hex : d && d.castelo ? d.castelo.hex : null;
+  }
+  function caminhoRota() {
+    var p = rota && rota.previa;
+    if (!p || !p.curta || !p.curta.ok) return null;
+    return ex.seguro && p.segura.ok ? p.segura : p.curta;
+  }
+  function comecarRota() {
+    var ativo = ex.ativo && RP.exploracao.ativo(ex.ativo), tipo = RP.exploracao.tipo(ex.tipo);
+    if (!ativo && (!tipo || !tipo.livres)) { RP.aviso({ titulo: 'Nenhum ' + (tipo ? tipo.nome.toLowerCase() : 'explorador') + ' livre', texto: 'Treine um novo ou espere um voltar.', icone: 'explorador', tipo: 'alerta' }); return; }
+    if (RP.envio && RP.envio.ativo()) RP.envio.cancelar();
+    if (RP.selecao) RP.selecao.limpar();
+    rota = { antes: ex.pontos.slice(), previa: null, feitos: 0, chave: '', hover: -1 };
+    RP.ir('mapa');
+    barraRota(); pedirPreviaRota();
+  }
+  function pararRota() { rota = null; barraRota(); if (RP.mapa.redesenhar) RP.mapa.redesenhar(); }
+  function pedirPreviaRota() {
+    var n = ex.pontos.length, corpo = ex.ativo ? { marchaId: ex.ativo, pontos: ex.pontos } : { tipo: ex.tipo, pontos: ex.pontos, escolta: ex.comEscolta ? ex.escolta : {} };
+    var chave = JSON.stringify(corpo);
+    rota.chave = chave;
+    if (!n) { rota.previa = null; rota.feitos = 0; return; }
+    RP.post('/exploracao/previa', corpo).then(function (p) {
+      if (!rota || rota.chave !== chave) return;
+      rota.previa = p; rota.feitos = n; barraRota();
+      if (RP.mapa.redesenhar) RP.mapa.redesenhar();
+    }, function (e) { if (rota && rota.chave === chave) { rota.previa = { erro: e.message }; barraRota(); } });
+  }
+  function mudouRota() { barraRota(); pedirPreviaRota(); if (RP.mapa.redesenhar) RP.mapa.redesenhar(); }
+  function barraRota() {
+    var topo = RP.$('.mapa-topo'); if (!topo) return;
+    var b = RP.$('.rota-barra', topo);
+    if (!b) { b = document.createElement('div'); b.className = 'ordem-barra rota-barra'; b.setAttribute('role', 'status'); topo.appendChild(b); }
+    b.hidden = !rota;
+    document.documentElement.classList.toggle('em-rota', !!rota);
+    if (!rota) return;
+    var n = ex.pontos.length, p = rota.previa, esc = caminhoRota(), erro = p && (p.erro || (p.curta && !p.curta.ok));
+    var duas = p && p.curta && p.curta.ok && p.segura.ok && (p.segura.hexes !== p.curta.hexes || p.segura.min !== p.curta.min);
+    var txt = !n ? 'Clique em cada ponto do caminho, na ordem'
+      : n + (n === 1 ? ' ponto' : ' pontos') + (erro ? ' · ' + (p.erro ? RP.esc(p.erro) : 'sem caminho até o último ponto') : esc ? ' · ' + esc.hexes + ' hexágonos · chega em ' + RP.fmtDuracao(esc.min * 60) : '') +
+        ' · ' + (ex.circuito && n > 1 ? 'recomeça do primeiro' : 'espera no último');
+    b.innerHTML = '<span class="ordem-ico">' + RP.icone('rota') + '</span><span class="ordem-txt"><b>Desenhe a rota</b><small>' + txt + '</small></span>' +
+      '<span class="ordem-botoes"><button type="button" class="btn btn-p btn-primario' + (n && !erro ? '' : ' btn-inativo') + '" data-rota-enviar>' + RP.icone(RP.ICONE_EXPLORADOR[ex.tipo] || 'explorador') + 'Enviar<kbd class="tecla">Enter</kbd></button>' +
+      (duas ? '<button type="button" class="btn btn-p btn-fantasma" data-rota-caminho aria-pressed="' + !!ex.seguro + '">' + (ex.seguro ? 'Rota segura' : 'Rota curta') + '</button>' : '') +
+      (n > 1 ? '<button type="button" class="btn btn-p btn-fantasma" data-rota-circuito aria-pressed="' + !!ex.circuito + '">' + (ex.circuito ? 'Circuito: sim' : 'Circuito: não') + '<kbd class="tecla">O</kbd></button>' : '') +
+      '<button type="button" class="btn btn-p btn-fantasma' + (n ? '' : ' btn-inativo') + '" data-rota-desfazer>Desfazer<kbd class="tecla">Z</kbd></button>' +
+      '<button type="button" class="btn btn-p btn-fantasma" data-rota-ajustes data-dica="Escolta e pontos, na janela de Exploradores">Ajustes</button>' +
+      '<button type="button" class="btn btn-p btn-fantasma btn-icone" data-rota-cancelar aria-label="Cancelar a rota" data-dica="Cancelar <kbd class=\'tecla\'>Esc</kbd>">' + RP.icone('fechar') + '</button></span>';
+  }
+  function enviarRota() {
+    if (!rota || !ex.pontos.length) return;
+    var p = rota.previa;
+    if (p && (p.erro || (p.curta && !p.curta.ok))) { RP.aviso({ titulo: 'Sem caminho até o último ponto', texto: 'Desfaça o ponto ou escolha outro.', icone: 'alerta', tipo: 'alerta' }); return; }
+    ordenar(function () {
+      pararRota();
+      ex.pontos = []; ex.circuito = false; ex.ordem = 'explorar';
+      if (RP.mapa.recarregar) RP.mapa.recarregar();
+      RP.exploracao.carregar().catch(function () { /* offline */ });
+    });
+  }
+  /* no chão, nas duas visões: o caminho real, os pontos numerados (em pixels de tela, sem achatar) e a prévia até o mouse */
+  function desenharRota(c, d, cam, ag) {
+    if (!rota) return;
+    var pts = ex.pontos, o = origemRota(), esc = caminhoRota(), feitos = esc ? Math.min(rota.feitos, pts.length) : 0;
+    var soltos = (feitos ? [pts[feitos - 1]] : o != null ? [o] : []).concat(pts.slice(feitos));   /* ainda sem resposta do servidor */
+    if (esc) RP.envio.traco(c, esc.caminho, false, cam.z, ag, true);
+    function tracejado(a, b) {
+      var p = H.centroH(a), q = H.centroH(b), lw = Math.max(1.6, 3 / cam.z);
+      c.save(); c.lineCap = 'round'; c.setLineDash([lw * 2, lw * 2.4]); c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = lw;
+      c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(q.x, q.y); c.stroke(); c.restore();
+    }
+    for (var i = 1; i < soltos.length; i++) tracejado(soltos[i - 1], soltos[i]);
+    if (ex.circuito && pts.length > 1) tracejado(pts[pts.length - 1], pts[0]);
+    var ult = pts.length ? pts[pts.length - 1] : o;
+    if (rota.hover >= 0 && ult != null && rota.hover !== ult) tracejado(ult, rota.hover);
+    var m = c.getTransform(), dpr = window.devicePixelRatio || 1, Cs = RP.arte.cores();
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+    c.font = '700 ' + Math.round(11 * dpr) + 'px ' + Cs.fonteTexto; c.textAlign = 'center'; c.textBaseline = 'middle';
+    pts.forEach(function (h, k) {
+      var w = H.centroH(h), q = m.transformPoint({ x: w.x, y: w.y });
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(q.x, q.y, 10.5 * dpr, 0, 6.2832); c.fill();
+      c.fillStyle = Cs.selecaoPes; c.beginPath(); c.arc(q.x, q.y, 9 * dpr, 0, 6.2832); c.fill();
+      c.fillStyle = '#fff'; c.fillText(String(k + 1), q.x, q.y + 0.5 * dpr);
+    });
+    c.restore();
+  }
+  RP.mapa.desenhosExtras.push(desenharRota);
+  RP.mapa.desenhosExtrasCena.push(desenharRota);
+  RP.rotaExp = {
+    ativa: function () { return !!rota; },
+    ponto: function (h) {
+      var d = RP.exploracao.dados, max = (d && d.regras.maxPontos) || 200, n = ex.pontos.length;
+      if (!rota || h < 0 || (n ? ex.pontos[n - 1] : origemRota()) === h) return;
+      if (n >= max) { RP.aviso({ titulo: 'A rota chegou ao tamanho máximo', texto: max + ' pontos.', icone: 'alerta', tipo: 'alerta', ms: 2000 }); return; }
+      ex.pontos.push(h);
+      if (RP.sons) RP.sons.tocar('clique');
+      mudouRota();
+    },
+    passar: function (h) { if (!rota || rota.hover === h) return; rota.hover = h; if (RP.mapa.redesenhar) RP.mapa.redesenhar(); },
+    cancelar: function () { if (!rota) return; ex.pontos = rota.antes; ex.chave = ''; pararRota(); RP.ir('exploradores'); }
+  };
+  document.addEventListener('click', function (e) {
+    if (!rota) return;
+    if (e.target.closest('[data-rota-enviar]')) { enviarRota(); return; }
+    if (e.target.closest('[data-rota-caminho]')) { ex.seguro = !ex.seguro; barraRota(); if (RP.mapa.redesenhar) RP.mapa.redesenhar(); return; }
+    if (e.target.closest('[data-rota-circuito]')) { ex.circuito = !ex.circuito; barraRota(); if (RP.mapa.redesenhar) RP.mapa.redesenhar(); return; }
+    if (e.target.closest('[data-rota-desfazer]')) { if (ex.pontos.length) { ex.pontos.pop(); rota.previa = null; rota.feitos = 0; mudouRota(); } return; }
+    if (e.target.closest('[data-rota-ajustes]')) { ex.chave = ''; pararRota(); RP.ir('exploradores'); return; }
+    if (e.target.closest('[data-rota-cancelar]')) RP.rotaExp.cancelar();
+  });
+  RP.teclas.registrar('Enter', { descricao: 'Enviar pela rota desenhada', grupo: 'Tropas', oculta: true, quando: function () { return !!rota && !RP.folhaAberta(); }, acao: function () { var b = RP.$('[data-rota-enviar]'); if (b) b.click(); } });
+  RP.teclas.registrar('O', { descricao: 'Rota: circuito sim/não', grupo: 'Tropas', oculta: true, quando: function () { return !!rota && ex.pontos.length > 1; }, acao: function () { var b = RP.$('[data-rota-circuito]'); if (b) b.click(); } });
+  RP.teclas.registrar('Z', { descricao: 'Rota: desfazer o último ponto', grupo: 'Tropas', oculta: true, quando: function () { return !!rota; }, acao: function () { var b = RP.$('[data-rota-desfazer]'); if (b) b.click(); } });
 
   RP.registrarTela('exploradores', {
     secao: 'tropas',
@@ -271,7 +403,8 @@
       el.addEventListener('click', function (e) {
         var b;
         if ((b = e.target.closest('[data-exp-tipo]'))) { ex.tipo = b.getAttribute('data-exp-tipo'); desenhar(el); return; }
-        if ((b = e.target.closest('[data-exp-ordem]'))) { ex.ordem = b.getAttribute('data-exp-ordem'); if (ex.ordem === 'rota' && !ex.pontos.length && ex.alvo != null) ex.pontos = [ex.alvo]; desenhar(el); return; }
+        if ((b = e.target.closest('[data-exp-ordem]'))) { ex.ordem = b.getAttribute('data-exp-ordem'); if (ex.ordem === 'rota' && !ex.pontos.length && ex.alvo != null) ex.pontos = [ex.alvo]; desenhar(el); if (ex.ordem === 'rota') comecarRota(); return; }
+        if (e.target.closest('[data-exp-desenhar]')) { comecarRota(); return; }
         if ((b = e.target.closest('[data-exp-caminho]'))) { ex.seguro = b.getAttribute('data-exp-caminho') === 'segura'; desenhar(el); return; }
         if ((b = e.target.closest('[data-exp-escolher]'))) { escolherNoMapa(b.getAttribute('data-exp-escolher')); return; }
         if ((b = e.target.closest('[data-exp-tirar]'))) { ex.pontos.splice(+b.getAttribute('data-exp-tirar'), 1); desenhar(el); return; }
@@ -297,7 +430,7 @@
     },
     entrar: function (el, params) {
       var a = params.get('alvo');
-      if (a != null && a !== '') { var h = a.indexOf(',') > 0 ? H.idx(+a.split(',')[0], +a.split(',')[1]) : +a; if (ex.ordem === 'rota' && escolhendo === 'ponto') ex.pontos.push(h); else ex.alvo = h; }
+      if (a != null && a !== '') { var h = a.indexOf(',') > 0 ? H.idx(+a.split(',')[0], +a.split(',')[1]) : +a; if (ex.ordem === 'rota') ex.pontos.push(h); else ex.alvo = h; }
       if (params.get('tipo')) ex.tipo = params.get('tipo');
       if (params.get('ordem')) ex.ordem = params.get('ordem');
       if (params.get('ativo')) ex.ativo = +params.get('ativo');
@@ -357,7 +490,7 @@
   /* ---------------------------------------------------------------- no mapa: explorar, espionar, escolher destino */
   function objetosHex(h, dados) { return (dados && dados.porHex && dados.porHex[h]) || []; }
   RP.mapa.acoesFolhaHex.push(function (h, dados) {
-    if (escolhendo) return '<button type="button" class="btn btn-p btn-primario" data-exp-aqui="' + h + '">' + RP.icone('alvo') + (escolhendo === 'ponto' ? 'Adicionar este ponto' : 'Escolher este destino') + '</button>';
+    if (escolhendo) return '<button type="button" class="btn btn-p btn-primario" data-exp-aqui="' + h + '">' + RP.icone('alvo') + 'Escolher este destino</button>';
     if (RP.envio && RP.envio.ativo()) return '';
     var obj = objetosHex(h, dados), html = '';
     var meu = obj.filter(function (o) { return o.tipo === 'local' && o.dono === 'meu'; })[0];
@@ -382,7 +515,7 @@
     var b = e.target.closest('[data-exp-aqui]');
     if (!b) return;
     var h = +b.getAttribute('data-exp-aqui');
-    if (escolhendo === 'ponto') ex.pontos.push(h); else ex.alvo = h;
+    ex.alvo = h;
     escolhendo = null; ex.chave = '';
     RP.fecharFolha(); RP.ir('exploradores');
   });
