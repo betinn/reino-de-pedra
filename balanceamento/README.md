@@ -83,7 +83,7 @@ Cada meta vem das regras do `CLAUDE.md`, do plano de pessoas no mapa ou de prát
 **Custo** para subir ao nível L: `5 × 2,15^(L−2)` recursos, divididos em 45% madeira, 35% pedra, 10% ferro e 10% comida. **Tempo**: `2 min × 2^(L−2)`.
 O custo cresce mais rápido que a produção: cada nível rende menos por recurso gasto (o retorno vai de 6 h a 13 dias). Isso dá fôlego à temporada sem travar o começo.
 
-**População**: o castelo dá teto de 15; cada moradia, +3, custando `40 + 24 × (moradias já feitas)`. Cresce `5%/h × população × (1 − população/teto livre)`, +30% com sobra de comida; abaixo de 3 pessoas, cresce em linha. Recrutar tira da população (converte uma pessoa); as tropas ocupam o teto.
+**População**: o castelo dá teto de 15; cada moradia, +3, custando `40 + 24 × (moradias já feitas)`. Com espaço no teto, cresce de 1 a 2 pessoas por hora: `min(2, (1 + 1 × livre/teto livre) × (1,3 com sobra de comida))`, parando no teto. Antes era logístico (5%/h × população × espaço livre) e um reino pequeno ficava quase parado (0,3/h com 7 de 21). Recrutar tira da população (converte uma pessoa); as tropas ocupam o teto.
 
 **Deslocamento**: `hexágonos × terreno médio 1,35 × minutos por velocidade` (lenta 0,5; média 0,33; rápida 0,2). Rota pública: ×0,55. Carregadores da requisição são pessoas do local de origem, andam na velocidade lenta com 30 de carga por pessoa (carrinho de mão) e fazem mais viagens quando falta gente. **Visão em marcha**: um exército revela a névoa com a maior visão do grupo (milícia, lanceiro e cerco 1; arqueiro, cavalaria e elite 2).
 

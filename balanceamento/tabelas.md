@@ -23,7 +23,7 @@ Estoque de cada local: até 10 h da própria produção; o excedente vai para o 
 
 Castelo: produz 2.5/h de cada recurso básico no nível 1 e 6.9/h no nível 10. Nenhum local passa do nível do castelo. Melhorar o castelo custa 4× e leva 2× o tempo de um local do mesmo nível (nível 10: 17 h 4 min).
 
-População: o castelo abriga 15 pessoas e cada moradia mais 3 (a primeira custa 18 madeira, 14 pedra, 4 ferro, 4 comida, cada uma 24 a mais). Reino novo: 8 pessoas. Crescimento 5%/h (logístico), +30% com sobra de comida.
+População: o castelo abriga 15 pessoas e cada moradia mais 3 (a primeira custa 18 madeira, 14 pedra, 4 ferro, 4 comida, cada uma 24 a mais). Reino novo: 8 pessoas. Crescimento de 1 a 2 pessoas por hora enquanto há espaço no teto (mais rápido com mais espaço livre), +30% com sobra de comida, até 2/h.
 
 Reino novo com os primeiros passos já dados: castelo e locais no nível 2, 2 moradias, 4 lanceiros e 2 arqueiros no castelo, 1 a pé, 1 a cavalo, 1 prospector (exploradores prontos) e o entorno explorado até 12 hexágonos do castelo.
 
@@ -100,15 +100,15 @@ Portões do castelo: 100 de estrutura por nível (nível 3: 300, 8 aríetes ou 4
 
 | Dia | Produção/h (total) | Locais | Nível médio | Castelo | Pessoas (civis + tropas + exploradores) / teto | Vagas | Eficiência | Tropas |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 44 | 4 | 4 | 4 | 20 (10 + 7 + 3) / 21 | 4 | 100% | 7 |
+| 1 | 44 | 4 | 4 | 4 | 21 (11 + 7 + 3) / 21 | 4 | 100% | 7 |
 | 3 | 68 | 4 | 6 | 6 | 21 (11 + 7 + 3) / 21 | 8 | 100% | 7 |
 | 7 | 117 | 5 | 7.6 | 8 | 21 (11 + 7 + 3) / 21 | 10 | 100% | 7 |
-| 10 | 147 | 6 | 7.8 | 8 | 26 (14 + 9 + 3) / 27 | 12 | 100% | 9 |
-| 14 | 168 | 7 | 7.9 | 8 | 28 (16 + 10 + 3) / 30 | 14 | 100% | 10 |
-| 21 | 235 | 9 | 8.2 | 9 | 43 (24 + 16 + 3) / 48 | 23 | 100% | 16 |
+| 10 | 147 | 6 | 7.8 | 8 | 24 (13 + 8 + 3) / 24 | 12 | 100% | 8 |
+| 14 | 168 | 7 | 7.9 | 8 | 30 (17 + 10 + 3) / 30 | 14 | 100% | 10 |
+| 21 | 235 | 9 | 8.2 | 9 | 42 (25 + 14 + 3) / 42 | 23 | 100% | 14 |
 | 35 | 355 | 12 | 9 | 9 | 66 (41 + 22 + 3) / 66 | 36 | 100% | 22 |
 | 50 | 537 | 14 | 10 | 10 | 78 (48 + 27 + 3) / 78 | 42 | 100% | 27 |
-| 70 | 537 | 14 | 10 | 10 | 78 (48 + 26 + 3) / 78 | 42 | 100% | 26 |
+| 70 | 537 | 14 | 10 | 10 | 78 (48 + 27 + 3) / 78 | 42 | 100% | 27 |
 
 Gasto em obras 86739 · em tropas 2340 · economia no máximo (nível médio ≥ 9,5), sem guerra: dia 46.
 
@@ -116,17 +116,17 @@ Gasto em obras 86739 · em tropas 2340 · economia no máximo (nível médio ≥
 
 | Dia | Produção/h (total) | Locais | Nível médio | Castelo | Pessoas (civis + tropas + exploradores) / teto | Vagas | Eficiência | Tropas |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 45 | 4 | 4 | 5 | 20 (7 + 10 + 3) / 21 | 4 | 100% | 10 |
-| 3 | 68 | 4 | 6 | 6 | 26 (10 + 13 + 3) / 27 | 8 | 100% | 13 |
-| 7 | 118 | 6 | 6.8 | 8 | 33 (14 + 16 + 3) / 33 | 12 | 100% | 16 |
-| 10 | 168 | 7 | 7.9 | 8 | 36 (14 + 19 + 3) / 42 | 14 | 100% | 19 |
+| 1 | 45 | 4 | 4 | 5 | 21 (8 + 10 + 3) / 21 | 4 | 100% | 10 |
+| 3 | 68 | 4 | 6 | 6 | 24 (9 + 12 + 3) / 24 | 8 | 100% | 12 |
+| 7 | 123 | 6 | 7 | 8 | 32 (14 + 14 + 3) / 33 | 12 | 100% | 14 |
+| 10 | 168 | 7 | 7.9 | 8 | 39 (17 + 19 + 3) / 39 | 14 | 100% | 19 |
 | 14 | 200 | 8 | 8.1 | 9 | 45 (20 + 22 + 3) / 45 | 17 | 100% | 22 |
-| 21 | 306 | 10 | 9 | 9 | 85 (39 + 43 + 3) / 87 | 30 | 100% | 43 |
-| 35 | 479 | 15 | 9.2 | 10 | 105 (50 + 52 + 3) / 105 | 44 | 100% | 52 |
-| 50 | 680 | 18 | 10 | 10 | 135 (65 + 67 + 3) / 135 | 54 | 100% | 67 |
-| 70 | 680 | 18 | 10 | 10 | 135 (65 + 67 + 3) / 135 | 54 | 100% | 67 |
+| 21 | 306 | 10 | 9 | 9 | 72 (33 + 36 + 3) / 72 | 30 | 100% | 36 |
+| 35 | 468 | 15 | 9 | 10 | 102 (48 + 51 + 3) / 102 | 43 | 100% | 51 |
+| 50 | 680 | 18 | 10 | 10 | 126 (60 + 63 + 3) / 126 | 54 | 100% | 63 |
+| 70 | 680 | 18 | 10 | 10 | 126 (60 + 63 + 3) / 126 | 54 | 100% | 63 |
 
-Gasto em obras 124277 · em tropas 7920 · economia no máximo (nível médio ≥ 9,5), sem guerra: dia 36.
+Gasto em obras 121420 · em tropas 7380 · economia no máximo (nível médio ≥ 9,5), sem guerra: dia 37.
 
 ### Queda do castelo no dia 35 (médio)
 
@@ -321,11 +321,11 @@ Castelo nível 5: sem coleta depois de 12 h; com coleta em 6 h 3 min (61 min rea
 | M4c | Travessia do mapa (312 hex.) em até 90 min, tropa lenta | 53 min | ✓ |
 | M5a | Jogador médio com 4 a 10 soldados e 15 a 25 pessoas no fim do escudo (dia 3) | 7 · 21 | ✓ |
 | M5b | Jogador médio com 20 a 30 soldados e 50 a 80 pessoas no dia 35 | 22 · 66 | ✓ |
-| M5c | Jogador ativo com 1,5 a 2,5× as tropas do médio no dia 35 | 2.4× | ✓ |
+| M5c | Jogador ativo com 1,5 a 2,5× as tropas do médio no dia 35 | 2.3× | ✓ |
 | M5d | Recrutar não derruba a economia do médio (eficiência ≥ 90% no dia 35) | 100% | ✓ |
-| M5e | Sem guerra, o ativo chega ao máximo da economia entre os dias 30 e 50 | dia 36 | ✓ |
+| M5e | Sem guerra, o ativo chega ao máximo da economia entre os dias 30 e 50 | dia 37 | ✓ |
 | M5f | Sem guerra, o médio só chega ao máximo depois do dia 40 (ou não chega) | dia 46 | ✓ |
-| M5g | Teto prático de um reino: o ativo termina a temporada com 90 a 140 pessoas | 135 | ✓ |
+| M5g | Teto prático de um reino: o ativo termina a temporada com 90 a 140 pessoas | 126 | ✓ |
 | M6 | 6 cavaleiros levam pelo menos 2 h de produção de um local nível 6 | 5.4 h | ✓ |
 | M7a | Local defendido cai com cerca de 1,5× a força (arqueiros contra lanceiros) | 2× | ✓ |
 | M7b | Torre muda o resultado do mesmo ataque | defesa vence | ✓ |

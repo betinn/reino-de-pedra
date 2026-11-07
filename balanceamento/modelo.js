@@ -22,17 +22,16 @@ const P = {
   custoN2: 5, custoCresc: 2.15,
   tempoN2: 2 * 60, tempoCresc: 2.0,                     /* segundos */
   receita: { madeira: 0.45, pedra: 0.35, ferro: 0.10, comida: 0.10 },
-  /* população (pessoas): teto do castelo e por moradia, crescimento logístico (uma pessoa nova por vez, com nome).
-     Tropas ocupam o teto (moram no reino): cada soldado é um trabalhador a menos. */
+  /* população (pessoas): teto do castelo e por moradia (uma pessoa nova por vez, com nome). Tropas ocupam o teto (moram
+     no reino): cada soldado é um trabalhador a menos. Crescimento enquanto há espaço no teto: de popMinH a popMaxH pessoas
+     por hora, mais rápido quanto mais espaço livre (popMinH + (popMaxH − popMinH) × livre/teto livre), +bonusComida com
+     sobra de comida, nunca acima de popMaxH. O jogo nunca fica parado com espaço no teto. */
   tetoCastelo: 15, tetoPorMoradia: 3, popInicial: 8, custoMoradia: 40, moradiaPasso: 24,
-  crescPop: 0.05, bonusComida: 0.30,
+  popMinH: 1, popMaxH: 2, bonusComida: 0.30,
   /* vagas de trabalho de um local de produção no nível L: max(minimo, round(L × porNivel)). Uma vaga vazia produz menos
      (a produção do local é proporcional às vagas ocupadas). Referência do plano: 1 por nível com mínimo de 2; o modelo
      usa menos para a economia do jogador médio não ficar sem gente (metas M5d e M5g): 1 vaga até o nível 4, 2 do 5 ao 8, 3 no 9 e 10. */
   vagas: { porNivel: 0.3, minimo: 1 },
-  /* servidor: população civil abaixo de popSemente cresce em linha (crescPop × popSemente pessoas por hora) até chegar
-     a ela e daí segue a logística: um reino que recrutou toda a população volta a crescer */
-  popSemente: 3,
   /* estoque inicial (kit) e capacidade de estoque de um local em horas de produção. Pedra 60 (era 40): o castelo 4 pede
      32 de pedra e, com 40, o reino novo travava nele por horas (meta M26) */
   kit: { madeira: 90, pedra: 60, comida: 90, ferro: 90 },
@@ -551,7 +550,8 @@ function simular(perfil, opc) {
     S.couro += P.cacasDia * couroMedioCaca() / 24;    /* caça (cacasDia caçadas por dia, rendimento médio por bando) */
     const sobra = pr.comida > castelo(S.casteloL) * 2;
     const livre = Math.max(1, teto() - S.tropas - S.outros);     /* tropas e exploradores ocupam o teto */
-    S.pop = Math.max(0, Math.min(livre, S.pop + P.crescPop * S.pop * (1 - S.pop / livre) * (sobra ? 1 + P.bonusComida : 1)));
+    const ritmoPop = Math.min(P.popMaxH, (P.popMinH + (P.popMaxH - P.popMinH) * Math.max(0, livre - S.pop) / livre) * (sobra ? 1 + P.bonusComida : 1));
+    if (S.pop < livre) S.pop = Math.min(livre, S.pop + ritmoPop);
     S.tropas *= (1 - perfil.perdasDia / 24);          /* desgaste por combate */
     const dia = (S.h + 1) / 24;
     if (!S.diaMax && S.locais.length >= 8 && S.locais.reduce((s, x) => s + x.L, 0) / S.locais.length >= 9.5) S.diaMax = Math.ceil(dia);
@@ -630,7 +630,7 @@ for (let n = 1; n <= P.nivelMax; n++) {
 out('\nA serraria rende ' + P.fatorSerraria + '× o valor da tabela: as obras gastam 45% em madeira.');
 out('\nEstoque de cada local: até ' + P.estoqueHoras + ' h da própria produção; o excedente vai para o armazém, que também guarda os valiosos. Uma vaga vazia produz menos: a produção do local é proporcional às vagas ocupadas.\n');
 out('Castelo: produz ' + r1(castelo(1)) + '/h de cada recurso básico no nível 1 e ' + r1(castelo(10)) + '/h no nível 10. Nenhum local passa do nível do castelo. Melhorar o castelo custa ' + P.casteloCusto + '× e leva ' + P.casteloTempo + '× o tempo de um local do mesmo nível (nível 10: ' + fmtT(tempoObra(10) * P.casteloTempo) + ').\n');
-out('População: o castelo abriga ' + P.tetoCastelo + ' pessoas e cada moradia mais ' + P.tetoPorMoradia + ' (a primeira custa ' + fmtC(receita(custoMoradia(0))) + ', cada uma ' + P.moradiaPasso + ' a mais). Reino novo: ' + P.popInicial + ' pessoas. Crescimento ' + P.crescPop * 100 + '%/h (logístico), +' + P.bonusComida * 100 + '% com sobra de comida.\n');
+out('População: o castelo abriga ' + P.tetoCastelo + ' pessoas e cada moradia mais ' + P.tetoPorMoradia + ' (a primeira custa ' + fmtC(receita(custoMoradia(0))) + ', cada uma ' + P.moradiaPasso + ' a mais). Reino novo: ' + P.popInicial + ' pessoas. Crescimento de ' + P.popMinH + ' a ' + P.popMaxH + ' pessoas por hora enquanto há espaço no teto (mais rápido com mais espaço livre), +' + P.bonusComida * 100 + '% com sobra de comida, até ' + P.popMaxH + '/h.\n');
 out('Reino novo com os primeiros passos já dados: castelo e locais no nível ' + P.inicio.castelo + ', ' + P.inicio.moradias + ' moradias, ' +
   Object.entries(P.inicio.tropas).map(([k, n]) => n + ' ' + U[k].nome.toLowerCase() + (n > 1 ? 's' : '')).join(' e ') + ' no castelo, ' +
   Object.entries(P.inicio.exploradores).map(([k, n]) => n + ' ' + P.exploradores[k].nome.toLowerCase()).join(', ') + ' (exploradores prontos) e o entorno explorado até ' + P.inicio.raioExplorado + ' hexágonos do castelo.\n');

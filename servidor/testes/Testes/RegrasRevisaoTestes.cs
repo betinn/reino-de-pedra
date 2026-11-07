@@ -331,13 +331,15 @@ public class RegrasRevisaoTestes
         t.AvancarHoras(200);
         Economia.Atualizar(t.M, r);
         Assert.True(r.Pop > 5);   // cresce até o teto livre (castelo 15 menos as milícias)
-        // a semente vale também no cálculo fechado: de 0 cresce em linha até o mínimo e depois segue a logística
-        var sem = t.M.P.PopSemente;
-        Assert.True(sem > 0);
-        Assert.Equal(0.05 * sem * 3, Economia.Logistica(0, 300, 0.05, 3, sem), 9);
-        Assert.Equal(Economia.Logistica(sem, 300, 0.05, 10), Economia.Logistica(0, 300, 0.05, 1 / 0.05 + 10, sem), 9);
-        Assert.Equal(Economia.Logistica(220, 300, 0.05, 2), Economia.Logistica(220, 300, 0.05, 2, sem), 12);
-        Assert.Equal(2, Economia.Logistica(0, 2, 0.05, 100, sem), 9);   // teto livre abaixo da semente
+        // cálculo fechado: de 1 a 2 por hora, mais rápido com mais espaço livre, parando no teto
+        Assert.Equal(2, Economia.Crescer(0, 300, 1, 1, 1, 2), 2);   // teto vazio: perto do máximo
+        Assert.InRange(Economia.Crescer(299, 300, 1, 0.5, 1, 2) - 299, 0.5 - 1e-6, 0.51);   // quase cheio: o mínimo
+        Assert.Equal(2, Economia.Crescer(0, 300, 1.3, 1, 1, 2), 9);   // o bônus de comida não passa do máximo
+        Assert.Equal(300, Economia.Crescer(290, 300, 1, 100, 1, 2), 9);   // para no teto
+        Assert.Equal(310, Economia.Crescer(310, 300, 1, 5, 1, 2), 9);     // acima do teto livre não cresce nem some
+        // fechado no intervalo: duas metades dão o mesmo que o todo
+        var meio = Economia.Crescer(10, 40, 1.3, 3, 1, 2);
+        Assert.Equal(Economia.Crescer(10, 40, 1.3, 6, 1, 2), Economia.Crescer(meio, 40, 1.3, 3, 1, 2), 9);
     }
 
     // ---------------------------------------------------------------- reset da temporada
