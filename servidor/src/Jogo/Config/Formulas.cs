@@ -13,6 +13,8 @@ public sealed class Formulas(Balanceamento b)
 
     /// <summary>Produção por hora de um local de produção no nível L.</summary>
     public double Producao(int L) => P.ProdBase * Math.Pow(P.ProdCresc, L - 1);
+    /// <summary>Produção de um local deste recurso: a serraria rende mais que os outros.</summary>
+    public double ProducaoDe(string recurso, int L) => Producao(L) * (recurso == "madeira" ? P.FatorSerraria : 1);
     /// <summary>Produção por hora do castelo, de cada recurso básico, no nível L.</summary>
     public double ProducaoCastelo(int L) => P.CasteloBase * Math.Pow(P.CasteloCresc, L - 1);
     /// <summary>Custo total (recursos) para subir um local ao nível L (L ≥ 2).</summary>

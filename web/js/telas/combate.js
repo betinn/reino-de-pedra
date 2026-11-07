@@ -41,8 +41,12 @@
       var torres = ((dados && dados.objetos) || []).filter(function (o) { return o.tipo === 'torre' && o.dono !== 'meu' && H.dist(o.hex, h) <= o.alcance; });
       return linha('Tipo', 'Saque') + linha('Objetivos', 'Relíquia à vista e o recurso principal do local') +
         linha('Tática', 'Média · ' + RP.textoTatica('media').toLowerCase()) + linha('Estandarte', 'Não levado: o alvo não sabe quem foi') +
-        (torres.length ? linha('Torres no alcance', String(torres.length)) : '') +
-        (est && est.de ? '<div class="info-linha"><span class="fraco">Detalhes</span><a href="#/envio?alvo=' + h + '&de=' + est.de + '&grupo=' + grupoParam(est.grupo) + '">Ajustar tipo, objetivos e tática</a></div>' : '');
+        (torres.length ? linha('Torres no alcance', String(torres.length)) : '');
+    },
+    /* a tela completa do ataque (tipo, objetivos, tática, estandarte), de um local ou de uma tropa em campo */
+    ajuste: function (h, est) {
+      if (est.marchaId) return '#/envio?alvo=' + h + '&marcha=' + est.marchaId + (est.pessoas ? '&pessoas=' + est.pessoas.join(',') + '&grupo=' + grupoParam(est.grupo) : '');
+      return '#/envio?alvo=' + h + '&de=' + est.de + '&grupo=' + grupoParam(est.grupo);
     },
     dados: function () { return { tipo: 'saque', tatica: 'media', objetivos: [] }; }
   });
@@ -177,7 +181,7 @@
     return g;
   }
   function corpoPrevia() {
-    return { deLocalId: env.de, tropas: env.grupo, destinoHex: env.hex, tipo: env.tipo, objetivos: env.objetivos, tatica: env.tatica,
+    return { deLocalId: env.marchaId ? null : env.de, marchaId: env.marchaId || null, pessoas: env.pessoas || null, tropas: env.grupo, destinoHex: env.hex, tipo: env.tipo, objetivos: env.objetivos, tatica: env.tatica,
       completar: env.completar, estandarte: env.estandarte, seguro: env.seguro };
   }
   function pedirPrevia(el) {
@@ -334,7 +338,10 @@
     (p.avisos || []).filter(function (x) { return x.tipo === 'alerta'; }).forEach(function (x) {
       h += '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p') + '<span>' + RP.esc(x.texto) + '</span></p>';
     });
-    h += '<div class="secao-titulo">3. Tropas</div>' +
+    if (env.marchaId) h += '<div class="secao-titulo">3. Tropas</div><div class="card pilha">' + RP.selosGrupo(env.grupo) + '<small class="fraco">Tropa em campo: parte de onde está agora.</small>' +
+      '<div class="ext-numeros"><div><span class="fraco">Tropas</span><b class="num">' + n + '</b></div><div><span class="fraco">Carga</span><b class="num">' + RP.num(p.carga) + '</b></div>' +
+      '<div><span class="fraco">Velocidade</span><b>' + RP.esc(RP.VELOCIDADES[p.vel] || p.vel) + '</b></div></div></div>';
+    else h += '<div class="secao-titulo">3. Tropas</div>' +
       (ors.length > 1 ? '<div class="abas abas-rolagem envio-origens" role="group" aria-label="De onde saem">' + ors.map(function (x) {
         return '<button type="button" class="aba" data-env-de="' + x.id + '" aria-pressed="' + (x.id === env.de) + '">' + RP.esc(x.nome) + '</button>';
       }).join('') + '</div>' : '') +
@@ -439,11 +446,21 @@
       var hex = q.get('alvo') ? +q.get('alvo') : NaN;
       if (!(hex >= 0)) { env = null; semAlvo(el, 'Escolha o alvo no mapa', 'Clique num local de outro reino no mapa e escolha Atacar. O envio abre aqui com o alvo escolhido.'); return; }
       var rod = RP.$('.rodape-acao', el); if (rod) rod.hidden = false;
-      env = { hex: hex, de: q.get('de') ? +q.get('de') : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null, modelo: null };
+      env = { hex: hex, de: q.get('de') ? +q.get('de') : null, marchaId: q.get('marcha') ? +q.get('marcha') : null, pessoas: q.get('pessoas') ? q.get('pessoas').split(',').map(Number) : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null, modelo: null };
       desenharEnvio(el);
       var repetir = q.get('repetir') === '1';
       Promise.all([RP.carregarTropas(), carregarModelos()]).then(function () {
         if (!env) return;
+        if (env.marchaId) {
+          var ex = RP.exercito(env.marchaId);
+          if (!ex) { env = null; semAlvo(el, 'Esta tropa não está mais em campo', 'Selecione a tropa no mapa e escolha o alvo de novo.'); return; }
+          env.grupo = {};
+          if (env.pessoas) q.get('grupo').split(',').forEach(function (p) { var kv = p.split(':'); env.grupo[kv[0]] = +kv[1] || 0; });
+          else Object.keys(ex.tropas).forEach(function (k) { env.grupo[k] = ex.tropas[k]; });
+          if (repetir && modelos && modelos.ultimo) { var g0 = env.grupo; aplicarModelo(modelos.ultimo, 'ultimo'); env.grupo = g0; }
+          pedirPrevia(el);
+          return;
+        }
         var ors = origens();
         if (!env.de || !ors.some(function (x) { return x.id === env.de; })) env.de = (ors.filter(function (x) { return x.tipo === 'castelo'; })[0] || ors[0] || {}).id || RP.reino.casteloId;
         if (q.get('grupo')) {

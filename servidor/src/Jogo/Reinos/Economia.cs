@@ -68,7 +68,7 @@ public static class Economia
         }
         else if (l.Produz != null)
         {
-            t[l.Produz] = m.F.Producao(l.Nivel) * EficienciaLocal(m, l);
+            t[l.Produz] = m.F.ProducaoDe(l.Produz, l.Nivel) * EficienciaLocal(m, l);
         }
         var mult = 1.0;
         foreach (var f in ModificadoresProducao) mult *= f(m, l);
@@ -88,7 +88,7 @@ public static class Economia
         {
             var horas = m.P.EstoqueHoras;
             foreach (var f in HorasDeEstoque) horas = Math.Max(horas, f(m, l));
-            return m.F.Producao(l.Nivel) * horas;
+            return m.F.ProducaoDe(recurso, l.Nivel) * horas;
         }
         return 0;
     }

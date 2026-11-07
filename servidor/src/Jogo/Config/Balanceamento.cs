@@ -58,6 +58,7 @@ public sealed class ParametrosP
     public int TemporadaDias { get; init; }
     public double ProdBase { get; init; }
     public double ProdCresc { get; init; }
+    public double FatorSerraria { get; init; } = 1;
     public int NivelMax { get; init; }
     public double CasteloBase { get; init; }
     public double CasteloCresc { get; init; }

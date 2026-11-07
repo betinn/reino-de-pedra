@@ -469,7 +469,7 @@ public class ValiososTestes
         DarReliquia(t, r, vila, "ataque");   // outro tipo não muda a produção
         Assert.Equal(base0 * (1 + 2 * t.M.P.Reliquia.Producao), Economia.TaxaLocal(t.M, r, vila).Qtd("comida"), 6);
         var serraria = LocalDe(t, r, TipoLocal.Serraria);
-        Assert.Equal(t.M.F.Producao(serraria.Nivel) * Economia.EficienciaLocal(t.M, serraria), Economia.TaxaLocal(t.M, r, serraria).Qtd("madeira"), 6);
+        Assert.Equal(t.M.F.ProducaoDe("madeira", serraria.Nivel) * Economia.EficienciaLocal(t.M, serraria), Economia.TaxaLocal(t.M, r, serraria).Qtd("madeira"), 6);
     }
 
     [Fact]

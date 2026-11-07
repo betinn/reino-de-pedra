@@ -37,8 +37,10 @@ public sealed class ModuloCombate : IModuloApi
                 Exercito ex;
                 if (p.MarchaId is long mid)
                 {
-                    Exercitos.DarOrdem(m, r, mid, ordem, hex, p.Seguro, VisaoCombate.Dados(p));
-                    ex = Exercitos.Do(m, r, mid);
+                    ex = p.Pessoas is { Count: > 0 }
+                        ? Grupos.Parte(m, r, mid, p.Pessoas, e => { Exercitos.DarOrdem(m, r, e.Id, ordem, hex, p.Seguro, VisaoCombate.Dados(p)); return e; })
+                        : Exercitos.Do(m, r, mid);
+                    if (p.Pessoas is not { Count: > 0 }) Exercitos.DarOrdem(m, r, mid, ordem, hex, p.Seguro, VisaoCombate.Dados(p));
                 }
                 else ex = Exercitos.Enviar(m, r, p.DeLocalId ?? 0, p.Tropas, hex, ordem, p.Seguro == true, VisaoCombate.Dados(p));
                 return VisaoTropas.Exercito(m, ex);

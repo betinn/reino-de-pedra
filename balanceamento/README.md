@@ -34,6 +34,7 @@ Em relação à primeira versão do modelo (castelo com teto 300, exércitos de 
 | Obras | Nível 2 em **2 min**; nível 6 em 32 min; nível 10 em **8 h 32 min** (o castelo leva o dobro) |
 | Retorno de uma melhoria | Primeira em **≈ 6 h**; a do nível 10 em **≈ 13 dias** (investimento de fim de temporada) |
 | Pessoas e exército | Jogador médio: **21 pessoas e 7 soldados** no fim do escudo, **65 pessoas e 22 soldados** no dia 35. Ativo: 2,4× as tropas; termina a temporada com ≈ 135 pessoas |
+| Serraria | Rende **1,5×** os outros locais, porque as obras gastam 45% em madeira. Ver a decisão [0032](../docs/decisoes/0032-serraria-e-ataque-de-tropa-em-campo.md), que lista as metas fora do alvo |
 | Unidade básica | Lanceiro: 90 recursos, 12 min, carga 5 |
 | Começo | Kit com 90 de madeira e **60 de pedra**. Sem coleta, 8 níveis nas 3 primeiras horas (30 min reais a 6×); com coleta, **10 níveis em 2 h** e o castelo 5 em 6 h |
 | Vida | Civil 60, lanceiro 110, explorador 80...; volta inteira em **6 h**, sem tique |

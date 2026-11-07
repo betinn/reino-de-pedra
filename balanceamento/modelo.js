@@ -14,6 +14,8 @@ const P = {
   temporadaDias: 70,
   /* produção por local (por hora) e crescimento por nível; nível máximo 10 */
   prodBase: 3, prodCresc: 1.30, nivelMax: 10,
+  /* a serraria rende mais que os outros locais: as obras gastam 45% em madeira, e a madeira faltava sempre */
+  fatorSerraria: 1.5,
   /* o castelo produz um pouco de cada recurso básico: o reino base sempre consegue recrutar */
   casteloBase: 2.5, casteloCresc: 1.12, casteloCusto: 4, casteloTempo: 2,   /* nenhum local passa do nível do castelo */
   /* custo da melhoria para o nível L (total de recursos) e tempo de obra */
@@ -483,7 +485,7 @@ function simular(perfil, opc) {
   const eficiencia = () => Math.min(1, S.pop / Math.max(1, trabNec()));
   const producaoH = () => {
     const e = eficiencia(), out = { comida: 0, madeira: 0, pedra: 0, ferro: 0 };
-    S.locais.forEach(x => { out[x.t] += prod(x.L) * e; });
+    S.locais.forEach(x => { out[x.t] += prod(x.L) * (x.t === 'madeira' ? P.fatorSerraria : 1) * e; });
     TIPOS.forEach(k => { out[k] += castelo(S.casteloL); });
     return out;
   };
@@ -623,6 +625,7 @@ for (let n = 1; n <= P.nivelMax; n++) {
   out('| ' + n + ' | ' + r1(prod(n)) + ' | ' + vagas(n) + ' | ' + (n > 1 ? r0(custo(n)) : '—') + ' | ' + (n > 1 ? fmtC(receita(custo(n))) : '—') + ' | ' +
     (n > 1 ? fmtT(tempoObra(n)) : '—') + ' | ' + (n > 1 ? r1(payback(n)) + ' h' : '—') + ' |');
 }
+out('\nA serraria rende ' + P.fatorSerraria + '× o valor da tabela: as obras gastam 45% em madeira.');
 out('\nEstoque de cada local: até ' + P.estoqueHoras + ' h da própria produção; o excedente vai para o armazém, que também guarda os valiosos. Uma vaga vazia produz menos: a produção do local é proporcional às vagas ocupadas.\n');
 out('Castelo: produz ' + r1(castelo(1)) + '/h de cada recurso básico no nível 1 e ' + r1(castelo(10)) + '/h no nível 10. Nenhum local passa do nível do castelo. Melhorar o castelo custa ' + P.casteloCusto + '× e leva ' + P.casteloTempo + '× o tempo de um local do mesmo nível (nível 10: ' + fmtT(tempoObra(10) * P.casteloTempo) + ').\n');
 out('População: o castelo abriga ' + P.tetoCastelo + ' pessoas e cada moradia mais ' + P.tetoPorMoradia + ' (a primeira custa ' + fmtC(receita(custoMoradia(0))) + ', cada uma ' + P.moradiaPasso + ' a mais). Reino novo: ' + P.popInicial + ' pessoas. Crescimento ' + P.crescPop * 100 + '%/h (logístico), +' + P.bonusComida * 100 + '% com sobra de comida.\n');

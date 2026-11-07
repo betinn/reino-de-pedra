@@ -93,6 +93,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Couro e peles**: recursos do reino, obtidos pela caça.
 - Recursos valiosos e lendários ficam **ocultos** até serem descobertos. Jazida oculta não impede fundar nem erguer torre no hexágono; ela segue oculta embaixo.
 - Jazidas são **finitas** e se esgotam com o tempo.
+- A **serraria rende 1,5×** o que os outros locais do mesmo nível rendem: as obras gastam 45% em madeira.
 - **O reino base já gera recursos básicos** suficientes para recrutar tropas básicas, sem depender de exploração.
 - Recursos ficam **no local** onde estão. Para usar (construir, recrutar), é preciso **transportá-los até o local** onde são necessários; não dá para usar recurso "de qualquer lugar". Vale a mesma lógica das relíquias: o transporte é feito por tropas e a carga pode ser **roubada no meio do caminho**.
 - **Veículos de transporte** (ex.: carroças) facilitam o transporte e também são construídos com recursos.
@@ -300,7 +301,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ### Pontos de atenção no balanceamento
 
 - Evitar farm de iniciantes: escudo de novato, rendimento decrescente em saques repetidos ao mesmo alvo, milícia proporcional à população.
-- O escudo de novato **só é descoberto ao chegar**: o atacante não vê a proteção antes, e as tropas voltam sem combate.
+- O escudo de novato **só é descoberto ao chegar**: o atacante não vê a proteção antes, e as tropas voltam sem combate. A notificação já diz o motivo.
 - Saques repetidos ao mesmo alvo rendem **progressivamente menos**, e o atacante é avisado antes de enviar.
 - Monitorar abuso do anonimato para assédio.
 
@@ -369,7 +370,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **O reino nasce com os primeiros passos já dados**: castelo e locais acima do nível 1, moradias prontas, uma guarnição pequena (lanceiros e arqueiros com nome) e exploradores prontos no castelo (a pé, a cavalo e prospector), com o entorno do castelo já explorado. Quem entra explora, caça, prospecta e manda os civis sem trabalho e as tropas coletarem madeira e pedra na hora, sem passar a primeira sessão só esperando timers: as primeiras melhorias saem nos primeiros minutos. Vale igual para reinos de IA.
 - Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
 - **Enviar tropas para cá**: sem tropa selecionada, o botão direito num hexágono oferece esse item primeiro. Ele abre o painel da base com de onde saem (o local mais perto ou o último usado, ou uma tropa em campo) e quantas vão (as últimas enviadas assim, metade ou todas); Enter envia. Destino que pede escolha (atacar, caçar...) termina na folha com as ordens.
-- **Atacar em 2 cliques**: clicar na tropa e clicar com o botão direito no alvo. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**, e Shift + botão direito mostra todas as ordens.
+- **Atacar em 2 cliques**: clicar na tropa e clicar com o botão direito no alvo. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**, de um local ou de uma tropa em campo, e Shift + botão direito mostra todas as ordens.
 - Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.
 - **Ver é jogar.** A Vista desenha cada pessoa do reino onde ela está (trabalhando com a ferramenta do ofício, em formação na guarnição, em coluna na marcha, cavando e quebrando pedra na escavação e na extração, treinando, ferida), com bonecos 3D de forma humana (e cavalos de verdade para quem monta) renderizados uma vez por ofício, pose e direção. Castelo, locais, torres e ruínas também são construções 3D, que crescem com o nível e levam a bandeira na cor do dono. Árvores, arbustos, flores, cogumelos, juncos, rochas e picos de montanha são 3D, com tipos e tamanhos que variam de lugar para lugar. Rios têm margem, canal fundo e reflexos, vitórias-régias, pedras e uma canoa aqui e ali; a ponte é de pedra, em arco, e atravessa o rio na direção da estrada. Ao girar a câmera, as construções giram em 3D junto, ao vivo, sem salto ao soltar; a vegetação fica em pé. Uma marcha mostra exatamente as pessoas que estão nela; com o zoom afastado, ou acima de 12 figuras no hexágono, vira uma pilha com contador. Pessoas de outros reinos aparecem só dentro da visão atual, em roupa sem cor de dono e sem nome. A foto da névoa guarda construções, não pessoas. Uma batalha em andamento aparece animada; o resultado continua vindo da fórmula.

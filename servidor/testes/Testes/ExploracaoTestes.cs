@@ -189,6 +189,22 @@ public class ExploracaoTestes
     }
 
     [Fact]
+    public void Foto_de_um_castelo_aparece_uma_vez_so_no_centro()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var outro = t.NovoReino();
+        var c = Castelo(t, outro);
+        Nevoas.RevelarArea(t.M, r.Id, c.Hex, 2);
+        Fotos.Tirar(t.M, r.Id, Pegada.DoLocal(t.M, c));
+        var fotos = VisaoExploracao.Mapa(t.M, r, new HashSet<int>()).OfType<JsonObject>()
+            .Where(o => (string?)o["tipo"] == "local" && (long?)o["id"] == c.Id).ToList();
+        var foto = Assert.Single(fotos);
+        Assert.Equal(c.Hex, (int)foto["hex"]!);
+        Assert.Equal(7, foto["ocupa"]!.AsArray().Count);
+    }
+
+    [Fact]
     public void Rota_desenhada_aceita_muitos_pontos_e_a_previa_emenda_o_caminho()
     {
         var t = new MundoTeste();
