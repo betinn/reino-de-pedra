@@ -35,5 +35,6 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0030](0030-mesa-desktop.md) | Mesa de jogo para computador: mundo na tela inteira, botão esquerdo seleciona e direito ordena, menu de contexto, dicas, atalhos (`RP.teclas`, F1), grupos de controle, janela flutuante para as telas, painel de seleção na base, minimapa recortado ao conhecido; `desktop.css` no lugar de `concha.css` |
 | [0031](0031-rota-desenhada-envio-rapido-nevoa.md) | Rota do explorador desenhada com um clique por ponto, envio rápido de tropas pelo botão direito e névoa mais leve na Vista |
 | [0032](0032-serraria-e-ataque-de-tropa-em-campo.md) | Serraria rende 1,5×, tropa em campo ajusta o ataque, motivo na notificação sem combate, foto da névoa com um local só e relógio acelerado que não volta atrás |
+| [0033](0033-frentes-e-saque-por-prioridade.md) | Frentes simultâneas com a defesa dividida, tempo de batalha que encurta, placar ao vivo, recuar sem o que levar, saque por prioridade e repouso no castelo |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

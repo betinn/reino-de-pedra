@@ -116,7 +116,7 @@ public static class Lendarios
         {
             eq.LocalId = null; eq.MarchaId = ex.Id; eq.Levar = false;
             m.Sujar(eq);
-            if (Batalhas.Ativa(m, l.Id) is { } b && b.DefensorId == ex.ReinoId) Batalhas.Recalcular(m, b, eq.Nome + " deixou o local.", "defesa");
+            if (Batalhas.Ativa(m, l.Id) is { } b && b.DefensorId == ex.ReinoId) Batalhas.RecalcularLocal(m, l.Id, eq.Nome + " deixou o local.", "defesa");
         }
     }
 
@@ -129,7 +129,7 @@ public static class Lendarios
             eq.MarchaId = null; eq.LocalId = l.Id; eq.DonoId = l.ReinoId; eq.Levar = false;
             m.Sujar(eq); mudou = true;
         }
-        if (mudou && Batalhas.Ativa(m, l.Id) is { } b && b.DefensorId == l.ReinoId) Batalhas.Recalcular(m, b, "O equipamento lendário chegou ao local.", "defesa");
+        if (mudou && Batalhas.Ativa(m, l.Id) is { } b && b.DefensorId == l.ReinoId) Batalhas.RecalcularLocal(m, l.Id, "O equipamento lendário chegou ao local.", "defesa");
     }
 
     /// <summary>

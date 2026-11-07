@@ -202,6 +202,8 @@ public sealed class VidaP
     public Dictionary<string, double> Max { get; init; } = new();
     /// <summary>Horas para a vida voltar do zero ao máximo (sem tique).</summary>
     public double RecuperaH { get; init; }
+    /// <summary>Fração da vida máxima que um soldado recupera por minuto no próprio castelo, fora de batalha.</summary>
+    public double RepousoPorMin { get; init; }
     /// <summary>Dano de cada animal que ataca, pelo risco efetivo ("baixo", "medio", "alto").</summary>
     public Dictionary<string, double> Golpe { get; init; } = new();
     /// <summary>Cada golpe tira de (1 − variação) a (1 + variação) do valor.</summary>

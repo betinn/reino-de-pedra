@@ -14,7 +14,7 @@ namespace ReinoDePedra.Api.Endpoints;
 public sealed record PedidoCurar(int? Qtd);
 public sealed record PedidoInterceptar(long MarchaId, long? DeLocalId, long? ExercitoId, Dictionary<string, int>? Tropas, string? Tatica, bool? Estandarte, List<long>? Pessoas = null);
 public sealed record PedidoModelo(string? Nome, string? Tipo, string? Tatica, bool? Estandarte, bool? Completar, Dictionary<string, int>? Tropas,
-    List<VisaoCombate.PedidoObjetivo>? Objetivos);
+    List<VisaoCombate.PedidoObjetivo>? Objetivos, string? Divisao = null, bool? RecuarVazio = null);
 
 /// <summary>Feridos e cura, interceptação, modelos de ataque e exílio (combate, parte 2).</summary>
 public sealed class ModuloGuerra : IModuloApi
@@ -83,7 +83,7 @@ public sealed class ModuloGuerra : IModuloApi
             {
                 var r = Sessao.ReinoDa(m, id);
                 var objs = (p.Objetivos ?? []).Select(o => new Objetivo(o.K ?? "", o.R, o.Q ?? 0));
-                return ModelosAtaque.ParaJson(ModelosAtaque.Salvar(m, r, p.Nome, p.Tipo, p.Tatica, p.Estandarte == true, p.Completar == true, p.Tropas, objs));
+                return ModelosAtaque.ParaJson(ModelosAtaque.Salvar(m, r, p.Nome, p.Tipo, p.Tatica, p.Estandarte == true, p.Completar == true, p.Tropas, objs, p.Divisao, p.RecuarVazio != false));
             }), Json.Web, statusCode: 201);
         });
 

@@ -69,7 +69,7 @@ public class CombateTestes
         var vivos = GT.Total(atk) - GT.Total(b.PerdasAtaque);
         if (vivos > 0) { Assert.True(s.M.Marchas.ContemId(ex.Id)); Assert.True(ex.Retornando); }
         else Assert.False(s.M.Marchas.ContemId(ex.Id));
-        if (recuou) Assert.Equal(b.Inicio + (long)Math.Round((b.Fim - b.Inicio) * lim!.Value), b.EncerradaEm);
+        if (recuou) Assert.Equal(Batalhas.TempoAte(b.Marcos[0], lim!.Value), b.EncerradaEm);
     }
 
     // ---------------------------------------------------------------- tática, recuo e reforço
@@ -105,7 +105,8 @@ public class CombateTestes
         var ex = s.Atacar(alvo, G(("arqueiro", 30)), CombateCenario.Plano("saque", "semLimite"));
         var b = s.Chegar(ex);
         var m0 = b.Marcos[0];
-        s.AvancarAte(b.Inicio + (b.Fim - b.Inicio) / 2);
+        s.AvancarAte(Batalhas.TempoAte(m0, 0.5));
+        Assert.Equal(0.5, Batalhas.Progresso(b, s.M.Agora), 3);
         Assert.Throws<RegraException>(() => Exercitos.DarOrdem(s.M, s.Atk, ex.Id, OrdemRetornar.Id, null));   // em batalha: só recuar
         Batalhas.Recuar(s.M, s.Atk, b.Id);
         Assert.Equal("recuo", b.Resultado);
@@ -296,14 +297,14 @@ public class CombateTestes
     {
         var s = new CombateCenario();
         var mina = s.Alvo(TipoLocal.Mina, G(), 100);
-        var p = Ataques.Normalizar(s.M, mina, G(("cavalaria", 10)), new PlanoAtaque { Tipo = "saque", Tatica = "" });
+        var p = Ataques.Normalizar(s.M, mina, new PlanoAtaque { Tipo = "saque", Tatica = "" });
         Assert.Equal(s.M.P.Combate.TaticaPadrao, p.Tatica);
         Assert.Equal(new[] { "reliquia", "recurso" }, p.Objetivos.Select(o => o.K));
         Assert.Equal("ferro", p.Objetivos[1].R);
-        Assert.Equal(10 * s.B().U["cavalaria"].Carga, p.Objetivos[1].Q);
-        var o = Ataques.Normalizar(s.M, mina, G(("lanceiro", 1)), new PlanoAtaque { Tipo = "ocupacao", Objetivos = [new("reliquia", null, 0), new("tomar", null, 0)] });
+        Assert.Equal(0, p.Objetivos[1].Q);   // recurso não tem quantidade: o jogo decide pela carga
+        var o = Ataques.Normalizar(s.M, mina, new PlanoAtaque { Tipo = "ocupacao", Objetivos = [new("reliquia", null, 0), new("tomar", null, 0)] });
         Assert.Equal(new[] { "tomar", "reliquia" }, o.Objetivos.Select(x => x.K));
-        var rep = Ataques.Normalizar(s.M, mina, G(("lanceiro", 1)), new PlanoAtaque { Tipo = "saque", Objetivos = [new("recurso", "ferro", 100), new("recurso", "ferro", 300)] });
+        var rep = Ataques.Normalizar(s.M, mina, new PlanoAtaque { Tipo = "saque", Objetivos = [new("recurso", "ferro", 100), new("recurso", "ferro", 300)] });
         Assert.Single(rep.Objetivos);
     }
 
@@ -326,8 +327,8 @@ public class CombateTestes
         Assert.Equal(500 - (cap - 30), alvo.Estoque.Qtd("ferro"), 6);
         var rel = s.M.Relatorios.Single(r => r.ReinoId == s.Atk.Id && r.Tipo == "ataque");
         var objs = rel.Dados["objetivos"]!.AsArray();
-        Assert.Equal("parcial", objs[0]!["estado"]!.GetValue<string>());
-        Assert.Equal("parcial", objs[1]!["estado"]!.GetValue<string>());
+        Assert.Equal("cumprido", objs[0]!["estado"]!.GetValue<string>());   // trouxe tudo o que havia
+        Assert.Equal("parcial", objs[1]!["estado"]!.GetValue<string>());    // ficou ferro: a carga encheu
         Assert.Equal("A carga encheu.", rel.Dados["porQueVoltaram"]!.GetValue<string>());
         // a carga chega ao castelo
         s.AvancarAte(ex.Chegada);
@@ -490,7 +491,7 @@ public class CombateTestes
         // os portões caíram um nível (depois a queda do castelo arruína o castelo: ver GuerraTestes)
         var defesa = s.M.Relatorios.Single(r => r.ReinoId == s.Def.Id && r.Tipo == "defesa");
         Assert.Contains("portões −1", defesa.Dados["danos"]!.AsArray().Select(x => x!.GetValue<string>()));
-        Assert.Equal(100, ex.Carga.Qtd("madeira"), 6);
+        Assert.Equal(Math.Min(300, ex.CargaMax(s.M)), ex.Carga.Qtd("madeira"), 6);   // sem quantidade: traz até a carga
         Assert.Equal("cerco", PlanoAtaque.Ler(b.Plano).Tipo);
         Assert.Single(AjustesTeste.De(s.M).Fins);
         var q = Assert.Single(AjustesTeste.De(s.M).Quedas);
@@ -569,7 +570,7 @@ public class CombateTestes
     }
 
     [Fact]
-    public void Segundo_ataque_do_mesmo_reino_se_junta_e_outro_reino_espera()
+    public void Segundo_ataque_do_mesmo_reino_se_junta_e_outro_reino_abre_outra_frente()
     {
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 30)), 100);
@@ -583,7 +584,7 @@ public class CombateTestes
         var e3 = Exercitos.Enviar(s.M, terceiro, ct.Id, G(("cavalaria", 5)), alvo.Hex, OrdemAtacar.Id, false, CombateCenario.Plano());
         s.AvancarAte(Math.Max(e2.Chegada, Math.Min(e3.Chegada, b.FimPrevisto - 1)));
         if (e2.Chegada < b.FimPrevisto) Assert.Contains(e2.Id, b.Exercitos);
-        if (e3.Chegada < b.FimPrevisto) { Assert.Contains(e3.Id, b.Espera); Assert.True(e3.Parado); }
+        if (e3.Chegada < b.FimPrevisto) Assert.Contains(s.M.Batalhas, x => x.AtacanteId == terceiro.Id && x.Exercitos.Contains(e3.Id) && x.Id != b.Id);
         s.T.AvancarHoras(3);
         Assert.True(s.M.Batalhas.All(x => x.Encerrada));
     }

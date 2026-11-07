@@ -941,6 +941,7 @@
     "mensageiro": 70
    },
    "recuperaH": 6,
+   "repousoPorMin": 0.1,
    "golpe": {
     "baixo": 20,
     "medio": 40,

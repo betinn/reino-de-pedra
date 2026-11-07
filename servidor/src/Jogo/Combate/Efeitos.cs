@@ -54,6 +54,8 @@ public static class Efeitos
         var danoResta = dano;
         var cargaCheia = false;
         var dono = l.ReinoId;
+        var pedidos = p.Objetivos.Where(o => o.K == "recurso").Select(o => (o.R!, l.Estoque.Qtd(o.R!) * r.Rendimento)).ToList();
+        var partilha = levaCarga ? Ataques.Partilha(pedidos, Livre(m, vivos), p.Divisao) : new();
         foreach (var o in p.Objetivos)
         {
             var txt = Ataques.TextoObjetivo(m, o, l);
@@ -62,14 +64,14 @@ public static class Efeitos
                 case "recurso":
                 {
                     var k = o.R!;
-                    var tem = l.Estoque.Qtd(k) * r.Rendimento;
-                    var livre = Livre(m, vivos);
-                    var leva = Math.Floor(Math.Min(o.Q, Math.Min(tem, livre)) + 1e-9);
+                    var tem = Math.Floor(l.Estoque.Qtd(k) * r.Rendimento + 1e-9);
+                    var leva = partilha.GetValueOrDefault(k);
                     if (leva > 0) { l.Estoque.Retirar(k, leva); Carregar(m, vivos, k, leva); r.Levaram.Somar(k, leva); m.Sujar(l); }
-                    if (livre - leva < 1) cargaCheia = true;
-                    r.Objetivos.Add(new(txt, leva >= o.Q - 0.5 ? "cumprido" : leva > 0 ? "parcial" : "falhou",
-                        leva > 0 ? N(leva) + " de " + Logistica.NomeRecurso(k) + (leva < o.Q - 0.5 ? (livre - leva < 1 ? " · a carga encheu" : " · era o que havia") : "")
-                            : livre < 1 ? "a carga já estava cheia" : "não havia no local"));
+                    var ficou = leva < tem - 0.5;   // havia mais do que coube na carga
+                    if (ficou) cargaCheia = true;
+                    r.Objetivos.Add(new(txt, leva <= 0 ? "falhou" : ficou ? "parcial" : "cumprido",
+                        leva > 0 ? N(leva) + " de " + Logistica.NomeRecurso(k) + (ficou ? " · a carga encheu" : " · era o que havia")
+                            : tem >= 1 ? "a carga já estava cheia" : "não havia no local"));
                     break;
                 }
                 case "reliquia":
@@ -181,7 +183,7 @@ public static class Efeitos
     }
 
     /// <summary>Derrota ou recuo: só os trebuchets, à distância, chegam a bater em torres e portões.</summary>
-    public static void SoDanoDeCerco(Mundo m, PlanoAtaque p, Local l, double dano, ResumoEfeitos r, bool venceu, string resultado, double? limite, bool ordenado)
+    public static void SoDanoDeCerco(Mundo m, PlanoAtaque p, Local l, double dano, ResumoEfeitos r, bool venceu, string resultado, double? limite, bool ordenado, string? motivo = null)
     {
         var danoResta = venceu ? 0 : dano;
         foreach (var o in p.Objetivos)
@@ -211,6 +213,7 @@ public static class Efeitos
         }
         r.PorQue = venceu ? "Venceram, mas nenhuma tropa sobrou."
             : resultado != "recuo" ? "Foram derrotados."
+            : motivo != null ? motivo
             : ordenado ? "Recuaram por ordem."
             : "Recuaram ao chegar ao limite da tática (" + Math.Round((limite ?? 1) * 100) + "% de baixas).";
     }

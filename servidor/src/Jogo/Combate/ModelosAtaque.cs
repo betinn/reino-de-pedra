@@ -18,6 +18,8 @@ namespace ReinoDePedra.Jogo.Combate
         public string Tatica { get; set; } = "";
         public bool Estandarte { get; set; }
         public bool Completar { get; set; }
+        public string Divisao { get; set; } = Ataques.DivisaoPrioridade;
+        public bool RecuarVazio { get; set; } = true;
         public Dictionary<string, int> Tropas { get; set; } = new();
         public List<Objetivo> Objetivos { get; set; } = new();
         /// <summary>Só no último ataque: alvo e de onde saiu.</summary>
@@ -30,7 +32,7 @@ namespace ReinoDePedra.Jogo.Combate
     public static class ModelosAtaque
     {
         public static ModeloAtaque Salvar(Mundo m, Reino r, string? nome, string? tipo, string? tatica, bool estandarte, bool completar,
-            IReadOnlyDictionary<string, int>? tropas, IEnumerable<Objetivo>? objetivos)
+            IReadOnlyDictionary<string, int>? tropas, IEnumerable<Objetivo>? objetivos, string? divisao = null, bool recuarVazio = true)
         {
             var g = m.P.Guerra;
             if (r.ModelosAtaque.Count >= g.ModelosMax) throw new RegraException("Você já tem " + g.ModelosMax + " modelos. Apague um antes.");
@@ -49,11 +51,12 @@ namespace ReinoDePedra.Jogo.Combate
             {
                 if (!Ataques.ObjetivosPorTipo[tipo].Contains(o.K)) throw new RegraException("Objetivo que não cabe neste tipo de ataque.");
                 if (o.K == "recurso" && o.R != "auto" && !Ataques.RecursoValido(m, o.R)) throw new RegraException("Recurso inválido.");
-                objs.Add(o);
+                objs.Add(o.K == "recurso" ? o with { Q = 0 } : o);
             }
             var md = new ModeloAtaque
             {
                 Id = m.NovoId(), Nome = nome, Tipo = tipo, Tatica = tatica, Estandarte = estandarte, Completar = completar,
+                Divisao = divisao == Ataques.DivisaoIgual ? divisao : Ataques.DivisaoPrioridade, RecuarVazio = recuarVazio,
                 Tropas = grupo, Objetivos = objs, Quando = m.Agora,
             };
             r.ModelosAtaque.Add(md);
@@ -81,7 +84,7 @@ namespace ReinoDePedra.Jogo.Combate
             r.UltimoAtaque = new ModeloAtaque
             {
                 Nome = "Último ataque", Tipo = p.Tipo, Tatica = p.Tatica, Estandarte = p.Estandarte, Completar = p.Completar,
-                Tropas = GT.Limpo(ex.Tropas),
+                Divisao = p.Divisao, RecuarVazio = p.RecuarVazio, Tropas = GT.Limpo(ex.Tropas),
                 Objetivos = p.Objetivos.Select(o => o.K == "recurso" && alvo?.Produz != null && o.R == alvo.Produz ? o with { R = "auto" } : o).ToList(),
                 AlvoHex = ex.Destino, DeLocalId = m.Locais.Obter(ex.OrigemLocalId) is { } l && l.Hex == ex.Origem ? l.Id : null, Quando = m.Agora,
             };
@@ -103,6 +106,7 @@ namespace ReinoDePedra.Jogo.Combate
             return new JsonObject
             {
                 ["id"] = md.Id, ["nome"] = md.Nome, ["tipo"] = md.Tipo, ["tatica"] = md.Tatica, ["estandarte"] = md.Estandarte, ["completar"] = md.Completar,
+                ["divisao"] = md.Divisao, ["recuarVazio"] = md.RecuarVazio,
                 ["tropas"] = tropas, ["objetivos"] = objs, ["alvoHex"] = md.AlvoHex, ["deLocalId"] = md.DeLocalId, ["quando"] = md.Quando,
             };
         }
