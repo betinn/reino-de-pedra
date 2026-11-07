@@ -29,7 +29,7 @@ Feito nesta etapa, para conferir jogando (`REINO_ACELERACAO=60 scripts/rodar-loc
 | 17 | **Feito.** Recrutamento (e exploradores, mensageiros e carroças) entrega uma unidade por vez; "2 de 5 prontos · todos em …" no item da fila. | `Fila.cs` (`ITipoItemPorUnidade`), `reino.js`, `CLAUDE.md` |
 
 Telas longas: exploradores, caça, caravana, ferraria e bandeiras passaram pela dieta de informação (1 ação principal, regras em "Como funciona", seções secundárias recolhidas, listas de uma linha com o detalhe só do escolhido). Pendente: a revisão com alguém de fora (regra 6) a cada tela refeita, e a mesma dieta em extração, comércio, alianças, mensagens, relíquias e temporada (ver [`proximos-passos.md`](proximos-passos.md), Cliente: acabamentos).
-| 18 | **A fazer.** Aproximar até bem perto no Mapa tático deve voltar à Vista, como afastar já leva ao Mapa. | `vista/tatico.js` |
+| 18 | **Feito.** Aproximar até bem perto no Mapa tático volta à Vista, pela roda do mouse e pela pinça, como afastar já leva ao Mapa. | `vista/tatico.js` |
 
 ## Teste manual do toque na Vista (item 15)
 
@@ -298,7 +298,9 @@ Pronto quando: numa fila de 5 lanceiros, a guarnição cresce de um em um e o it
 
 ### 18. Zoom in até bem perto no Mapa tático deve voltar à Vista
 
-Problema: afastar na Vista além do limite troca para o Mapa tático, mas aproximar no Mapa até bem perto não volta à Vista. Só os botões de zoom e as teclas fazem essa volta: em `vista/tatico.js`, `zoomBotao` chama `aoAproximarDemais`, e a roda do mouse e a pinça não chamam.
+Problema: afastar na Vista além do limite troca para o Mapa tático, mas aproximar no Mapa até bem perto não voltava à Vista. Só os botões de zoom e as teclas faziam essa volta: em `vista/tatico.js`, `zoomBotao` chamava `aoAproximarDemais`, e a roda do mouse e a pinça não chamavam.
+
+Feito: a roda e a pinça chamam `aoAproximarDemais` ao passar do zoom máximo do Mapa.
 
 Pronto quando: no Mapa tático, a roda do mouse e a pinça até bem perto trocam para a Vista, no ponto olhado, do mesmo jeito que afastar na Vista troca para o Mapa.
 

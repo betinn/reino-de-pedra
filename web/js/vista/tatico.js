@@ -138,11 +138,11 @@
     this.animarPara({ x: this.cam.x, y: this.cam.y, s: Math.max(SMIN, Math.min(SMAX, ns)) }, 220);
   };
   TP.ligarGestos = function () {
-    var self = this, p0 = null, tracando = false, ponto = null, toque = null;
+    var self = this, p0 = null, avisado = false, tracando = false, ponto = null, toque = null;
     function tracar(p) { var w = self.mundo(p.x, p.y), h = H.pixelParaHex(w.x, w.y); if (h >= 0) self.opt.aoTracar(h); }
     this.el.addEventListener('pointerdown', function (e) { var r = self.el.getBoundingClientRect(); toque = { x: e.clientX - r.left, y: e.clientY - r.top }; });
     RP.gestos(this.el, {
-      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; tracando = !!(self.opt.desenhando && self.opt.desenhando()); ponto = null; },
+      inicio: function () { cancelAnimationFrame(self.anim); self.gesto = true; avisado = false; tracando = !!(self.opt.desenhando && self.opt.desenhando()); ponto = null; },
       inicioPinca: function () { p0 = { x: self.cam.x, y: self.cam.y, s: self.cam.s }; if (tracando) { tracando = false; self.opt.aoTracarFim(); } },
       arrasto: function (dx, dy) {
         /* desenhando a linha de uma patrulha: arrastar risca hexágono a hexágono */
@@ -156,12 +156,18 @@
         self.cam.x -= dx / self.cam.s; self.cam.y -= dy / self.cam.s; self.mudou();
       },
       pinca: function (f, mx, my, mx0, my0) {
-        var wx = (mx0 - self.w / 2) / p0.s + p0.x, wy = (my0 - self.h / 2) / p0.s + p0.y, ns = Math.max(SMIN, Math.min(SMAX, p0.s * f));
+        var wx = (mx0 - self.w / 2) / p0.s + p0.x, wy = (my0 - self.h / 2) / p0.s + p0.y, ns = p0.s * f;
+        /* aproximar além do limite volta à Vista, como afastar na Vista traz ao Mapa */
+        if (ns > SMAX * 1.25 && self.opt.aoAproximarDemais) { if (!avisado) { avisado = true; self.opt.aoAproximarDemais(); } return; }
+        ns = Math.max(SMIN, Math.min(SMAX, ns));
         self.cam = { s: ns, x: wx - (mx - self.w / 2) / ns, y: wy - (my - self.h / 2) / ns };
         self.mudou();
       },
       roda: function (f, x, y) {
-        var ns = Math.max(SMIN, Math.min(SMAX, self.cam.s * f)), w = self.mundo(x, y);
+        var ns = self.cam.s * f;
+        if (ns > SMAX * 1.1 && self.opt.aoAproximarDemais) { self.opt.aoAproximarDemais(); return; }
+        ns = Math.max(SMIN, Math.min(SMAX, ns));
+        var w = self.mundo(x, y);
         self.cam = { s: ns, x: w.x - (x - self.w / 2) / ns, y: w.y - (y - self.h / 2) / ns };
         self.mudou();
       },
