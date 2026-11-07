@@ -39,7 +39,7 @@ public static class VisaoMapa
                 objetos.Add(new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "aliado", ruina = false, reino = Espionagem.Identidade(dl) });
             else objetos.Add(meu
                 ? new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "meu", ruina = l.Ruina }
-                : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina });
+                : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina, produz = l.Ruina ? null : l.Produz });   // o que produz se vê de fora (minério, lavoura)
         }
         foreach (var x in m.Marchas)
         {

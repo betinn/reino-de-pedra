@@ -159,6 +159,19 @@
     if (o.tipo === 'local' && o.dono === 'meu' && RP.local(o.id)) { RP.folhaLocal(o.id); return; }
     abrirFolhaMapa(montarObjeto(o), o.hex);
   }
+  /* o que atacar um local de outro reino pode render: o recurso que ele produz (ou guarda), relíquia e o próprio local.
+     Quanto há guardado, só a espionagem revela. */
+  var PRODUZ_TIPO = { vila: ['comida'], pasto: ['comida'], serraria: ['madeira'], mina: ['ferro', 'pedra'] };
+  function ganhosLocal(o) {
+    var rec = o.produz ? [o.produz] : PRODUZ_TIPO[o.local] || [];
+    var nomes = rec.map(function (k) { return RP.nomeRecurso(k); }).join(' ou ');
+    var guarda = o.local === 'castelo' || o.local === 'armazem';
+    var saque = guarda ? 'recursos guardados, inclusive os valiosos' : nomes ? nomes + ' que o local produz e guarda (até 10 h de produção)' : 'o que estiver guardado no local';
+    return linhaInfo('Saque', RP.esc(saque) + ' · a quantidade só a espionagem revela') +
+      linhaInfo('Relíquia', 'se houver uma guardada aqui (só a espionagem revela)') +
+      (o.local === 'castelo' ? linhaInfo('Cerco', 'relíquias e recursos guardados; se o castelo cai, vira ruína')
+        : linhaInfo('Ocupação', 'o local passa a ser seu' + (nomes ? ' e a produzir ' + RP.esc(nomes) + ' para você' : '') + ', no mesmo nível'));
+  }
   function montarObjeto(o) {
     var d = M.dados, h = o.hex;
     var e = M.estado(h), tp = MAPA.tiposObjeto[o.tipo], corpo = notaAntiga(e) + '<div class="info">', acoes = '';
@@ -166,6 +179,7 @@
       corpo += linhaInfo('Tipo', RP.esc(RP.TIPOS_LOCAL[o.local] || o.local)) + linhaInfo('Dono', donoTxt(o)) + linhaInfo('Terreno', RP.esc(nomeTerreno(h)));
       if (o.dono !== 'livre' && !o.ruina) corpo += '</div><p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>Explorar não revela o dono. Só a espionagem com batedores de elite mostra quem é.</span></p><div>';
       else corpo += '</div><p class="nota-regra">' + RP.icone('escombros', 'ico-p') + '<span>Ruínas e terra livre podem ser ocupadas ou reconstruídas.</span></p><div>';
+      if (o.dono !== 'meu' && !o.ruina && o.dono !== 'livre') corpo += '</div><div class="secao-titulo">Atacar pode render</div><div class="info">' + ganhosLocal(o) + '</div><div>';
       /* o último reconhecimento deste local, como foi visto na hora: não se atualiza sozinho, vale de qualquer distância */
       var rec = o.dono !== 'meu' && d.reconhecidos && d.reconhecidos[o.id];
       if (rec && RP.forcaInimigaHTML) corpo += '</div><div class="secao-titulo">Visto no reconhecimento</div>' + RP.forcaInimigaHTML(rec) + '<div>';
