@@ -5,6 +5,7 @@
   "prodBase": 3,
   "prodCresc": 1.3,
   "nivelMax": 10,
+  "fatorSerraria": 1.5,
   "casteloBase": 2.5,
   "casteloCresc": 1.12,
   "casteloCusto": 4,

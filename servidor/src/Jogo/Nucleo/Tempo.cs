@@ -12,15 +12,27 @@ public interface IRelogio
 /// </summary>
 public sealed class RelogioReal(double aceleracao = 1) : IRelogio
 {
-    private readonly long _inicioReal = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+    private long _inicioReal = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+    private long _inicioJogo = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     private readonly double _acel = aceleracao <= 0 ? 1 : aceleracao;
     public long Agora
     {
         get
         {
             var real = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            return _acel == 1 ? real : _inicioReal + (long)((real - _inicioReal) * _acel);
+            return _acel == 1 ? real : _inicioJogo + (long)((real - _inicioReal) * _acel);
         }
+    }
+
+    /// <summary>
+    /// Com aceleração, o mundo salvo está à frente da hora real. Ao carregar, o relógio continua de onde o mundo parou;
+    /// sem isso, reiniciar o servidor voltaria o tempo e esticaria escudos, obras e marchas.
+    /// </summary>
+    public void RetomarEm(long instante)
+    {
+        if (_acel == 1 || instante <= Agora) return;
+        _inicioReal = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        _inicioJogo = instante;
     }
 }
 

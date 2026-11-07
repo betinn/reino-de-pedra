@@ -168,6 +168,7 @@ public static class VisaoExploracao
         var nevoa = Nevoas.De(m, r.Id);
         var foto = Fotos.De(m, r.Id);
         // último estado conhecido: locais de outros reinos, ruínas antigas e o que outros sistemas fotografam
+        var locaisVistos = new HashSet<long>();   // a foto guarda o local em cada hexágono da pegada; o desenho é um só, no centro
         foreach (var (h, objs) in foto.Objetos)
         {
             if (vis.Contains(h) || nevoa.MinutoVisto(h) == 0) continue;
@@ -177,6 +178,18 @@ public static class VisaoExploracao
                 if (o["tipo"]?.GetValue<string>() == "local" && m.LocalNoHex(h) is { } atual && (atual.ReinoId == r.Id || VisaoMapa.Aliado(m, r, atual.ReinoId))) continue;   // virou seu (ou é de aliado: vem ao vivo)
                 var c = (JsonObject)o.DeepClone();
                 c["hex"] = h; c["foto"] = true; c["visto"] = visto;
+                if (o["tipo"]?.GetValue<string>() == "local")
+                {
+                    var id = o["id"]?.GetValue<long>() ?? 0;
+                    var real = m.Locais.Obter(id);
+                    if (real != null && vis.Contains(real.Hex)) continue;   // o centro está à vista: o local já vai ao vivo
+                    if (!locaisVistos.Add(id)) continue;
+                    if (real != null)
+                    {
+                        c["hex"] = real.Hex;
+                        c["ocupa"] = new JsonArray(Jogo.Mapa.Pegada.DoLocal(m, real).Select(x => (JsonNode)x).ToArray());
+                    }
+                }
                 l.Add(c);
             }
         }

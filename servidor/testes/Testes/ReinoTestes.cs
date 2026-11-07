@@ -51,7 +51,7 @@ public class ReinoTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         var serraria = t.M.LocaisDe(r.Id).First(l => l.Tipo == TipoLocal.Serraria);
-        var prod = t.M.F.Producao(1);
+        var prod = t.M.F.ProducaoDe("madeira", 1);
         t.AvancarHoras(5);
         Economia.Atualizar(t.M, r);
         Assert.Equal(prod * 5, serraria.Estoque.Qtd("madeira"), 3);

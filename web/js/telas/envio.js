@@ -369,6 +369,7 @@
       icone: '<span class="ico-placa folha-ico">' + RP.icone(d.icone || 'seta') + '</span>',
       corpo: corpo,
       acoes: '<button type="button" class="btn btn-p btn-primario' + (p.curta.ok ? '' : ' btn-inativo') + '" data-envio-confirmar>' + RP.icone(d.icone || 'seta') + RP.esc(d.verbo || d.rotulo) + '</button>' +
+        (d.ajuste ? '<a class="btn btn-p" data-envio-ajuste href="' + d.ajuste(h, est) + '">' + RP.icone('escudo') + 'Ajustar tática e objetivos</a>' : '') +
         (est.de ? '<button type="button" class="btn btn-p" data-envio-tropas>' + RP.icone('tropas') + 'Tropas</button>' : '') +
         '<button type="button" class="btn btn-p btn-fantasma" data-envio-trocar>' + RP.icone('alvo') + 'Trocar destino</button>'
     });
@@ -535,6 +536,7 @@
     }
     if (e.target.closest('[data-separar-ok]') && sep) { separar(); return; }
     if (!est) return;
+    if (e.target.closest('[data-envio-ajuste]')) { RP.fecharFolha(); cancelar(); return; }   /* o link abre a tela do ataque */
     if ((b = e.target.closest('[data-envio-rapido]'))) {
       if (b.classList.contains('btn-inativo')) return;
       if (est.ordem) enviar(); else { est.painel = false; RP.mapa.folhaHex(est.hex); }

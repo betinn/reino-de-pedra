@@ -52,6 +52,8 @@ namespace ReinoDePedra.Api
             if (banco.MundoExiste())
             {
                 banco.Carregar(mundo);
+                if (mundo.Relogio is RelogioReal rr)
+                    rr.RetomarEm(Math.Max(mundo.Reinos.Select(x => x.AtualizadoEm).DefaultIfEmpty(0).Max(), mundo.Relatorios.Select(x => x.Quando).DefaultIfEmpty(0).Max()));
                 mundo.PrepararMapa();
                 foreach (var e in mundo.Eventos) mundo.Agenda.Inserir(e);
             }

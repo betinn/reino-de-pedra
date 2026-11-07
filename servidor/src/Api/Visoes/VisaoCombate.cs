@@ -17,7 +17,7 @@ public static class VisaoCombate
 {
     public sealed record PedidoObjetivo(string K, string? R, double? Q);
     public sealed record PedidoAtaque(long? DeLocalId, long? MarchaId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L,
-        string? Tipo, List<PedidoObjetivo>? Objetivos, string? Tatica, bool? Completar, bool? Estandarte, bool? Seguro);
+        string? Tipo, List<PedidoObjetivo>? Objetivos, string? Tatica, bool? Completar, bool? Estandarte, bool? Seguro, List<long>? Pessoas = null);
 
     public static JsonObject Dados(PedidoAtaque p)
     {
@@ -58,7 +58,8 @@ public static class VisaoCombate
         if (p.MarchaId is long mid)
         {
             var ex = Exercitos.Do(m, r, mid);
-            de = ex.HexEm(m.Agora); grupo = GT.Limpo(ex.Tropas);
+            de = ex.HexEm(m.Agora);
+            grupo = GT.Limpo(p.Pessoas is { Count: > 0 } && p.Tropas != null ? p.Tropas : ex.Tropas);   // só parte da tropa vai
         }
         else
         {

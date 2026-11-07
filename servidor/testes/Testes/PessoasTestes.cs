@@ -66,7 +66,7 @@ public class PessoasTestes
         var r = t.NovoReino();
         var serraria = LocalDe(t, r, TipoLocal.Serraria);
         var cheia = Economia.TaxaLocal(t.M, r, serraria).Qtd("madeira");
-        Assert.Equal(t.M.F.Producao(1), cheia, 6);
+        Assert.Equal(t.M.F.ProducaoDe("madeira", 1), cheia, 6);
         Pessoas.Remover(t.M, Pessoas.Presentes(t.M, serraria).Single());
         Assert.Equal(0, Economia.TaxaLocal(t.M, r, serraria).Qtd("madeira"), 6);
         Assert.Equal(0, Economia.EficienciaLocal(t.M, serraria));

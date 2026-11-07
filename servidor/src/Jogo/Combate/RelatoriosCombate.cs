@@ -72,7 +72,9 @@ public static class RelatoriosCombate
             ["linhas"] = new JsonArray(Linha("Tropas", GT.Partes(m, ex.Tropas)), Linha("Por que voltaram", motivo)),
         };
         if (l != null) dados["hex"] = l.Hex;
-        Registros.Relatar(m, ex.ReinoId, "ataque", tipoNome + " a " + nome + ": sem combate", dados, "batalhas");
+        var titulo = tipoNome + " a " + nome + ": sem combate";
+        var rel = Registros.Relatar(m, ex.ReinoId, "ataque", titulo, dados);
+        Registros.Notificar(m, ex.ReinoId, "batalhas", titulo, motivo + " As tropas estão voltando.", "relatorio?id=" + rel.Id);
         if (def == null || l == null || l.ReinoId != def.Id) return;
         var quem = NomeAtacante(m, ex.ReinoId, ex.Estandarte);
         var dd = new JsonObject
