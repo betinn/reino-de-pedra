@@ -330,7 +330,7 @@
   function dicaRecurso(k) {
     var tot = RP.totalRecurso(k), taxa = RP.producao(k), enche = RP.encheEm(k), c = RP.castelo(), noCastelo = RP.qtdRecurso(k);
     return '<b>' + RP.esc(RP.NOMES_REC[k] || k) + '</b>' +
-      '<span>No castelo: <b style="display:inline">' + RP.num(noCastelo) + '</b>' + (c && c.cap && c.cap[k] ? ' de ' + RP.num(c.cap[k]) : '') + ' · no reino: ' + RP.num(tot) + '</span>' +
+      '<span>No reino: <b style="display:inline">' + RP.num(tot) + '</b> · no castelo: ' + RP.num(noCastelo) + (c && c.cap && c.cap[k] ? ' de ' + RP.num(c.cap[k]) : '') + '</span>' +
       '<small>' + (taxa ? '+' + RP.num(taxa) + ' por hora' + (enche != null ? (enche <= 0 ? ' · estoque cheio, produção parada' : ' · enche em ' + RP.fmtDuracao(enche / 1000)) : '') : 'nenhum local produz') + '</small>' +
       '<small>Clique: produção e estoques do reino</small>';
   }
@@ -676,19 +676,20 @@
   }
   setInterval(tique, 1000);
 
-  /* ---------------------------------------------------------------- barra de recursos (estoque do castelo) */
+  /* ---------------------------------------------------------------- barra de recursos (estoque do reino todo: obras e
+     recrutamento buscam o material em todos os locais, então o número do topo é o mesmo que eles usam) */
   var ORDEM_REC = ['madeira', 'pedra', 'comida', 'ferro', 'couro', 'peles'];
   RP.ORDEM_REC = ORDEM_REC;
   RP.naoLidas = 0;
   RP.barraRecursos = function (opt) {
     opt = opt || {};
-    var r = RP.reino, c = RP.castelo();
-    var h = '<div class="recursos" role="group" aria-label="Recursos no castelo (sede)">';
+    var r = RP.reino;
+    var h = '<div class="recursos" role="group" aria-label="Recursos do reino">';
     ORDEM_REC.forEach(function (k) {
-      var q = RP.qtdRecurso(k), cap = c && c.cap && c.cap[k];
+      var q = RP.totalRecurso(k), enche = RP.encheEm(k);
       var taxa = RP.producao(k);
-      h += '<button class="rec' + (cap && q >= cap * 0.95 ? ' rec-cheio' : '') + '" type="button" data-abrir-recursos data-dica-rec="' + k + '" aria-label="' + RP.NOMES_REC[k] + ' no castelo: ' + RP.num(q) + '">' +
-        RP.icone(k, 'r-' + k) + '<span class="rec-num" data-rec="' + k + '" data-curto>' + RP.numCurto(q) + '</span>' + (taxa ? '<span class="rec-taxa">+' + RP.numCurto(taxa) + '/h</span>' : '') + '</button>';
+      h += '<button class="rec' + (enche != null && enche <= 0 ? ' rec-cheio' : '') + '" type="button" data-abrir-recursos data-dica-rec="' + k + '" aria-label="' + RP.NOMES_REC[k] + ' no reino: ' + RP.num(q) + '">' +
+        RP.icone(k, 'r-' + k) + '<span class="rec-num" data-rec="' + k + '" data-local="*" data-curto>' + RP.numCurto(q) + '</span>' + (taxa ? '<span class="rec-taxa">+' + RP.numCurto(taxa) + '/h</span>' : '') + '</button>';
     });
     h += '<button class="rec" type="button" data-ir="reino" data-dica-pop aria-label="População">' + RP.icone('populacao', 'r-populacao') +
       '<span class="rec-num" data-pop data-curto>' + RP.numCurto(r ? r.pop : 0) + '</span>' + (r ? '<span class="rec-taxa">de ' + RP.numCurto(r.teto) + '</span>' : '') + '</button>';
@@ -750,7 +751,7 @@
     var r = RP.reino; if (!r) return;
     var corpo = RP.producaoHTML() + RP.contaRecursoHTML() +
       '<details class="detalhe"><summary>Onde estão os recursos</summary>' +
-      '<p class="fraco" style="font-size:var(--fs-2)">Recursos ficam onde são produzidos. Obras e recrutamento buscam sozinhos o que falta nos locais mais próximos; a barra do topo mostra o castelo.</p><div class="lista">' +
+      '<p class="fraco" style="font-size:var(--fs-2)">Recursos ficam onde são produzidos. Obras e recrutamento buscam sozinhos o que falta nos locais mais próximos; a barra do topo mostra o total do reino.</p><div class="lista">' +
       r.locais.map(function (l) {
         var t = Object.keys(l.taxa || {});
         return '<div class="lista-item"><span class="ico-placa dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span><div style="flex:1;min-width:0"><b>' + RP.esc(l.nome) + '</b>' +
