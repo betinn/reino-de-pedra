@@ -348,7 +348,10 @@
      Shift + direito mostra todas as ordens; o duplo clique num soldado seleciona todos do mesmo tipo no lugar. */
   function aoTocar(alvo) {
     var hh = alvo.hex != null ? alvo.hex : (alvo.obj && alvo.obj.hex), E = RP.envio, S = RP.selecao, ent = alvo.ent;
+    /* rota do explorador: qualquer clique é um ponto */
+    if (RP.rotaExp && RP.rotaExp.ativa()) { if (hh != null && hh >= 0) RP.rotaExp.ponto(hh); return; }
     if (alvo.botao === 2) { cliqueDireito(alvo); return; }
+    if (E && E.painel()) RP.fecharFolha();   /* o clique no mundo larga o envio rápido */
     if (alvoFundar) { if (hh != null && hh >= 0) folhaFundar(hh); return; }
     if (E && E.desenhando()) { if (hh != null && hh >= 0) E.ponto(hh); return; }
     /* ordem pedida ("Novo destino", "Missão"): o clique escolhe o hexágono (a folha dele traz as ordens), nunca abre o painel do local */
@@ -370,6 +373,7 @@
     if (alvo.obj) folhaObjeto(alvo.obj);
     else if (alvo.hex != null && alvo.hex >= 0) folhaHex(alvo.hex);
   }
+  function aoPassar(h) { if (RP.rotaExp) RP.rotaExp.passar(h); }
   function cliqueDireito(alvo) {
     var hh = alvo.hex != null ? alvo.hex : (alvo.obj && alvo.obj.hex), E = RP.envio, S = RP.selecao, ent = alvo.ent;
     if (alvoFundar) { if (hh != null && hh >= 0) folhaFundar(hh); return; }
@@ -387,6 +391,10 @@
       return;
     }
     menuDoAlvo(alvo);
+  }
+  /* primeiro item do menu: o envio rápido de tropas para este hexágono */
+  function itemEnviar(h) {
+    return RP.envio && RP.envio.podePara(h) ? [{ rotulo: 'Enviar tropas para cá', icone: 'tropas', classe: 'primario', acao: function () { RP.envio.paraCa(h); } }] : [];
   }
   /* menu de contexto do que está sob o mouse: os mesmos botões da folha, sem abrir a folha */
   function menuDoAlvo(alvo) {
@@ -410,17 +418,17 @@
     }
     if (o && o.tipo === 'local' && o.dono === 'meu' && RP.local(o.id)) {
       var l = RP.local(o.id);
-      RP.menuContexto({ x: x, y: y, titulo: RP.esc(l.nome), acoes: RP.acoesLocal(l) + '<button type="button" class="btn btn-fantasma" data-local="' + l.id + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      RP.menuContexto({ x: x, y: y, titulo: RP.esc(l.nome), itens: itemEnviar(l.hex), acoes: RP.acoesLocal(l) + '<button type="button" class="btn btn-fantasma" data-local="' + l.id + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
       return;
     }
     if (o) {
       var mo = montarObjeto(o);
-      RP.menuContexto({ x: x, y: y, titulo: mo.titulo, acoes: mo.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-obj="' + o._k + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      RP.menuContexto({ x: x, y: y, titulo: mo.titulo, itens: o.hex != null ? itemEnviar(o.hex) : [], acoes: mo.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-obj="' + o._k + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
       return;
     }
     if (hh != null && hh >= 0 && M.dados) {
       var mh = montarHex(hh);
-      RP.menuContexto({ x: x, y: y, titulo: mh.titulo, acoes: mh.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-hex="' + hh + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      RP.menuContexto({ x: x, y: y, titulo: mh.titulo, itens: itemEnviar(hh), acoes: mh.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-hex="' + hh + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
     }
   }
 
@@ -628,20 +636,20 @@
     cena = new RP.Cena(RP.$('.cena-cv', el), {
       interativa: true, camadas: MAPA.camadas,
       selecao: function () { return selecao; },
-      escolhendoHex: function () { return !!alvoFundar || !!(RP.envio && RP.envio.ativo() && !RP.envio.implicito()); },
-      aoTocar: aoTocar, aoMover: pedirMinimapa,
+      escolhendoHex: function () { return !!alvoFundar || !!(RP.rotaExp && RP.rotaExp.ativa()) || !!(RP.envio && RP.envio.ativo() && !RP.envio.implicito()); },
+      aoTocar: aoTocar, aoMover: pedirMinimapa, aoPassar: aoPassar,
       desenhando: function () { return !!(RP.envio && RP.envio.desenhando()); },
       aoTracar: function (h) { RP.envio.tracar(h); }, aoTracarFim: function () { RP.envio.tracarFim(); },
       modoSelecao: function () { return !!(RP.selecao && (RP.selecao.modo || RP.shift)); },
       aoLaco: function (pts) { if (RP.selecao) RP.selecao.lacar(pts); },
-      aoToqueLongo: function () { if (RP.selecao && !RP.selecao.modo && !alvoFundar && !(RP.envio && RP.envio.ativo())) RP.selecao.ativarModo(true); },
+      aoToqueLongo: function () { if (RP.selecao && !RP.selecao.modo && !alvoFundar && !(RP.envio && RP.envio.ativo()) && !(RP.rotaExp && RP.rotaExp.ativa())) RP.selecao.ativarModo(true); },
       aoAfastarDemais: function () {
         definirModo('tatico', { s: 0.75 });
         RP.aviso({ titulo: 'Mapa tático', texto: 'Afastou além da Vista. Aproxime, aperte M ou clique em Vista para voltar.', icone: 'hexagonos', ms: 2200 });
       }
     });
     tat = new RP.Tatico(RP.$('.mapa-vp', el), {
-      aoTocar: aoTocar, aoMover: pedirMinimapa,
+      aoTocar: aoTocar, aoMover: pedirMinimapa, aoPassar: aoPassar,
       desenhando: function () { return !!(RP.envio && RP.envio.desenhando()); },
       aoTracar: function (h) { RP.envio.tracar(h); }, aoTracarFim: function () { RP.envio.tracarFim(); },
       aoAproximarDemais: function () { definirModo('cena', { s: 1.4 }); }

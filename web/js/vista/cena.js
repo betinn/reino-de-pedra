@@ -188,6 +188,7 @@
       passar: function (x, y) {
         var w = self.mundo(x, y), h = H.pixelParaHex(w.x, w.y), a = self.alvoEm(x, y, h);
         self.cv.classList.toggle('sobre-objeto', !!a);
+        if (self.opt.aoPassar) self.opt.aoPassar(h);
       },
       fim: function () {
         self.gesto = false; self.ultimaMudanca = performance.now();
@@ -472,26 +473,13 @@
         if (A.hash(x.c, x.l, 199) > 0.85 && livre(x.ce.x + 8 * E, x.ce.y + 4 * E)) itens.push({ y: x.ce.y + 4 * E, x: x.ce.x + 8 * E, f: 'fol', s: 0.7, pal: pal });
       }
     });
-    /* bancos de névoa nos hexágonos desconhecidos */
-    hexes.forEach(function (h) {
-      if (M.estado(h).v !== 'desconhecido') return;
-      var ce = H.centroH(h);
-      itens.push({ y: ce.y + H.R * 0.55, x: ce.x, f: 'nev', c: H.c(h), l: H.l(h) });
-    });
     ordenar(itens, 0);
-    var pf = A.puff();
-    itens.forEach(function (it) {
-      if (it.f === 'nev') {
-        chao(c, V); c.fillStyle = P.nevoa; hexagono(c, it.x, it.y - H.R * 0.55, H.R + 3); c.fill();
-        obj(c, V, it.x, it.y - H.R * 0.55);
-        for (var i = 0; i < 2; i++) {
-          var px = (A.hash(it.c, it.l, 200 + i) - 0.5) * 40 * E, py = ((A.hash(it.c, it.l, 210 + i) - 0.5) * 18 - 10) * E, ps = (64 + A.hash(it.c, it.l, 220 + i) * 30) * E * 1.15;
-          c.drawImage(pf, px - ps / 2, py - ps / 2, ps, ps * 0.8);
-        }
-        return;
-      }
-      desenharNatureza(c, V, it);
-    });
+    itens.forEach(function (it) { desenharNatureza(c, V, it); });
+    /* névoa: o fundo já é a cor do desconhecido; na fronteira, uma mancha suave funde o conhecido com ela, sem aresta de hexágono */
+    var nb = A.nevoaBorda(), bordas = {}, nd = H.R * 3.4;
+    conhecidos.forEach(function (x) { H.vizinhos(x.h).forEach(function (v) { if (!porH[v] && M.estado(v).v === 'desconhecido') bordas[v] = true; }); });
+    chao(c, V);
+    Object.keys(bordas).forEach(function (k) { var ce = H.centroH(+k); c.drawImage(nb, ce.x - nd / 2, ce.y - nd / 2, nd, nd); });
     c.setTransform(1, 0, 0, 1, 0, 0);
     /* o que fica em pé e pode tapar quem passa atrás: o quadro animado redesenha estes por cima das figuras */
     r.altos = itens.filter(function (it) { return ALTURA_TAPA[it.f]; });
@@ -785,11 +773,11 @@
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     hexesNoRetangulo(vis, 0).forEach(function (h) {
       var cc = H.c(h), ll = H.l(h);
-      if (A.hash(cc, ll, 230) > 0.3 || M.estado(h).v !== 'desconhecido') return;
+      if (A.hash(cc, ll, 230) > 0.12 || M.estado(h).v !== 'desconhecido') return;
       var ce = H.centroH(h), ph = A.hash(cc, ll, 231) * 6.28;
       var p = self.tela(ce.x + Math.sin(t * 0.07 + ph) * 22, ce.y + Math.cos(t * 0.05 + ph) * 12);
       var sz = 110 * s;
-      c.globalAlpha = 0.45; c.drawImage(pf, p.x - sz / 2, p.y - sz * 0.75, sz, sz * 0.7); c.globalAlpha = 1;
+      c.globalAlpha = 0.14; c.drawImage(pf, p.x - sz / 2, p.y - sz * 0.75, sz, sz * 0.7); c.globalAlpha = 1;
     });
     /* objetos que atravessam a névoa (faróis) são redesenhados por cima dela */
     d.objs.forEach(function (o) {

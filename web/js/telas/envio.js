@@ -1,5 +1,6 @@
 /* Reino de Pedra — Enviar tropas pelo mapa. Com a tropa selecionada, clicar num hexágono oferece "Enviar tropa", que parte na
    hora, sem prévia; "Ver o caminho" abre a rota curta ou segura, e as outras ordens (atacar, caçar...) têm a confirmação delas.
+   Sem seleção, o botão direito oferece "Enviar tropas para cá": um painel rápido com de onde saem e quantas vão.
    Também dá nova ordem a um exército em campo, desenha no mapa a linha exata de uma patrulha e junta e separa tropas.
    Ponto de extensão: RP.ordensEnvio.push({ ordem, rotulo, icone, verbo, descricao(hex, dados, envio), quando(hex, dados, envio) })
    — o combate acrescenta "atacar". Porte da ordem rápida de prototipo/js/mapa.js e militar.js. */
@@ -11,14 +12,17 @@
   RP.NOMES_MARCHA.exercito = 'Exército';
   RP.NOMES_MARCHA.carregadores = 'Carregadores';
 
-  /* estado do envio: { de: localId | marchaId, pessoas, grupo, seguro, hex, ordem, previa, implicito, linha, circuito }.
-     implicito: começou no clique num hexágono com a tropa selecionada; fechar a folha desfaz. linha: hexágonos desenhados. */
+  /* estado do envio: { de: localId | marchaId, pessoas, grupo, seguro, hex, ordem, previa, implicito, linha, circuito, painel }.
+     implicito: começou no clique num hexágono com a tropa selecionada; fechar a folha desfaz. linha: hexágonos desenhados.
+     painel: é o envio rápido do botão direito, que vive na folha, sem a barra do topo. */
   var est = null, tracos = [], tracando = false, sep = null, juntando = null;
   RP.envio = {
     ativo: function () { return !!est; },
     estado: function () { return est; },
     implicito: function () { return !!(est && est.implicito); },
     desenhando: function () { return !!(est && est.linha); },
+    painel: function () { return !!(est && est.painel); },
+    traco: function (c, hs, fechar, z, ag, forte) { traco(c, hs, fechar, z, ag, forte); },
     iniciar: function (o) { iniciar(o); },
     cancelar: function () { cancelar(); },
     /* desenho da linha: um clique soma um trecho; arrastar soma hexágono a hexágono até soltar */
@@ -101,8 +105,90 @@
   }
   RP.envio.rapido = function (h, completa) {
     if (!est) return;
+    if (est.painel) { est.hex = h; est.ordem = ordemDireta(h); est.previa = null; abrirPainel(); return; }   /* outro destino, mesmas tropas */
     if (completa) { est.implicito = true; RP.mapa.folhaHex(h); return; }
     ordemRapida(h);
+  };
+
+  /* ---------------------------------------------------------------- envio rápido: botão direito sem tropa selecionada
+     Parte do local mais perto (ou do último usado), com as últimas tropas enviadas assim; Enter envia. Um destino que pede
+     escolha (atacar, caçar, extrair...) termina na folha do hexágono, com as ordens dele e as tropas já escolhidas. */
+  function ultimoRapido() { try { return JSON.parse(RP.pref('envio-rapido') || 'null'); } catch (e) { return null; } }
+  function grupoLembrado(l) {
+    var u = ultimoRapido(), g = {};
+    Object.keys((u && u.grupo) || {}).forEach(function (k) { var n = Math.min(u.grupo[k], (l.guarnicao || {})[k] || 0); if (n > 0) g[k] = n; });
+    return RP.somaGrupo(g) ? g : null;
+  }
+  /* de onde podem sair: locais com guarnição e tropas em campo livres, do mais perto ao mais longe */
+  function origensPara(h) {
+    var t = RP.tropas; if (!t) return [];
+    var alvo = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
+    return t.locais.filter(function (l) { return RP.somaGrupo(l.guarnicao) > 0 && !(alvo && alvo.id === l.id); })
+      .map(function (l) { return { id: l.id, nome: l.nome, d: H.dist(l.hex, h) }; })
+      .concat(t.exercitos.filter(function (e) { return !e.bloqueio && e.podeOrdem !== false && e.estado !== 'trabalhando' && e.hex !== h; })
+        .map(function (e) { return { marchaId: e.id, nome: 'Em campo · ' + e.resumo, d: H.dist(e.hex, h) }; }))
+      .sort(function (a, b) { return a.d - b.d; }).slice(0, 8);
+  }
+  function origemPainel(o) {
+    est.de = o.id; est.marchaId = o.marchaId; est.previa = null;
+    if (o.marchaId) est.grupo = null;
+    else { var l = localDe(); est.grupo = l ? grupoLembrado(l) || grupoPadrao(l) : {}; }
+    est.ordem = ordemDireta(est.hex);
+  }
+  function corpoPainel() {
+    var ors = origensPara(est.hex);
+    return (ors.length > 1 ? '<div class="abas abas-rolagem envio-origens" role="group" aria-label="De onde saem">' + ors.map(function (x) {
+      return '<button type="button" class="aba" ' + (x.marchaId ? 'data-envio-ex="' + x.marchaId + '" aria-pressed="' + (x.marchaId === est.marchaId) : 'data-envio-de="' + x.id + '" aria-pressed="' + (x.id === est.de)) + '">' + RP.esc(x.nome) + '</button>';
+    }).join('') + '</div>' : '') +
+      (est.marchaId ? '<div class="card">' + RP.selosGrupo(grupoAtual()) + '</div>' :
+        '<div class="envio-atalhos"><button type="button" class="btn btn-p btn-fantasma" data-envio-atalho="ultimas">Últimas</button><button type="button" class="btn btn-p btn-fantasma" data-envio-atalho="metade">Metade</button><button type="button" class="btn btn-p btn-fantasma" data-envio-atalho="todas">Todas</button></div>' +
+        '<div class="card pilha" data-envio-grupo>' + RP.grupoTropas.linhas(est.grupo, disponiveis()) + '</div>') +
+      '<div class="envio-resumo" data-envio-resumo></div>';
+  }
+  function acoesPainel() {
+    return '<button type="button" class="btn btn-p btn-primario" data-envio-rapido>' + RP.icone('seta') + (est.ordem ? 'Enviar' : 'Escolher a ordem') + '</button>' +
+      (est.ordem ? '<button type="button" class="btn btn-p btn-fantasma" data-envio-mais data-tecla="Q">' + RP.icone('alvo') + 'Mais ordens</button>' : '');
+  }
+  function abrirPainel() {
+    var h = est.hex, local = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
+    RP.abrirFolha({
+      titulo: 'Enviar tropas para cá',
+      subtitulo: '<span class="fraco">' + (local ? RP.esc(local.nome || RP.TIPOS_LOCAL[local.local] || 'Local') + ' · ' : '') + 'hexágono ' + H.c(h) + ', ' + H.l(h) + ' · ' + (est.ordem === 'reforcar' ? 'entram na defesa do local' : est.ordem === 'mover' ? 'vão até lá e ficam no lugar' : 'escolha a ordem depois') + '</span>',
+      icone: '<span class="ico-placa folha-ico">' + RP.icone('tropas') + '</span>',
+      corpo: corpoPainel(), acoes: acoesPainel(),
+      aoFechar: function (troca) { if (!troca && est && est.painel) cancelar(); }
+    });
+    previaPainel();
+  }
+  function pintarPainel() { RP.atualizarFolha(corpoPainel(), acoesPainel()); previaPainel(); }
+  var pedidoPainel = 0;
+  function previaPainel() {
+    var g = grupoAtual(), n = RP.somaGrupo(g), box = RP.$('[data-envio-resumo]'), ok = RP.$('[data-envio-rapido]'), meu = ++pedidoPainel;
+    est.previa = null;
+    if (RP.mapa.redesenhar) RP.mapa.redesenhar();
+    if (ok) ok.classList.toggle('btn-inativo', !n);
+    if (!box) return;
+    if (!n) { box.innerHTML = '<p class="fraco">Escolha quem vai.</p>'; return; }
+    box.innerHTML = '<p class="fraco">' + RP.esc(RP.partesGrupo(g)) + ' · calculando o caminho…</p>';
+    var corpo = est.marchaId ? { marchaId: est.marchaId, destinoHex: est.hex } : { deLocalId: est.de, tropas: est.grupo, destinoHex: est.hex };
+    RP.post('/tropas/previa', corpo).then(function (p) {
+      if (meu !== pedidoPainel || !est || !est.painel) return;
+      est.previa = p;
+      var b = RP.$('[data-envio-resumo]'), bt = RP.$('[data-envio-rapido]'); if (!b) return;
+      if (bt) bt.classList.toggle('btn-inativo', !p.curta.ok);
+      b.innerHTML = (p.curta.ok ? '<p><b>' + RP.esc(RP.partesGrupo(g)) + '</b> · chegam em <b>' + RP.fmtDuracao(p.curta.min * 60) + '</b></p>' : '<p class="txt-alerta">Não há caminho até o destino.</p>') + RP.faunaVereditoHTML(p, est.hex, g);
+      if (RP.mapa.redesenhar) RP.mapa.redesenhar();
+    }, function (e) { var b = RP.$('[data-envio-resumo]'); if (meu === pedidoPainel && b) b.innerHTML = '<p class="txt-alerta">' + RP.esc(e.message) + '</p>'; });
+  }
+  RP.envio.podePara = function (h) { return !RP.tropas || origensPara(h).length > 0; };
+  RP.envio.paraCa = function (h) {
+    RP.carregarTropas().then(function () {
+      var ors = origensPara(h), u = ultimoRapido();
+      if (!ors.length) { RP.aviso({ titulo: 'Nenhuma tropa para enviar', texto: 'Recrute no castelo ou no quartel.', icone: 'tropas', tipo: 'alerta' }); return; }
+      est = { hex: h, seguro: false, implicito: true, painel: true };
+      origemPainel((u && ors.filter(function (x) { return x.id === u.de; })[0]) || ors[0]);
+      barra(); abrirPainel();
+    }, function () { /* aviso já mostrado */ });
   };
 
   /* ---------------------------------------------------------------- linha da patrulha, desenhada no mapa */
@@ -141,6 +227,7 @@
   /* no chão, nas duas visões: a linha que está sendo desenhada e a linha de quem está selecionado */
   function desenharLinhas(c, d, cam, ag) {
     if (est && est.linha) traco(c, est.linha, est.circuito, cam.z, ag, true);
+    if (est && est.painel && est.previa && est.previa.curta.ok) traco(c, est.previa.curta.caminho, false, cam.z, ag, true);
     if (!RP.selecao || !RP.selecao.n() || !RP.mapaModelo.pessoa) return;
     var vistas = {};
     RP.selecao.ids().forEach(function (id) {
@@ -158,12 +245,13 @@
   function barra() {
     var tela = RP.$('[data-tela=mapa]'); if (!tela) return;
     var topo = RP.$('.mapa-topo', tela); if (!topo) return;
-    var b = RP.$('.ordem-barra', topo);
+    var b = RP.$('.ordem-barra:not(.rota-barra)', topo);
     if (!b) { b = document.createElement('div'); b.className = 'ordem-barra'; b.setAttribute('role', 'status'); topo.appendChild(b); }
-    b.hidden = !est;
-    tela.classList.toggle('em-ordem', !!est);
+    var ver = !!est && !est.painel;
+    b.hidden = !ver;
+    tela.classList.toggle('em-ordem', ver);
     tela.classList.toggle('em-desenho', !!(est && est.linha));
-    if (!est) return;
+    if (!ver) return;
     var g = grupoAtual(), l = localDe(), n = RP.somaGrupo(g);
     if (est.linha) {
       var k = est.linha.length, ok = k >= 2 ? '' : ' btn-inativo';
@@ -292,6 +380,7 @@
       ? RP.post('/tropas/' + e.marchaId + '/ordem', { ordem: e.ordem, destinoHex: e.hex, seguro: !!e.seguro, dados: extra, pessoas: e.pessoas || undefined })
       : RP.post('/tropas/enviar', e.pessoas ? { deLocalId: e.de, pessoas: e.pessoas, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra } : { deLocalId: e.de, tropas: e.grupo, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra });
     RP.tentar(p).then(function (ex) {
+      if (e.painel && e.de) RP.pref('envio-rapido', JSON.stringify({ de: e.de, grupo: e.grupo }));
       RP.fecharFolha(); cancelar();
       /* a tropa continua selecionada (são as mesmas pessoas): dá para mandar de novo sem clicar nela */
       if (RP.selecao) RP.selecao.barra();
@@ -446,6 +535,20 @@
     }
     if (e.target.closest('[data-separar-ok]') && sep) { separar(); return; }
     if (!est) return;
+    if ((b = e.target.closest('[data-envio-rapido]'))) {
+      if (b.classList.contains('btn-inativo')) return;
+      if (est.ordem) enviar(); else { est.painel = false; RP.mapa.folhaHex(est.hex); }
+      return;
+    }
+    if (e.target.closest('[data-envio-mais]')) { est.painel = false; RP.mapa.folhaHex(est.hex); return; }
+    if ((b = e.target.closest('[data-envio-ex]'))) { origemPainel({ marchaId: +b.getAttribute('data-envio-ex') }); pintarPainel(); return; }
+    if ((b = e.target.closest('[data-envio-atalho]'))) {
+      var la = localDe(), qual = b.getAttribute('data-envio-atalho'), disp = disponiveis(), ga = {};
+      if (qual === 'ultimas') ga = (la && (grupoLembrado(la) || grupoPadrao(la))) || {};
+      else Object.keys(disp).forEach(function (k) { if (disp[k] > 0) ga[k] = qual === 'todas' ? disp[k] : Math.ceil(disp[k] / 2); });
+      est.grupo = ga; pintarPainel();
+      return;
+    }
     if ((b = e.target.closest('[data-envio-ja]'))) {
       est.hex = +b.getAttribute('data-envio-hex'); est.ordem = b.getAttribute('data-envio-ja');
       if (RP.somaGrupo(grupoAtual())) enviar(); else folhaGrupo();
@@ -468,11 +571,12 @@
     if (e.target.closest('[data-envio-por-quantidade]')) { var lq = localDe(); est.pessoas = null; est.grupo = lq ? grupoPadrao(lq) : {}; if (RP.selecao) RP.selecao.limpar(); folhaGrupo(); barra(); return; }
     if ((b = e.target.closest('[data-envio-de]'))) {
       var l = RP.tropas.locais.filter(function (x) { return x.id === +b.getAttribute('data-envio-de'); })[0];
-      if (l) { est.de = l.id; est.grupo = grupoPadrao(l); folhaGrupo(); barra(); }
+      if (l && est.painel) { origemPainel({ id: l.id }); pintarPainel(); }
+      else if (l) { est.de = l.id; est.grupo = grupoPadrao(l); folhaGrupo(); barra(); }
       return;
     }
     if (e.target.closest('[data-envio-grupo]') && RP.grupoTropas.clique(e, est.grupo, disponiveis())) {
-      RP.$('[data-envio-grupo]').innerHTML = RP.grupoTropas.linhas(est.grupo, disponiveis()); barra(); return;
+      RP.$('[data-envio-grupo]').innerHTML = RP.grupoTropas.linhas(est.grupo, disponiveis()); barra(); if (est.painel) previaPainel(); return;
     }
     if (e.target.closest('[data-envio-pronto]')) { RP.fecharFolha(); barra(); if (est.hex != null && est.ordem) confirmar(est.hex, est.ordem); return; }
     if ((b = e.target.closest('[data-envio-ordem]'))) { confirmar(+b.getAttribute('data-envio-hex'), b.getAttribute('data-envio-ordem')); return; }

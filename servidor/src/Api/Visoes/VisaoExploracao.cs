@@ -52,7 +52,7 @@ public static class VisaoExploracao
             regras = new
             {
                 limites = m.P.Fauna, ataque = m.P.AtaqueFauna, perda = m.P.PerdaFauna, voltaH = m.P.FaunaVoltaH, cacaMin = m.P.CacaMin,
-                caca = m.P.Caca, espiao = m.P.Espiao, resgateH = m.P.ResgateH, avistamentoH = m.P.AvistamentoH,
+                caca = m.P.Caca, espiao = m.P.Espiao, resgateH = m.P.ResgateH, avistamentoH = m.P.AvistamentoH, maxPontos = m.P.Patrulha.MaxHexes,
                 rota = m.P.Rota, ponte = m.P.Ponte, terreno = m.P.Terreno, rotaFator = m.P.RotaFator, valor = m.P.Valor,
             },
         };
@@ -114,7 +114,7 @@ public static class VisaoExploracao
     }
 
     /// <summary>Prévia de caminho (curto e seguro) para um explorador (com escolta opcional) ou um grupo de tropas.</summary>
-    public static object Previa(Mundo m, Reino r, int de, int para, string? tipo, IReadOnlyDictionary<string, int> grupo)
+    public static object Previa(Mundo m, Reino r, int de, int para, string? tipo, IReadOnlyDictionary<string, int> grupo, IReadOnlyList<int>? pontos = null)
     {
         OpcoesCaminho Op(bool seguro) => tipo != null
             ? Exploradores.Opcoes(m, r.Id, tipo, grupo, seguro)
@@ -123,13 +123,23 @@ public static class VisaoExploracao
         var forca = Op(false).Forca;
         object Rota(bool seguro)
         {
-            var rota = Caminhos.Calcular(m, de, para, vel, Op(seguro));
-            var ok = rota.Hexes[^1] == para;
+            // com pontos, é o caminho que a marcha fará: de ponto em ponto, emendado
+            var hexes = new List<int> { de };
+            var total = 0.0;
+            var ok = true;
+            foreach (var p in pontos ?? [para])
+            {
+                if (p == hexes[^1]) continue;
+                var rota = Caminhos.Calcular(m, hexes[^1], p, vel, Op(seguro));
+                if (rota.Hexes[^1] != p) { ok = false; break; }
+                hexes.AddRange(rota.Hexes.Skip(1));
+                total += rota.TotalMin;
+            }
             return new
             {
-                ok, min = ok ? Math.Round(rota.TotalMin, 1) : (double?)null, hexes = ok ? rota.Hexes.Count : 0, caminho = ok ? rota.Hexes : null,
-                rotas = ok ? rota.Hexes.Count(h => m.Vias.Rotas.Contains(h)) : 0,
-                risco = ok ? Risco(m, r, rota.Hexes, forca) : null,
+                ok, min = ok ? Math.Round(total, 1) : (double?)null, hexes = ok ? hexes.Count : 0, caminho = ok ? hexes : null,
+                rotas = ok ? hexes.Count(h => m.Vias.Rotas.Contains(h)) : 0,
+                risco = ok ? Risco(m, r, hexes, forca) : null,
             };
         }
         object? espiao = null;

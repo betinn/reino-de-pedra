@@ -170,6 +170,7 @@
       passar: function (x, y) {
         var r = self.el.getBoundingClientRect(), a = document.elementFromPoint(r.left + x, r.top + y);
         self.el.classList.toggle('sobre-objeto', !!(a && a.closest && a.closest('[data-k]')));
+        if (self.opt.aoPassar) { var w = self.mundo(x, y); self.opt.aoPassar(H.pixelParaHex(w.x, w.y)); }
       },
       fim: function () { self.gesto = false; self.ultimaMudanca = performance.now(); self.pedirQuadro(); if (tracando) { tracando = false; self.opt.aoTracarFim(); } }
     });

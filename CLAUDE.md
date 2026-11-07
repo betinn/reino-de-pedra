@@ -38,7 +38,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: **312 × 240 hexágonos pequenos** (cerca de 2.500 por reino); a travessia com tropa lenta leva perto de 1 h (menos com rota ou cavalaria), o reino vizinho fica a 10 a 15 min e as curtas distâncias (6 a 10 hexágonos) levam 1 a 2 min. Um reino pode não encontrar todos os outros na temporada.
 - **Construções ocupam vários hexágonos**, conforme o tamanho: o castelo ocupa 7 (o hexágono e o anel em volta), os outros locais 3 (o hexágono e os vizinhos de leste e oeste), o posto 1. Fundar exige o espaço inteiro explorado, sem rio e livre; tocar em qualquer parte da construção é tocar no local.
-- Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido.
+- Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido. Na Vista, a névoa é uma bruma de tom médio com borda suave (sem aresta de hexágono); o explorado fica com as cores apagadas, e a visão atual, com cor e movimento.
 - Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
   - Planície: deslocamento rápido, comida, cavalos de raça e sal.
   - Floresta: lenta, madeira e caça.
@@ -60,6 +60,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Quem captura um explorador vê o **reino de origem** e o **nome** da pessoa, e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado e a mesma pessoa volta para casa.
 - Só explorador **sem escolta** é capturado, ao passar à vista de tropas de outro reino; o batedor de elite só é pego espionando. Resgate pedido e não pago no prazo também liberta.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
+- **Seguir rota se desenha no mapa**: escolhida a ordem, cada clique num hexágono é um ponto, sem diálogo. A linha no chão é o caminho real, pela rota segura ou curta, e o tracejado vai do último ponto ao mouse. Enter envia, Z desfaz, O fecha o circuito, Esc cancela.
 - **O explorador não volta sozinho.** Ao chegar ao destino, fica lá esperando nova ordem (outro lugar, rota, patrulha ou voltar), mantendo a área à vista. A rota é desenhada ponto a ponto; no fim, espera no último ponto, ou recomeça do primeiro se for um circuito.
 - Exploradores vão pela **rota segura por padrão**: desviam do perigo que o reino conhece; quem envia pode escolher a rota curta.
 
@@ -367,6 +368,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Jogo livre**: sem missões fixas ou obrigatórias; nada força o jogador a fazer algo.
 - **O reino nasce com os primeiros passos já dados**: castelo e locais acima do nível 1, moradias prontas, uma guarnição pequena (lanceiros e arqueiros com nome) e exploradores prontos no castelo (a pé, a cavalo e prospector), com o entorno do castelo já explorado. Quem entra explora, caça, prospecta e manda os civis sem trabalho e as tropas coletarem madeira e pedra na hora, sem passar a primeira sessão só esperando timers: as primeiras melhorias saem nos primeiros minutos. Vale igual para reinos de IA.
 - Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
+- **Enviar tropas para cá**: sem tropa selecionada, o botão direito num hexágono oferece esse item primeiro. Ele abre o painel da base com de onde saem (o local mais perto ou o último usado, ou uma tropa em campo) e quantas vão (as últimas enviadas assim, metade ou todas); Enter envia. Destino que pede escolha (atacar, caçar...) termina na folha com as ordens.
 - **Atacar em 2 cliques**: clicar na tropa e clicar com o botão direito no alvo. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**, e Shift + botão direito mostra todas as ordens.
 - Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.

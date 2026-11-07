@@ -12,7 +12,7 @@ public sealed record PedidoTreinarExplorador(string Tipo, int Qtd);
 /// <summary>Envio de explorador. <c>Seguro</c> vem ligado por padrão: o explorador desvia do perigo que o reino conhece (quem envia pode desligar).</summary>
 public sealed record PedidoEnviarExplorador(string Tipo, string? Ordem, int? DestinoHex, int? C, int? L, List<int>? Pontos, bool? Seguro, Dictionary<string, int>? Escolta, bool Circuito = false);
 public sealed record PedidoOrdemExplorador(string Ordem, int? DestinoHex, int? C, int? L, List<int>? Pontos, bool? Seguro, bool Circuito = false);
-public sealed record PedidoPreviaExploracao(string? Tipo, long? DeLocalId, Dictionary<string, int>? Tropas, Dictionary<string, int>? Escolta, long? MarchaId, int? DestinoHex, int? C, int? L);
+public sealed record PedidoPreviaExploracao(string? Tipo, long? DeLocalId, Dictionary<string, int>? Tropas, Dictionary<string, int>? Escolta, long? MarchaId, int? DestinoHex, int? C, int? L, List<int>? Pontos = null);
 public sealed record PedidoPrisioneiro(string Acao, Dictionary<string, double>? Resgate);
 public sealed record PedidoRota(int? Hex, int? C, int? L);
 
@@ -68,12 +68,13 @@ public sealed class ModuloExploracao : IModuloApi
             return Results.Json(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
-                var para = HexOuNulo(m, p.DestinoHex, p.C, p.L) ?? throw new RegraException("Escolha o destino.");
-                if (!m.G.Valido(para)) throw new RegraException("Destino fora do mapa.");
+                var pontos = p.Pontos is { Count: > 0 } ? p.Pontos : null;   // rota desenhada: o caminho real, ponto a ponto
+                var para = pontos?[^1] ?? HexOuNulo(m, p.DestinoHex, p.C, p.L) ?? throw new RegraException("Escolha o destino.");
+                if (!m.G.Valido(para) || (pontos != null && (pontos.Count > m.P.Patrulha.MaxHexes || pontos.Any(h => !m.G.Valido(h))))) throw new RegraException("Destino fora do mapa.");
                 if (p.MarchaId is long mid)
                 {
                     if (m.Marchas.Obter(mid) is not { } mc || mc.ReinoId != r.Id) throw new RegraException("Marcha não encontrada.", 404);
-                    return VisaoExploracao.Previa(m, r, mc.HexEm(m.Agora), para, mc is Explorador ex ? ex.TipoExp : null, mc.Tropas);
+                    return VisaoExploracao.Previa(m, r, mc.HexEm(m.Agora), para, mc is Explorador ex ? ex.TipoExp : null, mc.Tropas, pontos);
                 }
                 if (p.Tipo != null)
                 {
@@ -81,7 +82,7 @@ public sealed class ModuloExploracao : IModuloApi
                     var c = m.Locais.Obter(r.CasteloId) ?? throw new RegraException("Sem castelo.");
                     var esc = GT.Limpo(p.Escolta);
                     if (esc.Count > 0) esc = GT.Validar(m, c, esc);
-                    return VisaoExploracao.Previa(m, r, c.Hex, para, p.Tipo, esc);
+                    return VisaoExploracao.Previa(m, r, c.Hex, para, p.Tipo, esc, pontos);
                 }
                 var l = m.Locais.Obter(p.DeLocalId ?? r.CasteloId);
                 if (l == null || l.ReinoId != r.Id) throw new RegraException("Local não é seu.", 404);

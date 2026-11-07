@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using ReinoDePedra.Api.Visoes;
 using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Config;
@@ -185,6 +186,26 @@ public class ExploracaoTestes
         Assert.Contains(r.Id, j.DescobertaPor);
         Assert.DoesNotContain(r.Id, longe.DescobertaPor);
         Assert.Contains(t.M.Notificacoes, n => n.ReinoId == r.Id && n.Titulo.StartsWith("Jazida descoberta"));
+    }
+
+    [Fact]
+    public void Rota_desenhada_aceita_muitos_pontos_e_a_previa_emenda_o_caminho()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var c = Castelo(t, r);
+        r.ExploradoresLivres["cavalo"] = 1;
+        var a = HexA(t, c.Hex, 3); var b = HexA(t, c.Hex, 6);
+        var pontos = Enumerable.Range(0, 12).Select(i => i % 2 == 0 ? a : b).ToList();
+        var previa = System.Text.Json.JsonSerializer.SerializeToNode(VisaoExploracao.Previa(t.M, r, c.Hex, b, "cavalo", new Dictionary<string, int>(), pontos))!;
+        var caminho = previa["curta"]!["caminho"]!.AsArray().Select(h => (int)h!).ToList();
+        Assert.Equal(c.Hex, caminho[0]);
+        Assert.Equal(b, caminho[^1]);
+        var i = 0;   // passa por todos os pontos, em ordem
+        foreach (var h in caminho) if (i < pontos.Count && h == pontos[i]) i++;
+        Assert.Equal(pontos.Count, i);
+        var e = Exploradores.Enviar(t.M, r, "cavalo", Exploradores.SeguirRota, null, pontos);
+        Assert.Equal(12, e.Pontos.Count);
     }
 
     [Fact]
