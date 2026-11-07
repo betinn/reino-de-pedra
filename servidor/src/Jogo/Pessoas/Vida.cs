@@ -1,4 +1,6 @@
+using ReinoDePedra.Jogo.Combate;
 using ReinoDePedra.Jogo.Nucleo;
+using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Jogo.Pessoas
 {
@@ -7,11 +9,14 @@ namespace ReinoDePedra.Jogo.Pessoas
         /// <summary>Vida que faltava (dano) no instante <see cref="DanoEm"/>; 0 = vida cheia. A de agora sai de <see cref="Vidas.Atual"/>.</summary>
         public double Dano { get; set; }
         public long DanoEm { get; set; }
+        /// <summary>Soldado descansando no castelo: a vida volta no ritmo de <c>P.vida.repousoPorMin</c> desde <see cref="DanoEm"/>.</summary>
+        public bool Repouso { get; set; }
     }
 
     /// <summary>
     /// Vida das pessoas, sem tique: guarda o dano e o instante, e a vida de agora sai da recuperação (a vida inteira volta em
-    /// <c>P.vida.recuperaH</c> horas, em linha). O máximo vem do ofício (<c>P.vida.max</c>). Fauna no caminho e batalhas tiram
+    /// <c>P.vida.recuperaH</c> horas, em linha; soldado no próprio castelo, fora de batalha, recupera <c>P.vida.repousoPorMin</c>
+    /// da vida por minuto). O máximo vem do ofício (<c>P.vida.max</c>). Fauna no caminho e batalhas tiram
     /// vida por aqui; quem chega a zero morre, e quem chama tira a pessoa do mundo (<see cref="Pessoas.Remover"/>) com o nome
     /// no relatório.
     /// </summary>
@@ -23,7 +28,30 @@ namespace ReinoDePedra.Jogo.Pessoas
         public static double Max(Mundo m, Pessoa p) => m.F.VidaMax(p.Oficio, p.EhCivil);
 
         /// <summary>Quanto de vida volta por hora.</summary>
-        public static double PorHora(Mundo m, Pessoa p) => m.P.Vida.RecuperaH > 0 ? Max(m, p) / m.P.Vida.RecuperaH : 0;
+        public static double PorHora(Mundo m, Pessoa p) =>
+            p.Repouso ? Max(m, p) * m.P.Vida.RepousoPorMin * 60 : m.P.Vida.RecuperaH > 0 ? Max(m, p) / m.P.Vida.RecuperaH : 0;
+
+        private static bool EmRepouso(Mundo m, Pessoa p) =>
+            p.Estado == Estados.Guarnecida && p.GrupoId == null && Pessoas.EhSoldado(m, p) && p.LocalId is long id
+            && m.Locais.Obter(id) is { Tipo: TipoLocal.Castelo, Ruina: false } l && l.ReinoId == p.ReinoId && Batalhas.Ativa(m, l.Id) == null;
+
+        /// <summary>
+        /// A situação da pessoa mudou (entrou, saiu, começou ou acabou uma batalha): fecha a conta no ritmo antigo e passa ao novo.
+        /// Sem tique: o ritmo vale de <see cref="Pessoa.DanoEm"/> até a próxima mudança.
+        /// </summary>
+        public static void Reavaliar(Mundo m, Pessoa p)
+        {
+            var novo = EmRepouso(m, p);
+            if (novo == p.Repouso) return;
+            p.Dano = DanoEm(m, p); p.DanoEm = m.Agora;
+            p.Repouso = novo;
+            m.Sujar(p);
+        }
+
+        public static void ReavaliarLocal(Mundo m, Local l)
+        {
+            foreach (var p in m.PessoasNoLocal(l.Id).ToList()) Reavaliar(m, p);
+        }
 
         /// <summary>Vida que falta no instante <paramref name="t"/> (agora, por padrão).</summary>
         public static double DanoEm(Mundo m, Pessoa p, long? t = null)

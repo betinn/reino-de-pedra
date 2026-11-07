@@ -122,7 +122,7 @@ public static class RelatoriosCombate
         {
             "vitoria" or "defesa-recuou" => (res == "defesa-recuou" ? "A defesa recuou. " : "Vitória. ") +
                 (ef.Ocupou ? "O local é seu." : levaram.Length > 0 ? "Levaram " + levaram + "." : ef.Reliquias.Count > 0 ? "" : "Nada para levar."),
-            "recuo" => "Recuaram com " + Math.Round(100 * Pct(rc.PerdasAtaque, rc.TropasAtaque)) + "% de baixas.",
+            "recuo" => (b.MotivoRecuo != null ? b.MotivoRecuo + " " : "") + "Recuaram com " + Math.Round(100 * Pct(rc.PerdasAtaque, rc.TropasAtaque)) + "% de baixas.",
             _ => "Derrota: as tropas caíram.",
         };
         if (ef.Reliquias.Count > 0 && !ef.Ocupou) resumoA += " Relíquia: " + string.Join(", ", ef.Reliquias) + ".";
@@ -131,7 +131,7 @@ public static class RelatoriosCombate
         var dA = new JsonObject
         {
             ["resumo"] = resumoA, ["papel"] = "ataque", ["tipo"] = plano.Tipo, ["tipoNome"] = tipoNome, ["resultado"] = res,
-            ["alvo"] = nomeGenerico, ["batalhaId"] = b.Id, ["estandarte"] = b.Estandarte, ["tatica"] = plano.Tatica,
+            ["alvo"] = nomeGenerico, ["batalhaId"] = b.Id, ["estandarte"] = b.Estandarte, ["tatica"] = plano.Tatica, ["divisao"] = plano.Divisao,
             ["forcas"] = new JsonObject { ["ataque"] = Math.Round(full.A), ["defesa"] = Math.Round(full.D) },
             ["tropas"] = new JsonObject { ["enviadas"] = Grupo(rc.TropasAtaque), ["perdas"] = Grupo(rc.PerdasAtaque), ["feridos"] = Grupo(feridosA) },
             ["mortos"] = new JsonArray(b.MortosAtaque.Select(x => (JsonNode)x).ToArray()),
@@ -151,6 +151,9 @@ public static class RelatoriosCombate
         };
         if (l != null) dA["hex"] = l.Hex;
         if (feridosA.Count > 0) ((JsonArray)dA["linhas"]!).Add(Linha("Feridos", GT.Partes(m, feridosA)));
+        if (Ataques.LevaCarga(plano.Tipo) && plano.Objetivos.Count(o => o.K == "recurso") > 1)
+            ((JsonArray)dA["linhas"]!).Add(Linha("Divisão da carga", plano.Divisao == Ataques.DivisaoIgual ? "igual entre os recursos" : "por prioridade"));
+        if (c.Parte < 1 - 1e-9) ((JsonArray)dA["linhas"]!).Add(Linha("Outras frentes", "a defesa lutou contra mais de um ataque; " + Math.Round(c.Parte * 100) + "% dela nesta frente"));
         b.RelatorioAtaque = Registros.Relatar(m, b.AtacanteId, "ataque", titA, dA, "batalhas").Id;
 
         // ---------------- defensor (anônimo sem estandarte)
@@ -194,6 +197,7 @@ public static class RelatoriosCombate
         if (l != null) dD["hex"] = l.Hex;
         if (danos.Count > 0) ((JsonArray)dD["linhas"]!).Add(Linha("Danos", string.Join(", ", danos)));
         if (feridosD.Count > 0) ((JsonArray)dD["linhas"]!).Add(Linha("Feridos", GT.Partes(m, feridosD)));
+        if (c.Parte < 1 - 1e-9) ((JsonArray)dD["linhas"]!).Add(Linha("Outras frentes", "suas tropas enfrentaram mais de um ataque; " + Math.Round(c.Parte * 100) + "% delas nesta frente"));
         b.RelatorioDefesa = Registros.Relatar(m, b.DefensorId, "defesa", titD, dD, "batalhas").Id;
     }
 

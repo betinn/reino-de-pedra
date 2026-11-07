@@ -170,7 +170,8 @@ const P = {
     /* tática: limite de baixas para recuar (null = sem limite: lutam até cumprir ou cair) */
     taticas: { conservadora: 0.25, media: 0.40, agressiva: 0.60, semLimite: null }, taticaPadrao: 'media',
     /* duração da batalha: tempo para o defensor mandar reforços e para qualquer lado recuar.
-       base + por tropa envolvida no início, até o máximo: 6 contra 4 ≈ 7,5 min; um cerco de 50 tropas ≈ 17 min (o teto de 20 min). */
+       base + por tropa envolvida, até o máximo, sem contar baixas: 6 contra 4 ≈ 7,5 min; um cerco de 50 tropas ≈ 17 min (o teto de 20 min).
+       O tempo real é menor: o ritmo acompanha quem sobra (com metade das tropas vivas, a batalha corre no dobro do ritmo). */
     batalha: { baseSeg: 300, porTropaSeg: 15, maxSeg: 1200 },
     saqueJanelaH: 24,                  /* saques ao mesmo local nesta janela contam para o rendimento decrescente (saqueQueda) */
     massacrePorTropa: 1,               /* no massacre, cada tropa que sobrevive mata até 1 pessoa do local */
@@ -363,6 +364,7 @@ const P = {
     max: { civil: 60, padrao: 100, milicia: 70, lanceiro: 110, arqueiro: 90, cavalaria: 110, elite: 130, ariete: 90, trebuchet: 90,
            'explorador-pe': 80, 'explorador-cavalo': 80, prospector: 70, batedor: 90, mensageiro: 70 },
     recuperaH: 6,
+    repousoPorMin: 0.10,   /* soldado no próprio castelo, fora de batalha: 10% da vida máxima por minuto (cheia em 10 min) */
     golpe: { baixo: 20, medio: 40, alto: 70 }, variacao: 0.5,
     fuga: { cavalo: 0.6, batedor: 0.6 },
     batalha: 0.8

@@ -17,7 +17,7 @@
     if (document.hidden && window.Notification && Notification.permission === 'granted') {
       try { var x = new Notification(n.titulo, { body: n.texto || '', tag: 'rp-' + n.id }); x.onclick = function () { window.focus(); if (n.link) RP.ir(n.link); }; } catch (e) { /* ignora */ }
     } else {
-      RP.aviso({ titulo: n.titulo, texto: n.texto || '', icone: 'sino', tipo: n.categoria === 'ataques' ? 'perigo' : 'info' });
+      RP.aviso({ titulo: n.titulo, texto: n.texto || '', icone: 'sino', tipo: n.categoria === 'ataques' ? 'perigo' : 'info', link: n.link, ms: n.link ? 6000 : null });
     }
   });
 

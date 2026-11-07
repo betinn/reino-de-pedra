@@ -154,6 +154,8 @@
 
   function folhaObjeto(o) {
     if (o.tipo === 'marcha') { folhaMarcha(o); return; }
+    var tl = MAPA.tiposObjeto[o.tipo], link = tl && tl.link && tl.link(o);
+    if (link) { RP.ir(link); return; }   /* a batalha abre a tela dela, sem folha no meio */
     if (o.tipo === 'local' && o.dono === 'meu' && RP.local(o.id)) { RP.folhaLocal(o.id); return; }
     abrirFolhaMapa(montarObjeto(o), o.hex);
   }
@@ -241,7 +243,6 @@
         (pode && estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
         (pode && estado !== 'parado' ? '<button type="button" class="btn btn-p" data-exercito-parar="' + o.id + '" data-hex="' + pos.hex + '" data-tecla="H">' + RP.icone('alvo') + 'Parar aqui</button>' : '') +
         (divide ? '<button type="button" class="btn btn-p" data-tropa-separar="' + o.id + '" data-tecla="K">' + RP.icone('tropas') + 'Separar</button>' : '') +
-        (!pode && d.bloqueio && RP.telas.batalha ? '<a class="btn btn-p btn-perigo" href="#/tropas">' + RP.icone('escudo') + 'Recuar</a>' : '') +
         '<button type="button" class="btn btn-p" data-exercito="' + o.id + '" data-tecla="I">' + RP.icone('info') + 'Detalhes</button>' +
         '<a class="btn btn-p" href="#/posturas?marcha=' + o.id + '" data-tecla="C">' + RP.icone('escudo') + 'Comportamento</a>';
     } else if (o.marcha === 'caravana' && RP.telas.caravana) {
@@ -356,6 +357,10 @@
     if (E && E.desenhando()) { if (hh != null && hh >= 0) E.ponto(hh); return; }
     /* ordem pedida ("Novo destino", "Missão"): o clique escolhe o hexágono (a folha dele traz as ordens), nunca abre o painel do local */
     if (E && E.ativo() && !E.implicito()) { if (hh != null && hh >= 0) folhaHex(hh); return; }
+    if (ent && ent[0] === 'link') { RP.ir(ent[1]); return; }
+    /* a batalha divide o hexágono com as tropas: clicar no marcador dela abre a tela, sem selecionar ninguém */
+    var tlk = alvo.obj && !alvo.shift && MAPA.tiposObjeto[alvo.obj.tipo], lk = tlk && tlk.link && tlk.link(alvo.obj);
+    if (lk) { RP.ir(lk); return; }
     var t = tropaDoToque(alvo);
     /* duplo clique num soldado da guarnição: todos do mesmo tipo naquele lugar */
     if (alvo.duplo && t && !t.marchaId && ent) {

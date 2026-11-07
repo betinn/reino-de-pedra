@@ -14,7 +14,8 @@ public sealed record Objetivo(string K, string? R, double Q)
 }
 
 /// <summary>
-/// Plano de um ataque: tipo, objetivos em ordem de prioridade, tática, completar a carga e estandarte.
+/// Plano de um ataque: tipo, objetivos em ordem de prioridade, divisão da carga, tática, completar a carga, recuar sem o que
+/// levar e estandarte. Recursos não têm quantidade: o jogo decide quanto trazer pela carga, pelo estoque e pela divisão.
 /// Vive em <c>Exercito.Dados</c> (normalizado pelo servidor ao dar a ordem).
 /// </summary>
 public sealed class PlanoAtaque
@@ -24,6 +25,10 @@ public sealed class PlanoAtaque
     public string Tatica { get; set; } = "";
     public bool Completar { get; set; }
     public bool Estandarte { get; set; }
+    /// <summary>Como a carga se divide entre os recursos: <see cref="Ataques.DivisaoPrioridade"/> ou <see cref="Ataques.DivisaoIgual"/>.</summary>
+    public string Divisao { get; set; } = "";
+    /// <summary>Saque: sem nada do que foi pedido no local, as tropas voltam em vez de lutar.</summary>
+    public bool RecuarVazio { get; set; } = true;
 
     public static PlanoAtaque Ler(JsonObject? d)
     {
@@ -33,6 +38,8 @@ public sealed class PlanoAtaque
         p.Tatica = Str(d["tatica"]) ?? "";
         p.Completar = Bool(d["completar"]);
         p.Estandarte = Bool(d["estandarte"]);
+        p.Divisao = Str(d["divisao"]) ?? "";
+        if (d["recuarVazio"] != null) p.RecuarVazio = Bool(d["recuarVazio"]);
         if (d["objetivos"] is JsonArray arr)
             foreach (var x in arr.OfType<JsonObject>())
             {
@@ -54,7 +61,7 @@ public sealed class PlanoAtaque
             if (o.Q > 0) j["q"] = o.Q;
             arr.Add(j);
         }
-        return new JsonObject { ["tipo"] = Tipo, ["objetivos"] = arr, ["tatica"] = Tatica, ["completar"] = Completar, ["estandarte"] = Estandarte };
+        return new JsonObject { ["tipo"] = Tipo, ["objetivos"] = arr, ["tatica"] = Tatica, ["completar"] = Completar, ["estandarte"] = Estandarte, ["divisao"] = Divisao, ["recuarVazio"] = RecuarVazio };
     }
 
     private static string? Str(JsonNode? n) { try { return n?.GetValue<string>(); } catch { return null; } }
@@ -66,6 +73,7 @@ public static class Ataques
 {
     public const string Saque = "saque", Sabotagem = "sabotagem", Massacre = "massacre", Ocupacao = "ocupacao", Cerco = "cerco";
     public static readonly string[] Tipos = [Saque, Sabotagem, Massacre, Ocupacao, Cerco];
+    public const string DivisaoPrioridade = "prioridade", DivisaoIgual = "igual";
 
     public static readonly Dictionary<string, string> NomesTipo = new()
     {
@@ -105,12 +113,12 @@ public static class Ataques
     public static bool RecursoValido(Mundo m, string? r) => r != null && m.P.Valor.ContainsKey(r);
 
     /// <summary>Objetivos automáticos (ataque rápido): a relíquia à vista e o recurso principal do local.</summary>
-    public static (List<Objetivo> objetivos, bool completar) Padrao(Mundo m, string tipo, Local l, double carga)
+    public static (List<Objetivo> objetivos, bool completar) Padrao(Mundo m, string tipo, Local l)
     {
         var op = m.P.Combate.ObjPadrao;
         return tipo switch
         {
-            Saque => l.Produz != null ? ([new("reliquia", null, 0), new("recurso", l.Produz, Math.Max(1, carga))], false) : ([new("reliquia", null, 0)], true),
+            Saque => l.Produz != null ? ([new("reliquia", null, 0), new("recurso", l.Produz, 0)], false) : ([new("reliquia", null, 0)], true),
             Sabotagem => ([new("construcao", null, op["construcao"]), new("torre", null, op["torre"])], false),
             Massacre => ([new("populacao", null, op["populacao"])], false),
             Ocupacao => ([new("tomar", null, 0), new("reliquia", null, 0)], false),
@@ -119,13 +127,13 @@ public static class Ataques
     }
 
     /// <summary>Catálogo de objetivos que podem ser acrescentados ao tipo (com a quantidade padrão).</summary>
-    public static List<Objetivo> Catalogo(Mundo m, string tipo, double carga)
+    public static List<Objetivo> Catalogo(Mundo m, string tipo)
     {
         var op = m.P.Combate.ObjPadrao;
         var c = new List<Objetivo>();
         foreach (var k in ObjetivosPorTipo[tipo])
         {
-            if (k == "recurso") foreach (var r in Config.Formulas.Basicos.Concat(["couro", "peles"])) c.Add(new("recurso", r, Math.Max(1, carga)));
+            if (k == "recurso") foreach (var r in Config.Formulas.Basicos.Concat(["couro", "peles"])) c.Add(new("recurso", r, 0));
             else if (k is "reliquia" or "tomar") c.Add(new(k, null, 0));
             else c.Add(new(k, null, op.GetValueOrDefault(k, 1)));
         }
@@ -133,10 +141,10 @@ public static class Ataques
     }
 
     /// <summary>
-    /// Valida e completa o plano contra o alvo e as tropas: tipo permitido, objetivos do tipo (sem repetir, quantidades válidas),
-    /// "tomar" primeiro na ocupação, tática conhecida. Sem objetivos, usa os automáticos. Lança <see cref="RegraException"/>.
+    /// Valida e completa o plano contra o alvo: tipo permitido, objetivos do tipo (sem repetir, quantidades válidas; recurso não
+    /// tem quantidade), "tomar" primeiro na ocupação, tática conhecida. Sem objetivos, usa os automáticos. Lança <see cref="RegraException"/>.
     /// </summary>
-    public static PlanoAtaque Normalizar(Mundo m, Local alvo, IReadOnlyDictionary<string, int> tropas, PlanoAtaque p)
+    public static PlanoAtaque Normalizar(Mundo m, Local alvo, PlanoAtaque p)
     {
         var tipos = TiposPara(m, alvo);
         if (string.IsNullOrEmpty(p.Tipo)) p.Tipo = TipoPadrao(m, alvo);
@@ -147,7 +155,6 @@ public static class Ataques
                 : p.Tipo == Ocupacao ? "Para tomar um castelo, use o cerco." : "Este ataque não serve para este local.");
         if (string.IsNullOrEmpty(p.Tatica)) p.Tatica = m.P.Combate.TaticaPadrao;
         Limite(m, p.Tatica);
-        var carga = GT.Carga(m, tropas);
         var validos = ObjetivosPorTipo[p.Tipo];
         var lista = new List<Objetivo>();
         var vistos = new HashSet<string>();
@@ -162,7 +169,7 @@ public static class Ataques
             if (!validos.Contains(o.K)) throw new RegraException("Objetivo que não cabe neste tipo de ataque.");
             Objetivo n = o.K switch
             {
-                "recurso" => RecursoValido(m, o.R) && o.Q >= 1 ? new(o.K, o.R, Math.Min(o.Q, 1e7)) : throw new RegraException("Recurso ou quantidade inválida."),
+                "recurso" => RecursoValido(m, o.R) ? new(o.K, o.R, 0) : throw new RegraException("Recurso inválido."),
                 "reliquia" or "tomar" => new(o.K, null, 0),
                 "construcao" => new(o.K, null, Math.Clamp(Math.Floor(o.Q < 1 ? 1 : o.Q), 1, m.P.Combate.SabotagemMaxNiveis)),
                 "portoes" => new(o.K, null, Math.Clamp(Math.Floor(o.Q < 1 ? 1 : o.Q), 1, Defesas.PortoesMax(m))),
@@ -173,7 +180,7 @@ public static class Ataques
         }
         if (lista.Count == 0)
         {
-            var (obj, comp) = Padrao(m, p.Tipo, alvo, carga);
+            var (obj, comp) = Padrao(m, p.Tipo, alvo);
             lista = obj; p.Completar = p.Completar || comp;
         }
         if (p.Tipo == Ocupacao)
@@ -182,6 +189,8 @@ public static class Ataques
             lista.Insert(0, new Objetivo("tomar", null, 0));
         }
         if (!LevaCarga(p.Tipo)) p.Completar = false;
+        if (p.Divisao != DivisaoIgual) p.Divisao = DivisaoPrioridade;
+        if (p.Tipo != Saque) p.RecuarVazio = false;
         p.Objetivos = lista;
         return p;
     }
@@ -231,6 +240,43 @@ public static class Ataques
     public static JsonObject? FotoDoLocal(Mundo m, Reino r, int hex) =>
         Fotos.De(m, r.Id).Objetos.TryGetValue(hex, out var objs) ? objs.FirstOrDefault(o => (string?)o["tipo"] == "local") : null;
 
+    // ---------------------------------------------------------------- carga do saque
+
+    /// <summary>
+    /// Quanto trazer de cada recurso (em ordem de prioridade), pela carga livre e pelo que há: na prioridade, enche o primeiro e
+    /// passa ao seguinte; na divisão igual, cada um recebe a mesma parte, e o que sobra de quem tinha pouco vai para os outros.
+    /// </summary>
+    public static Dictionary<string, double> Partilha(IReadOnlyList<(string k, double tem)> itens, double livre, string divisao)
+    {
+        var res = new Dictionary<string, double>();
+        var ordem = divisao == DivisaoIgual ? itens.OrderBy(x => x.tem).ToList() : itens.ToList();
+        for (var i = 0; i < ordem.Count; i++)
+        {
+            var (k, tem) = ordem[i];
+            var cota = divisao == DivisaoIgual ? livre / (ordem.Count - i) : livre;
+            var leva = Math.Floor(Math.Min(tem, cota) + 1e-9);
+            if (leva <= 0) continue;
+            res[k] = leva; livre -= leva;
+        }
+        return res;
+    }
+
+    /// <summary>
+    /// Por que um saque que pediu para recuar não tem o que fazer no local (null se há o que levar, ou se o plano manda lutar
+    /// mesmo assim). As tropas olham ao chegar e sempre que a batalha muda.
+    /// </summary>
+    public static string? SemOQueLevar(Mundo m, Reino r, PlanoAtaque p, Local l)
+    {
+        if (p.Tipo != Saque || !p.RecuarVazio) return null;
+        var rend = Rendimento(m, SaquesRecentes(m, r, l.Id));
+        bool Tem(string k) => l.Estoque.Qtd(k) * rend >= 1;
+        if (p.Objetivos.Any(o => o.K == "reliquia") && Reliquias.NoLocal(m, l.Id).Any()) return null;
+        if (p.Objetivos.Any(o => o.K == "recurso" && Tem(o.R!))) return null;
+        if (p.Completar && l.Estoque.Any(kv => kv.Value * rend >= 1)) return null;
+        var pedidos = p.Objetivos.Select(o => o.K == "reliquia" ? "relíquia" : Logistica.NomeRecurso(o.R ?? "").ToLowerInvariant()).ToList();
+        return "Não havia o que levar" + (pedidos.Count > 0 ? " (" + string.Join(", ", pedidos) + ")" : "") + ".";
+    }
+
     // ---------------------------------------------------------------- saque decrescente
 
     /// <summary>Saques vitoriosos do reino a este local na janela (P.combate.saqueJanelaH).</summary>
@@ -261,7 +307,7 @@ public static class Ataques
         return o.K switch
         {
             "reliquia" => "Relíquia",
-            "recurso" => N(o.Q) + " de " + Logistica.NomeRecurso(o.R ?? ""),
+            "recurso" => Maiuscula(Logistica.NomeRecurso(o.R ?? "")),
             "torre" => "Derrubar " + N(o.Q) + (o.Q > 1 ? " torres" : " torre"),
             "portoes" => "Portões −" + N(o.Q) + (o.Q > 1 ? " níveis" : " nível"),
             "construcao" => (alvo != null ? NomeAlvo(alvo) : "Construção") + " −" + N(o.Q) + (o.Q > 1 ? " níveis" : " nível"),
@@ -271,6 +317,8 @@ public static class Ataques
         };
     }
 
+    private static string Maiuscula(string s) => s.Length > 0 ? char.ToUpperInvariant(s[0]) + s[1..] : s;
+
     /// <summary>"Quando param": frases curtas com as condições de parada do plano.</summary>
     public static List<string> QuandoParam(Mundo m, PlanoAtaque p, double carga)
     {
@@ -279,7 +327,8 @@ public static class Ataques
         l.Add(p.Tipo == Ocupacao ? "Ao tomar o local, ficam nele como guarnição."
             : "Ao cumprir os objetivos" + (LevaCarga(p.Tipo) && p.Completar ? " e completar a carga com o que houver" : "") + ", voltam.");
         if (LevaCarga(p.Tipo) && (p.Completar || p.Objetivos.Any(o => o.K == "recurso")))
-            l.Add("Se a carga encher antes (" + Combates.Num(carga) + "), voltam.");
+            l.Add("A carga (" + Combates.Num(carga) + ") " + (p.Divisao == DivisaoIgual ? "se divide igualmente entre os recursos escolhidos." : "enche pelo primeiro recurso, depois pelo seguinte.") + " Cheia, voltam.");
+        if (p.Tipo == Saque && p.RecuarVazio) l.Add("Se não houver o que levar, voltam sem seguir lutando.");
         l.Add(limite is double x ? "Se tiverem " + Math.Round(x * 100) + "% de baixas, recuam com o que já pegaram." : "Não recuam por baixas: lutam até cumprir ou cair.");
         return l;
     }
@@ -309,7 +358,7 @@ public sealed class OrdemAtacar : IOrdemExercito
         }
         var plano = PlanoAtaque.Ler(ex.Dados);
         if (tipoFixo != null) plano.Tipo = tipoFixo;
-        plano = Ataques.Normalizar(m, alvo, ex.Tropas, plano);
+        plano = Ataques.Normalizar(m, alvo, plano);
         ex.Dados = plano.ParaJson();
         ex.AlvoLocalId = alvo.Id;
         ex.Estandarte = plano.Estandarte;

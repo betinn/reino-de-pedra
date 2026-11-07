@@ -180,10 +180,12 @@
     var el = document.createElement('div');
     el.className = 'aviso aviso-' + (o.tipo || 'info');
     el.setAttribute('role', o.tipo === 'perigo' ? 'alert' : 'status');
-    el.innerHTML = RP.icone(o.icone || 'info', '', '') + '<div><b>' + RP.esc(o.titulo) + '</b>' + (o.texto ? '<span>' + RP.esc(o.texto) + '</span>' : '') + '</div>';
+    el.innerHTML = RP.icone(o.icone || 'info', '', '') + '<div><b>' + RP.esc(o.titulo) + '</b>' + (o.texto ? '<span>' + RP.esc(o.texto) + '</span>' : '') +
+      (o.link ? '<small class="aviso-abrir">Clique para abrir</small>' : '') + '</div>';
+    if (o.link) el.classList.add('aviso-link');
     box.appendChild(el);
     var sair = function () { el.classList.add('sai'); setTimeout(function () { el.remove(); }, 240); };
-    el.addEventListener('click', sair);
+    el.addEventListener('click', function () { if (o.link) RP.ir(o.link); sair(); });
     setTimeout(sair, o.ms || (o.texto ? 3600 : 2400));
   };
 

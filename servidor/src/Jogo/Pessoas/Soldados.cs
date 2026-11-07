@@ -179,7 +179,7 @@ public static partial class Pessoas
             lista.AddRange(Guarnicao(m, l).Where(p => p.Oficio == k && (todosOsReinos || p.ReinoId == dono))
                 .OrderByDescending(p => p.GrupoId == Escolhida ? 1 : 0).ThenByDescending(p => p.Marcas).ThenBy(p => p.Id).Take(n));
         }
-        foreach (var p in lista) { p.Estado = Estados.Marchando; p.GrupoId = Saindo; m.Sujar(p); }
+        foreach (var p in lista) { p.Estado = Estados.Marchando; p.GrupoId = Saindo; m.Sujar(p); Vidas.Reavaliar(m, p); }
         RecontarGuarnicao(m, l);
         return lista;
     }
@@ -230,6 +230,7 @@ public static partial class Pessoas
         {
             MudarLocal(m, p, l.Id);
             p.Estado = Estados.Guarnecida; p.GrupoId = null; m.Sujar(p);
+            Vidas.Reavaliar(m, p);
             mc.PessoaIds.Remove(p.Id);
         }
         m.Sujar(mc);
@@ -358,7 +359,7 @@ public static partial class Pessoas
     public static void Curadas(Mundo m, IEnumerable<Pessoa> pessoas, Local l)
     {
         Sincronizar(m, l);
-        foreach (var p in pessoas) { MudarLocal(m, p, l.Id); p.Estado = Estados.Guarnecida; p.GrupoId = null; p.ItemId = null; m.Sujar(p); }
+        foreach (var p in pessoas) { MudarLocal(m, p, l.Id); p.Estado = Estados.Guarnecida; p.GrupoId = null; p.ItemId = null; m.Sujar(p); Vidas.Reavaliar(m, p); }
         RecontarGuarnicao(m, l);
     }
 

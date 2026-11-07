@@ -17,13 +17,13 @@ public static class VisaoCombate
 {
     public sealed record PedidoObjetivo(string K, string? R, double? Q);
     public sealed record PedidoAtaque(long? DeLocalId, long? MarchaId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L,
-        string? Tipo, List<PedidoObjetivo>? Objetivos, string? Tatica, bool? Completar, bool? Estandarte, bool? Seguro, List<long>? Pessoas = null);
+        string? Tipo, List<PedidoObjetivo>? Objetivos, string? Tatica, bool? Completar, bool? Estandarte, bool? Seguro, List<long>? Pessoas = null, string? Divisao = null, bool? RecuarVazio = null);
 
     public static JsonObject Dados(PedidoAtaque p)
     {
         var arr = new JsonArray();
         foreach (var o in p.Objetivos ?? []) { var j = new JsonObject { ["k"] = o.K }; if (o.R != null) j["r"] = o.R; if (o.Q != null) j["q"] = o.Q; arr.Add(j); }
-        return new JsonObject { ["tipo"] = p.Tipo, ["objetivos"] = arr, ["tatica"] = p.Tatica, ["completar"] = p.Completar == true, ["estandarte"] = p.Estandarte == true };
+        return new JsonObject { ["tipo"] = p.Tipo, ["objetivos"] = arr, ["tatica"] = p.Tatica, ["completar"] = p.Completar == true, ["estandarte"] = p.Estandarte == true, ["divisao"] = p.Divisao, ["recuarVazio"] = p.RecuarVazio };
     }
 
     public static List<TorreConhecida> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null) => Reconhecimentos.TorresConhecidas(m, r, l, vis);
@@ -55,7 +55,7 @@ public static class VisaoCombate
         string? bloqueio = null;
         try { Ataques.ValidarTropas(m, grupo); } catch (RegraException e) { bloqueio = e.Message; }
         if (!Ataques.SemDono(m, alvo) && m.Reinos.Obter(alvo.ReinoId) is { } donoAlvo) bloqueio ??= Permissoes.MotivoEnvio(m, r, donoAlvo);
-        var plano = Ataques.Normalizar(m, alvo, grupo, PlanoAtaque.Ler(Dados(p)));
+        var plano = Ataques.Normalizar(m, alvo, PlanoAtaque.Ler(Dados(p)));
         var carga = GT.Carga(m, grupo);
         var vel = GT.Velocidade(m, grupo);
         var forca = GT.ForcaFauna(m, grupo);
@@ -69,13 +69,13 @@ public static class VisaoCombate
         var levaCarga = Ataques.LevaCarga(plano.Tipo);
         var recentes = levaCarga ? Ataques.SaquesRecentes(m, r, alvo.Id) : 0;
         var rendimento = Ataques.Rendimento(m, recentes);
-        var cargaObj = plano.Objetivos.Where(o => o.K == "recurso").Sum(o => o.Q);
+        var nRecursos = plano.Objetivos.Count(o => o.K == "recurso");
+        // o estoque do alvo não é conhecido aqui: a prévia diz só até quanto a carga comporta para cada recurso
+        double? Ate(Objetivo o) => o.K != "recurso" || !levaCarga ? null : plano.Divisao == Ataques.DivisaoIgual ? Math.Floor(carga / Math.Max(1, nRecursos)) : carga;
         var torres = TorresConhecidas(m, r, alvo, vis);
         var avisos = new List<object>();
         if (levaCarga && recentes > 0)
             avisos.Add(new { tipo = "alerta", texto = "Você saqueou este alvo " + recentes + (recentes > 1 ? " vezes" : " vez") + " nas últimas " + m.P.Combate.SaqueJanelaH + " h: rendimento " + Math.Round(rendimento * 100) + "%. Saques repetidos rendem cada vez menos." });
-        if (levaCarga && cargaObj > carga && grupo.Count > 0)
-            avisos.Add(new { tipo = "alerta", texto = "Os objetivos passam da carga. As tropas param quando a carga encher: leve mais tropas (a cavalaria carrega mais) ou reduza." });
         if (plano.Objetivos.Any(o => o.K is "torre" or "portoes") && grupo.GetValueOrDefault("ariete") + grupo.GetValueOrDefault("trebuchet") == 0)
             avisos.Add(new { tipo = "alerta", texto = "Sem aríetes nem trebuchets, torres e portões não sofrem dano." });
         if (torres.Count > 0)
@@ -100,12 +100,13 @@ public static class VisaoCombate
             plano = new
             {
                 plano.Tipo, tipoNome = Ataques.NomesTipo[plano.Tipo], plano.Tatica, limite = Ataques.Limite(m, plano.Tatica), plano.Completar, plano.Estandarte,
-                objetivos = plano.Objetivos.Select(o => new { k = o.K, r = o.R, q = o.Q, texto = Ataques.TextoObjetivo(m, o, alvo) }),
+                plano.Divisao, plano.RecuarVazio,
+                objetivos = plano.Objetivos.Select(o => new { k = o.K, r = o.R, q = o.Q, ate = Ate(o), texto = Ataques.TextoObjetivo(m, o, alvo) }),
             },
-            catalogo = Ataques.Catalogo(m, plano.Tipo, carga).Where(o => !presentes.Contains(o.Chave))
+            catalogo = Ataques.Catalogo(m, plano.Tipo).Where(o => !presentes.Contains(o.Chave))
                 .Select(o => new { k = o.K, r = o.R, q = o.Q, texto = Ataques.TextoObjetivo(m, o, alvo) }),
             taticas = m.P.Combate.Taticas,
-            tropas = grupo, total = GT.Total(grupo), carga, cargaObjetivos = cargaObj, vel, forcaFauna = forca,
+            tropas = grupo, total = GT.Total(grupo), carga, vel, forcaFauna = forca,
             curta = Op(false), segura = Op(true),
             forcaInimiga = Reconhecimentos.Estimar(m, r, alvo, grupo, bonusA, plano.Tatica, vis),
             saque = levaCarga ? new { recentes, rendimento } : null,
@@ -129,8 +130,44 @@ public static class VisaoCombate
         return new
         {
             b.Id, papel, hex = b.Hex, nome = NomeLocal(m, r, b, l), tipo = plano.Tipo, tipoNome = Ataques.NomesTipo.GetValueOrDefault(plano.Tipo, ""),
-            b.Inicio, fim = b.FimPrevisto, b.Encerrada, resultado = ResultadoPara(b, papel), b.EncerradaEm,
+            b.Inicio, fim = b.FimPrevisto, b.Encerrada, resultado = ResultadoPara(b, papel), b.EncerradaEm, frentes = Batalhas.Ativas(m, b.LocalId).Count,
         };
+    }
+
+    /// <summary>O placar visto por um lado: "meu" e "eles", com o ritmo para o cliente andar sozinho entre uma busca e outra.</summary>
+    public static object Vivo(Batalhas.Placar x, string papel)
+    {
+        var ataque = papel == "ataque";
+        return new
+        {
+            t0 = x.T0, p0 = x.P0, dur = x.Dur, m = x.M, progresso = Math.Round(x.Progresso, 4),
+            meu = new { forca = ataque ? x.A : x.D, perda = ataque ? x.PerdaA : x.PerdaD, total = ataque ? x.TotalA : x.TotalD, baixa = ataque ? x.BaixaA : x.BaixaD, baixas = ataque ? x.BaixasA : x.BaixasD },
+            eles = new { forca = ataque ? x.D : x.A, perda = ataque ? x.PerdaD : x.PerdaA, total = ataque ? x.TotalD : x.TotalA, baixa = ataque ? x.BaixaD : x.BaixaA, baixas = ataque ? x.BaixasD : x.BaixasA },
+        };
+    }
+
+    /// <summary>
+    /// As frentes do local como este reino as vê: o defensor vê cada ataque (anônimo sem estandarte) e abre cada um; o atacante
+    /// vê a própria frente e as outras forças no local, sem identidade nem acesso.
+    /// </summary>
+    public static List<object> Frentes(Mundo m, Reino r, Batalha b)
+    {
+        var agora = m.Agora;
+        var lista = Batalhas.Ativas(m, b.LocalId);
+        if (!lista.Any(x => x.Id == b.Id)) lista.Insert(0, b);
+        return lista.Select(x =>
+        {
+            var propria = x.AtacanteId == r.Id;
+            var defendo = x.DefensorId == r.Id;
+            return (object)new
+            {
+                id = propria || defendo ? x.Id : (long?)null, atual = x.Id == b.Id, propria,
+                nome = propria ? "Suas tropas" : RelatoriosCombate.NomeAtacante(m, x.AtacanteId, x.Estandarte),
+                tipoNome = propria || defendo ? Ataques.NomesTipo.GetValueOrDefault(PlanoAtaque.Ler(x.Plano).Tipo, "") : null,
+                fim = x.FimPrevisto, parte = Math.Round((x.Marcos.LastOrDefault()?.Parte ?? 1) * 100),
+                vivo = Vivo(Batalhas.PlacarDe(m, x, agora), defendo ? "defesa" : "ataque"),
+            };
+        }).ToList();
     }
 
     private static string NomeLocal(Mundo m, Reino r, Batalha b, Local? l) =>
@@ -169,8 +206,11 @@ public static class VisaoCombate
                 reforcos.Add(new { localId = x.Id, x.Nome, tropas = GT.Limpo(x.Guarnicao), vel, min = Math.Round(rota.TotalMin, 1), chega, aTempo = chega < b.FimPrevisto });
             }
         var defR = m.Reinos.Obter(b.DefensorId);
+        var aRecuar = papel == "ataque" && !b.Encerrada && l != null && (plano.Tipo == Ataques.Saque)
+            ? Ataques.SemOQueLevar(m, r, new PlanoAtaque { Tipo = plano.Tipo, Objetivos = plano.Objetivos, Completar = plano.Completar, RecuarVazio = true }, l) : null;
         return new
         {
+            vivo = Vivo(Batalhas.PlacarDe(m, b, agora), papel), frentes = Frentes(m, r, b), semOQueLevar = aRecuar, motivoRecuo = papel == "ataque" ? b.MotivoRecuo : null,
             b.Id, papel, hex = b.Hex, c = m.G.C(b.Hex), lin = m.G.L(b.Hex), nome = NomeLocal(m, r, b, l), localId = papel == "defesa" ? b.LocalId : (long?)null,
             tipo = plano.Tipo, tipoNome = Ataques.NomesTipo.GetValueOrDefault(plano.Tipo, ""), tatica = papel == "ataque" ? plano.Tatica : null,
             agora, b.Inicio, fim = b.FimPrevisto, fimMax = b.Fim, b.Encerrada, resultado = ResultadoPara(b, papel), b.EncerradaEm,

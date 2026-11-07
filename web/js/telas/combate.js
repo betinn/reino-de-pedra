@@ -20,6 +20,10 @@
     { id: 'semLimite', nome: 'Sem limite', icone: 'estandarte' }
   ];
   var LEVA_CARGA = { saque: true, cerco: true };
+  var DIVISOES = [
+    { id: 'prioridade', nome: 'Por prioridade', icone: 'subir', txt: 'Enche com o primeiro recurso, depois com o seguinte.' },
+    { id: 'igual', nome: 'Igual', icone: 'carroca', txt: 'A mesma parte para cada recurso; o que faltar de um vai para os outros.' }
+  ];
   function linha(r, v) { return '<div class="info-linha"><span class="fraco">' + r + '</span><span>' + v + '</span></div>'; }
   function limites() { return (RP.reino && RP.reino.combate && RP.reino.combate.taticas) || {}; }
   RP.textoTatica = function (id, lims) {
@@ -32,6 +36,33 @@
   function grupoParam(g) { return Object.keys(g || {}).filter(function (k) { return g[k] > 0; }).map(function (k) { return k + ':' + g[k]; }).join(','); }
   RP.nomeObjetivo = function (o) { return o.texto || o.k; };
 
+  /* placar ao vivo de uma frente, com o mesmo ritmo do servidor: dt = dur × (1 − m × p) dp, a partir do último marco */
+  function progressoVivo(v, t) {
+    if (!v.dur) return v.progresso;
+    var c = v.p0 - v.m * v.p0 * v.p0 / 2 + Math.max(0, t - v.t0) / v.dur;
+    var p = v.m < 1e-9 ? c : (1 - Math.sqrt(Math.max(0, 1 - 2 * v.m * c))) / v.m;
+    return Math.max(0, Math.min(1, p));
+  }
+  function ladoVivo(l, p, fim) {
+    var baixas = fim ? l.baixas : Math.min(l.total, Math.round(l.baixa * l.perda * p));
+    return { forca: l.forca * (1 - l.perda * p), baixas: baixas, total: l.total, vivos: Math.max(0, l.total - baixas) };
+  }
+  RP.placarVivo = function (v, t) {
+    var p = progressoVivo(v, t), fim = !v.dur;
+    return { p: p, meu: ladoVivo(v.meu, p, fim), eles: ladoVivo(v.eles, p, fim) };
+  };
+  /* soma das frentes de um objeto do mapa (o defensor pode enfrentar várias), ou null para quem só assiste */
+  RP.placarObjeto = function (o, t) {
+    if (!o.vivos || !o.vivos.length) return null;
+    var s = { meu: { forca: 0, baixas: 0, total: 0, vivos: 0 }, eles: { forca: 0, baixas: 0, total: 0, vivos: 0 } };
+    o.vivos.forEach(function (v) {
+      var x = RP.placarVivo(v, t);
+      ['meu', 'eles'].forEach(function (k) { Object.keys(s[k]).forEach(function (c) { s[k][c] += x[k][c]; }); });
+    });
+    s.pct = s.meu.forca + s.eles.forca > 0 ? s.meu.forca / (s.meu.forca + s.eles.forca) : 0.5;
+    return s;
+  };
+
   /* ================================================================ ordem rápida pelo mapa: tropa → destino → Atacar */
   RP.ordensEnvio = RP.ordensEnvio || [];
   RP.ordensEnvio.push({
@@ -39,7 +70,7 @@
     quando: function (h, dados) { var l = localAlheio(h, dados); return !!l && !semDono(l); },
     descricao: function (h, dados, est) {
       var torres = ((dados && dados.objetos) || []).filter(function (o) { return o.tipo === 'torre' && o.dono !== 'meu' && H.dist(o.hex, h) <= o.alcance; });
-      return linha('Tipo', 'Saque') + linha('Objetivos', 'Relíquia à vista e o recurso principal do local') +
+      return linha('Tipo', 'Saque') + linha('Objetivos', 'Relíquia à vista e o recurso principal do local') + linha('Sem o que levar', 'Voltam sem seguir lutando') +
         linha('Tática', 'Média · ' + RP.textoTatica('media').toLowerCase()) + linha('Estandarte', 'Não levado: o alvo não sabe quem foi') +
         (torres.length ? linha('Torres no alcance', String(torres.length)) : '');
     },
@@ -127,9 +158,6 @@
     if (RP.envio && RP.envio.ativo()) return '';
     var l = localAlheio(h, dados), html = '';
     if (l) html += '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + h + '">' + RP.icone(semDono(l) ? 'bandeira' : 'espada') + (semDono(l) ? 'Ocupar este local' : 'Atacar este local') + '</a>';
-    objetosHex(h, dados).filter(function (o) { return o.tipo === 'batalha' && o.id; }).forEach(function (o) {
-      html += '<a class="btn btn-p" href="#/batalha?id=' + o.id + '">' + RP.icone('espada') + 'Ver a batalha</a>';
-    });
     return html;
   });
   function folhaTorre(o) {
@@ -137,8 +165,11 @@
       (o.dono === 'meu' ? '' : linha('Informação', o.aoVivo ? '<span class="selo selo-visivel">ao vivo</span>' : '<span class="selo selo-antigo">último estado visto</span>'));
   }
   function folhaBatalha(o) {
+    var pl = RP.placarObjeto(o, RP.agora());
     return linha('Batalha', (o.papel === 'defesa' ? 'seu local sob ataque' : o.papel === 'ataque' ? 'suas tropas atacam' : 'em andamento') +
-      ' · termina ' + RP.barraTempo(o.inicio, o.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Batalha' }));
+      (o.frentes > 1 ? ' · ' + o.frentes + ' ataques ao mesmo tempo' : '') +
+      ' · termina ' + RP.barraTempo(o.inicio, o.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Batalha' })) +
+      (pl ? linha('Baixas', 'suas ' + RP.num(pl.meu.baixas) + ' · deles ' + RP.num(pl.eles.baixas)) : '');
   }
   RP.mapa.extrasFolhaHex.push(function (h, dados) {
     if (RP.mapa.desenhaTiposObjeto) return '';
@@ -188,7 +219,18 @@
   RP.mapa.tiposObjeto = RP.mapa.tiposObjeto || {};
   /* a torre já tem arte própria no Mapa e na Vista (web/js/vista/tipos.js): aqui só a folha do combate */
   RP.mapa.tiposObjeto.torre = Object.assign({ nome: 'Torre de arqueiros', icone: 'torre' }, RP.mapa.tiposObjeto.torre || {}, { folha: folhaTorre });
-  RP.mapa.tiposObjeto.batalha = Object.assign({ nome: 'Batalha', icone: 'espada' }, RP.mapa.tiposObjeto.batalha || {}, {
+  /* no Mapa tático: o marcador com a barra de quem ganha e as baixas (o SVG é refeito quando chegam dados novos) */
+  function svgBatalha(o) {
+    /* o selo fica acima do hexágono, para não cobrir as tropas que lutam ali: clicar nele abre a tela da batalha */
+    var pl = RP.placarObjeto(o, RP.agora()), h = '<g transform="translate(0 -34)"><circle class="bt-base" r="12"/><use href="#i-espada" x="-8" y="-8" width="16" height="16"/>';
+    if (!pl) return h + '</g>';
+    return h + '<g transform="translate(-18 15)"><rect class="bt-trilho" width="36" height="5" rx="2.5"/><rect class="bt-meu" width="' + (36 * pl.pct).toFixed(1) + '" height="5" rx="2.5"/></g>' +
+      '<title>Ver batalha · baixas ' + RP.num(pl.meu.baixas) + ' × ' + RP.num(pl.eles.baixas) + '</title></g>';
+  }
+  RP.mapa.tiposObjeto.batalha = Object.assign({ nome: function () { return 'Batalha'; }, icone: function () { return 'espada'; } }, RP.mapa.tiposObjeto.batalha || {}, {
+    svgTatico: svgBatalha,
+    /* quem participa abre a tela da batalha direto, sem folha: pelo selo sobre o hexágono ou pelas figuras */
+    link: function (o) { return o.id ? 'batalha?id=' + o.id : null; },
     desenharTatico: function (ctx, o, info) { desenharBatalha(ctx, o, H.centroH(o.hex), null, (info && info.agora) || RP.agora()); }, folha: folhaBatalha });
   /* o mapa que desenha RP.mapa.tiposObjeto sozinho marca RP.mapa.desenhaTiposObjeto = true; senão desenhamos aqui */
   RP.mapa.desenhosExtras.push(function (ctx, dados, cam, agora) {
@@ -244,7 +286,7 @@
   }
   function corpoPrevia() {
     return { deLocalId: env.marchaId ? null : env.de, marchaId: env.marchaId || null, pessoas: env.pessoas || null, tropas: env.grupo, destinoHex: env.hex, tipo: env.tipo, objetivos: env.objetivos, tatica: env.tatica,
-      completar: env.completar, estandarte: env.estandarte, seguro: env.seguro };
+      completar: env.completar, estandarte: env.estandarte, seguro: env.seguro, divisao: env.divisao, recuarVazio: env.recuarVazio };
   }
   function pedirPrevia(el) {
     clearTimeout(previaTimer);
@@ -253,8 +295,8 @@
       RP.post('/ataques/previa', corpoPrevia()).then(function (p) {
         if (meu !== seqPrevia || !env) return;
         env.previa = p; env.erro = null;
-        env.tipo = p.plano.tipo; env.tatica = p.plano.tatica; env.completar = p.plano.completar;
-        env.objetivos = p.plano.objetivos.map(function (o) { return { k: o.k, r: o.r, q: o.q, texto: o.texto }; });
+        env.tipo = p.plano.tipo; env.tatica = p.plano.tatica; env.completar = p.plano.completar; env.divisao = p.plano.divisao;
+        env.objetivos = p.plano.objetivos.map(function (o) { return { k: o.k, r: o.r, q: o.q, ate: o.ate, texto: o.texto }; });
         if (!p.segura.ok || (p.curta.ok && p.segura.min === p.curta.min && p.segura.hexes === p.curta.hexes)) env.seguro = false;
         desenharEnvio(el);
       }, function (e) {
@@ -264,8 +306,7 @@
     }, 180);
   }
   function passoObj(o, d) {
-    if (o.k === 'recurso') o.q = Math.max(500, Math.round((o.q + d * 500) / 100) * 100);
-    else if (o.k === 'populacao') o.q = Math.max(25, o.q + d * 25);
+    if (o.k === 'populacao') o.q = Math.max(25, o.q + d * 25);
     else if (o.k === 'torre' || o.k === 'portoes' || o.k === 'construcao') o.q = Math.max(1, o.q + Math.sign(d));
   }
   function iconeObj(o) { return { reliquia: 'lendario', recurso: o.r, torre: 'torre', portoes: 'castelo', construcao: 'martelo', populacao: 'populacao', tomar: 'bandeira' }[o.k] || 'alvo'; }
@@ -278,26 +319,28 @@
       '<span class="rota-tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(r.min * 60) + '</span></button>';
   }
   function htmlObjetivos(p) {
-    var lista = env.objetivos || [], cap = p.carga, soma = lista.reduce(function (s, o) { return s + (o.k === 'recurso' ? o.q : 0); }, 0);
+    var lista = env.objetivos || [], recursos = lista.filter(function (o) { return o.k === 'recurso'; }).length;
     var h = '<div class="secao-titulo">4. Objetivos</div>' +
-      '<p class="fraco env-nota">As tropas perseguem os objetivos nesta ordem. Se um não existir no local, passam ao próximo.</p>' +
+      '<p class="fraco env-nota">As tropas perseguem os objetivos nesta ordem. Se um não existir no local, passam ao próximo. Quanto trazer de cada recurso, o jogo decide pela carga e pelo estoque.</p>' +
       '<div class="card pilha obj-lista">' + (lista.length ? lista.map(function (o, i) {
-        var fixo = o.k === 'tomar', ajustavel = ['reliquia', 'tomar'].indexOf(o.k) < 0, primeiro = i === 0 || lista[i - 1].k === 'tomar';
+        var fixo = o.k === 'tomar', ajustavel = ['reliquia', 'tomar', 'recurso'].indexOf(o.k) < 0, primeiro = i === 0 || lista[i - 1].k === 'tomar';
         return '<div class="obj-item"><div class="obj-linha"><span class="obj-n" aria-label="Prioridade ' + (i + 1) + '">' + (i + 1) + '</span>' +
           '<span class="ico-placa' + (o.k === 'reliquia' ? ' obj-relq' : '') + '">' + RP.icone(iconeObj(o), o.k === 'recurso' ? 'r-' + o.r : o.k === 'reliquia' ? 'r-lendario' : '') + '</span>' +
           '<span class="obj-txt"><b>' + RP.esc(RP.nomeObjetivo(o)) + '</b><small class="fraco">' + RP.esc(previsaoObj(o)) + '</small></span>' +
           (fixo ? '' : '<button type="button" class="btn btn-icone btn-fantasma" data-obj-subir="' + i + '" aria-label="Subir prioridade"' + (primeiro ? ' disabled' : '') + '>' + RP.icone('subir') + '</button>' +
             '<button type="button" class="btn btn-icone btn-fantasma" data-obj-tirar="' + i + '" aria-label="Remover objetivo">' + RP.icone('fechar') + '</button>') + '</div>' +
           (ajustavel ? '<div class="obj-qtd"><div class="stepper"><button type="button" class="btn btn-icone" data-obj-passo="' + i + '" data-d="-1" aria-label="Menos">' + RP.icone('menos') + '</button>' +
-            '<output class="num">' + (o.k === 'recurso' ? RP.numCurto(o.q) : o.k === 'populacao' ? RP.num(o.q) : '−' + o.q) + '</output>' +
-            '<button type="button" class="btn btn-icone" data-obj-passo="' + i + '" data-d="1" aria-label="Mais">' + RP.icone('mais') + '</button></div>' +
-            (o.k === 'recurso' ? '<button type="button" class="btn btn-p" data-obj-passo="' + i + '" data-d="10">+5k</button>' : '') + '</div>' : '') + '</div>';
+            '<output class="num">' + (o.k === 'populacao' ? RP.num(o.q) : '−' + o.q) + '</output>' +
+            '<button type="button" class="btn btn-icone" data-obj-passo="' + i + '" data-d="1" aria-label="Mais">' + RP.icone('mais') + '</button></div></div>' : '') + '</div>';
       }).join('') : '<p class="fraco">Sem objetivos: as tropas usam os automáticos.</p>') +
       (p.catalogo.length ? '<div class="obj-add"><span class="fraco">Adicionar</span><div class="obj-add-lista">' + p.catalogo.map(function (c) {
         return '<button type="button" class="btn btn-p" data-obj-add="' + RP.esc(chave(c)) + '">' + RP.icone(iconeObj(c), c.k === 'recurso' ? 'ico-p r-' + c.r : 'ico-p') + RP.esc(rotuloAdd(c)) + '</button>';
       }).join('') + '</div></div>' : '') +
-      (LEVA_CARGA[env.tipo] && soma ? '<div class="obj-carga"><div class="linha-entre"><span class="fraco">Carga dos objetivos</span><b class="num' + (soma > cap ? ' txt-perigo' : '') + '">' + RP.num(soma) + ' de ' + RP.num(cap) + '</b></div>' +
-        '<div class="barra' + (soma > cap ? ' barra-perigo' : '') + '" role="progressbar" aria-label="Carga dos objetivos em relação à capacidade das tropas"><i style="width:' + Math.min(100, cap ? (100 * soma) / cap : 100).toFixed(1) + '%"></i></div></div>' : '') +
+      (LEVA_CARGA[env.tipo] && recursos > 1 ? '<div class="obj-carga"><span class="rotulo">Divisão da carga (' + RP.num(p.carga) + ')</span>' +
+        '<div class="escolhas escolhas-lista" role="radiogroup" aria-label="Divisão da carga">' + DIVISOES.map(function (d) {
+          return '<button type="button" class="escolha escolha-linha" role="radio" data-env-divisao="' + d.id + '" aria-checked="' + (env.divisao === d.id) + '"><span class="ico-placa">' + RP.icone(d.icone) + '</span>' +
+            '<span class="escolha-txt"><b>' + d.nome + '</b><small class="fraco">' + d.txt + '</small></span></button>';
+        }).join('') + '</div></div>' : '') +
       '</div>';
     var lims = p.taticas || limites();
     h += '<div class="secao-titulo">5. Tática</div><div class="escolhas escolhas-lista" role="radiogroup" aria-label="Tática">' + TATICAS.map(function (t) {
@@ -305,6 +348,7 @@
         '<span class="escolha-txt"><b>' + t.nome + '</b><small class="fraco">' + RP.esc(RP.textoTatica(t.id, lims)) + '</small></span></button>';
     }).join('') + '</div>' +
       (LEVA_CARGA[env.tipo] ? '<button type="button" class="alternar env-alternar" data-env-completar aria-pressed="' + !!env.completar + '">' + RP.icone('ouro') + '<span>Depois dos objetivos, completar a carga<br><small class="fraco">com o que houver no local</small></span><i aria-hidden="true"></i></button>' : '') +
+      (env.tipo === 'saque' ? '<button type="button" class="alternar env-alternar" data-env-recuar aria-pressed="' + !!env.recuarVazio + '">' + RP.icone('voltar') + '<span>Sem o que levar, voltar sem lutar<br><small class="fraco">olham ao chegar e sempre que a batalha muda; desligado, lutam mesmo assim</small></span><i aria-hidden="true"></i></button>' : '') +
       '<div class="card quando-voltam"><span class="rotulo">Quando param</span><ul class="regras-lista">' + p.quandoParam.map(function (q, i, arr) {
         return '<li>' + RP.icone(i === 0 ? 'check' : i === arr.length - 1 ? 'escudo' : 'ouro', 'ico-p') + '<span>' + RP.esc(q) + '</span></li>';
       }).join('') + '</ul>' +
@@ -322,7 +366,7 @@
     if (o.k === 'portoes') return 'Aríetes e trebuchets derrubam portões.';
     if (o.k === 'populacao') return 'A população reage como milícia.';
     if (o.k === 'construcao') return 'O local perde níveis; no nível 1, é destruído.';
-    if (o.k === 'recurso') return 'Até a carga e o que houver no local.';
+    if (o.k === 'recurso') return o.ate != null ? 'Traz até ' + RP.num(o.ate) + ', conforme a carga e o estoque do local.' : 'Conforme a carga e o estoque do local.';
     return '';
   }
   /* ---------------------------------------------------------------- modelos de ataque e "repetir último" (GET/POST /ataques/modelos) */
@@ -345,6 +389,7 @@
     var tipos = (env.previa && env.previa.tipos) || [];
     env.tipo = !tipos.length || tipos.indexOf(md.tipo) >= 0 ? md.tipo : null;
     env.tatica = md.tatica; env.estandarte = !!md.estandarte; env.completar = !!md.completar;
+    env.divisao = md.divisao || 'prioridade'; env.recuarVazio = md.recuarVazio !== false;
     if (md.deLocalId && origens().some(function (x) { return x.id === md.deLocalId; })) env.de = md.deLocalId;
     var d = disponiveis(), g = {};
     Object.keys(md.tropas || {}).forEach(function (k) { var n = Math.min(md.tropas[k], d[k] || 0); if (n > 0) g[k] = n; });
@@ -359,7 +404,7 @@
         '<div class="campo"><label for="env-modelo-nome">Nome</label><input id="env-modelo-nome" maxlength="' + ((modelos && modelos.nomeMax) || 30) + '" value="' + RP.esc((RP.TIPOS_ATAQUE[env.tipo] || {}).nome || 'Ataque') + ' ' + RP.somaGrupo(env.grupo) + '"></div>',
       acoes: [{ rotulo: RP.icone('check') + 'Salvar', classe: 'btn-primario', acao: function () {
         var inp = document.getElementById('env-modelo-nome'), alvoProd = env.previa && env.previa.alvo && env.previa.alvo.produz;
-        RP.tentar(RP.post('/ataques/modelos', { nome: inp ? inp.value : '', tipo: env.tipo, tatica: env.tatica, estandarte: env.estandarte, completar: env.completar, tropas: env.grupo,
+        RP.tentar(RP.post('/ataques/modelos', { nome: inp ? inp.value : '', tipo: env.tipo, tatica: env.tatica, estandarte: env.estandarte, completar: env.completar, tropas: env.grupo, divisao: env.divisao, recuarVazio: env.recuarVazio,
           objetivos: (env.objetivos || []).map(function (o) { return { k: o.k, r: o.k === 'recurso' && alvoProd && o.r === alvoProd ? 'auto' : o.r, q: o.q }; }) })).then(function (md) {
           RP.aviso({ titulo: 'Modelo salvo', texto: md.nome + ': aparece no topo do envio.', icone: 'check', tipo: 'sucesso' });
           carregarModelos(el);
@@ -501,6 +546,8 @@
         }
         if ((b = e.target.closest('[data-env-tatica]'))) { env.tatica = b.getAttribute('data-env-tatica'); env.modelo = null; pedirPrevia(el); return; }
         if (e.target.closest('[data-env-completar]')) { env.completar = !env.completar; pedirPrevia(el); return; }
+        if (e.target.closest('[data-env-recuar]')) { env.recuarVazio = !env.recuarVazio; pedirPrevia(el); return; }
+        if ((b = e.target.closest('[data-env-divisao]'))) { env.divisao = b.getAttribute('data-env-divisao'); pedirPrevia(el); return; }
         if (e.target.closest('[data-env-estandarte]')) { env.estandarte = !env.estandarte; pedirPrevia(el); return; }
         if ((b = e.target.closest('[data-env-caminho]'))) { env.seguro = b.getAttribute('data-env-caminho') === 'segura'; desenharEnvio(el); return; }
         if (e.target.closest('[data-env-enviar]')) { if (env.previa) confirmarEnvio(el); return; }
@@ -525,7 +572,7 @@
       var hex = q.get('alvo') ? +q.get('alvo') : NaN;
       if (!(hex >= 0)) { env = null; semAlvo(el, 'Escolha o alvo no mapa', 'Clique num local de outro reino no mapa e escolha Atacar. O envio abre aqui com o alvo escolhido.'); return; }
       var rod = RP.$('.rodape-acao', el); if (rod) rod.hidden = false;
-      env = { hex: hex, de: q.get('de') ? +q.get('de') : null, marchaId: q.get('marcha') ? +q.get('marcha') : null, pessoas: q.get('pessoas') ? q.get('pessoas').split(',').map(Number) : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null, modelo: null };
+      env = { hex: hex, de: q.get('de') ? +q.get('de') : null, marchaId: q.get('marcha') ? +q.get('marcha') : null, pessoas: q.get('pessoas') ? q.get('pessoas').split(',').map(Number) : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null, modelo: null, divisao: 'prioridade', recuarVazio: true };
       desenharEnvio(el);
       var repetir = q.get('repetir') === '1';
       Promise.all([RP.carregarTropas(), carregarModelos()]).then(function () {
@@ -626,9 +673,10 @@
   }
 
   /* ================================================================ Batalha em andamento (#/batalha?id=) */
-  var bat = null, batTimer = null;
+  var bat = null, batTimer = null, batSeq = 0;
   function carregarBatalha(el, id) {
-    return RP.get('/batalhas/' + id).then(function (b) { bat = b; RP.sincronizar(b.agora); desenharBatalhaTela(el); return b; },
+    var seq = ++batSeq;
+    return RP.get('/batalhas/' + id).then(function (b) { if (seq !== batSeq) return b; bat = b; RP.sincronizar(b.agora); desenharBatalhaTela(el); return b; },
       function (e) { RP.$('.bat-conteudo', el).innerHTML = '<p class="fraco">' + RP.esc(e.message) + '</p>'; });
   }
   function rotulosBat(b) { return { meu: b.papel === 'defesa' ? 'Seu lado' : 'Suas tropas', eles: b.eles.nome, meuCurto: 'Você', elesCurto: 'Eles' }; }
@@ -641,6 +689,58 @@
     var m = { vencendo: ['sucesso', 'Tendência: seu lado vence'], perdendo: ['perigo', 'Tendência: o outro lado leva vantagem'], recuo: ['alerta', 'Tendência: suas tropas recuam no limite da tática'], equilibrado: ['alerta', 'Tendência: equilibrado'] }[b.tendencia] || ['alerta', ''];
     return '<p class="tendencia ' + m[0] + '">' + RP.icone(m[0] === 'sucesso' ? 'check' : 'alerta', 'ico-p') + m[1] + '</p>';
   }
+  /* barra de quem ganha: a parte de cada lado é a força que ainda tem */
+  function barraPlacar(x, rotA, rotB) {
+    var tot = (x.meu.forca + x.eles.forca) || 1, a = 100 * x.meu.forca / tot;
+    return '<div class="placar-barra" role="img" data-pl-barra aria-label="' + RP.esc(rotA) + ' ' + Math.round(a) + '%, ' + RP.esc(rotB) + ' ' + Math.round(100 - a) + '%">' +
+      '<i class="d" style="width:' + a.toFixed(1) + '%"></i><i class="a" style="width:' + (100 - a).toFixed(1) + '%"></i><span class="placar-meio" aria-hidden="true"></span></div>';
+  }
+  function placarHTML(b, rot) {
+    var x = RP.placarVivo(b.vivo, RP.agora());
+    function lado(k, nome) {
+      return '<div class="placar-lado ' + k + '"><span class="rotulo">' + RP.esc(nome) + '</span><b class="num" data-pl="' + k + '-vivos">' + RP.num(x[k].vivos) + '</b>' +
+        '<small class="fraco">de ' + RP.num(x[k].total) + ' · baixas: <span class="placar-baixas" data-pl="' + k + '-baixas">' + RP.num(x[k].baixas) + '</span></small></div>';
+    }
+    return '<div class="placar-lados">' + lado('meu', rot.meu) + '<div class="bat-vs">×</div>' + lado('eles', b.eles.nome) + '</div>' + barraPlacar(x, rot.meu, b.eles.nome) +
+      '<div class="linha-entre placar-tempo"><span class="fraco">Batalha <b class="num" data-pl="pct">' + Math.round(x.p * 100) + '%</b></span>' +
+      (b.encerrada ? '' : '<span class="fraco">encurta conforme as tropas caem</span>') + '</div>' +
+      '<div class="barra barra-perigo" role="progressbar" aria-label="Progresso da batalha"><i data-pl="progresso" style="width:' + (x.p * 100).toFixed(1) + '%"></i></div>';
+  }
+  function frentesHTML(b) {
+    if (!b.frentes || b.frentes.length < 2) return '';
+    return '<div class="secao-titulo">Frentes · ' + b.frentes.length + ' ataques ao mesmo tempo</div>' +
+      '<p class="fraco env-nota">A mesma defesa enfrenta os ataques juntos e se divide entre eles, na proporção da força de cada um. Uma frente que acaba libera a defesa para as outras.</p>' +
+      '<div class="card lista">' + b.frentes.map(function (f, i) {
+        var x = RP.placarVivo(f.vivo, RP.agora()), defendo = b.papel === 'defesa';
+        var corpo = '<div class="frente-topo"><b>' + RP.esc(f.nome) + '</b>' + (f.atual ? '<span class="selo selo-info">nesta tela</span>' : '') + '<small class="fraco">' + (f.tipoNome ? RP.esc(f.tipoNome) + ' · ' : '') + f.parte + '% da defesa</small></div>' +
+          barraPlacar(x, defendo ? 'Defesa' : 'Ataque', defendo ? 'Ataque' : 'Defesa') +
+          '<div class="linha-entre"><small class="fraco">Baixas: <span data-fr-meu>' + RP.num(x.meu.baixas) + '</span> do ' + (defendo ? 'seu lado' : 'ataque') + ' · <span data-fr-eles>' + RP.num(x.eles.baixas) + '</span> ' + (defendo ? 'deles' : 'da defesa') + '</small>' +
+          (b.encerrada ? '' : RP.barraTempo(0, f.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Frente' })) + '</div>';
+        return f.id && !f.atual ? '<a class="frente" data-frente="' + i + '" href="#/batalha?id=' + f.id + '">' + corpo + '</a>' : '<div class="frente" data-frente="' + i + '">' + corpo + '</div>';
+      }).join('') + '</div>';
+  }
+  /* anda o placar entre uma busca e outra, sem refazer a tela */
+  function atualizarPlacar(el) {
+    var b = bat; if (!b) return;
+    var t = RP.agora(), x = RP.placarVivo(b.vivo, t);
+    function pl(k, v) { var n = RP.$('[data-pl="' + k + '"]', el); if (n) n.textContent = v; }
+    function barra(box, y) {
+      if (!box) return;
+      var tot = (y.meu.forca + y.eles.forca) || 1, a = 100 * y.meu.forca / tot;
+      box.querySelector('.d').style.width = a.toFixed(1) + '%'; box.querySelector('.a').style.width = (100 - a).toFixed(1) + '%';
+    }
+    ['meu', 'eles'].forEach(function (k) { pl(k + '-vivos', RP.num(x[k].vivos)); pl(k + '-baixas', RP.num(x[k].baixas)); });
+    pl('pct', Math.round(x.p * 100) + '%');
+    var pg = RP.$('[data-pl="progresso"]', el); if (pg) pg.style.width = (x.p * 100).toFixed(1) + '%';
+    barra(RP.$('.bat-placar [data-pl-barra]', el), x);
+    (b.frentes || []).forEach(function (f, i) {
+      var n = RP.$('[data-frente="' + i + '"]', el); if (!n) return;
+      var y = RP.placarVivo(f.vivo, t);
+      barra(n.querySelector('[data-pl-barra]'), y);
+      n.querySelector('[data-fr-meu]').textContent = RP.num(y.meu.baixas);
+      n.querySelector('[data-fr-eles]').textContent = RP.num(y.eles.baixas);
+    });
+  }
   function ladoTxt(l, b, meu) {
     var partes = RP.partesGrupo(l.tropas) || 'sem tropas';
     if (l.milicia) partes += ' · milícia ' + RP.num(l.milicia);
@@ -652,15 +752,16 @@
   function desenharBatalhaTela(el) {
     var b = bat; if (!b) return;
     var agora = RP.agora(), dur = b.fim - b.inicio, rot = rotulosBat(b);
-    var tot = (b.forca.meu + b.forca.eles) || 1;
     var sub = RP.esc(b.nome) + ' · ' + RP.esc(b.tipoNome) + (b.papel === 'ataque' && b.tatica ? ' · tática ' + RP.esc((TATICAS.filter(function (x) { return x.id === b.tatica; })[0] || {}).nome || '').toLowerCase() : '');
     RP.$('.bat-sub', el).innerHTML = sub;
     RP.$('.bat-conteudo', el).innerHTML =
-      '<div class="card pilha"><div class="bat-lados"><div class="bat-lado meu"><span class="rotulo">' + RP.esc(rot.meu) + '</span><b class="num">' + RP.num(b.forca.meu) + '</b><small class="fraco">' + RP.esc(ladoTxt(b.meu, b, true)) + '</small></div>' +
-      '<div class="bat-vs">×</div><div class="bat-lado eles"><span class="rotulo">' + RP.esc(b.eles.nome) + '</span><b class="num">' + RP.num(b.forca.eles) + '</b><small class="fraco">' + RP.esc(ladoTxt(b.eles, b, false)) + '</small></div></div>' +
-      '<div class="barra-dupla" role="img" aria-label="' + RP.esc(rot.meu) + ' ' + Math.round(100 * b.forca.meu / tot) + '%, ' + RP.esc(b.eles.nome) + ' ' + Math.round(100 * b.forca.eles / tot) + '%"><i class="d" style="width:' + (100 * b.forca.meu / tot).toFixed(1) + '%"></i><i class="a" style="width:' + (100 * b.forca.eles / tot).toFixed(1) + '%"></i></div>' +
+      (b.semOQueLevar ? '<div class="faixa-alerta">' + RP.icone('alerta') + '<span class="txt"><b>' + RP.esc(b.semOQueLevar) + '</b><br>Suas tropas seguem lutando porque o envio mandou. Você pode recuar.</span><button type="button" class="btn btn-p" data-bat-recuar>' + RP.icone('voltar') + 'Recuar</button></div>' : '') +
+      (b.motivoRecuo ? '<p class="nota-antiga">' + RP.icone('info', 'ico-p') + '<span>' + RP.esc(b.motivoRecuo) + '</span></p>' : '') +
+      '<div class="card pilha bat-placar">' + placarHTML(b, rot) +
       tendenciaHTML(b) +
+      '<div class="bat-composicao"><small class="fraco"><b>' + RP.esc(rot.meu) + ':</b> ' + RP.esc(ladoTxt(b.meu, b, true)) + '</small><small class="fraco"><b>' + RP.esc(b.eles.nome) + ':</b> ' + RP.esc(ladoTxt(b.eles, b, false)) + '</small></div>' +
       (b.eles.atacante ? '<div class="linha bat-estandarte">' + RP.brasao(b.eles.atacante.brasao, { tamanho: 28 }) + '<span><b>Reino de ' + RP.esc(b.eles.atacante.nome) + '</b><br><small class="fraco">identificado pelo estandarte</small></span></div>' : '') + '</div>' +
+      frentesHTML(b) +
       '<div class="secao-titulo">Força ao longo da batalha</div><div class="card">' + RP.graficoBatalha(b.serie, dur, Math.min(agora, b.fim) - b.inicio, rot) + tabelaSerie(b.serie, rot) + '</div>' +
       '<div class="secao-titulo">Acontecimentos</div><ol class="diario">' + b.diario.slice().reverse().map(function (d) {
         var s = Math.round(d.t / 1000);
@@ -753,7 +854,10 @@
         if (e.target.closest('[data-reforco-enviar]')) enviarReforco(reforco.localId);
         else if (e.target.closest('[data-bat-reforcos-voltar]')) { reforco = null; folhaReforcos(); }
       });
-      RP.ouvir('batalha', function (d) { if (!el.hidden && bat && d && d.id === bat.id) carregarBatalha(el, bat.id); });
+      RP.ouvir('batalha', function (d) {
+        if (el.hidden || !bat || !d) return;
+        if (d.id === bat.id || (bat.frentes || []).some(function (f) { return f.id === d.id; })) carregarBatalha(el, bat.id);
+      });
     },
     entrar: function (el, q) {
       bat = null;
@@ -772,13 +876,13 @@
       }
       carregarBatalha(el, id);
       if (!RP.tropas) RP.carregarTropas().then(function () { desenharBatalhaTela(el); }, function () { /* offline */ });
-      /* a curva anda com o tempo: redesenha a cada 5 s e busca de novo a cada 20 s */
+      /* o placar anda a cada meio segundo, pelo ritmo do servidor; a tela busca de novo a cada 5 s, e na hora quando a batalha acaba */
       var n = 0;
       batTimer = setInterval(function () {
         if (el.hidden || !bat || bat.encerrada) return;
         n++;
-        if (n % 4 === 0 || RP.agora() > bat.fim) carregarBatalha(el, bat.id); else desenharBatalhaTela(el);
-      }, 5000);
+        if (n % 10 === 0 || RP.agora() > bat.fim) carregarBatalha(el, bat.id); else atualizarPlacar(el);
+      }, 500);
     },
     sair: function () { clearInterval(batTimer); }
   });
@@ -788,7 +892,7 @@
     var l = (RP.reino && RP.reino.batalhas) || [];
     return l.map(function (b) {
       return '<a class="faixa-alerta faixa-batalha" href="#/batalha?id=' + b.id + '">' + RP.icone(b.papel === 'defesa' ? 'alerta' : 'espada') + '<span class="txt"><b>' +
-        (b.papel === 'defesa' ? 'Batalha em ' + RP.esc(b.nome) : 'Suas tropas atacam: ' + RP.esc(b.nome)) + '</b><br>' + RP.esc(b.tipoNome) + ' · termina ' + RP.barraTempo(b.inicio, b.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Batalha' }) + '</span>' + RP.icone('avancar', 'ico-p') + '</a>';
+        (b.papel === 'defesa' ? 'Batalha em ' + RP.esc(b.nome) : 'Suas tropas atacam: ' + RP.esc(b.nome)) + '</b><br>' + RP.esc(b.tipoNome) + (b.frentes > 1 ? ' · ' + b.frentes + ' ataques ao mesmo tempo' : '') + ' · termina ' + RP.barraTempo(b.inicio, b.fim, { classe: 'curta', cor: 'perigo', rotulo: 'Batalha' }) + '</span>' + RP.icone('avancar', 'ico-p') + '</a>';
     }).join('');
   }
   RP.extrasReino = RP.extrasReino || [];
@@ -797,7 +901,7 @@
   RP.extrasTropas.push(faixaBatalhas);
   RP.acoesTropas = RP.acoesTropas || [];
   RP.acoesTropas.push({ href: '#/batalha', icone: 'espada', titulo: 'Batalhas', texto: 'Em andamento e recentes' });
-  RP.ouvir('batalha', function () { RP.recarregarReino(); });
+  RP.ouvir('batalha', function () { RP.recarregarReino(); if (RP.mapa.recarregar) RP.mapa.recarregar(); });
 
   /* ================================================================ locais: defesa (torres, portões) e batalha */
   RP.extrasCardLocal = RP.extrasCardLocal || [];
@@ -816,8 +920,7 @@
   });
   RP.acoesFolhaLocal = RP.acoesFolhaLocal || [];
   RP.acoesFolhaLocal.push(function (l) {
-    return (l.defesa && l.defesa.batalhaId ? '<a class="btn btn-p btn-primario" href="#/batalha?id=' + l.defesa.batalhaId + '">' + RP.icone('espada') + 'Batalha</a>' : '') +
-      (l.tipo === 'castelo' && RP.sistema('defesas') ? '<a class="btn btn-p" href="#/construcao?aba=defesas">' + RP.icone('torre') + 'Defesas</a>' : '');
+    return (l.tipo === 'castelo' && RP.sistema('defesas') ? '<a class="btn btn-p" href="#/construcao?aba=defesas">' + RP.icone('torre') + 'Defesas</a>' : '');
   });
 
   /* ================================================================ Construção → Defesas: portões e torres */

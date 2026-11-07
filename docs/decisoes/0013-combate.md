@@ -1,5 +1,7 @@
 # 0013 — Combate: ataque, batalha, efeitos, torres e portões
 
+> Atualizada pela [decisão 0033](0033-frentes-e-saque-por-prioridade.md): ataques de reinos diferentes não esperam mais, o tempo da batalha não é mais linear e recurso não tem quantidade.
+
 **Decisão.**
 
 - **Ataque é uma ordem de exército** (`atacar`; `ocupar` para ruína e terra livre). O plano (tipo, objetivos em ordem, tática, completar a carga, estandarte) vai em `Exercito.Dados` e é normalizado na ordem (`Ataques.Normalizar`): tipo permitido pelo alvo (cerco só castelo; ocupação não vale para castelo; local sem dono só aceita ocupação), objetivos do tipo, sem repetir, quantidades válidas, "tomar" primeiro. Sem objetivos, usa os automáticos (relíquia à vista e o recurso principal do local, com a carga das tropas). Milícia não ataca. `Permissoes.AntesDeEnviar` recusa no envio; na chegada valem `AntesDeEnviar` (pode ter mudado) e `AoChegar` (escudo = `Reino.EscudoAte`, para novato e exílio): as tropas voltam sem combate e o relatório diz por quê.
