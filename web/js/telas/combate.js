@@ -88,6 +88,68 @@
     dados: function () { return { tipo: 'ocupacao' }; }
   });
   RP.NOMES_MARCHA = RP.NOMES_MARCHA || {};
+  if (RP.ORDENS_NOMES) RP.ORDENS_NOMES.reconhecer = 'Reconhecer';
+
+  /* ================================================================ força inimiga antes da batalha
+     f = estimativa do servidor (prévia do ataque, prévia de tropas ou relatório de reconhecimento): o que se vê (vista) ou o
+     que a espionagem contou, sem o dono. */
+  var FONTES = { vista: ['selo-visivel', 'olho', 'À vista agora'], espionagem: ['selo-antigo', 'batedor', 'Pela espionagem'], nenhuma: ['selo-desconhecido', 'nevoa', 'Desconhecida'] };
+  var VEREDITOS = { vantagem: ['selo-visivel', 'Vantagem'], apertado: ['selo-destaque', 'Apertado'], desvantagem: ['selo-perigo', 'Desvantagem'] };
+  RP.forcaInimigaHTML = function (f, opts) {
+    if (!f) return '';
+    opts = opts || {};
+    var fo = FONTES[f.fonte] || FONTES.nenhuma;
+    var selo = '<span class="selo ' + fo[0] + '">' + RP.icone(fo[1]) + (f.fonte === 'vista' && opts.rotuloVista ? opts.rotuloVista : fo[2]) + (f.fonte === 'espionagem' && f.espionadoHaH != null ? ' · há ' + RP.fmtDuracao(f.espionadoHaH * 3600) : '') + '</span>';
+    if (f.semDefesa) return '<div class="card pilha forca-inimiga">' + selo + '<p class="fraco">' + RP.esc(f.texto || '') + '</p></div>';
+    var h = '<div class="card pilha forca-inimiga" data-forca-fonte="' + RP.esc(f.fonte) + '"><div class="linha-entre">' + selo +
+      (f.veredito ? '<span class="selo ' + VEREDITOS[f.veredito][0] + '">' + RP.icone(f.vence ? 'espada' : 'escudo') + VEREDITOS[f.veredito][1] + '</span>' : '') + '</div>';
+    if (f.fonte === 'nenhuma') {
+      return h + '<div class="info">' + linha('Torres no alcance', RP.num(f.torres || 0) + (f.arqueirosNoAlto ? ' · ' + RP.num(f.arqueirosNoAlto) + ' arqueiros no alto' : '')) + '</div>' +
+        '<p class="fraco env-nota">' + RP.esc(f.texto || '') + '</p>' + (opts.acoes || '') + '</div>';
+    }
+    if (f.ataque != null) {
+      var tot = (f.ataque + f.defesa) || 1;
+      h += '<div class="bat-lados"><div class="bat-lado meu"><span class="rotulo">Suas tropas</span><b class="num">' + RP.num(f.ataque) + '</b><small class="fraco">perdas estimadas ' + Math.round(100 * f.perdasMinhas) + '% · ' + RP.num(f.baixasMinhas) + (f.baixasMinhas === 1 ? ' pessoa' : ' pessoas') + '</small></div>' +
+        '<div class="bat-vs">×</div><div class="bat-lado eles"><span class="rotulo">Defesa do local</span><b class="num">' + RP.num(f.defesa) + '</b><small class="fraco">perdas estimadas ' + Math.round(100 * f.perdasDeles) + '%</small></div></div>' +
+        '<div class="barra-dupla" role="img" aria-label="Suas tropas ' + Math.round(100 * f.ataque / tot) + '%, defesa ' + Math.round(100 * f.defesa / tot) + '%"><i class="d" style="width:' + (100 * f.ataque / tot).toFixed(1) + '%"></i><i class="a" style="width:' + (100 * f.defesa / tot).toFixed(1) + '%"></i></div>';
+    }
+    var g = f.guarnicao || {};
+    h += '<div class="info">' + linha('Guarnição', RP.somaGrupo(g) ? RP.selosGrupo(g) : 'nenhuma ' + (f.fonte === 'vista' ? 'à vista' : 'no relatório')) +
+      linha('Milícia', '≈ ' + RP.num(f.milicia || 0) + ' · ' + RP.num(f.civis || 0) + ' civis') +
+      linha('Torres no alcance', RP.num(f.torres || 0) + (f.arqueirosNoAlto ? ' · ' + RP.num(f.arqueirosNoAlto) + ' arqueiros no alto' : '')) +
+      (f.portoes ? linha('Portões', 'nível ' + f.portoes) : '') +
+      linha('Bônus de defesa', f.bonusDefesa != null ? '+' + Math.round(100 * f.bonusDefesa) + '%' : 'desconhecido (só a espionagem revela)') + '</div>' +
+      (f.texto ? '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' ' + RP.esc(f.texto) + '</p>' : '') + (opts.acoes || '') + '</div>';
+    return h;
+  };
+
+  RP.ordensEnvio.push({
+    ordem: 'reconhecer', rotulo: 'Reconhecer', verbo: 'Reconhecer', icone: 'olho', titulo: 'Reconhecer',
+    quando: function (h, dados) { var l = localAlheio(h, dados); return !!l && !semDono(l); },
+    descricao: function () {
+      return linha('Ordem', 'Param à vista do alvo, a até 3 hexágonos, sem atacar') + linha('Na chegada', 'Relatório com guarnição, milícia, torres e a força contra a sua') +
+        linha('Depois', 'Atacar dali ou voltar');
+    }
+  });
+
+  RP.desenhosRelatorio = RP.desenhosRelatorio || {};
+  RP.desenhosRelatorio.reconhecimento = function (rel) {
+    var d = rel.dados || {}, ex = RP.exercito && RP.exercito(d.marchaId);
+    return '<p class="suave">' + RP.esc(d.resumo || '') + '</p>' + RP.forcaInimigaHTML(d.estimativa, { rotuloVista: 'À vista na chegada' }) +
+      '<p class="fraco env-nota">A estimativa vale para o momento do relatório. A prévia do ataque mostra a força de agora.</p>' +
+      '<div class="linha rel-acoes">' + (ex || !RP.tropas ? '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + d.alvoHex + '&marcha=' + d.marchaId + '">' + RP.icone('espada') + 'Atacar daqui</a>' +
+        '<button type="button" class="btn btn-p" data-reconh-voltar="' + d.marchaId + '">' + RP.icone('voltar') + 'Voltar</button>' : '<span class="fraco">Esta tropa não está mais ali.</span>') +
+      (d.hex != null ? '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + d.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a>' : '') + '</div>';
+  };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-reconh-voltar]');
+    if (!b) return;
+    RP.tentar(RP.post('/tropas/' + b.getAttribute('data-reconh-voltar') + '/ordem', { ordem: 'retornar' })).then(function () {
+      RP.aviso({ titulo: 'Tropas voltando', icone: 'voltar', tipo: 'sucesso' });
+      RP.carregarTropas().catch(function () { /* offline */ });
+      RP.ir('mapa');
+    });
+  });
 
   /* folha do hexágono: atacar um local alheio; torres e batalhas */
   var modoTorre = false;
@@ -374,6 +436,10 @@
       '<div class="info">' + linha('Dono', a.dono === 'livre' ? 'nenhum' : 'desconhecido') +
       (a.torres.length ? linha('Torres no alcance', a.torres.length + ' · ' + a.torres.map(function (t) { return 'nível ' + t.nivel; }).join(', ')) : '') + '</div>' +
       (a.torres.length ? '<p class="nota-antiga">' + RP.icone('torre', 'ico-p') + '<span>Arqueiros nas torres atiram do alto, protegidos. Aríetes derrubam torres; derrubar a torre é objetivo de sabotagem e de cerco.</span></p>' : '') + '</div>';
+    var fi = p.forcaInimiga;
+    h += '<div class="secao-titulo">Força inimiga</div>' + RP.forcaInimigaHTML(fi, {
+      acoes: fi && !fi.semDefesa && fi.fonte !== 'vista' && n ? '<button type="button" class="btn btn-p" data-env-reconhecer>' + RP.icone('olho') + 'Reconhecer antes: parar à vista e ver a defesa</button>' : ''
+    });
     h += '<div class="secao-titulo">2. Tipo de ataque</div><div class="escolhas">' + Object.keys(RP.TIPOS_ATAQUE).map(function (id) {
       var t = RP.TIPOS_ATAQUE[id], ok = tipos.indexOf(id) >= 0;
       return '<button type="button" class="escolha' + (ok ? '' : ' bloqueado') + '" data-env-tipo="' + id + '" aria-pressed="' + (env.tipo === id) + '"' + (ok ? '' : ' aria-disabled="true"') + '>' +
@@ -419,6 +485,18 @@
     var b = RP.$('[data-env-enviar]', el);
     b.innerHTML = RP.icone(env && env.tipo === 'ocupacao' ? 'bandeira' : 'espada') + (env && env.tipo === 'ocupacao' ? 'Enviar para ocupar' : 'Enviar ataque');
     b.classList.toggle('btn-inativo', !ok);
+  }
+  /* reconhecer antes de atacar: as mesmas tropas vão até a vista do alvo e param; o relatório traz a força inimiga */
+  function reconhecer() {
+    var e = env, hex = e.hex;
+    var p = e.marchaId ? RP.post('/tropas/' + e.marchaId + '/ordem', { ordem: 'reconhecer', destinoHex: hex, seguro: !!e.seguro, pessoas: e.pessoas || undefined })
+      : RP.post('/tropas/enviar', { deLocalId: e.de, tropas: e.grupo, destinoHex: hex, ordem: 'reconhecer', seguro: !!e.seguro });
+    RP.tentar(p).then(function (ex) {
+      RP.aviso({ titulo: 'Tropas a caminho para reconhecer', texto: 'Param à vista do alvo' + (ex && ex.chegada ? ' ' + RP.fmtEm(ex.chegada) : '') + ' e mandam o relatório da defesa.', icone: 'olho', tipo: 'sucesso' });
+      RP.recarregarReino(); RP.carregarTropas().catch(function () { /* offline */ });
+      env = null;
+      RP.ir('mapa?foco=' + hex);
+    });
   }
   function confirmarEnvio(el) {
     var p = env.previa, r = rotaEscolhida(), t = RP.TIPOS_ATAQUE[env.tipo];
@@ -473,6 +551,7 @@
         if (e.target.closest('[data-env-estandarte]')) { env.estandarte = !env.estandarte; pedirPrevia(el); return; }
         if ((b = e.target.closest('[data-env-caminho]'))) { env.seguro = b.getAttribute('data-env-caminho') === 'segura'; desenharEnvio(el); return; }
         if (e.target.closest('[data-env-enviar]')) { if (env.previa) confirmarEnvio(el); return; }
+        if (e.target.closest('[data-env-reconhecer]')) { reconhecer(); return; }
         if (e.target.closest('[data-env-ultimo]') && modelos && modelos.ultimo) {
           aplicarModelo(modelos.ultimo, 'ultimo'); RP.aviso({ titulo: 'Último ataque', texto: 'Tropas, objetivos e tática preenchidos.', icone: 'voltar', tipo: 'sucesso', ms: 1800 }); pedirPrevia(el); desenharEnvio(el); return;
         }

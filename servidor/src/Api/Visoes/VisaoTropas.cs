@@ -184,7 +184,7 @@ public static class VisaoTropas
     }
 
     /// <summary>Tempos de viagem do grupo pela rota curta e pela segura, sem enviar nada; com a fauna conhecida no destino.</summary>
-    public static object Previa(Mundo m, Reino r, int de, int para, IReadOnlyDictionary<string, int> grupo)
+    public static object Previa(Mundo m, Reino r, int de, int para, IReadOnlyDictionary<string, int> grupo, double? bonusA = null)
     {
         var vel = GT.Velocidade(m, grupo);
         var forca = GT.ForcaFauna(m, grupo);
@@ -194,6 +194,17 @@ public static class VisaoTropas
             var ok = rota.Hexes[^1] == para;
             return new { ok, min = ok ? Math.Round(rota.TotalMin, 1) : (double?)null, hexes = ok ? rota.Hexes.Count : 0, caminho = ok ? rota.Hexes : null };
         }
-        return new { vel, carga = GT.Carga(m, grupo), forcaFauna = forca, visao = GT.Visao(m, grupo), pop = GT.Pop(m, grupo), curta = Op(false), segura = Op(true), fauna = FaunaNoDestino(m, r, para, grupo, forca) };
+        return new { vel, carga = GT.Carga(m, grupo), forcaFauna = forca, visao = GT.Visao(m, grupo), pop = GT.Pop(m, grupo), curta = Op(false), segura = Op(true), fauna = FaunaNoDestino(m, r, para, grupo, forca),
+            forcaInimiga = bonusA is double b ? ForcaInimiga(m, r, para, grupo, b) : null };
+    }
+
+    /// <summary>Destino num local alheio que o reino conhece: a força inimiga estimada contra este grupo (tática padrão).</summary>
+    private static System.Text.Json.Nodes.JsonObject? ForcaInimiga(Mundo m, Reino r, int para, IReadOnlyDictionary<string, int> grupo, double bonusA)
+    {
+        var l = m.LocalNoHex(para);
+        var vis = Nevoas.VisiveisAgora(m, r.Id);
+        if (l != null && l.ReinoId == r.Id && !l.Ruina) return null;
+        try { return Jogo.Combate.Reconhecimentos.Estimar(m, r, Jogo.Combate.Ataques.Alvo(m, r, para, vis), grupo, bonusA, null, vis); }
+        catch (RegraException) { return null; }
     }
 }

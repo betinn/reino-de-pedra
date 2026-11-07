@@ -129,19 +129,36 @@
     var h = '';
     if (d.presos.length) {
       h += '<div class="secao-titulo">Capturados por você</div><div class="pilha">' + d.presos.map(function (p) {
-        return '<div class="card pilha preso-card"><div class="linha">' + RP.iconeReino(p.origem, 32) + '<span style="flex:1;min-width:0"><b>' + RP.esc(p.nome) + ' de ' + RP.esc(p.origem ? p.origem.nome : '?') + '</b><br>' +
-          '<small class="fraco">Pego no hexágono ' + p.c + ', ' + p.l + ' · ' + (p.estado === 'resgate' ? 'resgate pedido: ' + RP.esc(resgateTxt(p.resgate)) : 'sem decisão') + '</small></span></div>' +
+        var estado = p.pagamento ? 'pagamento a caminho' : p.estado === 'resgate' ? 'resgate pedido: ' + RP.esc(resgateTxt(p.resgate)) : 'sem decisão';
+        return '<div class="card pilha preso-card" data-preso-card="' + p.id + '"><div class="linha">' + RP.iconeReino(p.origem, 32) + '<span style="flex:1;min-width:0"><b>' + RP.esc((p.pessoa ? p.pessoa + ', ' : '') + p.nome.toLowerCase()) + ' de ' + RP.esc(p.origem ? p.origem.nome : '?') + '</b><br>' +
+          '<small class="fraco">Pego no hexágono ' + p.c + ', ' + p.l + (p.cela ? ' · preso em ' + RP.esc(p.cela.nome) : '') + ' · ' + estado + '</small></span></div>' +
+          (p.oferta ? '<div class="nota-regra">' + RP.icone('troca', 'ico-p') + '<span><b>O dono oferece ' + RP.esc(resgateTxt(p.oferta)) + '</b> (valor ' + RP.num(p.ofertaValor) + (p.resgateValor ? ', contra ' + RP.num(p.resgateValor) + ' do seu pedido' : '') + '). Aceitar manda o pagamento sair na hora e revela quem você é.</span></div>' : '') +
           '<div class="linha-entre"><span class="fraco" style="font-size:var(--fs-2)">Libertado sozinho em <b class="num" data-fim="' + p.ate + '">' + RP.fmtResta(p.ate - RP.agora()) + '</b></span></div>' +
-          '<div class="linha preso-acoes"><button type="button" class="btn btn-p btn-primario" data-preso-resgate="' + p.id + '">' + RP.icone('troca') + 'Pedir resgate</button>' +
-          '<button type="button" class="btn btn-p" data-preso-acao="libertar" data-preso="' + p.id + '">' + RP.icone('check') + 'Libertar</button>' +
-          '<button type="button" class="btn btn-p btn-perigo" data-preso-acao="executar" data-preso="' + p.id + '">' + RP.icone('espada') + 'Executar</button></div></div>';
+          (p.pagamento ? '' : '<div class="linha preso-acoes">' +
+            (p.oferta ? '<button type="button" class="btn btn-p btn-primario" data-preso-acao="aceitar" data-preso="' + p.id + '">' + RP.icone('check') + 'Aceitar a oferta</button>' +
+              '<button type="button" class="btn btn-p" data-preso-acao="recusar" data-preso="' + p.id + '">Recusar</button>' : '') +
+            '<button type="button" class="btn btn-p' + (p.oferta ? '' : ' btn-primario') + '" data-preso-resgate="' + p.id + '">' + RP.icone('troca') + (p.oferta || p.estado === 'resgate' ? 'Pedir outro valor' : 'Pedir resgate') + '</button>' +
+            '<button type="button" class="btn btn-p" data-preso-acao="libertar" data-preso="' + p.id + '">' + RP.icone('check') + 'Libertar</button>' +
+            '<button type="button" class="btn btn-p btn-perigo" data-preso-acao="executar" data-preso="' + p.id + '">' + RP.icone('espada') + 'Executar</button></div>') + '</div>';
       }).join('') + '</div>';
     }
     if (d.capturados.length) {
       h += '<div class="secao-titulo">Seus exploradores presos</div><div class="pilha">' + d.capturados.map(function (p) {
-        return '<div class="card linha"><span class="ico-placa">' + RP.icone(RP.ICONE_EXPLORADOR[p.tipoExp] || 'explorador') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(p.nome) + '</b><br>' +
-          '<small class="fraco">' + (p.captor ? 'Com ' + RP.esc(p.captor.nome) + ', que pede ' + RP.esc(resgateTxt(p.resgate)) : 'Com quem o pegou, perto de ' + p.c + ', ' + p.l) + '</small><br>' +
-          '<small class="fraco">Volta em até <span data-fim="' + p.ate + '">' + RP.fmtResta(p.ate - RP.agora()) + '</span>, se não for executado.</small></span></div>';
+        var com = p.captor ? 'Com ' + RP.esc(p.captor.nome) : 'Com quem o pegou (desconhecido)';
+        var onde = p.cela ? 'preso em ' + RP.esc(p.cela.nome) + ' (' + p.cela.c + ', ' + p.cela.l + ')' : p.levado ? 'levado para o ' + RP.esc(p.levado) + ' de onde foi pego (' + p.c + ', ' + p.l + ')' : 'preso perto de ' + p.c + ', ' + p.l;
+        var neg = p.pagamento ? '<span class="selo selo-info">' + RP.icone('carroca') + 'Resgate a caminho: solto quando chegar</span>'
+          : (p.resgate ? '<span class="selo selo-destaque">' + RP.icone('troca') + 'Pedem ' + RP.esc(resgateTxt(p.resgate)) + '</span>' : '') +
+            (p.oferta ? '<span class="selo selo-antigo">' + RP.icone('troca') + 'Sua oferta: ' + RP.esc(resgateTxt(p.oferta)) + ' · esperando resposta</span>' : '');
+        return '<div class="card pilha preso-card" data-capturado-card="' + p.id + '"><div class="linha"><span class="ico-placa">' + RP.icone(RP.ICONE_EXPLORADOR[p.tipoExp] || 'explorador') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc((p.pessoa ? p.pessoa + ', ' : '') + p.nome.toLowerCase()) + '</b><br>' +
+          '<small class="fraco">' + com + ' · ' + onde + '</small><br>' +
+          '<small class="fraco">Volta em até <span data-fim="' + p.ate + '">' + RP.fmtResta(p.ate - RP.agora()) + '</span>, se não for executado.</small></span></div>' + neg +
+          (p.pagamento ? '' : '<div class="linha preso-acoes">' +
+            (p.resgate ? '<button type="button" class="btn btn-p btn-primario" data-capt-pagar="' + p.id + '">' + RP.icone('carroca') + 'Pagar o pedido</button>' : '') +
+            '<button type="button" class="btn btn-p' + (p.resgate ? '' : ' btn-primario') + '" data-capt-oferta="' + p.id + '">' + RP.icone('troca') + (p.resgate ? 'Contrapropor' : p.oferta ? 'Mudar a oferta' : 'Oferecer pagamento') + '</button>' +
+            (p.cela ? '<a class="btn btn-p btn-perigo" href="#/envio?alvo=' + p.cela.hex + '">' + RP.icone('espada') + 'Resgatar à força</a>'
+              : '<a class="btn btn-p" href="#/mapa?foco=' + p.hex + '">' + RP.icone('batedor') + 'Procurar onde está</a>') + '</div>') +
+          (p.pagamento || p.cela ? '' : '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' Para resgatar à força, descubra o local: espione os locais de outros reinos perto de onde ele foi pego. Vencer uma batalha nesse local o liberta.</p>') +
+          (p.cela && !p.pagamento ? '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' Qualquer ataque vitorioso neste local liberta o explorador, que volta para casa sozinho.</p>' : '') + '</div>';
       }).join('') + '</div>';
     }
     return h;
@@ -455,7 +472,8 @@
       var acao = b.getAttribute('data-preso-acao'), id = b.getAttribute('data-preso');
       var fazer = function () {
         RP.tentar(RP.post('/prisioneiros/' + id, { acao: acao })).then(function () {
-          RP.fecharFolha(); RP.aviso({ titulo: acao === 'executar' ? 'Explorador executado' : 'Explorador libertado', icone: acao === 'executar' ? 'espada' : 'check', tipo: 'sucesso' });
+          var tit = { executar: 'Explorador executado', libertar: 'Explorador libertado', aceitar: 'Oferta aceita', recusar: 'Oferta recusada' }[acao];
+          RP.fecharFolha(); RP.aviso({ titulo: tit, texto: acao === 'aceitar' ? 'O pagamento saiu: quando chegar, o explorador é solto.' : '', icone: acao === 'executar' ? 'espada' : 'check', tipo: 'sucesso' });
           RP.exploracao.carregar(); RP.recarregarReino();
         });
       };
@@ -464,6 +482,22 @@
       return;
     }
     if ((b = e.target.closest('[data-preso-resgate]'))) { folhaResgate(+b.getAttribute('data-preso-resgate')); return; }
+    if ((b = e.target.closest('[data-capt-oferta]'))) { folhaOferta(+b.getAttribute('data-capt-oferta')); return; }
+    if ((b = e.target.closest('[data-capt-pagar]'))) {
+      RP.tentar(RP.post('/comercio/resgates/' + b.getAttribute('data-capt-pagar') + '/pagar')).then(function () {
+        RP.aviso({ titulo: 'Resgate a caminho', texto: 'Quando chegar, o explorador é solto e volta para casa. A carga pode ser roubada no caminho.', icone: 'carroca', tipo: 'sucesso' });
+        RP.exploracao.carregar(); RP.recarregarReino();
+      });
+      return;
+    }
+    if ((b = e.target.closest('[data-oferta-enviar]'))) {
+      var o = {};
+      RP.$$('[data-oferta-rec]').forEach(function (inp) { var v = Math.floor(+inp.value || 0); if (v > 0) o[inp.getAttribute('data-oferta-rec')] = v; });
+      RP.tentar(RP.post('/prisioneiros/' + b.getAttribute('data-oferta-enviar') + '/oferta', { resgate: o })).then(function () {
+        RP.fecharFolha(); RP.aviso({ titulo: 'Oferta enviada', texto: 'Quem tem o explorador aceita, recusa ou pede outro valor.', icone: 'troca', tipo: 'sucesso' }); RP.exploracao.carregar();
+      });
+      return;
+    }
     if ((b = e.target.closest('[data-resgate-enviar]'))) {
       var r = {};
       RP.$$('[data-resgate-rec]').forEach(function (inp) { var v = Math.floor(+inp.value || 0); if (v > 0) r[inp.getAttribute('data-resgate-rec')] = v; });
@@ -472,6 +506,21 @@
       });
     }
   });
+  /* o dono oferece um pagamento (ou contrapropõe o pedido): não precisa saber quem capturou */
+  function folhaOferta(id) {
+    var d = RP.exploracao.dados, p = d && d.capturados.filter(function (x) { return x.id === id; })[0];
+    if (!p) return;
+    var recs = ['prata', 'ouro', 'comida', 'madeira', 'ferro'], base = p.oferta || p.resgate || { prata: 10 };
+    RP.abrirFolha({
+      titulo: p.resgate ? 'Contrapropor o resgate' : 'Oferecer pagamento', veu: true,
+      subtitulo: '<span class="fraco">' + RP.esc((p.pessoa ? p.pessoa + ', ' : '') + p.nome.toLowerCase()) + (p.resgate ? ' · pedem ' + RP.esc(resgateTxt(p.resgate)) : '') + '</span>',
+      corpo: '<p class="nota-regra">' + RP.icone('info', 'ico-p') + '<span>A oferta vai a quem tem o explorador, sem revelar quem é. Se aceitar, o pagamento sai na hora dos seus locais mais próximos e pode ser roubado no caminho; quando chega, o explorador é solto.</span></p>' +
+        '<div class="pilha">' + recs.map(function (k) {
+          return '<label class="linha-entre resgate-campo"><span class="linha">' + RP.icone(k, 'r-' + k) + RP.esc(RP.NOMES_REC[k]) + '</span><input class="campo" type="number" min="0" step="1" inputmode="numeric" value="' + (base[k] || 0) + '" data-oferta-rec="' + k + '" aria-label="' + RP.esc(RP.NOMES_REC[k]) + '"></label>';
+        }).join('') + '</div>',
+      acoes: '<button type="button" class="btn btn-p btn-primario" data-oferta-enviar="' + id + '">' + RP.icone('troca') + 'Enviar oferta</button>'
+    });
+  }
   function folhaResgate(id) {
     var d = RP.exploracao.dados, p = d && d.presos.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
@@ -575,7 +624,7 @@
     return (d.origem ? '<div class="card linha atacante">' + RP.iconeReino(d.origem, 40) + '<span><b>' + RP.esc(d.origem.nome) + '</b><br><small class="fraco">' + (d.prisioneiro ? 'Reino de origem do explorador' : 'Quem pede o resgate') + '</small></span></div>' : '') +
       '<p class="suave">' + RP.esc(d.resumo || '') + '</p>' + linhasPadrao(d) +
       (d.ate ? '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Prazo: ' + RP.fmtHora(d.ate) + '.</p>' : '') +
-      '<div class="linha" style="margin-top:var(--esp-3)">' + (d.prisioneiro ? '<a class="btn btn-p btn-primario" href="#/exploradores">' + RP.icone('batedor') + (preso !== false ? 'Decidir' : 'Exploradores') + '</a>' : '') + verNoMapa(d) + '</div>';
+      '<div class="linha" style="margin-top:var(--esp-3)">' + (d.prisioneiro ? '<a class="btn btn-p btn-primario" href="#/exploradores">' + RP.icone('batedor') + (d.dono ? 'Negociar ou resgatar' : preso !== false ? 'Decidir' : 'Exploradores') + '</a>' : '') + verNoMapa(d) + '</div>';
   };
   RP.desenhosRelatorio.fauna = function (rel) {
     var d = rel.dados || {};

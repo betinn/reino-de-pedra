@@ -97,6 +97,14 @@ public sealed class ModuloExploracao : IModuloApi
             return Results.NoContent();
         });
 
+        // o dono do explorador oferece um pagamento (ou contrapropõe o resgate pedido)
+        conta.MapPost("/prisioneiros/{pid:long}/oferta", async (long pid, PedidoPrisioneiro p, HttpContext ctx, Motor motor) =>
+        {
+            var id = ctx.ContaId();
+            await motor.Executar(m => Jogo.Social.Comercio.OferecerResgate(m, Sessao.ReinoDa(m, id), pid, p.Resgate));
+            return Results.NoContent();
+        });
+
         conta.MapGet("/rotas/previa", async (int hex, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();

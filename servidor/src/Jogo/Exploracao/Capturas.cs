@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using ReinoDePedra.Jogo.Combate;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
@@ -9,8 +10,10 @@ using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 namespace ReinoDePedra.Jogo.Exploracao
 {
     /// <summary>
-    /// Explorador capturado por outro reino. Quem captura vê o reino de origem e tem <c>P.resgateH</c> para pedir resgate,
-    /// libertar ou executar; sem decisão, o explorador é libertado e volta para casa. Preso, não ocupa o teto de ninguém.
+    /// Explorador capturado por outro reino. Fica preso num local de quem capturou (<see cref="LocalId"/>). Quem captura vê o
+    /// reino de origem e tem <c>P.resgateH</c> para pedir resgate, libertar ou executar; sem decisão, o explorador é libertado e
+    /// volta para casa. O dono pode oferecer um pagamento (ou contrapropor o resgate pedido) e pode resgatá-lo à força: vencer
+    /// uma batalha no local onde ele está preso o liberta. Preso, não ocupa o teto de ninguém.
     /// </summary>
     public sealed class Prisioneiro : Documento
     {
@@ -20,13 +23,23 @@ namespace ReinoDePedra.Jogo.Exploracao
         /// <summary>A pessoa presa (continua do reino de origem, em <c>Estados.Capturada</c>) e o nome dela.</summary>
         public long PessoaId { get; set; }
         public string Nome { get; set; } = "";
+        /// <summary>Onde foi pego.</summary>
         public int Hex { get; set; }
+        /// <summary>Local de quem capturou onde o explorador fica preso (0: o castelo do captor).</summary>
+        public long LocalId { get; set; }
+        /// <summary>O dono sabe em que local ele está preso (foi pego espionando o próprio local, ou um batedor o viu lá).</summary>
+        public bool LocalConhecido { get; set; }
+        /// <summary>O dono sabe quem capturou (pedido de resgate, oferta aceita ou espionagem do local).</summary>
+        public bool CaptorRevelado { get; set; }
         public long Quando { get; set; }
         /// <summary>Fim do prazo de decisão (libertação automática).</summary>
         public long Ate { get; set; }
         /// <summary>"preso" ou "resgate" (resgate pedido, esperando o pagamento).</summary>
         public string Estado { get; set; } = Capturas.Preso;
         public Recursos Resgate { get; set; } = new();
+        /// <summary>Pagamento oferecido pelo dono (vazio: nenhuma oferta aberta). Quem capturou aceita, recusa ou contrapropõe.</summary>
+        public Recursos Oferta { get; set; } = new();
+        public long? OfertaEm { get; set; }
         public long? EventoId { get; set; }
     }
 
@@ -42,19 +55,40 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         public static IEnumerable<Prisioneiro> PresosPor(Mundo m, long reinoId) => m.Prisioneiros.Where(p => p.CaptorId == reinoId);
         public static IEnumerable<Prisioneiro> PresosDe(Mundo m, long reinoId) => m.Prisioneiros.Where(p => p.DonoId == reinoId);
+        public static IEnumerable<Prisioneiro> NoLocal(Mundo m, long localId) => m.Prisioneiros.Where(p => p.LocalId == localId);
 
-        /// <summary>O explorador sai do mapa e vira prisioneiro de <paramref name="captor"/>.</summary>
-        public static Prisioneiro Capturar(Mundo m, Explorador e, Reino captor, int hex)
+        /// <summary>Local onde o explorador está preso: o registrado ou, sem registro, o castelo de quem capturou.</summary>
+        public static Local? Onde(Mundo m, Prisioneiro p) =>
+            p.LocalId != 0 ? m.Locais.Obter(p.LocalId) : m.Reinos.Obter(p.CaptorId) is { } c ? m.Locais.Obter(c.CasteloId) : null;
+
+        /// <summary>O pagamento do resgate já está a caminho: o valor não muda mais.</summary>
+        public static bool PagamentoACaminho(Mundo m, Prisioneiro p) => Remessas.Do(m, Comercio.Resgate, p.Id).Any();
+
+        /// <summary>
+        /// Onde fica preso: o local que viu o explorador (a guarnição que o pegou, o local espionado) se ainda é do captor; senão,
+        /// o local do captor mais perto de onde ele foi pego.
+        /// </summary>
+        private static Local? Cela(Mundo m, Reino captor, int hex, Local? viu)
+        {
+            if (viu != null && viu.ReinoId == captor.Id && !viu.Ruina) return viu;
+            return m.LocaisDe(captor.Id).Where(l => !l.Ruina).OrderBy(l => m.G.Distancia(l.Hex, hex)).ThenBy(l => l.Id).FirstOrDefault();
+        }
+
+        /// <summary>O explorador sai do mapa e vira prisioneiro de <paramref name="captor"/>, preso em <paramref name="viu"/> (ou no local mais perto).</summary>
+        public static Prisioneiro Capturar(Mundo m, Explorador e, Reino captor, int hex, Local? viu = null)
         {
             var dono = m.Reinos.Obter(e.ReinoId);
             var nome = e.NomeTipo(m);
             var pessoa = m.Pessoas.Obter(e.PessoaId);
             if (pessoa != null) PS.Capturada(m, e, pessoa);
             e.Encerrar(m);
+            var cela = Cela(m, captor, hex, viu);
             var p = m.Prisioneiros.Adicionar(new Prisioneiro
             {
                 CaptorId = captor.Id, DonoId = e.ReinoId, TipoExp = e.TipoExp, Hex = hex, Quando = m.Agora,
-                PessoaId = pessoa?.Id ?? 0, Nome = pessoa?.Nome ?? "",
+                PessoaId = pessoa?.Id ?? 0, Nome = pessoa?.Nome ?? "", LocalId = cela?.Id ?? 0,
+                // pego espionando o próprio local: o dono sabe onde ele está (sem saber, por isso, de quem é o local)
+                LocalConhecido = cela != null && m.LocalNoHex(hex)?.Id == cela.Id,
                 Ate = m.Agora + T.DeHoras(m.P.ResgateH),
             });
             p.EventoId = m.Agendar(new PrazoPrisioneiroEvento { PrisioneiroId = p.Id, Quando = p.Ate }).Id;
@@ -62,18 +96,29 @@ namespace ReinoDePedra.Jogo.Exploracao
             var onde = "hexágono " + m.G.C(hex) + ", " + m.G.L(hex);
             Registros.Relatar(m, captor.Id, "captura", nome + " capturado", new JsonObject
             {
-                ["resumo"] = "Suas tropas pegaram " + (p.Nome.Length > 0 ? p.Nome + ", " + nome.ToLowerInvariant() + "," : "um explorador") + " perto do " + onde + ". Decida em " + m.P.ResgateH + " h: pedir resgate, libertar ou executar. Sem decisão, ele é libertado.",
+                ["resumo"] = "Suas tropas pegaram " + (p.Nome.Length > 0 ? p.Nome + ", " + nome.ToLowerInvariant() + "," : "um explorador") + " perto do " + onde +
+                             (cela != null ? ". Fica preso em " + cela.Nome : "") + ". Decida em " + m.P.ResgateH + " h: pedir resgate, libertar ou executar. Sem decisão, ele é libertado.",
                 ["nome"] = p.Nome,
                 ["origem"] = dono != null ? Espionagem.Identidade(dono) : null,
                 ["prisioneiro"] = p.Id, ["ate"] = p.Ate, ["hex"] = hex,
-                ["linhas"] = new JsonArray { Fauna.Linha("Reino de origem", dono?.Nome ?? "desconhecido"), Fauna.Linha("Onde", onde) },
+                ["linhas"] = new JsonArray
+                {
+                    Fauna.Linha("Reino de origem", dono?.Nome ?? "desconhecido"), Fauna.Linha("Onde", onde),
+                    Fauna.Linha("Preso em", cela?.Nome ?? "—"),
+                },
             }, "exploracao", "Explorador capturado · " + (dono?.Nome ?? ""));
             if (dono != null)
+            {
+                var levado = cela == null || p.LocalConhecido ? null : m.G.Direcao(hex, cela.Hex);
                 Registros.Relatar(m, dono.Id, "captura", nome + " capturado", new JsonObject
                 {
-                    ["resumo"] = "Perdemos " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " perto do " + onde + ". Quem a pegou tem " + m.P.ResgateH + " h para decidir; sem decisão, volta.",
-                    ["hex"] = hex, ["nome"] = p.Nome, ["linhas"] = new JsonArray { Fauna.Linha("Onde", onde) },
+                    ["resumo"] = "Perdemos " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " perto do " + onde + ". " +
+                                 (p.LocalConhecido ? "Está preso no local que espionava. " : levado is { } d && d != "aqui" ? "Foi levado para o " + d + ". " : "Está preso ali perto. ") +
+                                 "Quem o pegou tem " + m.P.ResgateH + " h para decidir; sem decisão, volta. Você pode oferecer um pagamento ou resgatá-lo à força: vencer uma batalha no local onde ele está o liberta.",
+                    ["hex"] = hex, ["nome"] = p.Nome, ["prisioneiro"] = p.Id, ["ate"] = p.Ate, ["dono"] = true,
+                    ["linhas"] = new JsonArray { Fauna.Linha("Onde", onde), Fauna.Linha("Levado para", p.LocalConhecido ? "o local espionado" : levado ?? "—") },
                 }, "exploracao");
+            }
             m.Avisar(captor.Id, "reino");
             return p;
         }
@@ -81,7 +126,13 @@ namespace ReinoDePedra.Jogo.Exploracao
         public static Prisioneiro DoCaptor(Mundo m, Reino r, long id) =>
             m.Prisioneiros.Obter(id) is { } p && p.CaptorId == r.Id ? p : throw new RegraException("Prisioneiro não encontrado.", 404);
 
-        /// <summary>Decisão de quem capturou: "libertar", "executar" ou "resgate" (com o valor pedido).</summary>
+        public static Prisioneiro DoDono(Mundo m, Reino r, long id) =>
+            m.Prisioneiros.Obter(id) is { } p && p.DonoId == r.Id ? p : throw new RegraException("Prisioneiro não encontrado.", 404);
+
+        /// <summary>
+        /// Decisão de quem capturou: "libertar", "executar", "resgate" (pede ou contrapropõe, com o valor), "aceitar" (a oferta do
+        /// dono: o pagamento sai na hora) ou "recusar" (a oferta do dono).
+        /// </summary>
         public static void Decidir(Mundo m, Reino captor, long id, string acao, IReadOnlyDictionary<string, double>? resgate = null)
         {
             var p = DoCaptor(m, captor, id);
@@ -90,12 +141,15 @@ namespace ReinoDePedra.Jogo.Exploracao
                 case "libertar": Libertar(m, p, "libertado"); return;
                 case "executar": Executar(m, p); return;
                 case "resgate": PedirResgate(m, p, resgate); return;
+                case "aceitar": Comercio.AceitarOferta(m, captor, p); return;
+                case "recusar": RecusarOferta(m, p); return;
                 default: throw new RegraException("Escolha libertar, executar ou pedir resgate.");
             }
         }
 
         private static void PedirResgate(Mundo m, Prisioneiro p, IReadOnlyDictionary<string, double>? resgate)
         {
+            if (PagamentoACaminho(m, p)) throw new RegraException("O resgate já está a caminho.");
             var valor = new Recursos();
             foreach (var (k, v) in resgate ?? new Dictionary<string, double>())
             {
@@ -104,20 +158,33 @@ namespace ReinoDePedra.Jogo.Exploracao
                 if (v >= 1) valor.Somar(k, Math.Floor(v));
             }
             if (valor.Count == 0) throw new RegraException("Diga quanto pede de resgate.");
-            p.Estado = ResgatePedido; p.Resgate = valor;
+            var contra = p.Oferta.Count > 0;
+            p.Estado = ResgatePedido; p.Resgate = valor; p.Oferta = new(); p.OfertaEm = null; p.CaptorRevelado = true;
             m.Sujar(p);
             var captor = m.Reinos.Obter(p.CaptorId); var dono = m.Reinos.Obter(p.DonoId);
             if (captor != null && dono != null)
             {
                 Conhecimento.Conhecer(m, dono, captor, "resgate");   // o pedido revela quem pede
-                Registros.Relatar(m, dono.Id, "captura", "Resgate pedido por " + captor.Nome, new JsonObject
+                if (dono.ResgatesRecusados.Remove(p.Id)) m.Sujar(dono);
+                Registros.Relatar(m, dono.Id, "captura", (contra ? "Contraproposta de " : "Resgate pedido por ") + captor.Nome, new JsonObject
                 {
-                    ["resumo"] = captor.Nome + " tem seu " + Exploradores.NomeTipo(m, p.TipoExp).ToLowerInvariant() + " e pede resgate. Sem pagamento até o prazo, ele é libertado.",
-                    ["origem"] = Espionagem.Identidade(captor), ["resgate"] = Json(valor), ["ate"] = p.Ate, ["hex"] = p.Hex,
-                    ["linhas"] = new JsonArray { Fauna.Linha("Pede", string.Join(", ", valor.Arredondado().Select(kv => kv.Value + " " + Logistica.NomeRecurso(kv.Key)))) },
+                    ["resumo"] = captor.Nome + " tem seu " + Exploradores.NomeTipo(m, p.TipoExp).ToLowerInvariant() + (contra ? " e responde à sua oferta pedindo outro valor." : " e pede resgate.") +
+                                 " Pague, ofereça outro valor ou resgate-o à força. Sem pagamento até o prazo, ele é libertado.",
+                    ["origem"] = Espionagem.Identidade(captor), ["resgate"] = Json(valor), ["ate"] = p.Ate, ["hex"] = p.Hex, ["prisioneiro"] = p.Id, ["dono"] = true,
+                    ["linhas"] = new JsonArray { Fauna.Linha("Pede", Remessas.Texto(valor)) },
                 }, "comercio");
             }
             AoPedirResgate?.Invoke(m, p);
+        }
+
+        /// <summary>Quem capturou não aceita a oferta do dono. A recusa não revela quem capturou.</summary>
+        private static void RecusarOferta(Mundo m, Prisioneiro p)
+        {
+            if (p.Oferta.Count == 0) throw new RegraException("Não há oferta por este prisioneiro.");
+            p.Oferta = new(); p.OfertaEm = null; m.Sujar(p);
+            var quem = p.CaptorRevelado && m.Reinos.Obter(p.CaptorId) is { } c ? c.Nome : "Quem o capturou";
+            Registros.Notificar(m, p.DonoId, "exploracao", "Oferta recusada", quem + " não aceitou o pagamento por " + (p.Nome.Length > 0 ? p.Nome : "seu explorador") + ". Ofereça outro valor ou resgate-o à força.", "exploradores");
+            m.Avisar(p.DonoId, "reino"); m.Avisar(p.CaptorId, "reino");
         }
 
         /// <summary>Resgate pago (chamado pelo comércio quando o pagamento chega): o explorador é libertado.</summary>
@@ -129,31 +196,86 @@ namespace ReinoDePedra.Jogo.Exploracao
             if (m.Pessoas.Obter(p.PessoaId) is { } pessoa) PS.Remover(m, pessoa);
             Registros.Relatar(m, p.DonoId, "captura", Exploradores.NomeTipo(m, p.TipoExp) + " executado", new JsonObject
             {
-                ["resumo"] = "O explorador capturado perto do hexágono " + m.G.C(p.Hex) + ", " + m.G.L(p.Hex) + " não vai voltar.", ["hex"] = p.Hex,
+                ["resumo"] = (p.Nome.Length > 0 ? p.Nome + ", o explorador" : "O explorador") + " capturado perto do hexágono " + m.G.C(p.Hex) + ", " + m.G.L(p.Hex) + ", não vai voltar.", ["hex"] = p.Hex,
             }, "exploracao");
             m.Avisar(p.CaptorId, "reino");
         }
 
-        /// <summary>Solta o explorador: ele sai do hexágono onde foi pego e volta para casa.</summary>
+        /// <summary>Solta o explorador: ele sai do local onde estava preso (ou de onde foi pego) e volta para casa.</summary>
         public static void Libertar(Mundo m, Prisioneiro p, string motivo)
         {
+            var de = Onde(m, p)?.Hex ?? p.Hex;
             Remover(m, p);
             var dono = m.Reinos.Obter(p.DonoId);
             var pessoa = m.Pessoas.Obter(p.PessoaId);
             if (dono == null || !dono.Ativo) { if (pessoa != null) PS.Remover(m, pessoa); return; }
             var e = new Explorador
             {
-                ReinoId = dono.Id, TipoExp = p.TipoExp, CasaLocalId = dono.CasteloId, Base = p.Hex, Ordem = Exploradores.Retornar,
-                Origem = p.Hex, Destino = p.Hex, Caminho = [p.Hex], Tempos = [m.Agora], PessoaId = p.PessoaId,
+                ReinoId = dono.Id, TipoExp = p.TipoExp, CasaLocalId = dono.CasteloId, Base = de, Ordem = Exploradores.Retornar,
+                Origem = de, Destino = de, Caminho = [de], Tempos = [m.Agora], PessoaId = p.PessoaId,
             };
             e.Vel = Exploradores.Velocidade(m, p.TipoExp, e.Tropas);
             m.Marchas.Adicionar(e);
             if (pessoa != null) PS.Embarcar(m, e, [pessoa]);
             Exploradores.IrParaCasa(m, e);
-            Registros.Notificar(m, dono.Id, "exploracao", Exploradores.NomeTipo(m, p.TipoExp) + " " + motivo, "Está voltando para casa.", "exploradores");
+            Registros.Notificar(m, dono.Id, "exploracao", Exploradores.NomeTipo(m, p.TipoExp) + " " + motivo, (p.Nome.Length > 0 ? p.Nome + " está" : "Está") + " voltando para casa.", "exploradores");
             if (motivo == "libertado" && m.Agora >= p.Ate)
                 Registros.Notificar(m, p.CaptorId, "exploracao", "Prisioneiro libertado", "Sem decisão em " + m.P.ResgateH + " h, o explorador foi solto.", "exploradores");
             m.Avisar(p.CaptorId, "reino");
+            m.Avisar(dono.Id, "reino");
+        }
+
+        // ---------------------------------------------------------------- resgate à força
+
+        /// <summary>
+        /// Fim de uma batalha num local: o atacante que vence liberta os exploradores dele presos ali (o resgate à força). Depois,
+        /// quem estava preso num local que deixou de ser do captor (tomado, arruinado) é solto.
+        /// </summary>
+        public static void AoTerminarBatalha(Mundo m, ResultadoCombate rc)
+        {
+            if (rc.AtacanteVenceu)
+                foreach (var p in NoLocal(m, rc.LocalId).Where(p => p.DonoId == rc.AtacanteId).ToList())
+                {
+                    var l = m.Locais.Obter(rc.LocalId);
+                    Registros.Notificar(m, p.CaptorId, "exploracao", "Prisioneiro resgatado", "Tropas inimigas venceram em " + (l?.Nome ?? "um local seu") + " e levaram " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + ".", "exploradores");
+                    Libertar(m, p, "resgatado à força");
+                }
+            Conferir(m);
+        }
+
+        /// <summary>Quem está preso num local que não é mais de quem capturou (tomado, arruinado, perdido na queda) é solto.</summary>
+        public static void Conferir(Mundo m)
+        {
+            foreach (var p in m.Prisioneiros.Where(p => p.LocalId != 0).ToList())
+            {
+                var l = m.Locais.Obter(p.LocalId);
+                if (l != null && l.ReinoId == p.CaptorId && !l.Ruina) continue;
+                Registros.Notificar(m, p.CaptorId, "exploracao", "Prisioneiro solto", "O local onde " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " estava preso não é mais seu.", "exploradores");
+                Libertar(m, p, "solto");
+            }
+        }
+
+        /// <summary>
+        /// Espionagem de um local: o batedor vê quem está preso ali. Os presos do reino que espiona passam a ter local e captor
+        /// conhecidos; os de outros reinos aparecem só contados.
+        /// </summary>
+        public static void NoRelatorio(Mundo m, Reino espiao, Local l, JsonObject dados)
+        {
+            var presos = NoLocal(m, l.Id).ToList();
+            if (presos.Count == 0) return;
+            var meus = presos.Where(p => p.DonoId == espiao.Id).ToList();
+            var arr = new JsonArray();
+            foreach (var p in meus)
+            {
+                p.LocalConhecido = true; p.CaptorRevelado = true; m.Sujar(p);
+                arr.Add(new JsonObject { ["id"] = p.Id, ["nome"] = p.Nome, ["tipo"] = p.TipoExp, ["ate"] = p.Ate });
+            }
+            dados["presos"] = arr;
+            var outros = presos.Count - meus.Count;
+            var txt = string.Join(", ", meus.Select(p => (p.Nome.Length > 0 ? p.Nome + ", " : "") + Exploradores.NomeTipo(m, p.TipoExp).ToLowerInvariant()));
+            if (outros > 0) txt += (txt.Length > 0 ? "; " : "") + outros + (outros > 1 ? " de outros reinos" : " de outro reino");
+            if (dados["linhas"] is JsonArray linhas) linhas.Add(Fauna.Linha("Presos", txt));
+            if (meus.Count > 0) dados["resumo"] = (dados["resumo"]?.GetValue<string>() ?? "") + " Exploradores seus estão presos aqui: vencer uma batalha neste local os liberta.";
         }
 
         private static void Remover(Mundo m, Prisioneiro p)

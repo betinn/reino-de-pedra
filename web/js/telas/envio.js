@@ -358,6 +358,7 @@
     var corpo = '<div class="info">' + linha('Tropas', RP.selosGrupo(g)) +
       (d.descricao ? d.descricao(h, dados, est) : '') +
       linha('Chegada', esc && esc.ok ? '<b>em ' + RP.fmtDuracao(esc.min * 60) + '</b>' : '—') + '</div>' +
+      (p.forcaInimiga && RP.forcaInimigaHTML ? '<div class="secao-titulo">Força inimiga</div>' + RP.forcaInimigaHTML(p.forcaInimiga) : '') +
       '<div style="margin-top:var(--esp-2)">' + RP.cargaHTML(ex ? ex.carga : {}, p.carga) + '</div>' +
       RP.faunaVereditoHTML(p, h, g) +
       (p.curta.ok ? '<div class="secao-titulo">Caminho</div>' + RP.miniRota(p, est.seguro, local ? local.nome : 'o destino') + '<div class="pilha">' + opcaoCaminho('curta', p.curta) + (mesma ? '' : opcaoCaminho('segura', p.segura)) + '</div>' +

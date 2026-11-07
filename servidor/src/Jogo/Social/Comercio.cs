@@ -356,11 +356,59 @@ namespace ReinoDePedra.Jogo.Social
             var captor = Outro(m, p.CaptorId);
             if (ConferirNovato(m, r, captor, p.Resgate, new Recursos()) != null)
                 throw new RegraException("O resgate não pode ser pago agora. Tente mais tarde.");   // não diz por quê: o escudo do captor só se descobre ao chegar
-            Remessas.Enviar(m, r, captor, null, p.Resgate, Resgate, p.Id);
-            RegistrarNovato(m, r, captor, p.Resgate, new Recursos());
-            r.ResgatesRecusados.Remove(p.Id); m.Sujar(r);
+            EnviarResgate(m, r, captor, p);
             Registros.Notificar(m, captor.Id, "comercio", r.Nome + " pagou o resgate", "A carga (" + Remessas.Texto(p.Resgate) + ") está a caminho: quando chegar, o explorador é solto.", "exploradores");
-            m.Avisar(r.Id, "comercio"); m.Avisar(captor.Id, "comercio");
+        }
+
+        private static void EnviarResgate(Mundo m, Reino dono, Reino captor, Prisioneiro p)
+        {
+            Remessas.Enviar(m, dono, captor, null, p.Resgate, Resgate, p.Id);
+            RegistrarNovato(m, dono, captor, p.Resgate, new Recursos());
+            dono.ResgatesRecusados.Remove(p.Id); m.Sujar(dono);
+            m.Avisar(dono.Id, "comercio"); m.Avisar(captor.Id, "comercio");
+            m.Avisar(dono.Id, "reino"); m.Avisar(captor.Id, "reino");
+        }
+
+        /// <summary>
+        /// O dono oferece um pagamento pela liberdade do explorador, com ou sem resgate pedido (contraproposta). Não precisa saber
+        /// quem capturou: a oferta vai a quem tem o preso, que aceita, recusa ou contrapropõe. Oferecer não revela quem capturou.
+        /// </summary>
+        public static void OferecerResgate(Mundo m, Reino r, long prisioneiroId, IReadOnlyDictionary<string, double>? oferta)
+        {
+            var p = Capturas.DoDono(m, r, prisioneiroId);
+            if (Capturas.PagamentoACaminho(m, p)) throw new RegraException("O resgate já está a caminho.");
+            var valor = Remessas.Ler(m, oferta);
+            Remessas.Conferir(m, r, valor);
+            var captor = Outro(m, p.CaptorId);
+            if (ConferirNovato(m, r, captor, valor, new Recursos()) != null)
+                throw new RegraException("Esta oferta não pode ser feita agora. Tente mais tarde.");   // o escudo do captor não é dito
+            p.Oferta = valor; p.OfertaEm = m.Agora; m.Sujar(p);
+            r.ResgatesRecusados.Remove(p.Id); m.Sujar(r);
+            var quem = p.Nome.Length > 0 ? p.Nome + ", " + Exploradores.NomeTipo(m, p.TipoExp).ToLowerInvariant() + " de " + r.Nome : "o explorador de " + r.Nome;
+            Registros.Notificar(m, captor.Id, "exploracao", "Oferta pelo prisioneiro", r.Nome + " oferece " + Remessas.Texto(valor) + " pela liberdade de " + quem + ". Aceite, recuse ou peça outro valor.", "exploradores");
+            m.Avisar(r.Id, "reino"); m.Avisar(captor.Id, "reino");
+        }
+
+        /// <summary>
+        /// Quem capturou aceita a oferta do dono: a oferta vira o resgate e o pagamento sai na hora dos locais do dono. Aceitar
+        /// revela ao dono quem capturou (o pagamento vai até ele).
+        /// </summary>
+        public static void AceitarOferta(Mundo m, Reino captor, Prisioneiro p)
+        {
+            if (p.Oferta.Count == 0) throw new RegraException("Não há oferta por este prisioneiro.");
+            if (Capturas.PagamentoACaminho(m, p)) throw new RegraException("O resgate já está a caminho.");
+            var dono = m.Reinos.Obter(p.DonoId);
+            if (dono == null || !dono.Ativo) throw new RegraException("O reino do explorador não existe mais.");
+            try { Remessas.Conferir(m, dono, p.Oferta); }
+            catch (RegraException) { throw new RegraException("O dono não tem mais o que ofereceu."); }
+            if (ConferirNovato(m, captor, dono, new Recursos(), p.Oferta) != null) throw new RegraException("Esta oferta não vale mais.");
+            var antes = (p.Resgate, p.Estado, p.Oferta, p.OfertaEm, p.CaptorRevelado);
+            p.Resgate = p.Oferta; p.Estado = Capturas.ResgatePedido; p.Oferta = new(); p.OfertaEm = null; p.CaptorRevelado = true;
+            try { EnviarResgate(m, dono, captor, p); }
+            catch { (p.Resgate, p.Estado, p.Oferta, p.OfertaEm, p.CaptorRevelado) = antes; throw; }
+            m.Sujar(p);
+            Conhecimento.Conhecer(m, dono, captor, "resgate");
+            Registros.Notificar(m, dono.Id, "exploracao", captor.Nome + " aceitou sua oferta", "O pagamento (" + Remessas.Texto(p.Resgate) + ") saiu: quando chegar, " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " é solto.", "exploradores");
         }
 
         /// <summary>O dono não vai pagar: quem capturou é avisado (decide até o fim do prazo; sem decisão, o explorador é libertado).</summary>

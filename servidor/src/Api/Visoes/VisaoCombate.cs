@@ -26,26 +26,7 @@ public static class VisaoCombate
         return new JsonObject { ["tipo"] = p.Tipo, ["objetivos"] = arr, ["tatica"] = p.Tatica, ["completar"] = p.Completar == true, ["estandarte"] = p.Estandarte == true, ["divisao"] = p.Divisao, ["recuarVazio"] = p.RecuarVazio };
     }
 
-    public sealed record TorreConhecida(int Hex, int Nivel, int Alcance);
-
-    /// <summary>
-    /// Torres que cobrem o local pelo que o reino sabe: as próprias e as à vista como estão agora; fora da vista, as da foto
-    /// da névoa como foram vistas (nível e alcance daquele momento).
-    /// </summary>
-    public static List<TorreConhecida> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null)
-    {
-        vis ??= Nevoas.VisiveisAgora(m, r.Id);
-        var lista = Defesas.NoAlcance(m, l).Where(t => t.ReinoId == r.Id || vis.Contains(t.Hex))
-            .Select(t => new TorreConhecida(t.Hex, t.Nivel, Defesas.Alcance(m, t))).ToList();
-        foreach (var (h, objs) in Fotos.De(m, r.Id).Objetos)
-        {
-            if (vis.Contains(h)) continue;
-            foreach (var o in objs)
-                if (o["tipo"]?.GetValue<string>() == "torre" && o["alcance"]?.GetValue<int>() is int alc && m.G.Distancia(h, l.Hex) <= alc)
-                    lista.Add(new TorreConhecida(h, o["nivel"]?.GetValue<int>() ?? 1, alc));
-        }
-        return lista;
-    }
+    public static List<TorreConhecida> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null) => Reconhecimentos.TorresConhecidas(m, r, l, vis);
 
     /// <summary>Prévia do envio: chegada, carga, objetivos normalizados, saque decrescente e avisos, sem enviar nada.</summary>
     public static object Previa(Mundo m, Reino r, PedidoAtaque p, int para)
@@ -54,12 +35,13 @@ public static class VisaoCombate
         var alvo = Ataques.Alvo(m, r, para, vis);
         // fora da vista, o alvo aparece como a foto da névoa o guarda (último estado conhecido)
         var foto = vis.Contains(para) ? null : Ataques.FotoDoLocal(m, r, para);
-        int de; Dictionary<string, int> grupo;
+        int de; Dictionary<string, int> grupo; double bonusA;
         if (p.MarchaId is long mid)
         {
             var ex = Exercitos.Do(m, r, mid);
             de = ex.HexEm(m.Agora);
             grupo = GT.Limpo(p.Pessoas is { Count: > 0 } && p.Tropas != null ? p.Tropas : ex.Tropas);   // só parte da tropa vai
+            bonusA = Bonus.SomaAtaque(m, ex);
         }
         else
         {
@@ -68,6 +50,7 @@ public static class VisaoCombate
             de = l.Hex;
             grupo = GT.Limpo(p.Tropas);
             if (grupo.Count > 0) grupo = GT.Validar(m, l, grupo);
+            bonusA = Reconhecimentos.BonusDoLocal(m, r, l, grupo);
         }
         string? bloqueio = null;
         try { Ataques.ValidarTropas(m, grupo); } catch (RegraException e) { bloqueio = e.Message; }
@@ -125,6 +108,7 @@ public static class VisaoCombate
             taticas = m.P.Combate.Taticas,
             tropas = grupo, total = GT.Total(grupo), carga, vel, forcaFauna = forca,
             curta = Op(false), segura = Op(true),
+            forcaInimiga = Reconhecimentos.Estimar(m, r, alvo, grupo, bonusA, plano.Tatica, vis),
             saque = levaCarga ? new { recentes, rendimento } : null,
             avisos, quandoParam = Ataques.QuandoParam(m, plano, carga),
             defensorVera = plano.Estandarte ? new { nome = "Reino de " + r.Nome, brasao = r.Brasao, identificado = true } : new { nome = "Forças desconhecidas", brasao = (Brasao?)null, identificado = false },
