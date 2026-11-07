@@ -91,6 +91,7 @@ kbd.tecla {
 html.jogo #telas {
   position: fixed; right: 16px; top: calc(var(--topo-alt) + 12px); z-index: var(--z-folha);
   width: var(--janela-larg); max-width: calc(100vw - 32px); max-height: calc(100vh - var(--topo-alt) - 84px);
+  min-height: 0;   /* telas.css dá 100vh ao #telas: vence o max-height e empurra o rodapé (Enviar) para fora da tela */
   overflow-y: auto; overscroll-behavior: contain;
   background: var(--painel-fundo); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--painel-borda); border-radius: var(--raio-3);
