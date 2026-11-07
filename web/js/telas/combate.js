@@ -96,9 +96,6 @@
     if (RP.envio && RP.envio.ativo()) return '';
     var l = localAlheio(h, dados), html = '';
     if (l) html += '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + h + '">' + RP.icone(semDono(l) ? 'bandeira' : 'espada') + (semDono(l) ? 'Ocupar este local' : 'Atacar este local') + '</a>';
-    objetosHex(h, dados).filter(function (o) { return o.tipo === 'batalha' && o.id; }).forEach(function (o) {
-      html += '<a class="btn btn-p" href="#/batalha?id=' + o.id + '">' + RP.icone('espada') + 'Ver a batalha</a>';
-    });
     return html;
   });
   function folhaTorre(o) {
@@ -162,15 +159,16 @@
   RP.mapa.tiposObjeto.torre = Object.assign({ nome: 'Torre de arqueiros', icone: 'torre' }, RP.mapa.tiposObjeto.torre || {}, { folha: folhaTorre });
   /* no Mapa tático: o marcador com a barra de quem ganha e as baixas (o SVG é refeito quando chegam dados novos) */
   function svgBatalha(o) {
-    var pl = RP.placarObjeto(o, RP.agora()), h = '<circle class="bt-base" r="14"/><use href="#i-espada" x="-10" y="-10" width="20" height="20"/>';
-    if (!pl) return h + (o.frentes > 1 ? '<text class="ent-rotulo" y="30">' + o.frentes + ' frentes</text>' : '');
-    return h + '<g transform="translate(-22 19)"><rect class="bt-trilho" width="44" height="6" rx="3"/><rect class="bt-meu" width="' + (44 * pl.pct).toFixed(1) + '" height="6" rx="3"/></g>' +
-      '<text class="ent-rotulo" y="38">' + RP.num(pl.meu.baixas) + ' × ' + RP.num(pl.eles.baixas) + ' baixas</text>';
+    /* o selo fica acima do hexágono, para não cobrir as tropas que lutam ali: clicar nele abre a tela da batalha */
+    var pl = RP.placarObjeto(o, RP.agora()), h = '<g transform="translate(0 -34)"><circle class="bt-base" r="12"/><use href="#i-espada" x="-8" y="-8" width="16" height="16"/>';
+    if (!pl) return h + '</g>';
+    return h + '<g transform="translate(-18 15)"><rect class="bt-trilho" width="36" height="5" rx="2.5"/><rect class="bt-meu" width="' + (36 * pl.pct).toFixed(1) + '" height="5" rx="2.5"/></g>' +
+      '<title>Ver batalha · baixas ' + RP.num(pl.meu.baixas) + ' × ' + RP.num(pl.eles.baixas) + '</title></g>';
   }
   RP.mapa.tiposObjeto.batalha = Object.assign({ nome: function () { return 'Batalha'; }, icone: function () { return 'espada'; } }, RP.mapa.tiposObjeto.batalha || {}, {
     svgTatico: svgBatalha,
-    /* clicar na batalha leva à tela dela (placar, frentes, reforços, recuo) */
-    acoes: function (o) { return o.id ? '<a class="btn btn-p btn-primario" href="#/batalha?id=' + o.id + '">' + RP.icone('espada') + 'Ver a batalha</a>' : ''; },
+    /* quem participa abre a tela da batalha direto, sem folha: pelo selo sobre o hexágono ou pelas figuras */
+    link: function (o) { return o.id ? 'batalha?id=' + o.id : null; },
     desenharTatico: function (ctx, o, info) { desenharBatalha(ctx, o, H.centroH(o.hex), null, (info && info.agora) || RP.agora()); }, folha: folhaBatalha });
   /* o mapa que desenha RP.mapa.tiposObjeto sozinho marca RP.mapa.desenhaTiposObjeto = true; senão desenhamos aqui */
   RP.mapa.desenhosExtras.push(function (ctx, dados, cam, agora) {
@@ -197,7 +195,6 @@
   });
   document.addEventListener('click', function (e) {
     var b;
-    if ((b = e.target.closest('[data-ver-batalha]'))) { RP.ir('batalha?id=' + b.getAttribute('data-ver-batalha')); return; }
     if (e.target.closest('[data-torre-cancelar]')) { modoTorre = false; faixaTorre(); return; }
     if ((b = e.target.closest('[data-torre-aqui]'))) {
       RP.tentar(RP.post('/defesas/torres', { hex: +b.getAttribute('data-torre-aqui') })).then(function (it) {
@@ -844,8 +841,7 @@
   });
   RP.acoesFolhaLocal = RP.acoesFolhaLocal || [];
   RP.acoesFolhaLocal.push(function (l) {
-    return (l.defesa && l.defesa.batalhaId ? '<a class="btn btn-p btn-primario" href="#/batalha?id=' + l.defesa.batalhaId + '">' + RP.icone('espada') + 'Batalha</a>' : '') +
-      (l.tipo === 'castelo' && RP.sistema('defesas') ? '<a class="btn btn-p" href="#/construcao?aba=defesas">' + RP.icone('torre') + 'Defesas</a>' : '');
+    return (l.tipo === 'castelo' && RP.sistema('defesas') ? '<a class="btn btn-p" href="#/construcao?aba=defesas">' + RP.icone('torre') + 'Defesas</a>' : '');
   });
 
   /* ================================================================ Construção → Defesas: portões e torres */

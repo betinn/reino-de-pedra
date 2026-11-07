@@ -243,6 +243,7 @@
        dela é a própria figura, e o chão sob o dedo pode ser o hexágono de trás. A primeira da lista é a desenhada
        por cima. Ao escolher destino, vale o hexágono, como antes. */
     if (!escolhendo) {
+      for (i = 0; i < dentro.length; i++) if (dentro[i].ent && dentro[i].ent[0] === 'link') return dentro[i];
       for (i = 0; i < dentro.length; i++) if (dentro[i].ent && dentro[i].ent[0] === 'pessoa') return dentro[i];
       for (i = 0; i < dentro.length; i++) if (dentro[i].ent && dentro[i].ent[0] === 'marcha' && dentro[i].perto(x, y)) return dentro[i];
     }
@@ -607,7 +608,7 @@
 
     var itens = [], rotulos = [];
     function alvo(x, y, w, h, ent, o) { return { x: x, y: y, w: w, h: h, ent: ent, obj: o }; }
-    function rot(x, y, dy, txt, cls, cor) { rotulos.push({ x: x, y: y, dy: dy, txt: txt, cls: cls, cor: cor }); }
+    function rot(x, y, dy, txt, cls, cor, link, o) { rotulos.push({ x: x, y: y, dy: dy, txt: txt, cls: cls, cor: cor, link: link, obj: o }); }
 
     /* ameaças: marchas alheias a caminho de um local seu */
     var meusHex = {}, ameacados = {};
@@ -669,7 +670,7 @@
         try { if (tipo && tipo.desenharCena) tipo.desenharCena(c, o, info); else A.marco(c, t, pal, anim); } catch (er) { console.error(er); }
       }, alvo: alvo(p.x, p.y - 6, (tipo && tipo.alvo && tipo.alvo.w) || 40, (tipo && tipo.alvo && tipo.alvo.h) || 36, [o.tipo, o.id != null ? o.id : o._k], o) });
       var rt = tipo && tipo.rotulo ? tipo.rotulo(o, info) : (tipo ? null : (o.nome || o.rotulo || o.tipo));
-      if (rt) rot(p.x, p.y, (tipo && tipo.rotuloDy) || -30, typeof rt === 'string' ? rt : rt.txt, rt.cls || 'nivel', rt.cor || Cs.destaque);
+      if (rt) rot(p.x, p.y, (tipo && tipo.rotuloDy) || -30, typeof rt === 'string' ? rt : rt.txt, rt.cls || 'nivel', rt.cor || Cs.destaque, rt.link, o);
     });
 
     /* fundações na fila (hexágono livre): estacas, material e tempo */
@@ -804,6 +805,9 @@
         }
         postas.push(q);
         A.pilula(c, q.x, q.y, q.rt.txt, q.rt.cls, q.rt.cor);
+        /* pílula com link (a batalha): é um botão discreto, clicável por cima de tudo */
+        if (q.rt.link) self.alvos.push({ x0: q.x - q.w / 2, x1: q.x + q.w / 2, y0: q.y - 11, y1: q.y + 11, ent: ['link', q.rt.link], obj: q.rt.obj, hex: q.rt.obj && q.rt.obj.hex,
+          perto: function () { return true; } });
       });
     }
     /* laço da seleção (espaço de tela) */

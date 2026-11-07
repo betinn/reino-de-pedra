@@ -11,8 +11,10 @@
   tb.som = 'batalha';   /* espadas e escudos batendo, quando a batalha está à vista (RP.sons.mundo) */
   tb.rotuloDy = -46;
   tb.rotulo = function (o, info) {
+    /* quem participa vê o selo como botão: clicar abre a tela da batalha */
     var ag = info.agora || RP.agora(), pl = RP.placarObjeto(o, ag);
-    return { txt: (o.frentes > 1 ? o.frentes + ' ataques' : 'Batalha') + (pl ? ' · ' + pl.meu.baixas + ' × ' + pl.eles.baixas + ' baixas' : '') + (o.fim && o.fim > ag ? ' · ' + RP.fmtResta(o.fim - ag) : ''), cls: 'perigo', cor: A.cores().perigo };
+    return { txt: (o.id ? 'Ver batalha' : 'Batalha') + (o.frentes > 1 ? ' · ' + o.frentes + ' ataques' : '') + (pl ? ' · ' + pl.meu.baixas + ' × ' + pl.eles.baixas : '') + (o.fim && o.fim > ag ? ' · ' + RP.fmtResta(o.fim - ag) : ''),
+      cls: 'perigo', cor: A.cores().perigo, link: o.id ? 'batalha?id=' + o.id : null };
   };
   tb.desenharCena = function (c, o, info) {
     var t = info.t, Cs = A.cores(), S = RP.sprites;

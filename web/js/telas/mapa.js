@@ -154,6 +154,8 @@
 
   function folhaObjeto(o) {
     if (o.tipo === 'marcha') { folhaMarcha(o); return; }
+    var tl = MAPA.tiposObjeto[o.tipo], link = tl && tl.link && tl.link(o);
+    if (link) { RP.ir(link); return; }   /* a batalha abre a tela dela, sem folha no meio */
     if (o.tipo === 'local' && o.dono === 'meu' && RP.local(o.id)) { RP.folhaLocal(o.id); return; }
     abrirFolhaMapa(montarObjeto(o), o.hex);
   }
@@ -175,10 +177,6 @@
     else corpo += linhaInfo('Tipo', RP.esc(o.tipo));
     corpo += '</div>';
     if (tp && tp.acoes) acoes += tp.acoes(o, d) || '';
-    /* o local e a batalha dividem o hexágono: clicar em qualquer um dos dois leva à tela da batalha */
-    if (o.tipo !== 'batalha' && RP.telas.batalha) M.objetosEm(h).forEach(function (x) {
-      if (x.tipo === 'batalha' && x.id) acoes = '<a class="btn btn-p btn-primario" href="#/batalha?id=' + x.id + '">' + RP.icone('espada') + 'Ver a batalha</a>' + acoes;
-    });
     acoes += '<button type="button" class="btn btn-p btn-fantasma" data-abrir-hex="' + h + '" data-tecla="X">' + RP.icone('hexagonos') + 'Hexágono</button>';
     return {
       titulo: RP.esc(nomeObjeto(o)), subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(h) + '</div>',
@@ -240,8 +238,7 @@
         (estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-marcha-voltar-exp="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '');
     } else if (o.marcha === 'exercito' || ex) {
       var pode = !d.bloqueio && d.podeOrdem !== false, divide = pode && estado !== 'trabalhando' && RP.somaGrupo(d.tropas || {}) > 1;
-      acoes = (d.batalhaId && RP.telas.batalha ? '<a class="btn btn-p btn-primario" href="#/batalha?id=' + d.batalhaId + '">' + RP.icone('espada') + 'Ver a batalha</a>' : '') +
-        (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
+      acoes = (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
         (pode ? '<button type="button" class="btn btn-p" data-tropa-patrulhar="' + o.id + '" data-tecla="Q">' + RP.icone('rota') + 'Patrulhar</button>' : '') +
         (pode && estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
         (pode && estado !== 'parado' ? '<button type="button" class="btn btn-p" data-exercito-parar="' + o.id + '" data-hex="' + pos.hex + '" data-tecla="H">' + RP.icone('alvo') + 'Parar aqui</button>' : '') +
@@ -360,6 +357,10 @@
     if (E && E.desenhando()) { if (hh != null && hh >= 0) E.ponto(hh); return; }
     /* ordem pedida ("Novo destino", "Missão"): o clique escolhe o hexágono (a folha dele traz as ordens), nunca abre o painel do local */
     if (E && E.ativo() && !E.implicito()) { if (hh != null && hh >= 0) folhaHex(hh); return; }
+    if (ent && ent[0] === 'link') { RP.ir(ent[1]); return; }
+    /* a batalha divide o hexágono com as tropas: clicar no marcador dela abre a tela, sem selecionar ninguém */
+    var tlk = alvo.obj && !alvo.shift && MAPA.tiposObjeto[alvo.obj.tipo], lk = tlk && tlk.link && tlk.link(alvo.obj);
+    if (lk) { RP.ir(lk); return; }
     var t = tropaDoToque(alvo);
     /* duplo clique num soldado da guarnição: todos do mesmo tipo naquele lugar */
     if (alvo.duplo && t && !t.marchaId && ent) {

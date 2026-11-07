@@ -28,6 +28,7 @@ a.frente:hover { background: var(--cor-superficie-2); }
 .bt-trilho { fill: var(--grafico-hostil); }
 .bt-meu { fill: var(--grafico-meu); }
 .aviso-link { cursor: pointer; }
+.obj-batalha { cursor: pointer; }
 .aviso-abrir { display: block; margin-top: 2px; font-size: var(--fs-1); opacity: .8; text-decoration: underline; }
 .tela-envio .conteudo-tela, .tela-batalha .conteudo-tela { padding-bottom: calc(var(--alvo) * 3); }
 .tela-envio .escolha.bloqueado .ico-placa, .tela-envio .escolha.bloqueado b { opacity: .55; }
