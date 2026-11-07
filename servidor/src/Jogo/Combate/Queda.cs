@@ -106,6 +106,7 @@ namespace ReinoDePedra.Jogo.Combate
                 r.CasteloId = novo.Id;
                 ArrumarFilas(m, r, castelo, novo, false);
                 Pessoas.Pessoas.LocalMudou(m, castelo);   // quem morava no castelo caído vai para o novo
+                Pessoas.Vidas.ReavaliarLocal(m, novo);
                 q.NivelNovo = nivel;
             }
             else

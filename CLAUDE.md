@@ -186,7 +186,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Teto** definido por moradias (e pelo castelo). Cresce construindo moradias, cada uma mais cara que a anterior.
 - **Tropas ocupam o teto**: soldados também moram no reino. População civil + tropas ≤ teto.
 - **Nascimento com nome.** O crescimento é por tempo (mais rápido com excedente de comida; abaixo de 3 pessoas, em linha, para recrutar todos não travar o reino) e cria pessoas inteiras, uma por vez, no castelo; cada uma caminha até a vaga mais necessária.
-- **Vida.** Toda pessoa tem vida, com o máximo pelo ofício, que volta sozinha com o tempo (inteira em algumas horas). Animais tiram vida; quem sai vivo de uma batalha sai ferido na proporção das perdas do seu lado (sem morrer por isso: quem morre na batalha continua saindo das perdas). A barra de vida aparece na folha da pessoa e, no mapa, sobre quem está ferido.
+- **Vida.** Toda pessoa tem vida, com o máximo pelo ofício, que volta sozinha com o tempo (inteira em algumas horas). Soldado no castelo do próprio reino, fora de batalha, recupera **10% da vida por minuto**. Animais tiram vida; quem sai vivo de uma batalha sai ferido na proporção das perdas do seu lado (sem morrer por isso: quem morre na batalha continua saindo das perdas). A barra de vida aparece na folha da pessoa e, no mapa, sobre quem está ferido.
 - **Morte com nome.** Batalha, fauna (quando a vida chega a zero), massacre, ferimento sem ervas e execução matam pessoas específicas, e o relatório diz quem.
 - **Recrutar converte uma pessoa**: o treino tira um civil (quem está sem trabalho primeiro; senão, um trabalhador do local de nível mais baixo) e o devolve como soldado com o mesmo nome. Cancelar devolve o civil ao ofício anterior. Tropas mortas não retornam; feridos curados com ervas voltam (ver Combate).
 - **Carregadores são pessoas** (ver Recursos). **Milícia são as pessoas presentes** (ver Combate).
@@ -242,16 +242,20 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Massacre**: mata população do local; enfraquece o reino a longo prazo, sem ganho de recurso.
 - **Ocupação**: toma o local e passa a explorá-lo até alguém retomar. O local vira seu e mantém o nível; se estiver acima do seu castelo, só sobe quando o castelo passar dele.
 - **Cerco ao castelo**: o ataque mais difícil do jogo.
-- Todo ataque é enviado com **objetivos em ordem de prioridade** (ex.: capturar a relíquia + 10 mil de madeira) e uma **tática**. As tropas tentam cumprir os objetivos nessa ordem e sabem quando parar e voltar.
+- Todo ataque é enviado com **objetivos em ordem de prioridade** (ex.: capturar a relíquia, depois madeira, depois ferro) e uma **tática**. As tropas tentam cumprir os objetivos nessa ordem e sabem quando parar e voltar.
+- **Recurso não tem quantidade**: o jogador escolhe a ordem e o jogo decide quanto trazer, pela carga e pelo estoque. A carga se divide de duas formas, à escolha no envio: **por prioridade** (enche com o primeiro recurso, depois com o seguinte) ou **igual** (a mesma parte para cada recurso; o que faltar de um vai para os outros).
+- **Recuar sem o que levar**: no saque, uma opção do envio, ligada por padrão, faz as tropas voltarem quando não há no local nada do que foi pedido. Elas olham ao chegar (voltam sem combate) e sempre que a batalha muda (outra frente levou tudo, por exemplo: recuam com as baixas que já tiveram). Desligada, lutam mesmo assim, e a tela da batalha avisa que não há o que levar, com o botão de recuar. O relatório diz por que voltaram.
 - A tática define o limite de baixas para recuar: **conservadora 25%**, **média 40%**, **agressiva 60%** e **sem limite**.
 - Objetivos por tipo: saque (relíquia e recursos), sabotagem (construção do local e torres), massacre (população), ocupação (tomar o local e a relíquia), cerco (portões, torres, relíquia e recursos).
-- A batalha dura alguns minutos (mais com mais tropas), tempo para reforços e recuo; reforços que entram antes do fim lutam. Um segundo ataque do mesmo reino se junta; de outro reino, espera ela acabar.
+- A batalha dura alguns minutos (mais com mais tropas), tempo para reforços e recuo; reforços que entram antes do fim lutam. **O tempo encurta conforme as tropas morrem**: com metade das tropas vivas, a batalha corre no dobro do ritmo.
+- **Vários ataques ao mesmo tempo**: um segundo ataque do mesmo reino se junta ao primeiro; o de outro reino abre outra **frente** na hora, sem esperar. As mesmas tropas defendem todas as frentes: a defesa enfrenta a soma dos ataques e se divide entre eles, na proporção da força de cada um. Cada frente tem o próprio tempo, plano e relatório, e leva o que achar quando vence. Ao acabar uma frente, a defesa que sobrou se redivide entre as outras. Se o local cai numa frente, as outras voltam com as baixas que já tiveram. A defesa que recua sai de todas as frentes de uma vez.
+- A tela da batalha e o mapa mostram **ao vivo** quem está ganhando (barra com a força de cada lado) e as baixas de cada lado, e a tela lista as frentes. O número é a projeção do resultado: um reforço pode mudá-lo.
 - A milícia e o massacre usam as **pessoas civis presentes no local**: quem trabalha ali e quem está no castelo sem trabalho. O massacre mata pessoas específicas, com nome no relatório.
 - Sabotagem tira níveis; um local (que não seja o castelo) que chega ao nível 0 vira ruína sem dono. Uma melhoria na fila sobe só um nível e não passa do castelo (parada, o material fica no local): não desfaz a sabotagem. Aríetes batem só na vitória; trebuchets, de longe, mesmo na derrota.
 - Ruína e terra livre sem defesa são ocupadas na chegada, sem batalha.
 - Torres ficam a até 4 hexágonos de um local próprio.
-- Se um objetivo não existe no local, as tropas passam ao próximo. Recursos ocupam carga e as tropas voltam quando a carga enche; a relíquia não ocupa carga. Há a opção de completar a carga com o que houver no local.
-- O ataque rápido usa o padrão: saque, objetivos automáticos (relíquia à vista e o recurso principal do local), tática média, sem estandarte e rota curta, com as tropas do último ataque.
+- Se um objetivo não existe no local, as tropas passam ao próximo. Recursos ocupam carga; a relíquia não ocupa carga. Há a opção de completar a carga com o que houver no local.
+- O ataque rápido usa o padrão: saque, objetivos automáticos (relíquia à vista e o recurso principal do local), carga por prioridade, recuar sem o que levar, tática média, sem estandarte e rota curta, com as tropas do último ataque.
 - A espionagem revela também o **estoque** do alvo. O relatório mostra o resultado de cada objetivo e por que as tropas voltaram.
 
 ### Defesa

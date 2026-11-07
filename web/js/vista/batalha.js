@@ -1,7 +1,7 @@
 /* Reino de Pedra — batalha animada na Vista: no hexágono de uma batalha em andamento (objeto `batalha` do mapa, com
    `fim` e `papel`), duas fileiras de figuras lutam até o fim previsto: estocadas, flechas e poeira. É só animação:
    o resultado vem da fórmula do servidor (#/batalha mostra a série). O combate registra a folha e o Mapa tático;
-   aqui entra só o desenho da Vista (e o rótulo com o tempo que falta). */
+   aqui entra só o desenho da Vista: a barra de quem ganha e o rótulo com as baixas e o tempo que falta. */
 (function () {
   'use strict';
   var RP = window.RP, A = RP.arte, P = A.P;
@@ -11,8 +11,8 @@
   tb.som = 'batalha';   /* espadas e escudos batendo, quando a batalha está à vista (RP.sons.mundo) */
   tb.rotuloDy = -46;
   tb.rotulo = function (o, info) {
-    var ag = info.agora || RP.agora();
-    return { txt: 'Batalha' + (o.fim && o.fim > ag ? ' · ' + RP.fmtResta(o.fim - ag) : ''), cls: 'perigo', cor: A.cores().perigo };
+    var ag = info.agora || RP.agora(), pl = RP.placarObjeto(o, ag);
+    return { txt: (o.frentes > 1 ? o.frentes + ' ataques' : 'Batalha') + (pl ? ' · ' + pl.meu.baixas + ' × ' + pl.eles.baixas + ' baixas' : '') + (o.fim && o.fim > ag ? ' · ' + RP.fmtResta(o.fim - ag) : ''), cls: 'perigo', cor: A.cores().perigo };
   };
   tb.desenharCena = function (c, o, info) {
     var t = info.t, Cs = A.cores(), S = RP.sprites;
@@ -41,5 +41,12 @@
     }
     /* clarão das espadas */
     if (Math.sin(t * 9) > 0.92) { c.fillStyle = 'rgba(255,245,200,.7)'; c.beginPath(); c.arc(Math.sin(t * 7) * 8, -8, 1.6, 0, 6.2832); c.fill(); }
+    /* quem ganha: a cor do seu lado contra a do outro, acima das figuras */
+    var pl = RP.placarObjeto(o, info.agora || RP.agora());
+    if (pl) {
+      c.fillStyle = 'rgba(20,18,14,.75)'; c.fillRect(-25, -37, 50, 6);
+      c.fillStyle = P.hostil; c.fillRect(-24, -36, 48, 4);
+      c.fillStyle = Cs.meu; c.fillRect(-24, -36, 48 * pl.pct, 4);
+    }
   };
 })();

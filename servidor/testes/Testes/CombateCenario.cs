@@ -104,8 +104,9 @@ public sealed class CombateCenario
         M.Sujar(l);
     }
 
-    public static JsonObject Plano(string tipo = "saque", string tatica = "semLimite", JsonArray? objetivos = null, bool estandarte = false, bool completar = false) =>
-        new() { ["tipo"] = tipo, ["tatica"] = tatica, ["objetivos"] = objetivos ?? new JsonArray(), ["estandarte"] = estandarte, ["completar"] = completar };
+    /// <summary>Por padrão as tropas lutam mesmo sem o que levar: o alvo dos cenários nasce com o estoque vazio.</summary>
+    public static JsonObject Plano(string tipo = "saque", string tatica = "semLimite", JsonArray? objetivos = null, bool estandarte = false, bool completar = false, bool recuarVazio = false, string divisao = "prioridade") =>
+        new() { ["tipo"] = tipo, ["tatica"] = tatica, ["objetivos"] = objetivos ?? new JsonArray(), ["estandarte"] = estandarte, ["completar"] = completar, ["recuarVazio"] = recuarVazio, ["divisao"] = divisao };
 
     public static JsonObject Obj(string k, string? r = null, double q = 0)
     {

@@ -37,7 +37,7 @@ Em relação à primeira versão do modelo (castelo com teto 300, exércitos de 
 | Serraria | Rende **1,5×** os outros locais, porque as obras gastam 45% em madeira. Ver a decisão [0032](../docs/decisoes/0032-serraria-e-ataque-de-tropa-em-campo.md), que explica as metas ajustadas |
 | Unidade básica | Lanceiro: 90 recursos, 12 min, carga 5 |
 | Começo | Kit com 90 de madeira e **60 de pedra**. Sem coleta, 8 níveis nas 3 primeiras horas (30 min reais a 6×); com coleta, **10 níveis em 2 h** e o castelo 5 em 6 h |
-| Vida | Civil 60, lanceiro 110, explorador 80...; volta inteira em **6 h**, sem tique |
+| Vida | Civil 60, lanceiro 110, explorador 80...; volta inteira em **6 h**, sem tique; soldado no próprio castelo, fora de batalha, recupera **10% por minuto** |
 | Coleta | 4 por hora por pessoa (`4 × pessoas^0,8`), até 6 por hexágono; o hexágono guarda 60 e volta em 24 h |
 | Viagem (tropa lenta) | Vizinho do reino (3 hex.) **2 min**; reino vizinho (24 hex.) **16 min**; travessia do mapa (104 hex.) **1 h 10 min** |
 | Combate | Para tomar um local, cerca de **1,5× a força da defesa**; um castelo médio resiste a 20 tropas e cai com cerca de **2×** |
@@ -94,7 +94,7 @@ O custo cresce mais rápido que a produção: cada nível rende menos por recurs
 - **Arqueiros no alto das torres**: defesa ×3.
 - **Multiplicadores da defesa**: relíquia de resistência +20%; portões do castelo ×1,15 por nível.
 - **Resultado**: o lado maior vence. O vencedor perde `(menor/maior)^1,5` das tropas; o perdedor perde tudo, ou recua no limite de baixas da tática.
-- **Duração da batalha**: 5 min + 15 s por tropa envolvida, até 20 min (6 contra 4 ≈ 7,5 min; um cerco de 50 tropas ≈ 17 min).
+- **Duração da batalha**: 5 min + 15 s por tropa envolvida, até 20 min, sem contar baixas (6 contra 4 ≈ 7,5 min; um cerco de 50 tropas ≈ 17 min). O tempo real é menor: o ritmo acompanha quem sobra, e uma batalha em que todos caem leva metade disso.
 
 ## Unidades
 

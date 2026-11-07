@@ -417,6 +417,7 @@ public static partial class Pessoas
             nomes.Add(p.Nome);
             MudarLocal(m, p, l.Id);
             p.Estado = Estados.Guarnecida; p.ItemId = null; p.GrupoId = null; m.Sujar(p);
+            Vidas.Reavaliar(m, p);
             soldado |= EhSoldado(m, p);
         }
         if (soldado) RecontarGuarnicao(m, l);

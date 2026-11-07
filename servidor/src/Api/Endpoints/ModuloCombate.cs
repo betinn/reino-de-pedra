@@ -159,12 +159,18 @@ public static class ExtrasCombate
                     dono = meu ? "meu" : "desconhecido", arqueiros = meu ? Defesas.Arqueiros(mm, t) : (int?)null, aoVivo = meu || visivel,
                 });
             }
-            foreach (var b in mm.Batalhas)
+            // um objeto por local: as frentes que o reino disputa vão juntas, para o mapa mostrar um placar só
+            foreach (var g in mm.Batalhas.Where(b => !b.Encerrada).GroupBy(b => b.LocalId))
             {
-                if (b.Encerrada) continue;
-                var minha = b.AtacanteId == r.Id || b.DefensorId == r.Id;
-                if (!minha && !vis.Contains(b.Hex)) continue;
-                lista.Add(new { tipo = "batalha", id = minha ? b.Id : (long?)null, hex = b.Hex, inicio = b.Inicio, fim = b.FimPrevisto, papel = minha ? VisaoCombate.Papel(b, r) : null });
+                var minhas = g.Where(b => b.AtacanteId == r.Id || b.DefensorId == r.Id).OrderBy(b => b.Id).ToList();
+                var b0 = minhas.FirstOrDefault() ?? g.First();
+                if (minhas.Count == 0 && !vis.Contains(b0.Hex)) continue;
+                var papel = minhas.Count > 0 ? VisaoCombate.Papel(b0, r) : null;
+                lista.Add(new
+                {
+                    tipo = "batalha", id = minhas.Count > 0 ? b0.Id : (long?)null, hex = b0.Hex, inicio = g.Min(b => b.Inicio), fim = g.Max(b => b.FimPrevisto), papel, frentes = g.Count(),
+                    vivos = minhas.Select(b => VisaoCombate.Vivo(Batalhas.PlacarDe(mm, b, mm.Agora), papel!)).ToList(),
+                });
             }
             return lista;
         });

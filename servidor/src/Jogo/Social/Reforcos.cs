@@ -72,7 +72,7 @@ namespace ReinoDePedra.Jogo.Social
             ex.Encerrar(m);
             var partes = GT.Partes(m, grupo);
             if (Batalhas.Ativa(m, l.Id) is { } b && b.DefensorId == l.ReinoId)
-                Batalhas.Recalcular(m, b, "Reforço aliado chegou: " + partes + ".", "defesa");
+                Batalhas.RecalcularLocal(m, l.Id, "Reforço aliado chegou: " + partes + ".", "defesa");
             Registros.Notificar(m, r.Id, "tropas", "Reforço chegou", partes + " defendem " + l.Nome + ", de " + dono.Nome + ".", "tropas");
             Registros.Notificar(m, dono.Id, "alianca", "Reforço de " + r.Nome, partes + " defendem " + l.Nome + ". Continuam sendo de " + r.Nome + ".", "reino?local=" + l.Id);
             m.Avisar(r.Id, "reino"); m.Avisar(dono.Id, "reino");
@@ -104,7 +104,7 @@ namespace ReinoDePedra.Jogo.Social
             PS.Sair(m, l, grupo, e.ReinoId);
             var ex = Sair(m, r, l, grupo, e.OrigemLocalId);
             if (Batalhas.Ativa(m, l.Id) is { } b && b.DefensorId == l.ReinoId)
-                Batalhas.Recalcular(m, b, "Reforço aliado saiu: " + GT.Partes(m, grupo) + ".", "defesa");
+                Batalhas.RecalcularLocal(m, l.Id, "Reforço aliado saiu: " + GT.Partes(m, grupo) + ".", "defesa");
             Registros.Notificar(m, r.Id, "tropas", "Reforço voltando", GT.Partes(m, grupo) + " deixam " + l.Nome + ". " + motivo, "tropas");
             if (l.ReinoId != 0) Registros.Notificar(m, l.ReinoId, "alianca", "Reforço de " + r.Nome + " saiu", GT.Partes(m, grupo) + " deixaram " + l.Nome + ".", "reino?local=" + l.Id);
             m.Avisar(r.Id, "reino"); m.Avisar(l.ReinoId, "reino");

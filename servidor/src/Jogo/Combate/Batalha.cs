@@ -12,9 +12,10 @@ using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 namespace ReinoDePedra.Jogo.Combate
 {
     /// <summary>
-    /// Instante em que a composição da batalha mudou (início, reforço, saída de tropas): valores de ataque e defesa
-    /// pela fórmula e as perdas projetadas sem limite de tática. Entre um marco e o seguinte, a força mostrada de cada
-    /// lado é <c>valor × (1 − perda × progresso)</c>, com progresso = tempo decorrido / duração.
+    /// Instante em que a composição da batalha mudou (início, reforço, saída de tropas, outra frente): valores de ataque e
+    /// defesa desta frente e as perdas projetadas sem limite de tática. Entre um marco e o seguinte, a força mostrada de cada
+    /// lado é <c>valor × (1 − perda × progresso)</c>. O progresso anda mais rápido conforme as tropas caem:
+    /// <c>dt = Dur × (1 − M × p) dp</c>, ou seja, com metade das tropas vivas a batalha corre no dobro do ritmo.
     /// </summary>
     public sealed class MarcoBatalha
     {
@@ -23,13 +24,23 @@ namespace ReinoDePedra.Jogo.Combate
         public double D { get; set; }
         public double PerdaA { get; set; }
         public double PerdaD { get; set; }
+        /// <summary>Progresso no instante do marco.</summary>
+        public double P { get; set; }
+        /// <summary>Tempo (ms) que o progresso de 0 a 1 levaria se ninguém caísse.</summary>
+        public long Dur { get; set; }
+        /// <summary>Fração das tropas da frente que cai até o progresso 1.</summary>
+        public double M { get; set; }
+        /// <summary>Parte da defesa que enfrenta esta frente (1 = ataque único).</summary>
+        public double Parte { get; set; } = 1;
         public string? Txt { get; set; }
         /// <summary>"ataque", "defesa" ou null (os dois).</summary>
         public string? Lado { get; set; }
     }
 
     /// <summary>
-    /// Batalha num local: começa quando o ataque chega e dura <see cref="Batalhas.Duracao"/>. Enquanto dura, o defensor
+    /// Frente de batalha num local: uma por reino atacante. Começa quando o ataque chega; o tempo sai de
+    /// <see cref="Batalhas.Duracao"/> e encurta conforme as tropas caem. Vários reinos atacam o mesmo local ao mesmo tempo, cada
+    /// um na sua frente, e a mesma defesa se divide entre elas na proporção da força de cada ataque. Enquanto dura, o defensor
     /// manda reforços (as tropas que entram no local contam) e qualquer lado pode recuar. O resultado sai de
     /// <c>m.F.Batalha</c> com a composição no fim. Fica guardada por P.combate.guardarBatalhaH depois de encerrada.
     /// </summary>
@@ -42,10 +53,8 @@ namespace ReinoDePedra.Jogo.Combate
         /// <summary>Plano do primeiro ataque (os que chegam depois, do mesmo reino, se juntam a ele).</summary>
         public JsonObject Plano { get; set; } = new();
         public List<long> Exercitos { get; set; } = new();
-        /// <summary>Ataques de outros reinos esperando esta batalha acabar.</summary>
-        public List<long> Espera { get; set; } = new();
         public long Inicio { get; set; }
-        /// <summary>Fim pela duração (progresso 1).</summary>
+        /// <summary>Fim pelo ritmo atual (progresso 1).</summary>
         public long Fim { get; set; }
         /// <summary>Quando vai terminar com a composição atual (antes de <see cref="Fim"/> se a tática manda recuar).</summary>
         public long FimPrevisto { get; set; }
@@ -57,12 +66,16 @@ namespace ReinoDePedra.Jogo.Combate
         public int OrigemHex { get; set; }
         public bool Estandarte { get; set; }
         public bool Encerrada { get; set; }
+        /// <summary>Por que as tropas voltaram sem ordem do jogador nem limite da tática (sem o que levar, o local caiu).</summary>
+        public string? MotivoRecuo { get; set; }
         /// <summary>"vitoria", "derrota", "recuo" (do atacante) ou "defesa-recuou".</summary>
         public string? Resultado { get; set; }
         public long? EncerradaEm { get; set; }
         public Dictionary<string, int> PerdasAtaque { get; set; } = new();
         public Dictionary<string, int> PerdasDefesa { get; set; } = new();
         public double MiliciaMorta { get; set; }
+        /// <summary>Quem lutou pela defesa nesta frente (tropas e milícia, na parte dela), guardado no fim para o placar.</summary>
+        public int TotalDefesa { get; set; }
         /// <summary>Nomes dos civis mortos na milícia.</summary>
         public List<string> CivisMortos { get; set; } = new();
         /// <summary>Nomes dos soldados mortos de cada lado.</summary>
@@ -99,9 +112,11 @@ namespace ReinoDePedra.Jogo.Combate
         public const string ModoFim = "fim", ModoRecuoAtaque = "recuo-ataque", ModoRecuoDefesa = "recuo-defesa";
 
         public static Batalha? Ativa(Mundo m, long localId) => m.Batalhas.FirstOrDefault(b => !b.Encerrada && b.LocalId == localId);
+        /// <summary>As frentes em andamento no local.</summary>
+        public static List<Batalha> Ativas(Mundo m, long localId) => m.Batalhas.Where(b => !b.Encerrada && b.LocalId == localId).OrderBy(b => b.Id).ToList();
         public static IEnumerable<Batalha> DoReino(Mundo m, long reinoId) => m.Batalhas.Where(b => b.AtacanteId == reinoId || b.DefensorId == reinoId);
 
-        /// <summary>Duração: base + por tropa envolvida no início, até o máximo (P.combate.batalha).</summary>
+        /// <summary>Duração sem nenhuma baixa: base + por tropa envolvida, até o máximo (P.combate.batalha).</summary>
         public static long Duracao(Mundo m, int tropas)
         {
             var p = m.P.Combate.Batalha;
@@ -145,16 +160,14 @@ namespace ReinoDePedra.Jogo.Combate
                 RelatoriosCombate.SemCombate(m, ex, l, plano, "O local mudou no caminho: este ataque não serve mais para ele.", null);
                 ex.Retornar(m); return;
             }
-            var b = Ativa(m, l.Id);
-            if (b != null)
-            {
-                if (b.AtacanteId == ex.ReinoId) { Juntar(m, b, ex); return; }
-                ex.Parar(m);
-                b.Espera.Add(ex.Id); m.Sujar(b);
-                Exercitos.Avisar(m, ex, "Tropas esperando", "Há outra batalha em " + Ataques.NomeAlvo(l) + ". Suas tropas atacam quando ela acabar.");
-                return;
-            }
+            if (Ativas(m, l.Id).FirstOrDefault(x => x.AtacanteId == ex.ReinoId) is { } b) { Juntar(m, b, ex); return; }
             if (semDono) { Efeitos.OcuparSemDono(m, ex, l); return; }
+            Economia.Atualizar(m, def!);
+            if (Ataques.SemOQueLevar(m, r, plano, l) is { } vazio)
+            {
+                RelatoriosCombate.SemCombate(m, ex, l, plano, vazio, def);
+                ex.Retornar(m); return;
+            }
             Iniciar(m, ex, l, def!, plano);
         }
 
@@ -170,11 +183,13 @@ namespace ReinoDePedra.Jogo.Combate
                 TropasAtaque = new(ex.Tropas),
             };
             b.Exercitos.Add(ex.Id);
-            b.Fim = agora + Duracao(m, GT.Total(ex.Tropas) + GT.Total(l.Guarnicao));
+            var outras = Ativas(m, l.Id);
             m.Batalhas.Adicionar(b);
             ex.BatalhaId = b.Id; m.Sujar(ex);
             Revide.Registrar(m, def.Id, ex.ReinoId);
-            Recalcular(m, b, "A batalha começou.", null);
+            Vidas.ReavaliarLocal(m, l);
+            Recalcular(m, b, outras.Count > 0 ? "A batalha começou. A defesa já luta em outra frente." : "A batalha começou.", null);
+            foreach (var o in outras) Recalcular(m, o, "Outra força atacou o local: a defesa se divide.", "defesa");
             var atk = m.Reinos.Obter(ex.ReinoId)!;
             var quem = ex.Estandarte ? "O exército de " + atk.Nome : "Forças desconhecidas";
             Registros.Notificar(m, def.Id, "ataques", "Batalha em " + l.Nome, quem + " atacam (" + Ataques.NomesTipo[plano.Tipo].ToLowerInvariant() + "). Envie reforços ou recue.", "batalha?id=" + b.Id);
@@ -187,24 +202,35 @@ namespace ReinoDePedra.Jogo.Combate
             ex.BatalhaId = b.Id; m.Sujar(ex);
             b.Exercitos.Add(ex.Id);
             GT.Somar(b.TropasAtaque, ex.Tropas);
-            Recalcular(m, b, "Chegaram mais atacantes: " + GT.Partes(m, ex.Tropas) + ".", "ataque");
+            RecalcularLocal(m, b.LocalId, "Chegaram mais atacantes: " + GT.Partes(m, ex.Tropas) + ".", "ataque", b.Id, "Outra frente recebeu mais tropas.");
         }
 
         // ---------------------------------------------------------------- composição e fórmula
 
-        public sealed record Composicao(Local? Local, Reino? Defensor, List<Exercito> Exercitos, Dictionary<string, int> Ataque, Dictionary<string, int> Defesa, ExtraDefesa Extra);
+        /// <summary>
+        /// Uma frente como ela está: <c>Ataque</c> e <c>Exercitos</c> são desta frente; <c>Defesa</c> e <c>Extra</c>, a defesa
+        /// inteira do local; <c>AtaqueTotal</c>, a soma das frentes (é ela que a defesa enfrenta); <c>Parte</c>, a fração da
+        /// defesa que luta nesta frente (a força desta frente sobre a soma).
+        /// </summary>
+        public sealed record Composicao(Local? Local, Reino? Defensor, List<Exercito> Exercitos, Dictionary<string, int> Ataque, Dictionary<string, int> Defesa, ExtraDefesa Extra,
+            Dictionary<string, int> AtaqueTotal, double Parte);
 
         public static Composicao Compor(Mundo m, Batalha b)
         {
             var l = m.Locais.Obter(b.LocalId);
             var def = m.Reinos.Obter(b.DefensorId);
-            var exs = b.Exercitos.Select(id => m.Marchas.Obter(id) as Exercito).OfType<Exercito>().Where(e => GT.Total(e.Tropas) > 0).ToList();
+            var exs = ExercitosDe(m, b);
             var atk = new Dictionary<string, int>();
             foreach (var e in exs) GT.Somar(atk, e.Tropas);
             var dono = l != null && def != null && l.ReinoId == def.Id && !l.Ruina;
             var defG = dono ? GT.Limpo(l!.Guarnicao) : new Dictionary<string, int>();
-            var totA = exs.Sum(e => GT.Total(e.Tropas));
-            var bonusA = totA > 0 ? exs.Sum(e => Bonus.SomaAtaque(m, e) * GT.Total(e.Tropas)) / totA : 0;
+            // todas as frentes do local (esta inclusive, mesmo já encerrando): a defesa enfrenta a soma delas
+            var todos = new List<Exercito>(exs);
+            foreach (var o in Ativas(m, b.LocalId)) if (o.Id != b.Id) todos.AddRange(ExercitosDe(m, o));
+            var atkTotal = new Dictionary<string, int>();
+            foreach (var e in todos) GT.Somar(atkTotal, e.Tropas);
+            var totA = todos.Sum(e => GT.Total(e.Tropas));
+            var bonusA = totA > 0 ? todos.Sum(e => Bonus.SomaAtaque(m, e) * GT.Total(e.Tropas)) / totA : 0;
             var x = new ExtraDefesa
             {
                 Pop = dono ? Combates.PopDoLocal(m, def!, l!) : 0,
@@ -213,25 +239,79 @@ namespace ReinoDePedra.Jogo.Combate
                 BonusA = bonusA,
                 Portoes = dono && l!.Tipo == TipoLocal.Castelo ? Math.Clamp(l.Portoes, 0, Defesas.PortoesMax(m)) : 0,
             };
-            return new Composicao(l, def, exs, atk, defG, x);
+            var parte = 1.0;
+            if (todos.Count > exs.Count)
+            {
+                var meu = atk.Count > 0 ? m.F.ValorAtaque(atk, defG, bonusA) : 0;
+                var soma = m.F.ValorAtaque(atkTotal, defG, bonusA);
+                parte = soma > 0 ? Math.Clamp(meu / soma, 0, 1) : 1;
+            }
+            return new Composicao(l, def, exs, atk, defG, x, atkTotal, parte);
         }
 
-        /// <summary>Progresso (0 a 1) da batalha no instante t.</summary>
-        public static double Progresso(Batalha b, long t) => b.Fim > b.Inicio ? Math.Clamp((t - b.Inicio) / (double)(b.Fim - b.Inicio), 0, 1) : 1;
+        private static List<Exercito> ExercitosDe(Mundo m, Batalha b) =>
+            b.Exercitos.Select(id => m.Marchas.Obter(id) as Exercito).OfType<Exercito>().Where(e => GT.Total(e.Tropas) > 0).ToList();
+
+        /// <summary>A fórmula para esta frente: a soma dos ataques contra a defesa inteira, com a força mostrada na parte da frente.</summary>
+        public static ResultadoBatalha Formula(Mundo m, Composicao c, double? limite)
+        {
+            var r = m.F.Batalha(c.AtaqueTotal, c.Defesa, c.Extra, limite);
+            return r with { A = r.A * c.Parte, D = r.D * c.Parte };
+        }
+
+        /// <summary>Progresso (0 a 1) da frente no instante t: o tempo dt = Dur × (1 − M × p) dp, resolvido a partir do último marco.</summary>
+        public static double Progresso(Batalha b, long t)
+        {
+            var mc = b.Marcos.LastOrDefault(x => x.T <= t) ?? b.Marcos.FirstOrDefault();
+            if (mc == null) return 0;
+            if (mc.Dur <= 0) return 1;
+            var c = mc.P - mc.M * mc.P * mc.P / 2 + Math.Max(0, t - mc.T) / (double)mc.Dur;
+            var p = mc.M < 1e-9 ? c : (1 - Math.Sqrt(Math.Max(0, 1 - 2 * mc.M * c))) / mc.M;
+            return Math.Clamp(p, 0, 1);
+        }
+
+        /// <summary>Instante em que o progresso chega a <paramref name="p"/>, pelo ritmo do marco.</summary>
+        public static long TempoAte(MarcoBatalha mc, double p) =>
+            mc.T + (long)Math.Round(mc.Dur * (p - mc.P - mc.M * (p * p - mc.P * mc.P) / 2));
+
+        /// <summary>Todas as frentes do local mudam (reforço, tropas que saem, equipamento). A frente <paramref name="id"/> recebe o texto principal.</summary>
+        public static void RecalcularLocal(Mundo m, long localId, string? txt, string? lado, long? id = null, string? txtOutras = null)
+        {
+            foreach (var b in Ativas(m, localId))
+                Recalcular(m, b, id == null || b.Id == id ? txt : txtOutras ?? txt, id == null || b.Id == id ? lado : null);
+        }
 
         /// <summary>A composição mudou: novo marco, novo fim previsto (a tática pode mandar recuar antes do fim).</summary>
         public static void Recalcular(Mundo m, Batalha b, string? txt, string? lado)
         {
             if (b.Encerrada) return;
             if (m.Reinos.Obter(b.DefensorId) is { } dr) Economia.Atualizar(m, dr);
+            var plano = PlanoAtaque.Ler(b.Plano);
+            // o estoque pode ter acabado (outra frente levou, o dono gastou): sem o que levar, as tropas voltam
+            if (m.Locais.Obter(b.LocalId) is { } lv && m.Reinos.Obter(b.AtacanteId) is { } ar && Ataques.SemOQueLevar(m, ar, plano, lv) is { } vazio)
+            {
+                b.MotivoRecuo = vazio;
+                Encerrar(m, b, ModoRecuoAtaque);
+                return;
+            }
             var c = Compor(m, b);
-            var full = m.F.Batalha(c.Ataque, c.Defesa, c.Extra, null);
+            var full = Formula(m, c, null);
             var agora = m.Agora;
-            b.Marcos.Add(new MarcoBatalha { T = agora, A = full.A, D = full.D, PerdaA = full.PerdaA, PerdaD = full.PerdaD, Txt = txt, Lado = lado });
+            var p0 = Progresso(b, agora);
+            var defesa = (GT.Total(c.Defesa) + c.Extra.Pop * m.P.MiliciaPorPop) * c.Parte;
+            var nA = GT.Total(c.Ataque);
+            var mc = new MarcoBatalha
+            {
+                T = agora, A = full.A, D = full.D, PerdaA = full.PerdaA, PerdaD = full.PerdaD, Txt = txt, Lado = lado, P = p0, Parte = c.Parte,
+                Dur = Duracao(m, nA + (int)Math.Round(GT.Total(c.Defesa) * c.Parte)),
+                M = nA + defesa > 0 ? Math.Clamp((nA * full.PerdaA + defesa * full.PerdaD) / (nA + defesa), 0, 1) : 0,
+            };
+            b.Marcos.Add(mc);
+            b.Fim = TempoAte(mc, 1);
             var alvo = b.Fim;
-            var lim = Ataques.Limite(m, PlanoAtaque.Ler(b.Plano).Tatica);
+            var lim = Ataques.Limite(m, plano.Tatica);
             if (!full.VenceA && lim is double L && L < 1)
-                alvo = Math.Max(agora, b.Inicio + (long)Math.Round((b.Fim - b.Inicio) * L));
+                alvo = p0 >= L ? agora : TempoAte(mc, L);
             if (c.Exercitos.Count == 0) alvo = agora;
             b.FimPrevisto = alvo;
             m.Cancelar(b.EventoId);
@@ -254,14 +334,18 @@ namespace ReinoDePedra.Jogo.Combate
             var b = m.Batalhas.Obter(batalhaId);
             if (b == null || (b.AtacanteId != r.Id && b.DefensorId != r.Id)) throw new RegraException("Batalha não encontrada.", 404);
             if (b.Encerrada) throw new RegraException("A batalha já acabou.");
-            Encerrar(m, b, b.AtacanteId == r.Id ? ModoRecuoAtaque : ModoRecuoDefesa);
+            if (b.AtacanteId == r.Id) { Encerrar(m, b, ModoRecuoAtaque); return; }
+            // a defesa é uma só: deixa o local de uma vez, em todas as frentes
+            Encerrar(m, b, ModoRecuoDefesa);
+            foreach (var o in Ativas(m, b.LocalId)) Encerrar(m, o, ModoRecuoDefesa);
         }
 
         // ---------------------------------------------------------------- fim
 
         /// <summary>
-        /// Resolve a batalha. No fim (pela duração ou pelo limite da tática) usa exatamente <c>m.F.Batalha</c>; num recuo
-        /// ordenado, cada lado perde a parte das perdas projetadas já lutada (perda × progresso).
+        /// Resolve a frente. No fim (pelo tempo ou pelo limite da tática) usa exatamente <c>m.F.Batalha</c> com a soma das frentes;
+        /// a defesa perde a parte desta frente. Num recuo ordenado, cada lado perde a parte das perdas projetadas já lutada
+        /// (perda × progresso); a defesa que recua perde de uma vez, porque sai de todas as frentes.
         /// </summary>
         public static void Encerrar(Mundo m, Batalha b, string modo)
         {
@@ -278,17 +362,17 @@ namespace ReinoDePedra.Jogo.Combate
             var plano = PlanoAtaque.Ler(b.Plano);
             var lim = Ataques.Limite(m, plano.Tatica);
             var p = Progresso(b, agora);
-            var full = m.F.Batalha(c.Ataque, c.Defesa, c.Extra, null);
+            var full = Formula(m, c, null);
             double perdaA, perdaD; bool venceu; string resultado;
             if (modo == ModoFim)
             {
-                var res = m.F.Batalha(c.Ataque, c.Defesa, c.Extra, lim);
-                perdaA = res.PerdaA; perdaD = res.PerdaD; venceu = res.VenceA;
+                var res = Formula(m, c, lim);
+                perdaA = res.PerdaA; perdaD = res.PerdaD * c.Parte; venceu = res.VenceA;
                 resultado = res.VenceA ? "vitoria" : res.Recuou ? "recuo" : "derrota";
             }
             else
             {
-                perdaA = full.PerdaA * p; perdaD = full.PerdaD * p;
+                perdaA = full.PerdaA * p; perdaD = full.PerdaD * p * (modo == ModoRecuoDefesa ? 1 : c.Parte);
                 venceu = modo == ModoRecuoDefesa;
                 resultado = venceu ? "defesa-recuou" : "recuo";
             }
@@ -311,6 +395,7 @@ namespace ReinoDePedra.Jogo.Combate
             var miliciaMorta = modo == ModoRecuoDefesa ? 0 : Math.Floor(miliciaPessoas * perdaD * m.P.MiliciaBaixas + 1e-9);   // os outros civis fogem
             if (defR != null && l != null && miliciaMorta > 0) b.CivisMortos = PS.Matar(m, PS.Presentes(m, l), (int)miliciaMorta);
             b.PerdasAtaque = perdasAtk; b.PerdasDefesa = perdasDef; b.MiliciaMorta = miliciaMorta;
+            b.TotalDefesa = (int)Math.Round((GT.Total(c.Defesa) + miliciaPessoas) * c.Parte);
 
             // feridos: de quem vence ou recua (quem perde sem recuar não tem feridos); os outros caídos morrem
             var feridosA = venceu || resultado == "recuo" ? Combates.Feridos(m, perdasAtk) : new();
@@ -360,13 +445,14 @@ namespace ReinoDePedra.Jogo.Combate
 
             // efeitos: objetivos (vitória) ou só o dano de trebuchets à distância (derrota e recuo)
             var vivos = c.Exercitos.Where(e => GT.Total(e.Tropas) > 0).ToList();
-            var dano = trebuchetsInicio * m.B.U["trebuchet"].Cerco
+            var mesmoDono = l != null && l.ReinoId == b.DefensorId;   // o local caiu em outra frente: ninguém bate no novo dono
+            var dano = !mesmoDono ? 0 : trebuchetsInicio * m.B.U["trebuchet"].Cerco
                        + (venceu ? vivos.Sum(e => e.Tropas.GetValueOrDefault("ariete")) * m.B.U["ariete"].Cerco : 0);
             var efeito = new ResumoEfeitos();
             if (l != null && venceu && vivos.Count > 0)
                 Efeitos.Aplicar(m, b, plano, l, defR, vivos, modo == ModoRecuoDefesa, dano, efeito);
             else if (l != null)
-                Efeitos.SoDanoDeCerco(m, plano, l, dano, efeito, venceu, resultado, lim, modo != ModoFim);
+                Efeitos.SoDanoDeCerco(m, plano, l, dano, efeito, venceu, resultado, lim, modo != ModoFim, b.MotivoRecuo);
 
             // atacantes: ficam no local tomado, voltam para casa ou caem
             foreach (var ex in c.Exercitos)
@@ -386,7 +472,8 @@ namespace ReinoDePedra.Jogo.Combate
             b.Marcos.Add(new MarcoBatalha
             {
                 T = agora, A = ultimo?.A ?? full.A, D = ultimo?.D ?? full.D, PerdaA = ultimo?.PerdaA ?? full.PerdaA, PerdaD = ultimo?.PerdaD ?? full.PerdaD,
-                Txt = resultado switch { "vitoria" => "Os atacantes venceram.", "derrota" => "A defesa venceu.", "recuo" => "Os atacantes recuaram.", _ => "A defesa recuou." },
+                P = p, Dur = ultimo?.Dur ?? 0, M = ultimo?.M ?? 0, Parte = ultimo?.Parte ?? 1,
+                Txt = resultado switch { "vitoria" => "Os atacantes venceram.", "derrota" => "A defesa venceu.", "recuo" => b.MotivoRecuo ?? "Os atacantes recuaram.", _ => "A defesa recuou." },
             });
             m.Sujar(b);
 
@@ -400,10 +487,18 @@ namespace ReinoDePedra.Jogo.Combate
             m.Avisar(b.AtacanteId, "reino"); m.Avisar(b.DefensorId, "reino");
             m.Avisar(b.AtacanteId, "mapa"); m.Avisar(b.DefensorId, "mapa");
 
-            // quem esperava a batalha acabar ataca agora
-            var espera = b.Espera.ToList(); b.Espera.Clear();
-            foreach (var id in espera)
-                if (m.Marchas.Obter(id) is Exercito e && e.Parado && EhAtaque(e) && e.HexEm(agora) == b.Hex) Chegou(m, e);
+            // as outras frentes: se o local caiu, não há mais o que atacar; senão, a defesa que sobrou se redivide
+            foreach (var o in Ativas(m, b.LocalId))
+            {
+                if (o.Encerrada) continue;
+                if (l == null || l.Ruina || l.ReinoId != o.DefensorId)
+                {
+                    o.MotivoRecuo = "O local caiu nas mãos de outra força antes do fim da batalha.";
+                    Encerrar(m, o, ModoRecuoAtaque);
+                }
+                else Recalcular(m, o, "Uma frente terminou: a defesa se redivide.", null);
+            }
+            if (l != null) Vidas.ReavaliarLocal(m, l);
         }
 
         // ---------------------------------------------------------------- série para a tela e o relatório
@@ -457,14 +552,40 @@ namespace ReinoDePedra.Jogo.Combate
             return Valor(mc, Progresso(b, b.Encerrada ? b.EncerradaEm ?? agora : agora));
         }
 
+        /// <summary>
+        /// Placar de uma frente para a tela e o mapa: valores do último marco e o ritmo, para o cliente andar sozinho entre uma
+        /// busca e outra. Baixas ao vivo são a projeção da fórmula (total × perda × progresso); um reforço muda a projeção.
+        /// </summary>
+        public sealed record Placar(long T0, double P0, long Dur, double M, double A, double D, double PerdaA, double PerdaD,
+            int TotalA, int TotalD, double BaixaA, double BaixaD, double Parte, double Progresso, int BaixasA, int BaixasD);
+
+        public static Placar PlacarDe(Mundo m, Batalha b, long agora)
+        {
+            var mc = b.Marcos.LastOrDefault() ?? new MarcoBatalha();
+            var c = Compor(m, b);
+            var (a, d) = (mc.A, mc.D);
+            if (b.Encerrada)
+            {
+                var baixasD = GT.Total(b.PerdasDefesa) + (int)b.MiliciaMorta;
+                return new Placar(mc.T, mc.P, 0, 0, a, d, mc.PerdaA, mc.PerdaD, GT.Total(b.TropasAtaque), b.TotalDefesa, GT.Total(b.TropasAtaque), b.TotalDefesa, mc.Parte, mc.P,
+                    GT.Total(b.PerdasAtaque), baixasD);
+            }
+            var milicia = c.Extra.Pop * m.P.MiliciaPorPop;
+            var totalA = GT.Total(c.Ataque);
+            var totalD = (int)Math.Round((GT.Total(c.Defesa) + milicia) * c.Parte);
+            var baixaD = (GT.Total(c.Defesa) + milicia * m.P.MiliciaBaixas) * c.Parte;   // da milícia, só uma parte morre
+            var p = Progresso(b, agora);
+            return new Placar(mc.T, mc.P, mc.Dur, mc.M, a, d, mc.PerdaA, mc.PerdaD, totalA, totalD, totalA, baixaD, c.Parte, p,
+                (int)Math.Round(totalA * mc.PerdaA * p), (int)Math.Round(baixaD * mc.PerdaD * p));
+        }
+
         // ---------------------------------------------------------------- ganchos
 
         /// <summary>Tropas entraram num local em batalha (reforço): a composição muda.</summary>
         internal static void AoEntrarNoLocal(Mundo m, Exercito ex, Local l)
         {
-            var b = Ativa(m, l.Id);
-            if (b == null || l.ReinoId != b.DefensorId || ex.ReinoId != b.DefensorId) return;
-            Recalcular(m, b, "Reforços chegaram: " + GT.Partes(m, ex.Tropas) + ".", "defesa");
+            if (l.ReinoId != ex.ReinoId || Ativa(m, l.Id) is not { } b || b.DefensorId != ex.ReinoId) return;
+            RecalcularLocal(m, l.Id, "Reforços chegaram: " + GT.Partes(m, ex.Tropas) + ".", "defesa");
         }
 
         /// <summary>Tropas saíram de um local em batalha: a composição muda.</summary>
@@ -473,7 +594,7 @@ namespace ReinoDePedra.Jogo.Combate
             if (mc is not Exercito e || e.Caminho.Count == 0) return;   // AoPartir só roda na partida (o relógio real anda entre Partir e o gancho)
             var b = Ativa(m, e.OrigemLocalId);
             if (b == null || e.ReinoId != b.DefensorId || e.Caminho[0] != b.Hex) return;
-            Recalcular(m, b, "Tropas deixaram o local: " + GT.Partes(m, e.Tropas) + ".", "defesa");
+            RecalcularLocal(m, b.LocalId, "Tropas deixaram o local: " + GT.Partes(m, e.Tropas) + ".", "defesa");
         }
     }
 }

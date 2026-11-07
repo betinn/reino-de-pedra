@@ -49,7 +49,7 @@ public class CombateApiTestes
         Assert.Equal(HttpStatusCode.BadRequest, (await a.Post("ataques", new { deLocalId = casteloA, tropas = new { milicia = 3 }, destinoHex = alvoHex })).status);
 
         var (se, ex) = await a.Post("ataques", new { deLocalId = casteloA, tropas = new { cavalaria = 20 }, destinoHex = alvoHex, tipo = "saque", tatica = "media",
-            objetivos = new object[] { new { k = "recurso", r = "pedra", q = 500 } } });
+            objetivos = new object[] { new { k = "recurso", r = "pedra" } }, recuarVazio = false });
         Assert.True(se == HttpStatusCode.Created, ex.ToString());
         Assert.Equal("atacar", ex.GetProperty("ordem").GetString());
         var chegada = ex.GetProperty("chegada").GetInt64();
