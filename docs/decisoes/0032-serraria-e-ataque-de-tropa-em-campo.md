@@ -12,4 +12,12 @@
 
 ## Consequências
 
-Com a serraria mais forte, três metas do modelo saem do alvo: M12 (ferraria custa 15% do gasto em obras; alvo de 25% a 50%), M16 (eras custam 1,8 h e 3,6 h de produção; alvos de 2 a 4 h e 4 a 8 h) e M21 (recuperação da queda em 1,8 dia; alvo de 2 a 6 dias). O jogador médio chega ao máximo no dia 46, ainda depois do dia 40. O teste `Metas_do_modelo_no_alvo` falha até que se decida entre mudar essas metas ou subir os custos da ferraria e das eras.
+Com a serraria mais forte, o reino cresce mais rápido, e o jogador médio chega ao máximo no dia 46, ainda depois do dia 40. Três metas do modelo saíram do alvo. A escolha foi ajustar as metas, sem subir custos:
+
+| Meta | Resultado | Alvo antigo | Alvo novo |
+|---|---|---|---|
+| M12: ferraria em relação às obras | 15% | 25% a 50% | 12% a 50% |
+| M16: eras em horas de produção | 1,8 h e 3,6 h | 2 a 4 h e 4 a 8 h | 1,5 a 4 h e 3 a 8 h |
+| M21: recuperação da queda do castelo | 1,8 dia | 2 a 6 dias | 1,5 a 6 dias |
+
+Assim, ferraria e eras pesam menos na temporada, e perder o castelo custa menos tempo.

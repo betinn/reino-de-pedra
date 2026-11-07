@@ -334,16 +334,16 @@ Castelo nível 5: sem coleta depois de 12 h; com coleta em 6 h 3 min (61 min rea
 | M9 | Tática média recua com 40% e ainda causa perdas na defesa | 9% na defesa | ✓ |
 | M10 | Bônus somados ficam no teto de +50% (sem teto: +84% / +89%) | 50% | ✓ |
 | M11 | Armas ou armaduras nível 1 só compensam a partir de 10 a 30 tropas da família | 13 a 25 | ✓ |
-| M12 | Ferraria completa custa 25% a 50% do gasto em obras do médio na temporada | 15% | ✗ |
+| M12 | Ferraria completa custa 12% a 50% do gasto em obras do médio na temporada | 15% | ✓ |
 | M13 | Extrair valiosos rende por pessoa 1,5 a 3× um trabalhador de local nível 6 (4 lanceiros) | 1.7× | ✓ |
 | M14 | O ouro da Era do Aço sai em 3 a 12 h com 4 lanceiros, sem posto | 4 h 13 min | ✓ |
 | M15 | Ouro e aço no mapa cobrem 90% a 150% da demanda típica (escassos, motivo de disputa) | 101% / 96% | ✓ |
-| M16 | Era do Aço custa 2 a 4 h de produção do médio no dia 10; Era do Cerco, 4 a 8 h no dia 21 (sem o ouro) | 1.8 h / 3.6 h | ✗ |
+| M16 | Era do Aço custa 1,5 a 4 h de produção do médio no dia 10; Era do Cerco, 3 a 8 h no dia 21 (sem o ouro) | 1.8 h / 3.6 h | ✓ |
 | M17 | Curar um ferido custa 25% a 60% de recrutar um lanceiro | 44% | ✓ |
 | M18 | Equipamento lendário vale no máximo 3 tropas | 2 tropas | ✓ |
 | M19 | Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria | 60 > 45 · 24 < 26.5 | ✓ |
 | M20 | Reino sob escudo recebe no máximo 30% do que ele mesmo produz no escudo | 17% | ✓ |
-| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 2 a 6 dias | 1.8 dias | ✗ |
+| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível anterior em 1,5 a 6 dias | 1.8 dias | ✓ |
 | M22 | Explorador sozinho é atacado em qualquer perigo, mas um ataque só mata no alto: 20% a 50% das vezes a pé, até 25% a cavalo (foge); 2 lanceiros passam ilesos pelo baixo; 12 arqueiros, até pelo alto | 36% / 14% | ✓ |
 | M23 | 1 caçada por dia cobre 70% a 150% do couro que o médio usa para recrutar | 105% | ✓ |
 | M24 | 20 hexágonos de rota em planície custam 1 a 3 h de produção do médio no dia 14 | 1.2 h | ✓ |
@@ -354,4 +354,4 @@ Castelo nível 5: sem coleta depois de 12 h; com coleta em 6 h 3 min (61 min rea
 | M29 | Um hexágono com 4 coletores se esgota em 3 a 8 h e se recupera inteiro em 12 a 36 h | 6 h 14 min · 24 h | ✓ |
 | M30 | A vida volta inteira em 4 a 8 h; um ataque do perigo alto não mata ninguém de um grupo de lanceiros | 6 h · golpe até 105 < 110 | ✓ |
 
-3 meta(s) fora do alvo.
+Todas as metas no alvo.

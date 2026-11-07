@@ -34,7 +34,7 @@ Em relação à primeira versão do modelo (castelo com teto 300, exércitos de 
 | Obras | Nível 2 em **2 min**; nível 6 em 32 min; nível 10 em **8 h 32 min** (o castelo leva o dobro) |
 | Retorno de uma melhoria | Primeira em **≈ 6 h**; a do nível 10 em **≈ 13 dias** (investimento de fim de temporada) |
 | Pessoas e exército | Jogador médio: **21 pessoas e 7 soldados** no fim do escudo, **65 pessoas e 22 soldados** no dia 35. Ativo: 2,4× as tropas; termina a temporada com ≈ 135 pessoas |
-| Serraria | Rende **1,5×** os outros locais, porque as obras gastam 45% em madeira. Ver a decisão [0032](../docs/decisoes/0032-serraria-e-ataque-de-tropa-em-campo.md), que lista as metas fora do alvo |
+| Serraria | Rende **1,5×** os outros locais, porque as obras gastam 45% em madeira. Ver a decisão [0032](../docs/decisoes/0032-serraria-e-ataque-de-tropa-em-campo.md), que explica as metas ajustadas |
 | Unidade básica | Lanceiro: 90 recursos, 12 min, carga 5 |
 | Começo | Kit com 90 de madeira e **60 de pedra**. Sem coleta, 8 níveis nas 3 primeiras horas (30 min reais a 6×); com coleta, **10 níveis em 2 h** e o castelo 5 em 6 h |
 | Vida | Civil 60, lanceiro 110, explorador 80...; volta inteira em **6 h**, sem tique |
@@ -205,16 +205,16 @@ Valiosos e seus usos, comércio, pactos, resgate, limites do novato, eras, ferra
 |---|---|---|
 | M10 | Bônus somados ficam no teto de +50% | ✓ |
 | M11 | Armas ou armaduras nível 1 só compensam a partir de 10 a 30 tropas da família | 13 a 25 |
-| M12 | Ferraria completa custa 25% a 50% das obras do médio na temporada | 29% |
+| M12 | Ferraria completa custa 12% a 50% das obras do médio na temporada | 15% |
 | M13 | Extrair valiosos rende por pessoa 1,5 a 3× um trabalhador de local nível 6 | 1,7× |
 | M14 | O ouro da Era do Aço sai em 3 a 12 h com 4 lanceiros, sem posto | 4 h 13 min |
 | M15 | Ouro e aço do mapa cobrem 90% a 150% da demanda típica | 101% / 96% |
-| M16 | Era do Aço custa 2 a 4 h de produção do médio no dia 10; Era do Cerco, 4 a 8 h no dia 21 (sem o ouro) | 2,1 h / 4,7 h |
+| M16 | Era do Aço custa 1,5 a 4 h de produção do médio no dia 10; Era do Cerco, 3 a 8 h no dia 21 (sem o ouro) | 1,8 h / 3,6 h |
 | M17 | Curar um ferido custa 25% a 60% de recrutar um lanceiro | 44% |
 | M18 | Equipamento lendário vale no máximo 3 tropas | 2 |
 | M19 | Cavaleiro de elite: mais ataque por pessoa e menos por valor que a cavalaria | ✓ |
 | M20 | Reino sob escudo recebe no máximo 30% do que produz no escudo | 22% |
-| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível em 2 a 6 dias | 2,2 dias |
+| M21 | Depois de perder o castelo no dia 35, o médio volta ao nível em 1,5 a 6 dias | 1,8 dia |
 
 ### Combates com bônus
 
