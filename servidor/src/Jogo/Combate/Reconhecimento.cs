@@ -180,6 +180,10 @@ public static class Reconhecimentos
             ["linhas"] = Linhas(m, est),
         };
         Registros.Relatar(m, r.Id, "reconhecimento", "Reconhecimento: " + nome, dados, "tropas");
+        // foto do que se viu agora: a folha do local mostra exatamente isto, de qualquer distância, até o próximo reconhecimento
+        var foto = (JsonObject)est.DeepClone();
+        foto["fonte"] = "reconhecimento"; foto["quando"] = m.Agora; foto["tropasEnviadas"] = RelatoriosCombate.Grupo(ex.Tropas);
+        r.LocaisReconhecidos[l.Id] = foto;
         m.Avisar(r.Id, "mapa");
     }
 }

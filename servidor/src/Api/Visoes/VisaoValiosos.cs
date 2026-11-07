@@ -167,7 +167,7 @@ public static class VisaoValiosos
         }).OrderBy(x => x.Esgotada).ThenBy(x => x.Id).ToList();
         return new
         {
-            agora = m.Agora, jazidas, ruinas, grupos, maxTropas = m.P.Extracao.MaxTropas,
+            agora = m.Agora, jazidas, ruinas, grupos, maxTropas = m.P.Extracao.MaxTropas, reliquiaTipos = Tipos(m),
             posto = new { custo = m.P.Posto.Custo, seg = m.P.Posto.Tempo },
             escavar = new { horas1 = m.P.Reliquia.EscavarHoras1, minimo = m.P.Reliquia.EscavarMin },
         };

@@ -219,6 +219,8 @@ namespace ReinoDePedra.Jogo.Reinos
         public Dictionary<long, LocalEspionado> LocaisEspionados { get; set; } = new();
         /// <summary>Reinos conhecidos (ver <see cref="Conhecimento"/>).</summary>
         public HashSet<long> ReinosConhecidos { get; set; } = new();
+        /// <summary>Último reconhecimento de cada local de outro reino: id do local → a estimativa como foi vista na hora (não se atualiza sozinha).</summary>
+        public Dictionary<long, System.Text.Json.Nodes.JsonObject> LocaisReconhecidos { get; set; } = new();
     }
 }
 

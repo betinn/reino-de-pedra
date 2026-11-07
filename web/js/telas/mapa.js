@@ -166,12 +166,16 @@
       corpo += linhaInfo('Tipo', RP.esc(RP.TIPOS_LOCAL[o.local] || o.local)) + linhaInfo('Dono', donoTxt(o)) + linhaInfo('Terreno', RP.esc(nomeTerreno(h)));
       if (o.dono !== 'livre' && !o.ruina) corpo += '</div><p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>Explorar não revela o dono. Só a espionagem com batedores de elite mostra quem é.</span></p><div>';
       else corpo += '</div><p class="nota-regra">' + RP.icone('escombros', 'ico-p') + '<span>Ruínas e terra livre podem ser ocupadas ou reconstruídas.</span></p><div>';
+      /* o último reconhecimento deste local, como foi visto na hora: não se atualiza sozinho, vale de qualquer distância */
+      var rec = o.dono !== 'meu' && d.reconhecidos && d.reconhecidos[o.id];
+      if (rec && RP.forcaInimigaHTML) corpo += '</div><div class="secao-titulo">Visto no reconhecimento</div>' + RP.forcaInimigaHTML(rec) + '<div>';
     } else if (o.tipo === 'jazida') {
       corpo += linhaInfo('Recurso', RP.esc(RP.NOMES_REC[o.recurso] || o.recurso)) + linhaInfo('Restante', Math.round((o.restante || 0) * 100) + '%') +
         ((RP.config && RP.config.valor && RP.config.valor[o.recurso]) ? linhaInfo('Vale', RP.config.valor[o.recurso] + ' básicos cada') : '');
       corpo += '</div><p class="nota-regra">' + RP.icone('picareta', 'ico-p') + '<span>Nada é obrigatório: qualquer tropa pode coletar. Mais tropas, posto e rotas rendem mais.</span></p><div>';
     } else if (o.tipo === 'ruina-antiga') {
-      corpo += linhaInfo('Relíquia', o.esgotada ? 'já escavada' : 'guarda uma relíquia de tipo desconhecido');
+      corpo += linhaInfo('Relíquia', o.esgotada ? 'já escavada' : 'guarda 1 relíquia');
+      if (!o.esgotada) corpo += '</div><div class="secao-titulo">Escavar pode render</div>' + RP.ganhosRuina(d.reliquiaTipos) + '<div>';
       corpo += '</div><p class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>Uma unidade já escava. Mais tropas e um posto encurtam o tempo.</span></p><div>';
     } else if (tp && tp.folha) corpo += tp.folha(o, d) || '';
     else corpo += linhaInfo('Tipo', RP.esc(o.tipo));

@@ -559,6 +559,17 @@
     var v = (RP.config && RP.config.valor) || {};
     return Object.keys(c || {}).reduce(function (s, k) { return s + (c[k] || 0) * (v[k] || 1); }, 0);
   };
+  /* ---------------------------------------------------------------- o que uma ruína antiga pode render
+     Cada ruína guarda 1 relíquia de um dos três tipos, sorteado e só conhecido ao achar. Mostra as possibilidades
+     antes de escavar. tipos = { ataque: { nome, efeito, bonus }, ... } vindo do servidor (reliquiaTipos/tipos). */
+  RP.ganhosRuina = function (tipos, curto) {
+    var ks = ['ataque', 'producao', 'resistencia'].filter(function (k) { return tipos && tipos[k]; });
+    if (!ks.length) return curto ? '1 relíquia: ataque, produção ou resistência' : '';
+    if (curto) return '1 relíquia: ' + ks.map(function (k) { return tipos[k].nome.toLowerCase() + ' +' + Math.round((tipos[k].bonus || 0) * 100) + '%'; }).join(', ') + ' (um deles)';
+    return '<ul class="ruina-ganhos">' + ks.map(function (k) {
+      return '<li class="tipo-' + k + '">' + RP.icone('lendario', 'ico-p') + '<span><b>' + RP.esc(tipos[k].nome) + '</b> · ' + RP.esc(tipos[k].efeito) + '</span></li>';
+    }).join('') + '</ul><small class="fraco">Um destes, com a mesma chance. O tipo só se conhece ao achar.</small>';
+  };
   /* ---------------------------------------------------------------- produção do reino
      Soma das taxas por hora de todos os locais; "quando enche" é o primeiro local que chega à capacidade. */
   RP.producao = function (k) {

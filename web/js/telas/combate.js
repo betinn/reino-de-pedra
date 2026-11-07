@@ -93,13 +93,13 @@
   /* ================================================================ força inimiga antes da batalha
      f = estimativa do servidor (prévia do ataque, prévia de tropas ou relatório de reconhecimento): o que se vê (vista) ou o
      que a espionagem contou, sem o dono. */
-  var FONTES = { vista: ['selo-visivel', 'olho', 'À vista agora'], espionagem: ['selo-antigo', 'batedor', 'Pela espionagem'], nenhuma: ['selo-desconhecido', 'nevoa', 'Desconhecida'] };
+  var FONTES = { vista: ['selo-visivel', 'olho', 'À vista agora'], espionagem: ['selo-antigo', 'batedor', 'Pela espionagem'], nenhuma: ['selo-desconhecido', 'nevoa', 'Desconhecida'], reconhecimento: ['selo-antigo', 'olho', 'Reconhecimento'] };
   var VEREDITOS = { vantagem: ['selo-visivel', 'Vantagem'], apertado: ['selo-destaque', 'Apertado'], desvantagem: ['selo-perigo', 'Desvantagem'] };
   RP.forcaInimigaHTML = function (f, opts) {
     if (!f) return '';
     opts = opts || {};
     var fo = FONTES[f.fonte] || FONTES.nenhuma;
-    var selo = '<span class="selo ' + fo[0] + '">' + RP.icone(fo[1]) + (f.fonte === 'vista' && opts.rotuloVista ? opts.rotuloVista : fo[2]) + (f.fonte === 'espionagem' && f.espionadoHaH != null ? ' · há ' + RP.fmtDuracao(f.espionadoHaH * 3600) : '') + '</span>';
+    var selo = '<span class="selo ' + fo[0] + '">' + RP.icone(fo[1]) + (f.fonte === 'vista' && opts.rotuloVista ? opts.rotuloVista : fo[2]) + (f.fonte === 'espionagem' && f.espionadoHaH != null ? ' · há ' + RP.fmtDuracao(f.espionadoHaH * 3600) : '') + (f.fonte === 'reconhecimento' && f.quando ? ' · ' + RP.fmtHa((RP.agora() - f.quando) / 3600000) : '') + '</span>';
     if (f.semDefesa) return '<div class="card pilha forca-inimiga">' + selo + '<p class="fraco">' + RP.esc(f.texto || '') + '</p></div>';
     var h = '<div class="card pilha forca-inimiga" data-forca-fonte="' + RP.esc(f.fonte) + '"><div class="linha-entre">' + selo +
       (f.veredito ? '<span class="selo ' + VEREDITOS[f.veredito][0] + '">' + RP.icone(f.vence ? 'espada' : 'escudo') + VEREDITOS[f.veredito][1] + '</span>' : '') + '</div>';
@@ -109,6 +109,7 @@
     }
     if (f.ataque != null) {
       var tot = (f.ataque + f.defesa) || 1;
+      if (f.tropasEnviadas && RP.somaGrupo(f.tropasEnviadas)) h += '<div class="info">' + linha('Comparado com', RP.selosGrupo(f.tropasEnviadas)) + '</div>';
       h += '<div class="bat-lados"><div class="bat-lado meu"><span class="rotulo">Suas tropas</span><b class="num">' + RP.num(f.ataque) + '</b><small class="fraco">perdas estimadas ' + Math.round(100 * f.perdasMinhas) + '% · ' + RP.num(f.baixasMinhas) + (f.baixasMinhas === 1 ? ' pessoa' : ' pessoas') + '</small></div>' +
         '<div class="bat-vs">×</div><div class="bat-lado eles"><span class="rotulo">Defesa do local</span><b class="num">' + RP.num(f.defesa) + '</b><small class="fraco">perdas estimadas ' + Math.round(100 * f.perdasDeles) + '%</small></div></div>' +
         '<div class="barra-dupla" role="img" aria-label="Suas tropas ' + Math.round(100 * f.ataque / tot) + '%, defesa ' + Math.round(100 * f.defesa / tot) + '%"><i class="d" style="width:' + (100 * f.ataque / tot).toFixed(1) + '%"></i><i class="a" style="width:' + (100 * f.defesa / tot).toFixed(1) + '%"></i></div>';
