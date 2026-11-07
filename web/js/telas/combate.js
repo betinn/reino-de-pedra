@@ -68,7 +68,7 @@
     if (!f) return '';
     opts = opts || {};
     var fo = FONTES[f.fonte] || FONTES.nenhuma;
-    var selo = '<span class="selo ' + fo[0] + '">' + RP.icone(fo[1]) + fo[2] + (f.fonte === 'espionagem' && f.espionadoHaH != null ? ' · há ' + RP.fmtDuracao(f.espionadoHaH * 3600) : '') + '</span>';
+    var selo = '<span class="selo ' + fo[0] + '">' + RP.icone(fo[1]) + (f.fonte === 'vista' && opts.rotuloVista ? opts.rotuloVista : fo[2]) + (f.fonte === 'espionagem' && f.espionadoHaH != null ? ' · há ' + RP.fmtDuracao(f.espionadoHaH * 3600) : '') + '</span>';
     if (f.semDefesa) return '<div class="card pilha forca-inimiga">' + selo + '<p class="fraco">' + RP.esc(f.texto || '') + '</p></div>';
     var h = '<div class="card pilha forca-inimiga" data-forca-fonte="' + RP.esc(f.fonte) + '"><div class="linha-entre">' + selo +
       (f.veredito ? '<span class="selo ' + VEREDITOS[f.veredito][0] + '">' + RP.icone(f.vence ? 'espada' : 'escudo') + VEREDITOS[f.veredito][1] + '</span>' : '') + '</div>';
@@ -104,7 +104,7 @@
   RP.desenhosRelatorio = RP.desenhosRelatorio || {};
   RP.desenhosRelatorio.reconhecimento = function (rel) {
     var d = rel.dados || {}, ex = RP.exercito && RP.exercito(d.marchaId);
-    return '<p class="suave">' + RP.esc(d.resumo || '') + '</p>' + RP.forcaInimigaHTML(d.estimativa) +
+    return '<p class="suave">' + RP.esc(d.resumo || '') + '</p>' + RP.forcaInimigaHTML(d.estimativa, { rotuloVista: 'À vista na chegada' }) +
       '<p class="fraco env-nota">A estimativa vale para o momento do relatório. A prévia do ataque mostra a força de agora.</p>' +
       '<div class="linha rel-acoes">' + (ex || !RP.tropas ? '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + d.alvoHex + '&marcha=' + d.marchaId + '">' + RP.icone('espada') + 'Atacar daqui</a>' +
         '<button type="button" class="btn btn-p" data-reconh-voltar="' + d.marchaId + '">' + RP.icone('voltar') + 'Voltar</button>' : '<span class="fraco">Esta tropa não está mais ali.</span>') +
