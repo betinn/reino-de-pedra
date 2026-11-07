@@ -175,6 +175,10 @@
     else corpo += linhaInfo('Tipo', RP.esc(o.tipo));
     corpo += '</div>';
     if (tp && tp.acoes) acoes += tp.acoes(o, d) || '';
+    /* o local e a batalha dividem o hexágono: clicar em qualquer um dos dois leva à tela da batalha */
+    if (o.tipo !== 'batalha' && RP.telas.batalha) M.objetosEm(h).forEach(function (x) {
+      if (x.tipo === 'batalha' && x.id) acoes = '<a class="btn btn-p btn-primario" href="#/batalha?id=' + x.id + '">' + RP.icone('espada') + 'Ver a batalha</a>' + acoes;
+    });
     acoes += '<button type="button" class="btn btn-p btn-fantasma" data-abrir-hex="' + h + '" data-tecla="X">' + RP.icone('hexagonos') + 'Hexágono</button>';
     return {
       titulo: RP.esc(nomeObjeto(o)), subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(h) + '</div>',
@@ -236,12 +240,12 @@
         (estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-marcha-voltar-exp="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '');
     } else if (o.marcha === 'exercito' || ex) {
       var pode = !d.bloqueio && d.podeOrdem !== false, divide = pode && estado !== 'trabalhando' && RP.somaGrupo(d.tropas || {}) > 1;
-      acoes = (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
+      acoes = (d.batalhaId && RP.telas.batalha ? '<a class="btn btn-p btn-primario" href="#/batalha?id=' + d.batalhaId + '">' + RP.icone('espada') + 'Ver a batalha</a>' : '') +
+        (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
         (pode ? '<button type="button" class="btn btn-p" data-tropa-patrulhar="' + o.id + '" data-tecla="Q">' + RP.icone('rota') + 'Patrulhar</button>' : '') +
         (pode && estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
         (pode && estado !== 'parado' ? '<button type="button" class="btn btn-p" data-exercito-parar="' + o.id + '" data-hex="' + pos.hex + '" data-tecla="H">' + RP.icone('alvo') + 'Parar aqui</button>' : '') +
         (divide ? '<button type="button" class="btn btn-p" data-tropa-separar="' + o.id + '" data-tecla="K">' + RP.icone('tropas') + 'Separar</button>' : '') +
-        (!pode && d.bloqueio && RP.telas.batalha ? '<a class="btn btn-p btn-perigo" href="#/tropas">' + RP.icone('escudo') + 'Recuar</a>' : '') +
         '<button type="button" class="btn btn-p" data-exercito="' + o.id + '" data-tecla="I">' + RP.icone('info') + 'Detalhes</button>' +
         '<a class="btn btn-p" href="#/posturas?marcha=' + o.id + '" data-tecla="C">' + RP.icone('escudo') + 'Comportamento</a>';
     } else if (o.marcha === 'caravana' && RP.telas.caravana) {

@@ -69,6 +69,7 @@
     var comandos = '';
     if (tropa && o && !o.erro) {
       var pode = !ex || (!ex.bloqueio && ex.podeOrdem !== false);
+      if (ex && ex.batalhaId) comandos += cmd('data-ver-batalha="' + ex.batalhaId + '"', 'espada', 'Ver a batalha', '', 'btn-perigo');
       comandos += cmd('data-selecao-missao', 'alvo', 'Ordem…', 'Enter', 'btn-primario');
       if (pode) comandos += cmd('data-selecao-patrulha', 'rota', 'Patrulhar', 'Q');
       if (ex && pode && ex.estado !== 'retornando') comandos += cmd('data-exercito-voltar="' + ex.id + '"', 'voltar', 'Voltar', 'V');

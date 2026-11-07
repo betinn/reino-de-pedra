@@ -169,6 +169,8 @@
   }
   RP.mapa.tiposObjeto.batalha = Object.assign({ nome: function () { return 'Batalha'; }, icone: function () { return 'espada'; } }, RP.mapa.tiposObjeto.batalha || {}, {
     svgTatico: svgBatalha,
+    /* clicar na batalha leva à tela dela (placar, frentes, reforços, recuo) */
+    acoes: function (o) { return o.id ? '<a class="btn btn-p btn-primario" href="#/batalha?id=' + o.id + '">' + RP.icone('espada') + 'Ver a batalha</a>' : ''; },
     desenharTatico: function (ctx, o, info) { desenharBatalha(ctx, o, H.centroH(o.hex), null, (info && info.agora) || RP.agora()); }, folha: folhaBatalha });
   /* o mapa que desenha RP.mapa.tiposObjeto sozinho marca RP.mapa.desenhaTiposObjeto = true; senão desenhamos aqui */
   RP.mapa.desenhosExtras.push(function (ctx, dados, cam, agora) {
@@ -195,6 +197,7 @@
   });
   document.addEventListener('click', function (e) {
     var b;
+    if ((b = e.target.closest('[data-ver-batalha]'))) { RP.ir('batalha?id=' + b.getAttribute('data-ver-batalha')); return; }
     if (e.target.closest('[data-torre-cancelar]')) { modoTorre = false; faixaTorre(); return; }
     if ((b = e.target.closest('[data-torre-aqui]'))) {
       RP.tentar(RP.post('/defesas/torres', { hex: +b.getAttribute('data-torre-aqui') })).then(function (it) {
