@@ -336,7 +336,7 @@ public static class Governo
         {
             try
             {
-                if (!regencia && e.TipoExp == Exploradores.Pe && NaoVisto(m, r, castelo) is int alvo && alvo != e.HexEm(m.Agora))
+                if (!regencia && e.TipoExp == Exploradores.Pe && AlvoExploracao(m, r, castelo) is int alvo && alvo != e.HexEm(m.Agora))
                     Exploradores.DarOrdem(m, r, e.Id, Exploradores.Explorar, alvo, null, true);
                 else Exploradores.DarOrdem(m, r, e.Id, Exploradores.Retornar, null);
             }
@@ -348,7 +348,41 @@ public static class Governo
     {
         if (Ocupados(m, r, Exploradores.Pe) == 0) { Exploradores.Treinar(m, r, Exploradores.Pe, 1); return; }
         if (r.ExploradoresLivres.GetValueOrDefault(Exploradores.Pe) < 1) return;
-        if (NaoVisto(m, r, castelo) is int h) Exploradores.Enviar(m, r, Exploradores.Pe, Exploradores.Explorar, h, seguro: true);
+        if (AlvoExploracao(m, r, castelo) is int h) Exploradores.Enviar(m, r, Exploradores.Pe, Exploradores.Explorar, h, seguro: true);
+    }
+
+    /// <summary>Onde explorar: primeiro procura o reino da região mais perto ainda não achada; sem nenhuma, um hexágono ao acaso.</summary>
+    public static int? AlvoExploracao(Mundo m, Reino r, Local castelo) => RegiaoAProcurar(m, r, castelo) ?? NaoVisto(m, r, castelo);
+
+    /// <summary>
+    /// Regiões de reino (decisão 0035), a mesma informação que o jogador vê no mapa: a mais perto do castelo, a até
+    /// <c>ia.exploracao.regiaoAlcance</c>, em que o reino ainda não conhece nenhum local de outro reino. Devolve o hexágono
+    /// ainda não visto da região mais perto do castelo (a busca avança pelo lado de cá), ou null.
+    /// </summary>
+    public static int? RegiaoAProcurar(Mundo m, Reino r, Local castelo)
+    {
+        var alcance = m.P.IA.Exploracao.RegiaoAlcance;
+        if (alcance <= 0) return null;
+        var nevoa = Nevoas.De(m, r.Id);
+        var conhecidos = LocaisConhecidos(m, r).Where(x => !x.livre).Select(x => x.hex).ToList();
+        foreach (var rg in Rumores.Regioes(m, r.Id).OrderBy(x => m.G.Distancia(x.Centro, castelo.Hex)).ThenBy(x => x.Chave, StringComparer.Ordinal))
+        {
+            if (m.G.Distancia(rg.Centro, castelo.Hex) > alcance) break;
+            if (conhecidos.Any(h => m.G.Distancia(h, rg.Centro) <= rg.Raio)) continue;   // já achou um local de reino ali
+            var alvo = m.G.Area(rg.Centro, rg.Raio).Where(h => nevoa.MinutoVisto(h) == 0)
+                .OrderBy(h => m.G.Distancia(h, castelo.Hex)).ThenBy(h => h).Select(h => (int?)h).FirstOrDefault();
+            if (alvo != null) return alvo;
+        }
+        return null;
+    }
+
+    /// <summary>Poeira de marcha grande vindo na direção do reino (o rumo aproxima de um local dele): a IA segura as tropas em casa.</summary>
+    public static bool PoeiraVindo(Mundo m, Reino r)
+    {
+        var locais = m.LocaisDe(r.Id).Where(l => !l.Ruina).Select(l => l.Hex).ToList();
+        if (locais.Count == 0) return false;
+        int Perto(int h) => locais.Min(l => m.G.Distancia(l, h));
+        return Rumores.Rastros(m, r.Id, Nevoas.VisiveisAgora(m, r.Id)).Any(x => Perto(x.RumoHex) < Perto(x.Hex));
     }
 
     /// <summary>Caça quando falta couro: lanceiros numa região de fauna conhecida perto do castelo, só se passam ilesos.</summary>
@@ -504,6 +538,7 @@ public static class Governo
         var p = m.P.IA.Ataque;
         if (castelo.Nivel < p.Castelo) return;
         if (Exercitos.De(m, r.Id).Any(e => e.Ordem == OrdemAtacar.Id || e.BatalhaId != null)) return;
+        if (PoeiraVindo(m, r)) return;   // força grande vindo para cá: não esvazia a defesa
         var livres = TropasDeAtaque(m, castelo);
         var envio = Parte(livres, Math.Min((int)Math.Floor(GT.Total(livres) * p.FracTropas), GT.Total(livres) - p.Reserva));
         if (GT.Total(envio) == 0) return;

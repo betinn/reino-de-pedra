@@ -58,6 +58,11 @@ const P = {
   patrulha: { maxHexes: 200 },
   /* servidor: tamanho aproximado de uma força vista ("poucas" abaixo de poucas; depois, arredondado ao passo) */
   aproximado: { poucas: 4, passo: 5 },
+  /* rumores (decisão 0035): a região de cada reino aparece desde o início (castelo a até desvio do centro, área de raio raio),
+     e marchas com pelo menos rastro.tropas pessoas levantam poeira vista a até rastro.alcance de um local ou marcha do reino,
+     na grade de rastro.grade hexágonos, com o rumo de rastro.adiante hexágonos à frente */
+  regiaoReino: { raio: 14, desvio: 9 },
+  rastro: { tropas: 12, alcance: 14, grade: 3, adiante: 6 },
   /* novos locais: custo e quando o jogador funda (médio) */
   custoNovoLocal: 150, novoLocalCresc: 1.22, tempoNovoLocal: 90 * 60,
   /* deslocamento: minutos por unidade de custo de terreno (tropa lenta ≈ 0,7 min por hexágono médio: 3 hexágonos em 2 min,
@@ -335,7 +340,7 @@ const P = {
     /* ocupação de ruína ou terra livre à vista, a até 14 hexágonos, com 3 lanceiros */
     ocupacao: { alcance: 42, tropas: 3 },
     /* exploração: um explorador a pé, mandado a um hexágono ainda não visto a 4 a 16 hexágonos do castelo (6 tentativas de sorteio) */
-    exploracao: { distancia: [8, 48], tentativas: 6 },
+    exploracao: { distancia: [8, 48], tentativas: 6, regiaoAlcance: 84 },   /* regiaoAlcance: vai procurar o reino da região mais perto ainda não achada */
     /* caça enquanto o couro guardado está abaixo de 40 (um batedor de elite custa 30; com o teto antigo de 10 a IA nunca juntava couro
        para espionar, e sem espionagem não atacava): 4 lanceiros, região conhecida a até 10 hexágonos, só se passam ilesos */
     caca: { couroMin: 40, alcance: 30, tropas: 4 },

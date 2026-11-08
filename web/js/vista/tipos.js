@@ -138,4 +138,67 @@
     rotulo: function (o) { return { txt: (o.n || 3) + ' relíquias · farol', cls: 'nivel', cor: '#d796f2' }; },
     rotuloDy: -44
   });
+
+  /* ---------------------------------------------------------------- rumores (decisão 0035): o que se sabe sem explorar
+     regiao-reino: há um reino em algum lugar da área (o castelo não fica no centro), marcada desde o início, até na névoa.
+     rastro: poeira de uma marcha grande fora da vista, posição aproximada, tamanho aproximado e rumo. Nada diz o dono. */
+  function regiaoTxt() { return 'Reino nesta região'; }
+  registrar('regiao-reino', {
+    camada: 'rumores', atravessaNevoa: true,
+    nome: function () { return 'Região de um reino'; },
+    icone: function () { return 'castelo'; },
+    classe: function () { return 'regiao-reino'; },
+    svgFundo: function (o) { return '<g class="regiao-reino-area"><path d="' + TT.contorno(TT.noRaio(o.hex, o.raio || 14)) + '"/></g>'; },
+    svgTatico: function () { return '<circle class="rg-base" r="12"/><use href="#i-castelo" x="-8" y="-8" width="16" height="16"/><g class="rg-selo" transform="translate(10 -10)"><circle r="7"/><text y="4">?</text></g>' + rot(regiaoTxt(), 27); },
+    desenharCena: function () { /* a área vai por cima da névoa (sobreNevoa) */ },
+    sobreNevoa: function (c, o) {
+      var r = (o.raio || 14) * H.W;
+      c.save(); c.strokeStyle = 'rgba(232,196,120,.55)'; c.lineWidth = 2; c.setLineDash([10, 8]);
+      c.beginPath(); c.ellipse(0, 0, r, r * A.K, 0, 0, 6.2832); c.stroke();
+      c.fillStyle = 'rgba(232,196,120,.05)'; c.fill(); c.restore();
+    },
+    rotulo: function () { return { txt: regiaoTxt(), cls: 'nivel', cor: '#e8c478' }; },
+    folha: function (o) {
+      return '<div class="info-linha"><span class="fraco">Quem</span><span>Desconhecido</span></div>' +
+        '<div class="info-linha"><span class="fraco">Onde</span><span>o castelo fica em algum lugar desta área, a até ' + (o.raio || 14) + ' hexágonos do centro, não no centro</span></div>' +
+        '</div><p class="nota-regra">' + RP.icone('explorador', 'ico-p') + '<span>Todo reino do mundo aparece assim desde o início. Explore a área para achar o castelo e os locais; só a espionagem diz de quem são.</span></p><div>';
+    }
+  });
+
+  function rastroTxt(o) { return 'Poeira' + (o.tamanho ? ' · ' + o.tamanho : '') + (o.rumo && o.rumo !== 'aqui' ? ' · rumo ' + o.rumo : ''); }
+  function rastroVetor(o) {
+    var a = H.centroH(o.hex), b = H.centroH(o.rumoHex != null ? o.rumoHex : o.hex), dx = b.x - a.x, dy = b.y - a.y, n = Math.sqrt(dx * dx + dy * dy);
+    return n > 0.01 ? { x: dx / n, y: dy / n } : null;
+  }
+  registrar('rastro', {
+    camada: 'rumores', atravessaNevoa: true,
+    nome: function () { return 'Poeira de marcha'; },
+    icone: function () { return 'tropas'; },
+    classe: function () { return 'rastro'; },
+    svgTatico: function (o) {
+      var v = rastroVetor(o), seta = v ? '<path class="rt-seta" d="M' + TT.n1(v.x * 14) + ' ' + TT.n1(v.y * 14) + 'L' + TT.n1(v.x * 34) + ' ' + TT.n1(v.y * 34) + '"/>' +
+        '<circle class="rt-ponta" cx="' + TT.n1(v.x * 34) + '" cy="' + TT.n1(v.y * 34) + '" r="3"/>' : '';
+      return '<circle class="rt-nuvem" r="16"/><circle class="rt-nuvem" cx="-8" cy="4" r="10"/><circle class="rt-nuvem" cx="9" cy="5" r="9"/>' + seta + rot(rastroTxt(o), 30);
+    },
+    desenharCena: function () { /* a poeira vai por cima da névoa (sobreNevoa) */ },
+    sobreNevoa: function (c, o, info) {
+      var t = info.t, v = rastroVetor(o) || { x: 0, y: 0 };
+      for (var q = 0; q < 7; q++) {
+        var f = ((t * 0.25 + q / 7) % 1), rx = -v.x * f * 40 + Math.sin(q * 2.3 + t) * 6, ry = (-v.y * f * 40) * A.K - 6 - f * 10;
+        c.globalAlpha = 0.35 * (1 - f); A.elipse(c, rx, ry, 10 + f * 14, (10 + f * 14) * 0.55, '#c9b28a');
+      }
+      c.globalAlpha = 1;
+    },
+    rotulo: function (o) { return { txt: rastroTxt(o), cls: 'nivel', cor: A.cores().alerta }; },
+    folha: function (o) {
+      return '<div class="info-linha"><span class="fraco">Quem</span><span>Desconhecido</span></div>' +
+        '<div class="info-linha"><span class="fraco">Tamanho</span><span>' + RP.esc(o.tamanho || 'grande') + '</span></div>' +
+        (o.rumo && o.rumo !== 'aqui' ? '<div class="info-linha"><span class="fraco">Rumo</span><span>' + RP.esc(o.rumo) + '</span></div>' : '') +
+        '</div><p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>Marchas grandes levantam poeira vista de longe. A posição é aproximada; para ver quem é, chegue perto.</span></p><div>';
+    }
+  });
+  RP.mapa.legendaExtras.push(function () {
+    return '<div class="legenda-item"><span class="ico-placa">' + RP.icone('castelo') + '</span><span><b>Região de um reino</b><small>O castelo fica em algum lugar da área, não no centro. Todo reino aparece assim desde o início.</small></span></div>' +
+      '<div class="legenda-item"><span class="ico-placa">' + RP.icone('tropas') + '</span><span><b>Poeira</b><small>Marcha grande fora da vista: posição e tamanho aproximados e o rumo.</small></span></div>';
+  });
 })();

@@ -177,6 +177,11 @@ public static class VisaoExploracao
         var l = new List<object>();
         var nevoa = Nevoas.De(m, r.Id);
         var foto = Fotos.De(m, r.Id);
+        // rumores (decisão 0035): a região de cada reino, desde o início, e a poeira das marchas grandes fora da vista
+        foreach (var rg in Rumores.Regioes(m, r.Id))
+            l.Add(new { tipo = "regiao-reino", id = rg.Chave, hex = rg.Centro, raio = rg.Raio });
+        foreach (var ra in Rumores.Rastros(m, r.Id, vis, outro => VisaoMapa.Aliado(m, r, outro)))
+            l.Add(new { tipo = "rastro", hex = ra.Hex, tamanho = ra.Tamanho, rumo = ra.Rumo, rumoHex = ra.RumoHex });
         // último estado conhecido: locais de outros reinos, ruínas antigas e o que outros sistemas fotografam
         var locaisVistos = new HashSet<long>();   // a foto guarda o local em cada hexágono da pegada; o desenho é um só, no centro
         foreach (var (h, objs) in foto.Objetos)

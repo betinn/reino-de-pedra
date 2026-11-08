@@ -93,6 +93,10 @@ public sealed class ParametrosP
     public double AvistamentoH { get; init; }
     /// <summary>Tamanho aproximado de uma força vista: "poucas" abaixo de Poucas; depois arredondado ao Passo.</summary>
     public AproximadoP Aproximado { get; init; } = new();
+    /// <summary>Região de cada reino, marcada desde o início (decisão 0035).</summary>
+    public RegiaoReinoP RegiaoReino { get; init; } = new();
+    /// <summary>Poeira das marchas grandes fora da vista (decisão 0035).</summary>
+    public RastroP Rastro { get; init; } = new();
     public double CustoNovoLocal { get; init; }
     public double NovoLocalCresc { get; init; }
     public double TempoNovoLocal { get; init; }
@@ -381,6 +385,8 @@ public sealed class CarregadorP { public double Carga { get; init; } public stri
 public sealed class RioP { public double Vau { get; init; } }
 public sealed class VagasP { public double PorNivel { get; init; } public int Minimo { get; init; } }
 public sealed class AproximadoP { public int Poucas { get; init; } public int Passo { get; init; } }
+public sealed class RegiaoReinoP { public int Raio { get; init; } public int Desvio { get; init; } }
+public sealed class RastroP { public int Tropas { get; init; } public int Alcance { get; init; } public int Grade { get; init; } public int Adiante { get; init; } }
 public sealed class VisaoP { public int Castelo { get; init; } public int Local { get; init; } public int Tropa { get; init; } }
 public sealed class MapaP { public int Cols { get; init; } public int Lins { get; init; } }
 public sealed class PatrulhaP { public int MaxHexes { get; init; } = 200; }
@@ -580,7 +586,7 @@ public sealed class AtaqueIAP
 }
 public sealed class EspionagemIAP { public int Castelo { get; init; } public int Alcance { get; init; } public double RefazerH { get; init; } }
 public sealed class OcupacaoIAP { public int Alcance { get; init; } public int Tropas { get; init; } }
-public sealed class ExploracaoIAP { public int[] Distancia { get; init; } = [1, 1]; public int Tentativas { get; init; } }
+public sealed class ExploracaoIAP { public int[] Distancia { get; init; } = [1, 1]; public int Tentativas { get; init; } public int RegiaoAlcance { get; init; } }
 public sealed class CacaIAP { public double CouroMin { get; init; } public int Alcance { get; init; } public int Tropas { get; init; } }
 public sealed class ExtracaoIAP { public int Castelo { get; init; } public int Alcance { get; init; } public int Tropas { get; init; } }
 public sealed class MoradiaIAP { public double Trabalhadores { get; init; } public double Teto { get; init; } }
