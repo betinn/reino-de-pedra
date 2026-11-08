@@ -92,7 +92,7 @@
 
   RP.folhaLocal = function (id) {
     var l = RP.local(id); if (!l) return;
-    var m = l.melhoria, ks = Object.keys(l.taxa || {}), k = ks[0];
+    var ks = Object.keys(l.taxa || {}), k = ks[0];
     var g = Object.keys(l.guarnicao || {}).filter(function (x) { return l.guarnicao[x] > 0; });
     var obra = obraDoLocal(l);
     var corpo = '<div class="info">' +
@@ -106,9 +106,7 @@
       (obra ? '<div class="info-linha info-tempo"><span class="fraco">' + RP.esc(obra.rotulo) + '</span><span>' + (obra.inicio && obra.fim ? RP.barraTempo(obra.inicio, obra.fim, { rotulo: 'Obra: ' + obra.rotulo }) : obra.materialChegaEm ? 'material chega ' + RP.barraTempo(obra.materialPartida, obra.materialChegaEm, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho' }) : 'esperando material') + '</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Onde</span><span>' + (RP.hex.NOME_TERRENO[l.terreno] || '') + '</span></div>' +
       RP.extrasFolhaLocal.map(function (f) { return f(l) || ''; }).join('') +
-      '</div>' +
-      (m ? '<div class="secao-titulo">Melhorar para o nível ' + m.nivel + '</div><div class="card pilha">' + RP.custoHTML(m.custo) +
-        '<span class="fraco">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(m.seg) + ' de obra' + (m.bloqueio ? ' · ' + RP.esc(m.bloqueio) : '') + '</span></div>' : '');
+      '</div>';
     RP.abrirFolha({
       titulo: RP.esc(l.nome),
       subtitulo: '<span class="fraco">' + RP.nomeTipoLocal(l) + ' · Nível ' + l.nivel + '</span>',
@@ -119,17 +117,61 @@
   };
   /* os botões de um local seu (folha e menu de contexto), com as teclas */
   RP.acoesLocal = function (l) {
-    var m = l.melhoria;
-    return (m && !m.bloqueio ? '<button type="button" class="btn btn-p btn-primario" data-melhorar="' + l.id + '" data-tecla="U">' + RP.icone('martelo') + 'Melhorar</button>' : '') +
-      (l.tipo === 'castelo' || l.tipo === 'vila' ? '<button type="button" class="btn btn-p" data-moradia="' + l.id + '" data-tecla="O">' + RP.icone('moradia') + 'Moradia</button>' : '') +
+    return RP.botaoMelhorar(l, 'Melhorar', ' btn-primario', ' data-tecla="U"') +
+      (l.tipo === 'castelo' || l.tipo === 'vila' ? RP.botaoMoradia(l, 'Moradia', ' data-tecla="O"') : '') +
       RP.acoesFolhaLocal.map(function (f) { return f(l) || ''; }).join('') +
       '<a class="btn btn-p" href="#/mapa?foco=' + l.hex + '" data-tecla="F">' + RP.icone('mapa') + 'Ver no mapa</a>' +
       '<a class="btn btn-p" href="#/posturas?local=' + l.id + '" data-tecla="C">' + RP.icone('escudo') + 'Comportamento</a>';
   };
 
+  /* ---------------------------------------------------------------- dicas das melhorias
+     Passar o mouse em Melhorar ou Moradia mostra o que muda, em números (de → para), o custo e o tempo da obra.
+     A folha e a Construção não repetem custo e tempo fora da dica. */
+  function numDica(v) { return (+v || 0).toLocaleString('pt-BR', { maximumFractionDigits: Math.abs(v) < 10 ? 1 : 0 }); }
+  function efeitoDica(e) {
+    if (e.tipo === 'libera') return '<span class="dica-efeito">Libera ' + RP.esc(e.texto) + '</span>';
+    var nome = e.tipo === 'producao' ? 'Produção de ' + RP.nomeRecurso(e.rec)
+      : e.tipo === 'producaoBasicos' ? 'Produção de cada básico'
+      : e.tipo === 'guarda' ? (e.rec === '*' ? 'Guarda de cada recurso' : e.rec === 'basicos' ? 'Guarda de cada básico' : 'Guarda de ' + RP.nomeRecurso(e.rec))
+      : e.tipo === 'vagas' ? 'Vagas de trabalho'
+      : e.tipo === 'nivelLocais' ? 'Nível máximo dos outros locais' : e.tipo;
+    var u = e.tipo === 'producao' || e.tipo === 'producaoBasicos' ? '/h' : '', d = e.para - e.de;
+    return '<span class="dica-efeito">' + nome + ': ' + numDica(e.de) + u + ' → <strong>' + numDica(e.para) + u + '</strong> <em>(' + (d > 0 ? '+' : '') + numDica(d) + ')</em></span>';
+  }
+  function custoDica(custo, seg) {
+    return RP.custoHTML(custo) + '<small>' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(seg) + ' de obra</small>';
+  }
+  RP.dicaMelhoria = function (l) {
+    var m = l.melhoria; if (!m) return '';
+    var ef = m.efeitos || [], vagas = ef.some(function (e) { return e.tipo === 'vagas'; }), prod = ef.some(function (e) { return e.tipo === 'producao'; });
+    return '<b>' + RP.esc(RP.nomeTipoLocal(l)) + ': nível ' + (m.nivel - 1) + ' → ' + m.nivel + '</b>' +
+      (ef.length ? ef.map(efeitoDica).join('') : '<small>Só o nível sobe.</small>') +
+      (prod && vagas ? '<small>Produção com todas as vagas ocupadas.</small>' : '') +
+      custoDica(m.custo, m.seg) +
+      (m.bloqueio ? '<small class="txt-alerta">' + RP.esc(m.bloqueio) + '</small>' : '');
+  };
+  RP.dicaMoradia = function () {
+    var r = RP.reino; if (!r || !r.custos) return '';
+    var por = r.custos.tetoPorMoradia || 60;
+    var naFila = ((r.filas || {}).obras || []).filter(function (o) { return o.tipo === 'moradia'; }).length, de = r.teto + naFila * por;
+    return '<b>Moradia</b><span class="dica-efeito">Moradores: ' + RP.num(de) + ' → <strong>' + RP.num(de + por) + '</strong> <em>(+' + RP.num(por) + ')</em></span>' +
+      '<small>Cada moradia custa mais que a anterior.</small>' + custoDica(r.custos.moradia, r.custos.moradiaSeg);
+  };
+  /* botão Melhorar com a dica; bloqueado (passa do castelo), fica apagado e diz por quê */
+  RP.botaoMelhorar = function (l, rotulo, classe, extra) {
+    var m = l.melhoria; if (!m) return '';
+    return '<button type="button" class="btn btn-p' + (classe || '') + (m.bloqueio ? ' btn-inativo' : '') + '" data-melhorar="' + l.id + '"' + (extra || '') +
+      (m.bloqueio ? ' data-motivo="' + RP.esc(m.bloqueio) + '"' : '') + ' data-dica="' + RP.esc(RP.dicaMelhoria(l)) + '">' + RP.icone('martelo') + rotulo + '</button>';
+  };
+  RP.botaoMoradia = function (l, rotulo, extra) {
+    return '<button type="button" class="btn btn-p" data-moradia="' + l.id + '"' + (extra || '') + ' data-dica="' + RP.esc(RP.dicaMoradia()) + '">' + RP.icone('moradia') + rotulo + '</button>';
+  };
+
   document.addEventListener('click', function (e) {
     var b;
-    if ((b = e.target.closest('[data-melhorar]'))) {
+    if ((b = e.target.closest('[data-melhorar]')) && b.classList.contains('btn-inativo')) {
+      RP.aviso({ titulo: b.getAttribute('data-motivo') || 'Não dá para melhorar agora.', icone: 'alerta', tipo: 'alerta' });
+    } else if (b) {
       RP.tentar(RP.post('/obras', { acao: 'melhorar', localId: +b.getAttribute('data-melhorar') })).then(function (it) {
         RP.fecharFolha(); RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoFilaItem(it), icone: 'martelo', tipo: 'sucesso' }); RP.recarregarReino();
       });
@@ -202,16 +244,14 @@
     if (aba === 'economia') {
       corpo = r.locais.slice().sort(function (a, b) { return a.nivel - b.nivel; }).map(function (l) {
         var m = l.melhoria;
-        return '<div class="card pilha" style="gap:var(--esp-2)"><div class="linha-entre"><span class="linha">' + RP.icone(RP.iconeLocal(l)) + '<b>' + RP.esc(l.nome) + '</b></span><span class="selo-nv">Nv ' + l.nivel + (m ? ' → ' + m.nivel : '') + '</span></div>' +
-          (m ? '<div class="linha-entre" style="align-items:flex-start">' + RP.custoHTML(m.custo) + '<span class="fraco" style="white-space:nowrap">' + RP.fmtDuracao(m.seg) + '</span></div>' +
-            (m.bloqueio ? '<p class="fraco">' + RP.esc(m.bloqueio) + '</p>' : '<button type="button" class="btn btn-p" data-melhorar="' + l.id + '">' + RP.icone('martelo') + 'Melhorar</button>')
-            : '<p class="fraco">Nível máximo.</p>') + '</div>';
+        /* uma linha por local: custo, tempo e o que muda ficam na dica do botão */
+        return '<div class="card linha-entre melhoria-linha"><span class="linha">' + RP.icone(RP.iconeLocal(l)) + '<b>' + RP.esc(l.nome) + '</b><span class="selo-nv">Nv ' + l.nivel + (m ? ' → ' + m.nivel : '') + '</span></span>' +
+          (m ? RP.botaoMelhorar(l, 'Melhorar') : '<span class="fraco">Nível máximo</span>') + '</div>';
       }).join('');
     } else if (aba === 'populacao') {
       var lugares = r.locais.filter(function (l) { return l.tipo === 'castelo' || l.tipo === 'vila'; });
-      corpo = '<div class="card pilha"><b>Moradia</b><p class="suave">+60 moradores. Cada moradia custa mais que a anterior.</p>' +
-        '<div class="linha-entre" style="align-items:flex-start">' + RP.custoHTML(r.custos.moradia) + '<span class="fraco">' + RP.fmtDuracao(r.custos.moradiaSeg) + '</span></div>' +
-        lugares.map(function (l) { return '<button type="button" class="btn btn-p" data-moradia="' + l.id + '">' + RP.icone('moradia') + 'Em ' + RP.esc(l.nome) + '</button>'; }).join('') + '</div>';
+      corpo = '<div class="card pilha"><b>Moradia</b><p class="suave">Abriga mais moradores; cada uma custa mais que a anterior.</p>' +
+        lugares.map(function (l) { return RP.botaoMoradia(l, 'Em ' + RP.esc(l.nome)); }).join('') + '</div>';
     } else if (aba === 'novos') {
       corpo = '<p class="nota-regra">' + RP.icone('mapa', 'ico-p') + '<span>Novos locais podem ser fundados em <b>qualquer hexágono livre já explorado</b>. O custo cresce a cada novo local, e o material vai até lá a pé.</span></p>' +
         '<div class="card pilha"><div class="linha-entre"><b>Custo do próximo local</b><span class="fraco">' + RP.fmtDuracao(r.custos.novoLocalSeg) + '</span></div>' + RP.custoHTML(r.custos.novoLocal) + '</div>' +
