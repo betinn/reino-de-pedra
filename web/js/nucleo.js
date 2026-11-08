@@ -387,7 +387,7 @@
     return RP.$$('.btn', t).filter(function (b) { return !b.hasAttribute('data-folha-mais'); }).map(function (b) {
       var ico = b.querySelector('svg.ico'), k = b.querySelector('kbd'); if (k) k.remove();
       return {
-        rotulo: b.textContent.trim(), iconeHTML: ico ? ico.outerHTML : '', tecla: b.getAttribute('data-tecla'),
+        rotulo: b.textContent.trim(), iconeHTML: ico ? ico.outerHTML : '', tecla: b.getAttribute('data-tecla'), dica: b.getAttribute('data-dica'),
         classe: b.classList.contains('btn-primario') ? 'primario' : b.classList.contains('btn-perigo') ? 'perigo' : b.classList.contains('btn-inativo') ? 'inativo' : '',
         href: b.tagName === 'A' ? b.getAttribute('href') : null,
         acao: b.tagName === 'A' ? null : function () {
@@ -406,7 +406,7 @@
       (itens.length ? itens.map(function (it, i) {
         if (it.sep) return '<div class="menu-ctx-sep"></div>';
         var tag = it.href ? 'a' : 'button';
-        return '<' + tag + (it.href ? ' href="' + it.href + '"' : ' type="button"') + ' class="menu-ctx-item ' + (it.classe || '') + '" role="menuitem" data-mi="' + i + '">' +
+        return '<' + tag + (it.href ? ' href="' + it.href + '"' : ' type="button"') + ' class="menu-ctx-item ' + (it.classe || '') + '" role="menuitem" data-mi="' + i + '"' + (it.dica ? ' data-dica="' + RP.esc(it.dica) + '"' : '') + '>' +
           (it.iconeHTML || (it.icone ? RP.icone(it.icone) : '')) + '<span>' + RP.esc(it.rotulo) + '</span>' + (it.tecla ? '<kbd class="tecla">' + RP.esc(RP.teclas.rotulo(it.tecla)) + '</kbd>' : '') + '</' + tag + '>';
       }).join('') : '<div class="menu-ctx-vazio">' + RP.esc(o.vazio || 'Nada a fazer aqui.') + '</div>');
     document.body.appendChild(menuEl);
