@@ -52,6 +52,35 @@ public class GuerraApiTestes
     }
 
     [Fact]
+    public async Task Sacrificar_feridos_libera_o_teto()
+    {
+        var (s, a, d, _) = await Dois();
+        await using var _s = s; using var _a = a; using var _d = d;
+        long loteId = 0; int ocupavam = 0;
+        await s.Motor.Executar(m =>
+        {
+            var r = m.Reinos.Single(x => x.Nome == "Pedralva");
+            var lote = Feridos.Adicionar(m, r, new Dictionary<string, int> { ["lanceiro"] = 3 }, "Defesa de Mina")!;
+            loteId = lote.Id;
+            ocupavam = Feridos.Ocupando(m, r);
+        });
+        Assert.Equal(3, ocupavam);
+        var (sc, res) = await a.Post("feridos/sacrificar", new { loteId });
+        Assert.True(sc == HttpStatusCode.OK, res.ToString());
+        Assert.Equal(3, res.GetProperty("mortos").GetInt32());
+        Assert.Equal(3, res.GetProperty("nomes").GetArrayLength());
+        var (_, f) = await a.Get("feridos");
+        Assert.Equal(0, f.GetProperty("total").GetInt32());
+        await s.Motor.Executar(m =>
+        {
+            var r = m.Reinos.Single(x => x.Nome == "Pedralva");
+            Assert.Equal(0, Feridos.Ocupando(m, r));
+            Assert.DoesNotContain(m.PessoasDe(r.Id), p => p.Estado == Jogo.Pessoas.Estados.Ferida);
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, (await a.Post("feridos/sacrificar", new { loteId })).status);   // o lote já não existe
+    }
+
+    [Fact]
     public async Task Modelos_de_ataque_pela_api()
     {
         var (s, a, d, _) = await Dois();

@@ -284,6 +284,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **30% das baixas** de quem vence, ou de quem recua pela tática, voltam como feridos. Quem perde sem recuar não tem feridos.
 - **Feridos são pessoas**: cada uma espera no castelo com o próprio nome e o seu prazo. Cada ferido é curado no castelo com **5 ervas raras**. Sem ervas em **24 h**, morre (o aviso diz quem).
 - Os feridos ficam no castelo e ocupam o teto. A cura entra numa fila própria, as ervas vêm pela requisição e cada cura leva 2 h; cancelada, os feridos voltam a esperar com o prazo de antes. Curados, voltam à guarnição do castelo.
+- O jogador pode **sacrificar** um grupo de feridos que espera cura: morrem na hora (o aviso diz quem) e liberam o teto para novos nascimentos. Quem já está na fila de cura não é sacrificado.
 
 ### Queda do castelo
 

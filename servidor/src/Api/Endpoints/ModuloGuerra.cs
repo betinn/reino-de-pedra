@@ -12,6 +12,7 @@ using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 namespace ReinoDePedra.Api.Endpoints;
 
 public sealed record PedidoCurar(int? Qtd);
+public sealed record PedidoSacrificar(long? LoteId);
 public sealed record PedidoInterceptar(long MarchaId, long? DeLocalId, long? ExercitoId, Dictionary<string, int>? Tropas, string? Tatica, bool? Estandarte, List<long>? Pessoas = null);
 public sealed record PedidoModelo(string? Nome, string? Tipo, string? Tatica, bool? Estandarte, bool? Completar, Dictionary<string, int>? Tropas,
     List<VisaoCombate.PedidoObjetivo>? Objetivos, string? Divisao = null, bool? RecuarVazio = null);
@@ -35,6 +36,17 @@ public sealed class ModuloGuerra : IModuloApi
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Jogo.Combate.Feridos.Curar(m, r, p.Qtd));
             }), Json.Web, statusCode: 201);
+        });
+
+        conta.MapPost("/feridos/sacrificar", async (PedidoSacrificar p, HttpContext ctx, Motor motor) =>
+        {
+            var id = ctx.ContaId();
+            return Results.Json(await motor.Executar(m =>
+            {
+                var r = Sessao.ReinoDa(m, id);
+                var nomes = Jogo.Combate.Feridos.Sacrificar(m, r, p.LoteId);
+                return new { mortos = nomes.Count, nomes };
+            }), Json.Web);
         });
 
         conta.MapPost("/interceptacao/previa", async (PedidoInterceptar p, HttpContext ctx, Motor motor) =>

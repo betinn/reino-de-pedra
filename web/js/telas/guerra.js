@@ -55,7 +55,8 @@
     return '<div class="card pilha feridos-card"><div class="card-titulo" style="margin:0">' + RP.icone('ferido', 'r-ervas') + '<h3>Feridos</h3>' + (n ? '<span class="selo selo-perigo">' + n + '</span>' : '') + '</div>' +
       (n ? '<div class="lista">' + f.lotes.map(function (l) {
         return '<div class="lista-item"><span class="ico-placa">' + RP.icone(RP.iconeUnidade(Object.keys(l.unidades)[0])) + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(RP.partesGrupo(l.unidades)) + '</b><br><small class="fraco">' +
-          RP.esc(l.origem) + ' · morrem em <span data-fim="' + l.morreEm + '">' + RP.fmtResta(l.morreEm - RP.agora()) + '</span> sem ervas</small></span></div>';
+          RP.esc(l.origem) + ' · morrem em <span data-fim="' + l.morreEm + '">' + RP.fmtResta(l.morreEm - RP.agora()) + '</span> sem ervas</small></span>' +
+          '<button type="button" class="btn btn-p btn-perigo" data-sacrificar="' + l.id + '" data-dica="' + RP.esc('Morrem agora e liberam ' + l.total + (l.total === 1 ? ' vaga' : ' vagas') + ' no teto para novos nascimentos.') + '">Sacrificar</button></div>';
       }).join('') + '</div>' +
         '<p class="fraco" style="font-size:var(--fs-2)">' + Math.round(f.frac * 100) + '% das baixas de quem vence, ou recua pela tática, voltam feridos. Cada um é curado no castelo com ' + por + ' ervas raras em ' + RP.fmtDuracao(f.curaSeg).trim() +
         '. Ervas no reino: <b>' + RP.num(f.ervas) + '</b>' + (podem < n ? ', dá para ' + podem + ' de ' + n + '.' : '.') + '</p>' +
@@ -70,6 +71,23 @@
     var ch = f.total + ':' + f.emCura + ':' + JSON.stringify((r.filas || {}).cura || []).length;
     if (!feridos || ch !== chaveF) { chaveF = ch; buscarFeridos(); }
     return '<div data-feridos>' + feridosHTML() + '</div>';
+  });
+  document.addEventListener('click', function (e) {
+    var s = e.target.closest('[data-sacrificar]');
+    if (!s) return;
+    var id = +s.getAttribute('data-sacrificar');
+    var l = feridos && feridos.lotes.filter(function (x) { return x.id === id; })[0];
+    if (!l) return;
+    RP.modal({
+      titulo: 'Sacrificar ' + l.total + (l.total === 1 ? ' ferido?' : ' feridos?'),
+      corpo: '<p class="suave">' + RP.esc(RP.partesGrupo(l.unidades)) + ' morrem agora, sem esperar as ervas. O espaço no teto volta para novos nascimentos.</p>',
+      acoes: [{ rotulo: 'Sacrificar', classe: 'btn-perigo', acao: function () {
+        RP.tentar(RP.post('/feridos/sacrificar', { loteId: id })).then(function (res) {
+          RP.aviso({ titulo: res.mortos === 1 ? 'Ferido sacrificado' : 'Feridos sacrificados', texto: res.nomes.length ? RP.esc(res.nomes.join(', ')) + '.' : '', icone: 'ferido' });
+          chaveF = ''; RP.recarregarReino(); buscarFeridos();
+        });
+      } }, { rotulo: 'Manter' }],
+    });
   });
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-curar]');
