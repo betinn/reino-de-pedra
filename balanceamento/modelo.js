@@ -58,11 +58,6 @@ const P = {
   patrulha: { maxHexes: 200 },
   /* servidor: tamanho aproximado de uma força vista ("poucas" abaixo de poucas; depois, arredondado ao passo) */
   aproximado: { poucas: 4, passo: 5 },
-  /* rumores (decisão 0035): a região de cada reino aparece desde o início (castelo a até desvio do centro, área de raio raio),
-     e marchas com pelo menos rastro.tropas pessoas levantam poeira vista a até rastro.alcance de um local ou marcha do reino,
-     na grade de rastro.grade hexágonos, com o rumo de rastro.adiante hexágonos à frente */
-  regiaoReino: { raio: 14, desvio: 9 },
-  rastro: { tropas: 12, alcance: 14, grade: 3, adiante: 6 },
   /* novos locais: custo e quando o jogador funda (médio) */
   custoNovoLocal: 150, novoLocalCresc: 1.22, tempoNovoLocal: 90 * 60,
   /* deslocamento: minutos por unidade de custo de terreno (tropa lenta ≈ 0,7 min por hexágono médio: 3 hexágonos em 2 min,
@@ -217,7 +212,8 @@ const P = {
        distante (longe) dos pontos livres, medida a partir dos locais de quem derrubou o reino. */
     exilio: { kit: { madeira: 80, pedra: 50, comida: 100, ferro: 20 }, tropas: { milicia: 2 }, pop: 6, longe: 0.5 },
     /* interceptação: as tropas precisam chegar ao ponto de encontro pelo menos 60 s antes de a marcha passar (o protótipo usa o mesmo) */
-    interceptacao: { folgaSeg: 60 },
+    /* trechoHexes: quantos hexágonos à frente da marcha valem como ponto de encontro (o resto do caminho é segredo) */
+    interceptacao: { folgaSeg: 60, trechoHexes: 30 },
     /* posturas automáticas: quem "ataca qualquer ameaça" sai contra forças hostis que passam a até 1 hexágono (a visão de tropa);
        quem "ataca apenas quem atacar" revida contra o reino que atacou nos seus locais ou exércitos na última 1 h (a volta do ataque) */
     postura: { alcance: 2, revidaH: 1 },
@@ -236,7 +232,7 @@ const P = {
   extracaoRotaFrac: 0.5,
   /* visibilidade das relíquias guardadas no mesmo local: a partir de 2, brilho para quem já explorou a área;
      a partir de 3, farol para todos, até na névoa (1 relíquia: só a espionagem revela) */
-  reliquiaVis: { brilho: 2, farol: 3 },
+  reliquiaVis: { farol: 3 },
   /* o transporte manual aparece ao fundar o primeiro local a mais de 8 hexágonos do castelo (fora da vista dele, raio 6) */
   logisticaLongeHex: 8,
   /* ---------- ferraria, eras e equipamento lendário (servidor) ---------- */
@@ -334,13 +330,14 @@ const P = {
        ×1,75 com o mapa de 104 × 80, a mesma escala linear: ver docs/decisoes/0022), cujo dono não está sob escudo e não é
        muito menor (maior nível conhecido dele ≥ 60% do nosso castelo); vai com 60% das tropas de ataque do castelo (ficam pelo
        menos 3) se a força de ataque passar de 2,5× a defesa estimada (guarnição como lanceiros, torres e milícia); um ataque por vez */
-    ataque: { castelo: 3, espionagemH: 24, alcance: 84, porte: 0.6, forca: 2.5, fracTropas: 0.6, reserva: 3, tatica: 'conservadora' },
+    /* vigiaAlcance: exército de outro reino vindo a até este alcance de um local segura as tropas em casa */
+    ataque: { castelo: 3, espionagemH: 24, alcance: 84, porte: 0.6, forca: 2.5, fracTropas: 0.6, reserva: 3, tatica: 'conservadora', vigiaAlcance: 14 },
     /* espionagem: batedor a partir do castelo 4, alvo a até 28 hexágonos, cada local de novo só depois de 24 h */
     espionagem: { castelo: 4, alcance: 84, refazerH: 24 },
     /* ocupação de ruína ou terra livre à vista, a até 14 hexágonos, com 3 lanceiros */
     ocupacao: { alcance: 42, tropas: 3 },
     /* exploração: um explorador a pé, mandado a um hexágono ainda não visto a 4 a 16 hexágonos do castelo (6 tentativas de sorteio) */
-    exploracao: { distancia: [8, 48], tentativas: 6, regiaoAlcance: 84 },   /* regiaoAlcance: vai procurar o reino da região mais perto ainda não achada */
+    exploracao: { distancia: [8, 48], tentativas: 6 },
     /* caça enquanto o couro guardado está abaixo de 40 (um batedor de elite custa 30; com o teto antigo de 10 a IA nunca juntava couro
        para espionar, e sem espionagem não atacava): 4 lanceiros, região conhecida a até 10 hexágonos, só se passam ilesos */
     caca: { couroMin: 40, alcance: 30, tropas: 4 },

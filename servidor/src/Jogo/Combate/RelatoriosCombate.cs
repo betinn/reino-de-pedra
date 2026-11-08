@@ -9,8 +9,7 @@ namespace ReinoDePedra.Jogo.Combate;
 
 /// <summary>
 /// Relatórios de combate. Atacante: cada objetivo (cumprido, parcial, falhou), o que obteve, por que voltou, perdas,
-/// feridos. Defensor: ANÔNIMO ("Forças desconhecidas", tropas vistas, tipo, direção de origem); a identidade só aparece
-/// com estandarte. Tipos "ataque" e "defesa", categoria de notificação "batalhas".
+/// feridos. Defensor: quem atacou, tropas vistas, tipo e direção de origem. Tipos "ataque" e "defesa", categoria de notificação "batalhas".
 /// </summary>
 public static class RelatoriosCombate
 {
@@ -32,24 +31,9 @@ public static class RelatoriosCombate
     private static string Recursos(IReadOnlyDictionary<string, double> r) =>
         string.Join(", ", r.Where(kv => kv.Value >= 1).Select(kv => N(Math.Floor(kv.Value + 1e-9)) + " de " + Logistica.NomeRecurso(kv.Key)));
 
-    /// <summary>Quem o defensor vê: "Forças desconhecidas", ou o reino quando há estandarte.</summary>
-    public static JsonNode? Atacante(Mundo m, long reinoId, bool estandarte)
-    {
-        if (!estandarte) return null;
-        var r = m.Reinos.Obter(reinoId);
-        if (r == null) return null;
-        return new JsonObject
-        {
-            ["id"] = r.Id, ["nome"] = r.Nome, ["iconeProprio"] = r.IconeProprio, ["iconeVersao"] = r.IconeVersao,
-            ["brasao"] = new JsonObject
-            {
-                ["forma"] = r.Brasao.Forma, ["divisao"] = r.Brasao.Divisao, ["cor1"] = r.Brasao.Cor1, ["cor2"] = r.Brasao.Cor2,
-                ["simbolo"] = r.Brasao.Simbolo, ["corSimbolo"] = r.Brasao.CorSimbolo,
-            },
-        };
-    }
-    public static string NomeAtacante(Mundo m, long reinoId, bool estandarte) =>
-        estandarte && m.Reinos.Obter(reinoId) is { } r ? "Exército de " + r.Nome : "Forças desconhecidas";
+    /// <summary>Quem atacou: todo ataque tem dono.</summary>
+    public static JsonNode? Atacante(Mundo m, long reinoId) => m.Reinos.Obter(reinoId) is { } r ? Exploracao.Espionagem.Identidade(r) : null;
+    public static string NomeAtacante(Mundo m, long reinoId) => m.Reinos.Obter(reinoId) is { } r ? "Exército de " + r.Nome : "Um exército";
 
     public static JsonArray Serie(Batalha b, long agora)
     {
@@ -76,12 +60,12 @@ public static class RelatoriosCombate
         var rel = Registros.Relatar(m, ex.ReinoId, "ataque", titulo, dados);
         Registros.Notificar(m, ex.ReinoId, "batalhas", titulo, motivo + " As tropas estão voltando.", "relatorio?id=" + rel.Id);
         if (def == null || l == null || l.ReinoId != def.Id) return;
-        var quem = NomeAtacante(m, ex.ReinoId, ex.Estandarte);
+        var quem = NomeAtacante(m, ex.ReinoId);
         var dd = new JsonObject
         {
-            ["resumo"] = quem + " chegaram a " + l.Nome + " e voltaram sem combate.",
+            ["resumo"] = quem + " chegou a " + l.Nome + " e voltou sem combate.",
             ["papel"] = "defesa", ["tipo"] = plano.Tipo, ["tipoNome"] = tipoNome, ["resultado"] = "sem-combate", ["local"] = l.Nome, ["hex"] = l.Hex,
-            ["atacante"] = Atacante(m, ex.ReinoId, ex.Estandarte),
+            ["atacante"] = Atacante(m, ex.ReinoId),
             ["tropasVistas"] = Grupo(ex.Tropas), ["direcao"] = m.G.Direcao(l.Hex, ex.Origem),
             ["linhas"] = new JsonArray(Linha("Forças", quem), Linha("Tropas vistas", GT.Partes(m, ex.Tropas)), Linha("Vindas do", m.G.Direcao(l.Hex, ex.Origem))),
         };
@@ -131,7 +115,7 @@ public static class RelatoriosCombate
         var dA = new JsonObject
         {
             ["resumo"] = resumoA, ["papel"] = "ataque", ["tipo"] = plano.Tipo, ["tipoNome"] = tipoNome, ["resultado"] = res,
-            ["alvo"] = nomeGenerico, ["batalhaId"] = b.Id, ["estandarte"] = b.Estandarte, ["tatica"] = plano.Tatica, ["divisao"] = plano.Divisao,
+            ["alvo"] = nomeGenerico, ["batalhaId"] = b.Id, ["tatica"] = plano.Tatica, ["divisao"] = plano.Divisao,
             ["forcas"] = new JsonObject { ["ataque"] = Math.Round(full.A), ["defesa"] = Math.Round(full.D) },
             ["tropas"] = new JsonObject { ["enviadas"] = Grupo(rc.TropasAtaque), ["perdas"] = Grupo(rc.PerdasAtaque), ["feridos"] = Grupo(feridosA) },
             ["mortos"] = new JsonArray(b.MortosAtaque.Select(x => (JsonNode)x).ToArray()),
@@ -156,9 +140,9 @@ public static class RelatoriosCombate
         if (c.Parte < 1 - 1e-9) ((JsonArray)dA["linhas"]!).Add(Linha("Outras frentes", "a defesa lutou contra mais de um ataque; " + Math.Round(c.Parte * 100) + "% dela nesta frente"));
         b.RelatorioAtaque = Registros.Relatar(m, b.AtacanteId, "ataque", titA, dA, "batalhas").Id;
 
-        // ---------------- defensor (anônimo sem estandarte)
+        // ---------------- defensor
         if (m.Reinos.Obter(b.DefensorId) == null) return;
-        var quem = NomeAtacante(m, b.AtacanteId, b.Estandarte);
+        var quem = NomeAtacante(m, b.AtacanteId);
         var nomeLocal = l?.ReinoId == b.DefensorId || ef.Ocupou || ef.LocalDestruido ? l?.Nome ?? "local" : l?.Nome ?? "local";
         var direcao = l != null ? m.G.Direcao(l.Hex, b.OrigemHex) : "";
         var resD = res switch { "vitoria" => "derrota", "defesa-recuou" => "recuou", "recuo" => "vitoria", _ => "vitoria" };
@@ -171,7 +155,7 @@ public static class RelatoriosCombate
         if (ef.TorresDanificadas > 0) danos.Add(ef.TorresDanificadas + (ef.TorresDanificadas > 1 ? " torres danificadas" : " torre danificada"));
         if (ef.PortoesPerdidos > 0) danos.Add("portões −" + ef.PortoesPerdidos);
         if (ef.Mortos > 0) danos.Add(N(ef.Mortos) + " mortos no massacre" + (ef.MortosNomes.Count > 0 ? " (" + Pessoas.Pessoas.Nomear(ef.MortosNomes) + ")" : ""));
-        var resumoD = quem + " (" + tipoNome.ToLowerInvariant() + ", vindas do " + direcao + "). " + resD switch
+        var resumoD = quem + " (" + tipoNome.ToLowerInvariant() + ", vindo do " + direcao + "). " + resD switch
         {
             "vitoria" => res == "recuo" ? "Os atacantes recuaram." : "A defesa venceu.",
             "recuou" => "Você recuou: tropas e população salvas, o local foi saqueado.",
@@ -180,7 +164,7 @@ public static class RelatoriosCombate
         var dD = new JsonObject
         {
             ["resumo"] = resumoD, ["papel"] = "defesa", ["tipo"] = plano.Tipo, ["tipoNome"] = tipoNome, ["resultado"] = resD,
-            ["local"] = nomeLocal, ["batalhaId"] = b.Id, ["atacante"] = Atacante(m, b.AtacanteId, b.Estandarte),
+            ["local"] = nomeLocal, ["batalhaId"] = b.Id, ["atacante"] = Atacante(m, b.AtacanteId),
             ["tropasVistas"] = Grupo(b.TropasAtaque), ["direcao"] = direcao,
             ["forcas"] = new JsonObject { ["ataque"] = Math.Round(full.A), ["defesa"] = Math.Round(full.D) },
             ["perdas"] = new JsonObject { ["guarnicao"] = Grupo(rc.PerdasDefesa), ["milicia"] = rc.MiliciaMorta, ["civisMortos"] = new JsonArray(b.CivisMortos.Select(x => (JsonNode)x).ToArray()), ["feridos"] = Grupo(feridosD), ["atacantes"] = Grupo(rc.PerdasAtaque) },

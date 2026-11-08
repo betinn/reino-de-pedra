@@ -7,7 +7,7 @@ using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 namespace ReinoDePedra.Jogo.Combate
 {
     /// <summary>
-    /// Envio de ataque pronto: tipo, tropas, objetivos, tática e estandarte, sem alvo. Um recurso "auto" nos objetivos vira o
+    /// Envio de ataque pronto: tipo, tropas, objetivos e tática, sem alvo. Um recurso "auto" nos objetivos vira o
     /// recurso principal do alvo. O último ataque enviado também fica guardado (com alvo e local de saída) para "Repetir".
     /// </summary>
     public sealed class ModeloAtaque
@@ -16,7 +16,6 @@ namespace ReinoDePedra.Jogo.Combate
         public string Nome { get; set; } = "";
         public string Tipo { get; set; } = Ataques.Saque;
         public string Tatica { get; set; } = "";
-        public bool Estandarte { get; set; }
         public bool Completar { get; set; }
         public string Divisao { get; set; } = Ataques.DivisaoPrioridade;
         public bool RecuarVazio { get; set; } = true;
@@ -31,7 +30,7 @@ namespace ReinoDePedra.Jogo.Combate
     /// <summary>Modelos de ataque do reino (até P.guerra.modelosMax) e o último ataque enviado.</summary>
     public static class ModelosAtaque
     {
-        public static ModeloAtaque Salvar(Mundo m, Reino r, string? nome, string? tipo, string? tatica, bool estandarte, bool completar,
+        public static ModeloAtaque Salvar(Mundo m, Reino r, string? nome, string? tipo, string? tatica, bool completar,
             IReadOnlyDictionary<string, int>? tropas, IEnumerable<Objetivo>? objetivos, string? divisao = null, bool recuarVazio = true)
         {
             var g = m.P.Guerra;
@@ -55,7 +54,7 @@ namespace ReinoDePedra.Jogo.Combate
             }
             var md = new ModeloAtaque
             {
-                Id = m.NovoId(), Nome = nome, Tipo = tipo, Tatica = tatica, Estandarte = estandarte, Completar = completar,
+                Id = m.NovoId(), Nome = nome, Tipo = tipo, Tatica = tatica, Completar = completar,
                 Divisao = divisao == Ataques.DivisaoIgual ? divisao : Ataques.DivisaoPrioridade, RecuarVazio = recuarVazio,
                 Tropas = grupo, Objetivos = objs, Quando = m.Agora,
             };
@@ -83,7 +82,7 @@ namespace ReinoDePedra.Jogo.Combate
             var alvo = ex.AlvoLocalId is long id ? m.Locais.Obter(id) : null;
             r.UltimoAtaque = new ModeloAtaque
             {
-                Nome = "Último ataque", Tipo = p.Tipo, Tatica = p.Tatica, Estandarte = p.Estandarte, Completar = p.Completar,
+                Nome = "Último ataque", Tipo = p.Tipo, Tatica = p.Tatica, Completar = p.Completar,
                 Divisao = p.Divisao, RecuarVazio = p.RecuarVazio, Tropas = GT.Limpo(ex.Tropas),
                 Objetivos = p.Objetivos.Select(o => o.K == "recurso" && alvo?.Produz != null && o.R == alvo.Produz ? o with { R = "auto" } : o).ToList(),
                 AlvoHex = ex.Destino, DeLocalId = m.Locais.Obter(ex.OrigemLocalId) is { } l && l.Hex == ex.Origem ? l.Id : null, Quando = m.Agora,
@@ -105,7 +104,7 @@ namespace ReinoDePedra.Jogo.Combate
             foreach (var (k, n) in md.Tropas) tropas[k] = n;
             return new JsonObject
             {
-                ["id"] = md.Id, ["nome"] = md.Nome, ["tipo"] = md.Tipo, ["tatica"] = md.Tatica, ["estandarte"] = md.Estandarte, ["completar"] = md.Completar,
+                ["id"] = md.Id, ["nome"] = md.Nome, ["tipo"] = md.Tipo, ["tatica"] = md.Tatica, ["completar"] = md.Completar,
                 ["divisao"] = md.Divisao, ["recuarVazio"] = md.RecuarVazio,
                 ["tropas"] = tropas, ["objetivos"] = objs, ["alvoHex"] = md.AlvoHex, ["deLocalId"] = md.DeLocalId, ["quando"] = md.Quando,
             };

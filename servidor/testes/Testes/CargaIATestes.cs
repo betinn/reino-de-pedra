@@ -45,7 +45,9 @@ public class CargaIATestes(ITestOutputHelper saida)
         GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
         var cpu0 = proc.TotalProcessorTime;
         var relogio = Stopwatch.StartNew();
-        long eventos = 0, jogadas = 0, sessoesIA = 0, picoMemoria = GC.GetTotalMemory(false);
+        // o processo guarda os mundos de outros testes: conta só o que este mundo acrescenta
+        var memoriaAntes = GC.GetTotalMemory(true);
+        long eventos = 0, jogadas = 0, sessoesIA = 0, picoMemoria = 0;
         var tempoSessoes = new Stopwatch();
         var proximaAmostra = m.Agora + T.Hora;
         while (true)
@@ -71,7 +73,7 @@ public class CargaIATestes(ITestOutputHelper saida)
             if (ehSessao) tempoSessoes.Stop();
             if (m.Agora >= proximaAmostra)
             {
-                picoMemoria = Math.Max(picoMemoria, GC.GetTotalMemory(false));
+                picoMemoria = Math.Max(picoMemoria, GC.GetTotalMemory(false) - memoriaAntes);
                 proximaAmostra += T.Hora;
             }
         }
@@ -97,7 +99,7 @@ public class CargaIATestes(ITestOutputHelper saida)
             mb = new DirectoryInfo(dir).GetFiles().Sum(f => f.Length) / (1024.0 * 1024);
         }
         finally { try { Directory.Delete(dir, true); } catch { } }
-        var viva = GC.GetTotalMemory(true);
+        var viva = GC.GetTotalMemory(true) - memoriaAntes;
 
         var ia = Ocupacao.DeIA(m).ToList();
         var nivelCastelo = ia.Average(r => m.Locais[r.CasteloId].Nivel);

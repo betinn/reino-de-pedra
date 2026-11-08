@@ -18,13 +18,11 @@ public class RegrasRevisaoTestes
     public RegrasRevisaoTestes() => AjustesTeste.Garantir();
 
     private static Dictionary<string, int> G(params (string k, int n)[] g) => g.ToDictionary(x => x.k, x => x.n);
-    private static void Conhecer(Mundo m, Reino a, Reino b) { Conhecimento.Conhecer(m, a, b, "teste"); Conhecimento.Conhecer(m, b, a, "teste"); }
     private static void AvancarAte(MundoTeste t, long instante) { t.Avancar(TimeSpan.FromMilliseconds(Math.Max(0, instante - t.M.Agora))); AjustesTeste.FalharSeErro(); }
 
     private static void Aliar(MundoTeste t, Reino lider, Reino outro)
     {
         var a = Aliancas.Criar(t.M, lider, "Liga " + lider.Id);
-        Conhecer(t.M, lider, outro);
         Aliancas.Convidar(t.M, lider, outro.Id);
         Aliancas.AceitarConvite(t.M, outro, a.Id);
     }

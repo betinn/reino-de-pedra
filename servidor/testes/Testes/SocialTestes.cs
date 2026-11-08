@@ -16,17 +16,15 @@ public class SocialTestes
 
     private static Dictionary<string, int> G(params (string k, int n)[] g) => g.ToDictionary(x => x.k, x => x.n);
     private static Dictionary<string, double> R(params (string k, double n)[] g) => g.ToDictionary(x => x.k, x => x.n);
-    private static void Conhecer(Mundo m, Reino a, Reino b) { Conhecimento.Conhecer(m, a, b, "teste"); Conhecimento.Conhecer(m, b, a, "teste"); }
     private static void AvancarAte(MundoTeste t, long instante) { t.Avancar(TimeSpan.FromMilliseconds(Math.Max(0, instante - t.M.Agora))); AjustesTeste.FalharSeErro(); }
     private static void SemEscudo(params Reino[] rs) { foreach (var r in rs) r.EscudoAte = 0; }
 
-    /// <summary>Aliança com o líder e os outros reinos já dentro (todos se conhecem).</summary>
+    /// <summary>Aliança com o líder e os outros reinos já dentro.</summary>
     private static Alianca Alianca(MundoTeste t, Reino lider, params Reino[] outros)
     {
         var a = Aliancas.Criar(t.M, lider, "Liga do Norte " + lider.Id);
         foreach (var o in outros)
         {
-            Conhecer(t.M, lider, o);
             Aliancas.Convidar(t.M, lider, o.Id);
             Aliancas.AceitarConvite(t.M, o, a.Id);
         }
@@ -42,26 +40,24 @@ public class SocialTestes
         var rs = Enumerable.Range(0, 6).Select(_ => t.NovoReino()).ToList();
         var a = Alianca(t, rs[0], rs[1], rs[2], rs[3], rs[4]);
         Assert.Equal(t.M.P.Alianca, a.Membros.Count);
-        Conhecer(t.M, rs[0], rs[5]);
         Assert.Contains("máximo", Assert.Throws<RegraException>(() => Aliancas.Convidar(t.M, rs[0], rs[5].Id)).Message);
         Assert.Throws<RegraException>(() => Aliancas.PedirEntrada(t.M, rs[5], a.Id));
     }
 
     [Fact]
-    public void Convite_so_para_reino_conhecido_e_revela_quem_convida()
+    public void Convite_e_pedido_de_entrada_valem_para_qualquer_reino_ativo()
     {
         var t = new MundoTeste();
-        var a = t.NovoReino(); var b = t.NovoReino();
+        var a = t.NovoReino(); var b = t.NovoReino(); var c = t.NovoReino();
         var al = Aliancas.Criar(t.M, a, "Liga do Sul");
-        Assert.Throws<RegraException>(() => Aliancas.Convidar(t.M, a, b.Id));
-        Conhecimento.Conhecer(t.M, a, b, "teste");
-        Aliancas.Convidar(t.M, a, b.Id);
-        Assert.True(Conhecimento.Conhece(b, a.Id));
+        Aliancas.Convidar(t.M, a, b.Id);   // nunca se viram
         Assert.Single(Aliancas.ConvitesPara(t.M, b.Id));
         Aliancas.AceitarConvite(t.M, b, al.Id);
         Assert.Equal(al.Id, b.AliancaId);
         Assert.True(Aliancas.SaoAliados(t.M, a.Id, b.Id));
-        Assert.Contains("alianca", b.SistemasVistos);
+        Aliancas.PedirEntrada(t.M, c, al.Id);   // também sem nunca ter visto um membro
+        Aliancas.AceitarPedido(t.M, a, c.Id);
+        Assert.Equal(al.Id, c.AliancaId);
     }
 
     [Fact]
@@ -71,7 +67,6 @@ public class SocialTestes
         var rs = Enumerable.Range(0, 5).Select(_ => t.NovoReino()).ToList();
         var a = Alianca(t, rs[0], rs[1], rs[2], rs[3]);
         var novo = rs[4];
-        Conhecer(t.M, rs[1], novo);
         // membro não convida nem promove
         Assert.Contains("líder e os conselheiros", Assert.Throws<RegraException>(() => Aliancas.Convidar(t.M, rs[1], novo.Id)).Message);
         Assert.Throws<RegraException>(() => Aliancas.Promover(t.M, rs[1], rs[2].Id));
@@ -125,15 +120,9 @@ public class SocialTestes
         Aliancas.Sair(t.M, s.Atk);
         Assert.False(Aliancas.SaoAliados(t.M, s.Atk.Id, s.Def.Id));
         Assert.Contains("24 h", Assert.Throws<RegraException>(() => Aliancas.Criar(t.M, s.Atk, "Outra Liga")).Message);
-        // sem saber de quem é o local, a trégua é descoberta ao chegar: as tropas voltam sem combate
-        var ex = s.Atacar(alvo, G(("cavalaria", 5)));
-        s.AvancarAte(ex.Chegada);
-        Assert.Empty(t.M.Batalhas);
-        Assert.True(ex.Retornando);
-        Assert.Contains(t.M.Relatorios, r => r.ReinoId == s.Atk.Id && r.Dados["porQueVoltaram"]?.GetValue<string>() == SistemaSocial.MotivoTregua);
-        // sabendo de quem é (espionado), recusa já no envio
-        s.Atk.LocaisEspionados[alvo.Id] = new LocalEspionado { DonoId = s.Def.Id };
+        // a trégua é pública: recusa já no envio, sem espionar nada
         Assert.Equal(SistemaSocial.MotivoTregua, Assert.Throws<RegraException>(() => s.Atacar(alvo, G(("cavalaria", 5)))).Message);
+        Assert.Empty(Exercitos.De(t.M, s.Atk.Id));
         // depois de 24 h: pode atacar e entrar em outra aliança
         t.AvancarHoras(t.M.P.TreguaSaidaH);
         Assert.False(Aliancas.EmTregua(t.M, s.Atk.Id, s.Def.Id));
@@ -281,11 +270,12 @@ public class SocialTestes
         t.AvancarMin(t.M.P.Mensageiro.Tempo / 60 + 1);
         Assert.Equal(1, a.MensageirosLivres);
         var cb = t.M.Locais[b.CasteloId];
-        Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 0);
         Assert.Throws<RegraException>(() => Mensageiros.Enviar(t.M, a, new string('a', t.M.P.Mensageiro.Caracteres + 1), null, cb.Id));
-        Assert.Throws<RegraException>(() => Mensageiros.Enviar(t.M, a, "olá", b.Id, null));   // reino desconhecido: só por um local dele
-        var msg = Mensageiros.Enviar(t.M, a, "Podemos conversar sobre a estrada?", null, cb.Id);
-        var mc = Assert.IsType<Mensageiro>(t.M.Marchas[msg.MarchaId!.Value]);
+        Assert.False(Nevoas.Explorado(t.M, a.Id, cb.Hex));
+        var msg = Mensageiros.Enviar(t.M, a, "Podemos conversar sobre a estrada?", null, cb.Id);   // a um local na névoa: vai ao dono
+        Assert.Equal(b.Id, msg.ParaId);   // já na saída
+        Assert.True(msg.PorReino);
+        var mc =Assert.IsType<Mensageiro>(t.M.Marchas[msg.MarchaId!.Value]);
         Assert.False(mc.Interceptavel);   // tropas não o atacam
         Assert.False(mc.AlvoDeFauna);     // fauna também não
         Assert.Equal(0, a.MensageirosLivres);
@@ -293,20 +283,22 @@ public class SocialTestes
         AvancarAte(t, mc.Chegada);
         Assert.Equal(Mensageiros.EntregueE, msg.Estado);
         Assert.Equal(b.Id, msg.ParaId);
-        Assert.True(Conhecimento.Conhece(b, a.Id));      // a mensagem revela quem mandou
-        Assert.False(Conhecimento.Conhece(a, b.Id));     // o destinatário não se revela
-        Assert.False(Mensageiros.DestinatarioConhecido(t.M, msg));
+        Assert.Equal(a.Id, msg.DeId);
         Assert.True(mc.Retornando);
         AvancarAte(t, mc.Chegada);
         Assert.Equal(1, a.MensageirosLivres);
-        // b responde: agora a sabe quem é
+        // b responde: a resposta vai a quem mandou
         t.DarRecursos(b);
         Mensageiros.Treinar(t.M, b, 1);
         t.AvancarMin(t.M.P.Mensageiro.Tempo / 60 + 1);
         var resp = Mensageiros.Enviar(t.M, b, "Podemos.", null, null, msg.Id);
         AvancarAte(t, t.M.Marchas[resp.MarchaId!.Value].Chegada);
-        Assert.True(Conhecimento.Conhece(a, b.Id));
-        Assert.True(Mensageiros.DestinatarioConhecido(t.M, msg));
+        Assert.Equal(Mensageiros.EntregueE, resp.Estado);
+        Assert.Equal(a.Id, resp.ParaId);
+        // direto a um reino, sem nunca ter visto nada dele
+        var c = t.NovoReino();
+        var direta = Mensageiros.Enviar(t.M, a, "Boa temporada.", c.Id, null);
+        Assert.Equal(c.Id, direta.ParaId);
     }
 
     [Fact]
@@ -327,18 +319,16 @@ public class SocialTestes
     // ---------------------------------------------------------------- troca direta
 
     [Fact]
-    public void Troca_so_com_conhecidos_e_as_duas_cargas_viajam()
+    public void Troca_com_qualquer_reino_e_as_duas_cargas_viajam()
     {
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino();
         SemEscudo(a, b);
         t.DarRecursos(a, 5000); t.DarRecursos(b, 5000);
         t.M.Locais[b.CasteloId].Estoque.Somar("prata", 100);
-        Assert.Contains("conhece", Assert.Throws<RegraException>(() => Comercio.ProporTroca(t.M, a, b.Id, R(("madeira", 500)), R(("prata", 40)), null)).Message);
-        Conhecimento.Conhecer(t.M, a, b, "espionagem");
+        Assert.Throws<RegraException>(() => Comercio.ProporTroca(t.M, a, a.Id, R(("madeira", 500)), R(("prata", 40)), null));   // consigo mesmo, não
         Assert.Throws<RegraException>(() => Comercio.ProporTroca(t.M, a, b.Id, R(("madeira", 500)), R(("prata", 40)), new string('x', t.M.P.Mensageiro.RecadoProposta + 1)));
         var p = Comercio.ProporTroca(t.M, a, b.Id, R(("madeira", 500)), R(("prata", 40)), "pela estrada do rei");
-        Assert.True(Conhecimento.Conhece(b, a.Id));   // a proposta revela quem propõe
         Assert.Throws<RegraException>(() => Comercio.AceitarTroca(t.M, a, p.Id));   // só o destinatário aceita
         Comercio.AceitarTroca(t.M, b, p.Id);
         Assert.Equal(Comercio.Aceita, p.Estado);
@@ -359,7 +349,6 @@ public class SocialTestes
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino();
         SemEscudo(a, b);
-        Conhecer(t.M, a, b);
         t.DarRecursos(a, 5000);
         var p = Comercio.ProporTroca(t.M, a, b.Id, R(("madeira", 100)), R(("pedra", 100)), null);
         t.AvancarHoras(t.M.P.Social.PropostaH + 0.1);
@@ -374,7 +363,6 @@ public class SocialTestes
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino();
         SemEscudo(a, b);
-        Conhecer(t.M, a, b);
         t.M.Locais[a.CasteloId].Estoque.Somar("prata", 100);
         Assert.Throws<RegraException>(() => Comercio.ProporPacto(t.M, a, b.Id, 0, null, null, null));
         Assert.Throws<RegraException>(() => Comercio.ProporPacto(t.M, a, b.Id, t.M.P.Pacto.DiasMax + 1, null, null, null));
@@ -387,20 +375,13 @@ public class SocialTestes
         Assert.Equal(Comercio.Ativo, pc.Estado);
         Assert.True(Comercio.PactoAtivo(t.M, a.Id, b.Id));
         Assert.Equal(pc.Inicio + 3 * T.Dia, pc.Fim);
-        // ataque: o local espionado recusa no envio
-        var ca = t.M.Locais[a.CasteloId]; var cb = t.M.Locais[b.CasteloId];
+        // o pacto é público: recusa no envio, a qualquer local do outro, sem espionar nada
+        var ca = t.M.Locais[a.CasteloId];
         ca.Guarnicao["cavalaria"] = 10;
-        a.LocaisEspionados[cb.Id] = new LocalEspionado { DonoId = b.Id };
-        Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 0);
-        Assert.Equal(SistemaSocial.MotivoPacto, Assert.Throws<RegraException>(() =>
-            Exercitos.Enviar(t.M, a, ca.Id, G(("cavalaria", 5)), cb.Hex, OrdemAtacar.Id, false, CombateCenario.Plano())).Message);
-        // sem saber de quem é, descobre ao chegar e volta sem combate
-        var mina = t.M.LocaisDe(b.Id).First(l => l.Tipo == TipoLocal.Mina);
-        Nevoas.RevelarArea(t.M, a.Id, mina.Hex, 0);
-        var ex = Exercitos.Enviar(t.M, a, ca.Id, G(("cavalaria", 5)), mina.Hex, OrdemAtacar.Id, false, CombateCenario.Plano());
-        AvancarAte(t, ex.Chegada);
-        Assert.Empty(t.M.Batalhas);
-        Assert.True(ex.Retornando);
+        foreach (var l in t.M.LocaisDe(b.Id).ToList())
+            Assert.Equal(SistemaSocial.MotivoPacto, Assert.Throws<RegraException>(() =>
+                Exercitos.Enviar(t.M, a, ca.Id, G(("cavalaria", 5)), l.Hex, OrdemAtacar.Id, false, CombateCenario.Plano())).Message);
+        Assert.Empty(Exercitos.De(t.M, a.Id));
         // explorador do outro não é capturado durante o pacto
         Assert.Contains(Capturas.Ignorar, f => f(t.M, a, b));
         // termina depois dos dias
@@ -410,12 +391,25 @@ public class SocialTestes
     }
 
     [Fact]
+    public void Pacto_que_comeca_com_as_tropas_a_caminho_as_faz_voltar_na_chegada()
+    {
+        var s = new CombateCenario();
+        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 2)), 50, dist: 8);
+        var ex = s.Atacar(alvo, G(("cavalaria", 5)));
+        Comercio.AceitarPacto(s.M, s.Def, Comercio.ProporPacto(s.M, s.Atk, s.Def.Id, 1, null, null, null).Id);
+        Assert.True(Comercio.PactoAtivo(s.M, s.Atk.Id, s.Def.Id));
+        s.AvancarAte(ex.Chegada);
+        Assert.Empty(s.M.Batalhas);
+        Assert.True(ex.Retornando);
+        Assert.Contains(s.M.Relatorios, r => r.ReinoId == s.Atk.Id && r.Dados["porQueVoltaram"]?.GetValue<string>() == SistemaSocial.MotivoPacto);
+    }
+
+    [Fact]
     public void Pacto_nao_comeca_se_o_pagamento_for_roubado()
     {
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino(); var c = t.NovoReino();
         SemEscudo(a, b, c);
-        Conhecer(t.M, a, b);
         t.M.Locais[b.CasteloId].Estoque.Somar("prata", 100);
         var p = Comercio.ProporPacto(t.M, a, b.Id, 2, "outro", R(("prata", 30)), null);   // a cobra de b
         var pc = Comercio.AceitarPacto(t.M, b, p.Id);
@@ -435,7 +429,6 @@ public class SocialTestes
         var t = new MundoTeste();
         var rs = Enumerable.Range(0, 5).Select(_ => t.NovoReino()).ToList();
         var a = rs[0];
-        foreach (var r in rs) Conhecer(t.M, a, r);
         SemEscudo(rs.ToArray());
         for (var i = 1; i <= t.M.P.Pacto.AtivosMax; i++)
             Comercio.AceitarPacto(t.M, rs[i], Comercio.ProporPacto(t.M, a, rs[i].Id, 1, null, null, null).Id);
@@ -445,7 +438,6 @@ public class SocialTestes
         // ninguém cobra pacto de reino sob escudo
         var novato = t.NovoReino();
         var b = rs[4];
-        Conhecer(t.M, b, novato);
         t.M.Locais[novato.CasteloId].Estoque.Somar("prata", 100);
         // a proposta não revela o escudo a quem propõe; o novato é que não consegue aceitar
         var cobra = Comercio.ProporPacto(t.M, b, novato.Id, 2, "outro", R(("prata", 10)), null);
@@ -461,7 +453,6 @@ public class SocialTestes
         var t = new MundoTeste();
         var veterano = t.NovoReino(); var novato = t.NovoReino();
         veterano.EscudoAte = 0;
-        Conhecer(t.M, veterano, novato);
         t.DarRecursos(veterano, 50000); t.DarRecursos(novato, 50000);
         var lim = t.M.P.Comercio.NovatoDia;
         // propor uma troca desequilibrada a quem não é aliado não diz nada sobre o escudo dele
@@ -555,7 +546,7 @@ public class SocialTestes
     }
 
     [Fact]
-    public void Derrubar_bandeira_avisa_o_dono_sem_dizer_quem_e_mostra_o_autor()
+    public void Derrubar_bandeira_avisa_o_dono_de_quem_foi()
     {
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino();
@@ -564,28 +555,20 @@ public class SocialTestes
         Assert.Throws<RegraException>(() => Bandeiras.Colocar(t.M, a, h, "ameaca", "Esta estrada é nossa"));   // a ainda não explorou ali
         Nevoas.RevelarArea(t.M, a.Id, h, 0);
         var band = Bandeiras.Colocar(t.M, a, h, "ameaca", "Esta estrada é nossa");
-        // b vê a bandeira: passa a conhecer a (bandeiras mostram quem colocou)
-        t.AvancarMin(1);
-        Nevoas.VisiveisAgora(t.M, b.Id);
-        Assert.Contains(Fotos.De(t.M, b.Id).Objetos.GetValueOrDefault(h) ?? [], o => o["tipo"]?.GetValue<string>() == "bandeira");
-        Assert.True(Conhecimento.Conhece(b, a.Id));
-        // b derruba sem estandarte: a é avisado sem saber quem foi
+        // b derruba: a é avisado de quem foi
         cb.Guarnicao["lanceiro"] = 3;
         var ex = Exercitos.Enviar(t.M, b, cb.Id, G(("lanceiro", 1)), h, OrdemDerrubarBandeira.Id, false, new JsonObject { ["bandeira"] = band.Id });
         Assert.Throws<RegraException>(() => Exercitos.Enviar(t.M, a, t.M.Locais[a.CasteloId].Id, G(("lanceiro", 1)), h, OrdemDerrubarBandeira.Id));   // a própria não
         AvancarAte(t, ex.Chegada);
         Assert.Null(t.M.Bandeiras.Obter(band.Id));
         var n = t.M.Notificacoes.Where(x => x.ReinoId == a.Id && x.Titulo == "Bandeira derrubada").Single();
-        Assert.DoesNotContain(b.Nome, n.Texto);
-        Assert.False(Conhecimento.Conhece(a, b.Id));
-        // com estandarte: o dono sabe quem foi
+        Assert.Contains(b.Nome, n.Texto);
+        // sem dizer qual: derruba todas as alheias do hexágono
         var band2 = Bandeiras.Colocar(t.M, a, h, "ameaca", "De novo aqui");
         AvancarAte(t, ex.Chegada);   // as tropas voltaram
-        var ex2 = Exercitos.Enviar(t.M, b, cb.Id, G(("lanceiro", 1)), h, OrdemDerrubarBandeira.Id, false, new JsonObject { ["estandarte"] = true });
+        var ex2 = Exercitos.Enviar(t.M, b, cb.Id, G(("lanceiro", 1)), h, OrdemDerrubarBandeira.Id);
         AvancarAte(t, ex2.Chegada);
         Assert.Null(t.M.Bandeiras.Obter(band2.Id));
-        Assert.Contains(t.M.Notificacoes, x => x.ReinoId == a.Id && x.Titulo == "Bandeira derrubada" && x.Texto!.Contains(b.Nome));
-        Assert.True(Conhecimento.Conhece(a, b.Id));
     }
 
     // ---------------------------------------------------------------- persistência
@@ -606,7 +589,6 @@ public class SocialTestes
             var ex = Exercitos.Enviar(t.M, a, ca.Id, G(("lanceiro", 4)), t.M.Locais[b.CasteloId].Hex, OrdemReforcar.Id);
             AvancarAte(t, ex.Chegada);
             Aliancas.Falar(t.M, a, "Olá");
-            Conhecer(t.M, a, c);
             Comercio.ProporTroca(t.M, a, c.Id, R(("madeira", 100)), R(("pedra", 100)), null);
             Comercio.AceitarPacto(t.M, c, Comercio.ProporPacto(t.M, a, c.Id, 2, "eu", R(("madeira", 50)), null).Id);
             Comercio.AceitarPedido(t.M, b, Comercio.PedirRecursos(t.M, a, b.Id, R(("pedra", 100)), null, null).Id);
@@ -640,16 +622,13 @@ public class SocialTestes
     // ---------------------------------------------------------------- sistemas aos poucos
 
     [Fact]
-    public void Conhecer_o_primeiro_reino_apresenta_aliancas_e_comercio()
+    public void Aliancas_e_comercio_ficam_abertos_desde_o_inicio()
     {
         var t = new MundoTeste();
-        var a = t.NovoReino(); var b = t.NovoReino();
-        Assert.DoesNotContain("alianca", a.SistemasVistos);
-        Assert.False(Sistemas.Estado(a)["comercio"]);
-        Conhecimento.Conhecer(t.M, a, b, "espionagem");
-        Assert.Contains("alianca", a.SistemasVistos);
-        Assert.True(Sistemas.Estado(a)["comercio"]);
-        Assert.Contains(t.M.Notificacoes, n => n.ReinoId == a.Id && n.Titulo == "Novo: Comércio e diplomacia");
-        Assert.False(Sistemas.Revelar(t.M, a, "comercio"));   // uma vez só
+        var a = t.NovoReino();
+        var estado = Sistemas.Estado(a);
+        Assert.False(estado.ContainsKey("alianca"));   // sem gatilho: nada a revelar
+        Assert.False(estado.ContainsKey("comercio"));
+        Assert.DoesNotContain(t.M.Notificacoes, n => n.ReinoId == a.Id && n.Titulo == "Novo: Comércio e diplomacia");
     }
 }

@@ -228,7 +228,7 @@ public class GuerraTestes
         Assert.False(q.Exilio);
         Assert.Contains("Coroa de Ferro", q.ReliquiasLevadas);
         var relat = s.M.Relatorios.Single(x => x.ReinoId == s.Def.Id && x.Tipo == "queda");
-        Assert.DoesNotContain(s.Atk.Nome, relat.Dados.ToJsonString());   // sem estandarte, sem nome
+        Assert.Contains(s.Atk.Nome, relat.Dados.ToJsonString());   // quem derrubou tem nome
         Assert.Contains(s.M.Notificacoes, n => n.ReinoId == s.Atk.Id && n.Titulo == "Castelo derrubado");
     }
 
@@ -282,12 +282,12 @@ public class GuerraTestes
 
     // ---------------------------------------------------------------- interceptação
 
-    /// <summary>Exército do defensor saindo de uma mina à vista do atacante rumo a um ponto longe.</summary>
+    /// <summary>Exército do defensor saindo de uma mina perto do atacante rumo a um ponto longe, por onde a cavalaria do atacante o alcança.</summary>
     private static (CombateCenario s, Local mina, Exercito alvo) Marcha(int lanceiros = 10, int dist = 30)
     {
         var s = new CombateCenario();
         var mina = s.Alvo(TipoLocal.Mina, G(("lanceiro", lanceiros)), 0);
-        var destino = s.HexLivre(mina.Hex, dist);
+        var destino = CombateCenario.DestinoInterceptavel(s.M, mina.Hex, s.CasteloAtk.Hex, dist);
         var alvo = Exercitos.Enviar(s.M, s.Def, mina.Id, G(("lanceiro", lanceiros)), destino, OrdemMover.Id);
         alvo.Carga.Somar("ferro", 200);   // cabe na carga dos 30 cavaleiros mesmo depois das baixas
         return (s, mina, alvo);
@@ -304,6 +304,7 @@ public class GuerraTestes
         Assert.Contains(e!.Hex, alvo.Caminho);
         Assert.True(e.Nos <= e.Eles - T.DeSegundos(s.M.P.Guerra.Interceptacao.FolgaSeg));
         Assert.True(e.Indice < alvo.Caminho.Count - 1);
+        Assert.InRange(e.Indice, 1, s.M.P.Guerra.Interceptacao.TrechoHexes);   // só o trecho à frente: o resto do caminho é segredo
         // lentos demais não alcançam
         Assert.Null(Interceptacoes.Calcular(s.M, s.HexLivre(alvo.Origem, 75), G(("ariete", 1)), alvo));
         var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, tropas, e.Hex, OrdemInterceptar.Id, false, new JsonObject { ["marchaId"] = alvo.Id });
@@ -316,7 +317,7 @@ public class GuerraTestes
         Assert.True(ex.Retornando);
         var rel = s.M.Relatorios.Single(x => x.ReinoId == s.Def.Id && x.Tipo == "defesa");
         Assert.Equal("interceptacao", rel.Dados["tipo"]!.GetValue<string>());
-        Assert.Null(rel.Dados["atacante"]);                           // anônimo sem estandarte
+        Assert.Equal(s.Atk.Nome, rel.Dados["atacante"]!["nome"]!.GetValue<string>());
         Assert.Contains(s.M.Relatorios, x => x.ReinoId == s.Atk.Id && x.Tipo == "ataque" && x.Dados["resultado"]!.GetValue<string>() == "vitoria");
     }
 
@@ -326,8 +327,9 @@ public class GuerraTestes
         var (s, mina, alvo) = Marcha();
         var tropas = G(("cavalaria", 30));
         s.Guarnecer(s.CasteloAtk, tropas);
-        var e = Interceptacoes.Calcular(s.M, s.CasteloAtk.Hex, tropas, alvo)!;
-        var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, tropas, e.Hex, OrdemInterceptar.Id, false, new JsonObject { ["marchaId"] = alvo.Id });
+        var e = Interceptacoes.Calcular(s.M, s.CasteloAtk.Hex, tropas, alvo);
+        Assert.NotNull(e);
+        var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, tropas, e!.Hex, OrdemInterceptar.Id, false, new JsonObject { ["marchaId"] = alvo.Id });
         Exercitos.DarOrdem(s.M, s.Def, alvo.Id, OrdemRetornar.Id, null);   // o alvo volta para a mina
         s.AvancarAte(Math.Max(ex.Chegada, e.Eles) + T.Min);
         Assert.True(ex.Retornando);
@@ -336,7 +338,7 @@ public class GuerraTestes
     }
 
     [Fact]
-    public void So_marcha_alheia_a_vista_e_interceptavel()
+    public void Marcha_alheia_em_movimento_e_interceptavel_mesmo_fora_da_vista()
     {
         var (s, _, alvo) = Marcha();
         Assert.Throws<RegraException>(() => Interceptacoes.Alvo(s.M, s.Def, alvo.Id));          // a própria
@@ -344,7 +346,10 @@ public class GuerraTestes
         Assert.Equal("Pacto de não agressão.", Assert.Throws<RegraException>(() => Interceptacoes.Alvo(s.M, s.Atk, alvo.Id)).Message);
         AjustesTeste.De(s.M).Bloquear = null;
         Assert.Same(alvo, Interceptacoes.Alvo(s.M, s.Atk, alvo.Id));
-        s.AvancarAte(alvo.Chegada);                                                              // chegou longe, fora da visão
+        s.AvancarAte(alvo.Chegada - T.Min);                                                      // longe, fora da visão: continua pública
+        Assert.DoesNotContain(alvo.HexEm(s.M.Agora), ReinoDePedra.Jogo.Exploracao.Nevoas.VisiveisAgora(s.M, s.Atk.Id));
+        Assert.Same(alvo, Interceptacoes.Alvo(s.M, s.Atk, alvo.Id));
+        s.AvancarAte(alvo.Chegada);                                                              // chegou: não está mais em marcha
         Assert.Throws<RegraException>(() => Interceptacoes.Alvo(s.M, s.Atk, alvo.Id));
     }
 
@@ -418,32 +423,6 @@ public class GuerraTestes
         Assert.True(GT.Total(vig.Tropas) < 30);
     }
 
-    // ---------------------------------------------------------------- avistamentos
-
-    [Fact]
-    public void Forcas_vistas_ficam_no_mapa_por_10h_depois_de_sair_da_visao_e_somem()
-    {
-        var s = new CombateCenario();
-        var mina = s.Alvo(TipoLocal.Mina, G(("lanceiro", 10)), 0);
-        var visao = ForcasVistas.Visao(s.M, s.Atk.Id);
-        var destino = s.M.G.Area(mina.Hex, 24).First(h => s.M.G.Distancia(h, mina.Hex) >= 20 && !visao.Contains(h) && Obras.HexLivre(s.M, h) && !s.M.Mapa.Rio[h]
-            && Caminhos.Calcular(s.M, mina.Hex, h, "Lenta").Hexes[^1] == h);
-        var alvo = Exercitos.Enviar(s.M, s.Def, mina.Id, G(("lanceiro", 10)), destino, OrdemMover.Id);
-        var sai = alvo.Caminho.FindIndex(h => !visao.Contains(h));
-        Assert.True(sai > 0);
-        s.AvancarAte(alvo.Tempos[sai] - 1);
-        Assert.Empty(ForcasVistas.De(s.M, s.Atk.Id));
-        s.AvancarAte(alvo.Tempos[sai]);
-        var f = Assert.Single(ForcasVistas.De(s.M, s.Atk.Id));
-        Assert.Equal(alvo.Caminho[sai - 1], f.Hex);
-        Assert.Equal("exercito", f.Marcha);
-        Assert.Empty(ForcasVistas.De(s.M, s.Def.Id));                       // a própria marcha não conta
-        s.AvancarAte(f.Ate - 1);
-        Assert.Single(ForcasVistas.De(s.M, s.Atk.Id));
-        s.AvancarAte(f.Ate);
-        Assert.DoesNotContain(s.M.ForcasVistas, x => x.ReinoId == s.Atk.Id);
-    }
-
     // ---------------------------------------------------------------- modelos e último ataque
 
     [Fact]
@@ -461,14 +440,14 @@ public class GuerraTestes
         Assert.Equal(s.CasteloAtk.Id, u.DeLocalId);
         Assert.Equal("auto", u.Objetivos[0].R);                    // o recurso principal do alvo vira "auto"
         Assert.Equal("pedra", u.Objetivos[1].R);
-        var md = ModelosAtaque.Salvar(s.M, s.Atk, "Saque leve", "saque", "media", false, true, G(("cavalaria", 10)), [new Objetivo("recurso", "auto", 800)]);
+        var md = ModelosAtaque.Salvar(s.M, s.Atk, "Saque leve", "saque", "media", true, G(("cavalaria", 10)), [new Objetivo("recurso", "auto", 800)]);
         Assert.Single(s.Atk.ModelosAtaque);
         Assert.Equal("madeira", ModelosAtaque.ObjetivosPara(md, new Local { Produz = "madeira" })[0].R);
         Assert.Empty(ModelosAtaque.ObjetivosPara(md, new Local { Produz = null }));
-        Assert.Throws<RegraException>(() => ModelosAtaque.Salvar(s.M, s.Atk, "x", "saque", "media", false, false, G(("milicia", 3)), null));
-        Assert.Throws<RegraException>(() => ModelosAtaque.Salvar(s.M, s.Atk, "x", "massacre", "media", false, false, null, [new Objetivo("recurso", "ferro", 1)]));
-        for (var i = 1; i < s.M.P.Guerra.ModelosMax; i++) ModelosAtaque.Salvar(s.M, s.Atk, null, null, null, false, false, null, null);
-        Assert.Throws<RegraException>(() => ModelosAtaque.Salvar(s.M, s.Atk, null, null, null, false, false, null, null));
+        Assert.Throws<RegraException>(() => ModelosAtaque.Salvar(s.M, s.Atk, "x", "saque", "media", false, G(("milicia", 3)), null));
+        Assert.Throws<RegraException>(() => ModelosAtaque.Salvar(s.M, s.Atk, "x", "massacre", "media", false, null, [new Objetivo("recurso", "ferro", 1)]));
+        for (var i = 1; i < s.M.P.Guerra.ModelosMax; i++) ModelosAtaque.Salvar(s.M, s.Atk, null, null, null, false, null, null);
+        Assert.Throws<RegraException>(() => ModelosAtaque.Salvar(s.M, s.Atk, null, null, null, false, null, null));
         ModelosAtaque.Apagar(s.M, s.Atk, md.Id);
         Assert.Equal(s.M.P.Guerra.ModelosMax - 1, s.Atk.ModelosAtaque.Count);
     }
@@ -490,7 +469,7 @@ public class GuerraTestes
     // ---------------------------------------------------------------- persistência
 
     [Fact]
-    public void Feridos_modelos_avistamentos_e_interceptacao_sao_salvos_e_recarregados()
+    public void Feridos_modelos_e_interceptacao_sao_salvos_e_recarregados()
     {
         var dir = Path.Combine(Path.GetTempPath(), "rp-guerra-" + Guid.NewGuid().ToString("N"));
         try
@@ -498,12 +477,12 @@ public class GuerraTestes
             var (s, _, alvo) = Marcha();
             var tropas = G(("cavalaria", 30));
             s.Guarnecer(s.CasteloAtk, tropas);
-            var e = Interceptacoes.Calcular(s.M, s.CasteloAtk.Hex, tropas, alvo)!;
-            var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, tropas, e.Hex, OrdemInterceptar.Id, false, new JsonObject { ["marchaId"] = alvo.Id });
+            var e = Interceptacoes.Calcular(s.M, s.CasteloAtk.Hex, tropas, alvo);
+            Assert.NotNull(e);
+            var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, tropas, e!.Hex, OrdemInterceptar.Id, false, new JsonObject { ["marchaId"] = alvo.Id });
             s.AvancarAte(ex.Chegada);
             Feridos.Adicionar(s.M, s.Atk, G(("lanceiro", 3)), "teste");
-            ModelosAtaque.Salvar(s.M, s.Atk, "Saque", "saque", "media", false, false, G(("cavalaria", 5)), [new Objetivo("recurso", "auto", 500)]);
-            ForcasVistas.Registrar(s.M, s.Atk.Id, alvo, alvo.Origem, "sul");
+            ModelosAtaque.Salvar(s.M, s.Atk, "Saque", "saque", "media", false, G(("cavalaria", 5)), [new Objetivo("recurso", "auto", 500)]);
             Revide.Registrar(s.M, s.Atk.Id, s.Def.Id);
             s.Guarnecer(s.CasteloAtk, G(("lanceiro", 2)));
             Pessoas.Sincronizar(s.M, s.CasteloAtk);
@@ -518,7 +497,6 @@ public class GuerraTestes
             var r2 = m2.Reinos[s.Atk.Id];
             Assert.Equal(3, Feridos.Total(r2));
             Assert.Equal("auto", r2.ModelosAtaque.Single().Objetivos[0].R);
-            Assert.Single(ForcasVistas.De(m2, s.Atk.Id));
             Assert.True(Revide.Atacou(m2, s.Atk.Id, s.Def.Id));
             Assert.Equal(2.5, Veterania.DoLocal(m2, m2.Locais[s.CasteloAtk.Id]), 6);
             // o encontro agendado acontece no mundo recarregado

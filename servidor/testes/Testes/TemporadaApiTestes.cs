@@ -37,7 +37,7 @@ public class TemporadaApiTestes
 
         // região inicial só no nível 5
         using var c2 = s.NovoCliente();
-        await c2.Post("conta/registrar", new { email = "regiao@exemplo.test", senha = "senha muito boa 123" });
+        await c2.CriarConta("regiao@exemplo.test");
         var (sx, ex) = await c2.Post("reino", new { nome = "Ventania", regiao = "norte", brasao = new { forma = "portugues", divisao = "cortado", cor1 = "azul", cor2 = "vermelho", simbolo = "torre", corSimbolo = "ouro" } });
         Assert.Equal(HttpStatusCode.BadRequest, sx);
         Assert.Contains("nível 5", ex.GetProperty("erro").GetString());

@@ -10,14 +10,13 @@ namespace ReinoDePedra.Jogo.Social
 {
     /// <summary>
     /// Mensagem levada por mensageiro. Revela quem a mandou; o destinatário só se revela se responder.
-    /// Enviada a um local de dono desconhecido, quem manda não fica sabendo quem recebeu.
     /// </summary>
     public sealed class Mensagem : Documento
     {
         public long DeId { get; set; }
-        /// <summary>Quem recebeu (0 enquanto o mensageiro não chega a um local de dono desconhecido).</summary>
+        /// <summary>Quem recebe.</summary>
         public long ParaId { get; set; }
-        /// <summary>Mandada a um reino conhecido (quem manda sabe para quem é); senão, a um local.</summary>
+        /// <summary>Mandada a um reino. Mensagens antigas podem ter ido a um local (o dono de então recebe).</summary>
         public bool PorReino { get; set; }
         public long? LocalId { get; set; }
         public int Hex { get; set; }
@@ -98,8 +97,8 @@ namespace ReinoDePedra.Jogo.Social
         }
 
         /// <summary>
-        /// Manda um mensageiro: a um reino conhecido (vai ao castelo dele) ou a um local de outro reino já explorado,
-        /// mesmo de dono desconhecido. <paramref name="respondeA"/>: a mensagem recebida que esta responde.
+        /// Manda um mensageiro: a um reino (vai ao castelo dele) ou a um local de outro reino (entrega ao dono).
+        /// <paramref name="respondeA"/>: a mensagem recebida que esta responde.
         /// </summary>
         public static Mensagem Enviar(Mundo m, Reino r, string? texto, long? paraReinoId, long? localId, long? respondeA = null)
         {
@@ -119,17 +118,16 @@ namespace ReinoDePedra.Jogo.Social
             {
                 var para = m.Reinos.Obter(pid);
                 if (para == null || !para.Ativo || para.Id == r.Id) throw new RegraException("Reino não encontrado.", 404);
-                if (original == null && !Conhecimento.Conhece(r, pid)) throw new RegraException("Para um reino que você não conhece, mande o mensageiro a um local dele.");
                 var c = m.Locais.Obter(para.CasteloId) ?? throw new RegraException("Esse reino não tem castelo.");
                 hex = c.Hex; lid = c.Id; porReino = true;
             }
             else if (localId is long l0)
             {
                 var l = m.Locais.Obter(l0);
-                if (l == null || !Nevoas.Explorado(m, r.Id, l.Hex)) throw new RegraException("Local não encontrado.", 404);
+                if (l == null) throw new RegraException("Local não encontrado.", 404);
                 if (l.ReinoId == r.Id) throw new RegraException("Esse local é seu.");
                 if (l.ReinoId == 0 || l.Ruina) throw new RegraException("Esse local não tem dono para receber a mensagem.");
-                hex = l.Hex; lid = l.Id;
+                hex = l.Hex; lid = l.Id; porReino = true; paraReinoId = l.ReinoId;
             }
             else throw new RegraException("Escolha para quem vai a mensagem.");
             PS.SincronizarLivres(m, r);
@@ -201,17 +199,12 @@ namespace ReinoDePedra.Jogo.Social
                 return;
             }
             msg.ParaId = para.Id; msg.Estado = EntregueE; msg.Entregue = m.Agora; m.Sujar(msg);
-            Conhecimento.Conhecer(m, para, de, "mensagem");   // a mensagem revela quem a mandou
             var previa = msg.Texto.Length > 60 ? msg.Texto[..60] + "…" : msg.Texto;
             Registros.Notificar(m, para.Id, "mensagens", "Mensageiro de " + de.Nome, "“" + previa + "”", "mensagens");
             Registros.Notificar(m, de.Id, "mensagens", "Mensagem entregue", "O mensageiro volta para o castelo.", "mensagens");
             Podar(m, para.Id);
             m.Avisar(para.Id, "mensagem"); m.Avisar(de.Id, "mensagem");
         }
-
-        /// <summary>Quem mandou pode saber quem recebeu? Só se mandou a um reino conhecido, ou se o destinatário respondeu.</summary>
-        public static bool DestinatarioConhecido(Mundo m, Mensagem msg) =>
-            msg.PorReino || (msg.ParaId != 0 && m.Mensagens.Any(x => x.RespondeA == msg.Id && x.DeId == msg.ParaId && x.Estado == EntregueE));
 
         public static IEnumerable<Mensagem> Recebidas(Mundo m, long reinoId) => m.Mensagens.Where(x => x.ParaId == reinoId && x.Estado == EntregueE);
         public static IEnumerable<Mensagem> Enviadas(Mundo m, long reinoId) => m.Mensagens.Where(x => x.DeId == reinoId);

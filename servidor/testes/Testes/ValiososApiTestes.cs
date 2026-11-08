@@ -93,7 +93,7 @@ public class ValiososApiTestes
         var (spo, po) = await c.Post("postos", new { hex = hexJazida });
         Assert.True(spo == HttpStatusCode.Created, po.ToString());
 
-        // relíquias: as suas, com o brilho no mapa de quem explorou; para outro reino, anônimas
+        // relíquias: as suas, com o tipo; para outro reino, o brilho no mapa, sem o tipo
         var (srl, rel) = await c.Get("reliquias");
         Assert.True(srl == HttpStatusCode.OK, srl + " " + rel);
         Assert.Equal(2, rel.GetProperty("minhas").GetArrayLength());
@@ -114,7 +114,9 @@ public class ValiososApiTestes
         await c2.ContaComReino("bia@exemplo.com", "Valdren");
         var (_, mapa2) = await c2.Get("mapa");
         Assert.DoesNotContain(Objetos(mapa2, "reliquia-em"), o => o.TryGetProperty("local", out var l) && l.GetInt64() == mina);
-        Assert.Empty(Objetos(mapa2, "brilho"));   // não explorou a área
+        var brilho = Assert.Single(Objetos(mapa2, "brilho"));   // público, mesmo sem ter explorado a área
+        Assert.Equal(2, brilho.GetProperty("n").GetInt32());
+        Assert.False(brilho.TryGetProperty("tipos", out _));
         Assert.Equal(HttpStatusCode.NotFound, (await c2.Post($"reliquias/{relId}/mover", new { deLocalId = castelo, tropas = new { lanceiro = 1 }, destinoLocalId = castelo })).status);
     }
 }

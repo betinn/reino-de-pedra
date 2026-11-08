@@ -826,11 +826,13 @@
   function rotear() {
     var h = location.hash.replace(/^#\/?/, '') || 'inicio';
     var partes = h.split('?');
+    /* link de convite: #/convite/<token> (o token fica no fragmento: nem o servidor nem os logs o veem na URL) */
+    if (partes[0].indexOf('convite/') === 0) { RP.abrirConvite(partes[0].slice(8)); return; }
     var nome = RP.telas[partes[0]] ? partes[0] : (RP.reino ? 'reino' : 'inicio');
     var params = new URLSearchParams(partes[1] || '');
     var def = RP.telas[nome];
     /* telas do jogo exigem conta e reino; sem eles, vai para a entrada ou a criação */
-    if (!def.publica && !RP.conta) { nome = 'inicio'; def = RP.telas[nome]; }
+    if (!def.publica && !RP.conta && !(nome === 'criar' && RP.criarOpcoes)) { nome = 'inicio'; def = RP.telas[nome]; }
     else if (!def.publica && !def.semReino && !RP.reino) { nome = RP.conta && !RP.conta.reino ? 'criar' : 'inicio'; def = RP.telas[nome]; }
     var cheia = !!def.publica || !!def.semReino || !RP.reino;
     if (atual && atual !== nome && !RP.telas[atual].fundo) {

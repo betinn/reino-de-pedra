@@ -22,7 +22,7 @@ public sealed record ResultadoCampo(string Resultado, ResultadoBatalha Formula, 
 /// agressiva). Resolvido na hora com <c>m.F.Batalha</c>: ataque de quem alcança (Bonus.Ataque) contra a defesa das tropas da
 /// marcha (Bonus.DefesaExercito se ela for um exército). Quem alcança recua no limite da tática; a marcha luta até cair.
 /// Se a marcha perde, <see cref="Marcha.AoSerVencida"/> entrega a carga e as relíquias. Feridos e veterania valem como
-/// numa batalha; o defensor recebe relatório anônimo (sem estandarte).
+/// numa batalha; o defensor recebe o relatório com o nome de quem o alcançou.
 /// </summary>
 public static class Campo
 {
@@ -99,7 +99,7 @@ public static class Campo
         return new ResultadoCampo(resultado, res, perdasA, perdasD, levaram, rels);
     }
 
-    /// <summary>Nome do que foi alcançado, como o atacante vê (sem dono).</summary>
+    /// <summary>Nome do que foi alcançado, pelo tipo da marcha.</summary>
     public static string NomeMarcha(string tipo) => tipo switch
     {
         "exercito" => "um exército", "carregadores" => "carregadores", "caravana" => "uma caravana", _ => "uma marcha",
@@ -129,7 +129,7 @@ public static class Campo
         {
             ["resumo"] = motivo + ": " + (resultado == "vitoria" ? "vitória contra " + nomeAlvo + "." + (levTxt.Length > 0 ? " Levaram " + levTxt + "." : "") : resultado == "recuo" ? "recuaram." : "derrota."),
             ["papel"] = "ataque", ["tipo"] = "interceptacao", ["tipoNome"] = motivo, ["resultado"] = resultado, ["alvo"] = nomeAlvo, ["hex"] = hex,
-            ["estandarte"] = atk.Estandarte, ["tatica"] = tatica,
+            ["tatica"] = tatica,
             ["forcas"] = new JsonObject { ["ataque"] = Math.Round(res.A), ["defesa"] = Math.Round(res.D) },
             ["tropas"] = new JsonObject { ["enviadas"] = RelatoriosCombate.Grupo(atkG), ["perdas"] = RelatoriosCombate.Grupo(perdasA), ["feridos"] = RelatoriosCombate.Grupo(feridosA) },
             ["defesa"] = new JsonObject { ["tropas"] = RelatoriosCombate.Grupo(defG), ["perdas"] = RelatoriosCombate.Grupo(perdasD), ["milicia"] = 0, ["arqueirosNoAlto"] = 0, ["portoes"] = 0 },
@@ -141,14 +141,14 @@ public static class Campo
         if (atk.ReinoId != 0 && m.Reinos.Obter(atk.ReinoId) != null)
             Registros.Relatar(m, atk.ReinoId, "ataque", motivo + ": " + (resultado == "vitoria" ? "vitória" : resultado == "recuo" ? "recuo" : "derrota"), dA, "batalhas");
         if (m.Reinos.Obter(alvo.ReinoId) == null) return;
-        var quem = RelatoriosCombate.NomeAtacante(m, atk.ReinoId, atk.Estandarte);
+        var quem = RelatoriosCombate.NomeAtacante(m, atk.ReinoId);
         var resD = resultado == "vitoria" ? "derrota" : "vitoria";
         var seus = tipoAlvo switch { "carregadores" => "Seus carregadores", "caravana" => "Sua caravana", _ => "Suas tropas" };
         var dD = new JsonObject
         {
-            ["resumo"] = quem + " alcançaram " + seus.ToLowerInvariant() + " no caminho. " + (resD == "vitoria" ? "Elas venceram e seguiram." : "Perderam" + (levTxt.Length > 0 ? ": levaram " + levTxt : "") + (rels.Count > 0 ? " e a relíquia " + string.Join(", ", rels) : "") + "."),
+            ["resumo"] = quem + " alcançou " + seus.ToLowerInvariant() + " no caminho. " + (resD == "vitoria" ? "Elas venceram e seguiram." : "Perderam" + (levTxt.Length > 0 ? ": levaram " + levTxt : "") + (rels.Count > 0 ? " e a relíquia " + string.Join(", ", rels) : "") + "."),
             ["papel"] = "defesa", ["tipo"] = "interceptacao", ["tipoNome"] = "Interceptação", ["resultado"] = resD, ["local"] = seus + " em campo", ["hex"] = hex,
-            ["atacante"] = RelatoriosCombate.Atacante(m, atk.ReinoId, atk.Estandarte), ["tropasVistas"] = RelatoriosCombate.Grupo(atkG),
+            ["atacante"] = RelatoriosCombate.Atacante(m, atk.ReinoId), ["tropasVistas"] = RelatoriosCombate.Grupo(atkG),
             ["forcas"] = new JsonObject { ["ataque"] = Math.Round(res.A), ["defesa"] = Math.Round(res.D) },
             ["perdas"] = new JsonObject { ["guarnicao"] = RelatoriosCombate.Grupo(perdasD), ["milicia"] = 0, ["feridos"] = RelatoriosCombate.Grupo(feridosD), ["atacantes"] = RelatoriosCombate.Grupo(perdasA) },
             ["levaram"] = levObj.DeepClone(), ["reliquias"] = new JsonArray(rels.Select(x => (JsonNode)x).ToArray()), ["danos"] = new JsonArray(),

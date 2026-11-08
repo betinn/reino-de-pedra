@@ -17,19 +17,17 @@ namespace ReinoDePedra.Jogo.Combate
     }
 
     /// <summary>
-    /// Interceptação: alcançar uma marcha visível (exército, caravana, carregadores, marcha com relíquia) num ponto do caminho
+    /// Interceptação: alcançar uma marcha (exército, caravana, carregadores, marcha com relíquia) num ponto do caminho
     /// dela, chegando antes (com folga de P.guerra.interceptacao.folgaSeg). As tropas esperam no ponto; quando a marcha passa,
     /// combate em campo (<see cref="Campo.Lutar"/>). Se ela mudou de rota ou já passou, a interceptação falha e as tropas voltam.
     /// </summary>
     public static class Interceptacoes
     {
-        /// <summary>Marcha que o reino pode tentar interceptar: alheia, interceptável, à vista agora e sem bloqueio (aliança, pacto).</summary>
-        public static Marcha Alvo(Mundo m, Reino r, long marchaId, HashSet<int>? vis = null)
+        /// <summary>Marcha que o reino pode tentar interceptar: alheia, interceptável e sem bloqueio (aliança, pacto). Marchas são públicas.</summary>
+        public static Marcha Alvo(Mundo m, Reino r, long marchaId)
         {
             var mc = m.Marchas.Obter(marchaId);
             if (mc == null || mc.ReinoId == r.Id) throw new RegraException("Marcha não encontrada.", 404);
-            vis ??= Nevoas.VisiveisAgora(m, r.Id);
-            if (!vis.Contains(mc.HexEm(m.Agora))) throw new RegraException("Essa marcha não está mais à vista.");
             if (!mc.Interceptavel) throw new RegraException("Não dá para interceptar esta marcha.");
             if (mc is Exercito { Parado: true } || mc.Chegada <= m.Agora) throw new RegraException("Essas forças não estão em marcha.");
             if (m.Reinos.Obter(mc.ReinoId) is { } dono)
@@ -41,7 +39,8 @@ namespace ReinoDePedra.Jogo.Combate
         }
 
         /// <summary>
-        /// O primeiro ponto do caminho da marcha (antes do destino) aonde as tropas chegam com folga antes dela, pela rota curta.
+        /// O primeiro ponto do trecho próximo da marcha (P.guerra.interceptacao.trechoHexes à frente, antes do destino) aonde as
+        /// tropas chegam com folga antes dela, pela rota curta. Só esse trecho: a resposta não pode entregar para onde ela vai.
         /// Dijkstra a partir de <paramref name="de"/> com os mesmos custos de <see cref="Caminhos"/>. Null se não alcançam.
         /// </summary>
         public static Encontro? Calcular(Mundo m, int de, IReadOnlyDictionary<string, int> tropas, Marcha alvo)
@@ -51,7 +50,10 @@ namespace ReinoDePedra.Jogo.Combate
             var agora = m.Agora;
             var folga = T.DeSegundos(m.P.Guerra.Interceptacao.FolgaSeg);
             var restantes = new Dictionary<int, int>();
-            for (var i = 1; i < alvo.Caminho.Count - 1; i++)
+            var aqui = alvo.Tempos.BinarySearch(agora);
+            if (aqui < 0) aqui = ~aqui - 1;
+            var ate = Math.Min(alvo.Caminho.Count - 1, Math.Max(aqui, 0) + 1 + m.P.Guerra.Interceptacao.TrechoHexes);
+            for (var i = Math.Max(1, aqui + 1); i < ate; i++)
                 if (alvo.Tempos[i] > agora + folga && !restantes.ContainsKey(alvo.Caminho[i])) restantes[alvo.Caminho[i]] = i;
             if (restantes.Count == 0) return null;
             var dist = MinutosDe(m, de, vel, alvo.Tempos[^1] - agora);
@@ -94,10 +96,10 @@ namespace ReinoDePedra.Jogo.Combate
         public static int PontoDe(Mundo m, Exercito ex) =>
             ex.Caminho.Count > 0 ? ex.HexEm(m.Agora) : m.Locais.Obter(ex.OrigemLocalId)?.Hex ?? ex.Origem;
 
-        public static JsonObject Dados(Marcha alvo, Encontro e, string tatica, bool estandarte) => new()
+        public static JsonObject Dados(Marcha alvo, Encontro e, string tatica) => new()
         {
             ["marchaId"] = alvo.Id, ["partida"] = alvo.Partida, ["hex"] = e.Hex, ["quando"] = e.Eles, ["tipoAlvo"] = alvo.Tipo,
-            ["tatica"] = tatica, ["estandarte"] = estandarte,
+            ["tatica"] = tatica,
         };
 
         internal static long L(JsonObject d, string k)
@@ -163,9 +165,7 @@ namespace ReinoDePedra.Jogo.Combate
             if (e.Hex != destino) throw new RegraException("O ponto de encontro mudou: confira de novo.");
             var tatica = Interceptacoes.S(ex.Dados, "tatica", m.P.Combate.TaticaPadrao);
             Ataques.Limite(m, tatica);
-            var estandarte = ex.Dados["estandarte"] is JsonValue v && v.TryGetValue<bool>(out var b) && b;
-            ex.Dados = Interceptacoes.Dados(alvo, e, tatica, estandarte);
-            ex.Estandarte = estandarte;
+            ex.Dados = Interceptacoes.Dados(alvo, e, tatica);
             ex.AlvoLocalId = null;
         }
         public void Chegou(Mundo m, Exercito ex) => Interceptacoes.Chegou(m, ex);
@@ -202,7 +202,7 @@ namespace ReinoDePedra.Jogo.Combate
 
     /// <summary>
     /// "Atacar apenas quem atacar": quem atacou os locais ou exércitos de um reino fica marcado por P.guerra.postura.revidaH.
-    /// O atacante não é revelado ao jogador; o servidor só usa isso para o revide automático.
+    /// O servidor usa isso para o revide automático.
     /// </summary>
     public static class Revide
     {

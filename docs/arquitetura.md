@@ -52,15 +52,14 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Economia.ModificadoresProducao`, `HorasDeEstoque`, `OcupantesExtras`, `TetoExtra` | Relíquias, salgadeira, feridos... |
 | `Marcha.AoPartir` | Rodar a cada partida de marcha (fauna no caminho, encontros, avistamentos). |
 | `Combate.Bonus.Ataque/Defesa/DefesaExercito` | Bônus de combate (armas, veterania, relíquia, lendário, legado); o combate soma e aplica o teto. |
-| `Combate.Permissoes.AntesDeEnviar/AoChegar` | Bloqueios de ataque (aliança, pacto, trégua antes; escudo descoberto ao chegar). |
+| `Combate.Permissoes.AntesDeEnviar/AoChegar` | Bloqueios de ataque (aliança, pacto, trégua, públicos, antes; escudo descoberto ao chegar). |
 | `Combate.Combates.AoCairCastelo` | Cerco vitorioso: (reino que perdeu, exército vencedor, castelo). A queda do castelo (`Combate.Quedas`) registra aqui. |
 | `Combate.Quedas.EscolherExilio`, `Quedas.AoCair` | Ponto do exílio escolhido (linhagem nível 7; null = sorteio longe de quem derrubou); reagir a uma queda (ranking, legado, IA). `Reino.UltimaQueda` tem o resumo. |
 | `Combate.Campo.Lutar(m, exército, marcha, tática, motivo)` | Combate em campo instantâneo contra uma marcha (interceptação, postura agressiva; escolta e caravanas podem usar). Feridos, veterania, `AoTerminar` e relatórios incluídos. |
-| `Combate.Interceptacoes.Calcular/Alvo`, ordem `interceptar` | Ponto de encontro sobre o caminho de uma marcha visível; quem pode ser interceptado (usa `Permissoes`). |
+| `Combate.Interceptacoes.Calcular/Alvo`, ordem `interceptar` | Ponto de encontro nos próximos `P.guerra.interceptacao.trechoHexes` hexágonos da marcha (o resto do caminho é segredo); quem pode ser interceptado (usa `Permissoes`). |
 | `Combate.Revide.Registrar/Atacou` | Quem atacou um reino na última P.guerra.postura.revidaH (postura "atacar apenas quem atacar"). Ataques de outros sistemas registram aqui. |
 | `Combate.Veterania.Aplicar/BonusDe/DoLocal/DaMarcha`, `Pessoa.Marcas` | Marcas de veterania por pessoa; o bônus do grupo é a média dos soldados nele. |
 | `Combate.Feridos.Adicionar/Curar`, fila `cura`, `LoteFeridos.PessoaIds` | Lotes de feridos no castelo (pessoas em `Estados.Ferida`; morrem no prazo, com nome) e a cura com ervas. `Combates.AoFerir` entrega a contagem e as pessoas. |
-| `Combate.ForcasVistas.Registrar` | Marcar no mapa de um reino "forças vistas há X" (some em P.avistamentoH). |
 | `Combate.ModelosAtaque`, `Reino.UltimoAtaque` | Modelos de ataque salvos e o último ataque (recurso `"auto"` = recurso principal do alvo). |
 | `Combate.Combates.AoTerminar` | Batalha encerrada (`ResultadoCombate`: lados, tropas, perdas, milícia): veterania, ranking, legado. |
 | `Combate.Combates.AoFerir` | Feridos de um lado (reino, unidades, local). Sem ninguém registrado, as baixas são todas mortes. |
@@ -89,21 +88,20 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Exercitos.Bloqueio`, `Exercito.PararAqui` | Motivo que impede nova ordem agora (o mesmo de `DarOrdem`; a API manda `podeOrdem`/`bloqueio`); "parar aqui" (`mover` para o próprio hexágono): fica onde está, com a postura padrão de campo, passando pelos ganchos de `AoPartir` (interrompe caça, extração e escavação). |
 | `VisaoTropas.Estado/Trabalho/FaunaNoDestino`, `VisaoMapa.MarchaPropria` (Api) | Estado único de marcha própria ("marchando", "parado", "retornando", "trabalhando"), o trabalho de um exército parado (tipo `caca`, `extracao`, `escavacao` ou `coleta`; `{ tipo, recurso, coletado, destino, inicio, fim }`), a fauna conhecida num hexágono com o veredito da regra de perdas; o objeto de marcha própria do mapa (carga, tropas, estado, alvo). |
 | `VisaoReino.Extras`, `VisaoReino.ExtrasLocal`, `VisaoMarcha.ExtrasPropria`, `VisaoMapa.Extras` (Api) | Acrescentar dados ao que o cliente recebe. |
-| `Fotos.Fotografos` | Objetos do sistema que ficam na foto da névoa (último estado conhecido fora da visão: torres, bandeiras...). |
+| `Jogo.Publico.RegraPublica`, `Jogo.Publico.MensagensGlobais`, `Api.Publico.FeedPublico`, `Combate.Batalhas.AoComecar`, `Capturas.AoCapturar` | A regra única do que é público ([0036](decisoes/0036-mapa-publico-e-convites.md)): monta campo a campo o que o site e o mapa do jogador mostram de outros reinos. O feed guarda bytes prontos por parte (`chao`, `mundo`, `vivo`, `info`) e não passa pelo motor a cada visitante. Campo novo em objeto de outro reino entra aqui, de propósito. |
+| `Api.Contas.ServicoConvites`, `ModuloPublico`, `ModuloAdmin`, `scripts/convites.sh` | Fila de pedidos de convite, link de uso único (só o hash fica guardado; `Consumir` é um UPDATE condicional) e rotas do administrador (`REINO_ADMIN_TOKEN`). |
 | `Marcha.AlvoDeFauna`, `Marcha.Furtiva`, `Marcha.ForcaContraFauna`, `Marcha.SofrerFauna`, `Marcha.AoPassar` | Fauna e visibilidade por tipo de marcha (mensageiro fora da fauna, batedor furtivo, caravana perde carga...). |
 | `OpcoesCaminho.ReinoId` | A rota segura evita a fauna que esse reino conhece (passe sempre o reino que viaja). |
-| `Espionagem.TorresNoAlcance`, `Espionagem.Milicia`, `Espionagem.ExtrasRelatorio` | Torres e milícia na chance e no relatório de espionagem. |
+| `Espionagem.TorresNoAlcance` | Torres na chance de o batedor ser visto. |
 | `Capturas.Ignorar`, `Capturas.AoPedirResgate`, `Capturas.PagarResgate` | Aliança/pacto sem captura; levar o pedido de resgate e libertar quando pago (comércio). |
-| `Conhecimento.Conhecer` / `Conhecimento.AoConhecer`, `Reino.ReinosConhecidos` | Reinos conhecidos (espionagem, captura, resgate; estandarte e bandeira depois) e gatilho de alianças e comércio. |
-| `Avistamentos.Registrar` | "Visto há X" no mapa por `P.avistamentoH` (espião; o combate pode registrar tropas). |
+| `Avistamentos.Registrar` | "Visto há X" no mapa por `P.avistamentoH` (espião). |
 | `Sistemas.Registrar/Revelar`, `Reino.SistemasVistos` | Sistemas apresentados aos poucos: registre a chave em AoIniciar e revele no gatilho ("Novo: ..."); GET /reino manda `sistemas`. |
-| `Permissoes.AntesDeEnviarNoLocal` | Bloqueio que depende do local (pacto/trégua quando o atacante já sabe de quem é o local). |
 | `OrdemReforcar.Aceita/Chegada`, `Tropas.Reservadas`, `Tropas.GuarnicaoLivre` | Reforço em local que não é seu (aliança); tropas da guarnição que o dono não pode usar. |
 | `Reforcos.PartesDasPerdas` | Parte de cada reforço aliado nas perdas da defesa de um local (perdas e feridos de cada reino). |
 | `Aliancas.SaoAliados/EmTregua/AoEntrarEmRegencia`, `Aliancas.EmRegencia` | Aliança para outros sistemas (IA, regência, interceptação). |
 | `Remessa`, `Remessas.Enviar`, `Remessas.AoTerminar[motivo]` | Carga de um reino para outro (troca, ajuda, pagamentos): sai dos locais mais próximos, roubável; reação quando a última chega ou uma é roubada. |
 | `Comercio.AceitarTroca/Abertas/PactoAtivo/ConferirNovato` | Comércio para a IA comerciante e para quem precisa do pacto ou do limite do novato. |
-| `VisaoMapa.Aliados`, `VisaoMapa.AoVerEstandarte` (Api) | Locais e marchas reconhecidos (dono "aliado" com `reino`); reagir a uma marcha vista com estandarte. |
+| `VisaoMapa.Aliados`, `VisaoMapa.Dono` (Api) | Quem é aliado e como cada dono aparece (`meu`, `aliado`, `outro`, `livre`). |
 | `RP.teclas` (`registrar(tecla, { descricao, grupo, acao, quando, ctrl, oculta })`, F1), `RP.menuContexto({ x, y, titulo, acoes, itens })`, `[data-dica]` / `[data-dica-rec]`, `data-tecla` nos botões de folha, `RP.painel` (janela), `RP.montarTopo`, `RP.NAV`, `RP.itensMenuMais` (cliente) | Mesa de computador ([0030](decisoes/0030-mesa-desktop.md)): atalhos de teclado com ajuda, menu de contexto do botão direito a partir do mesmo HTML de botões da folha, dicas ao passar o mouse, tecla de cada comando, janela flutuante das telas e barra do topo. `RP.gestos` entrega `cliqueDireito`, `passar` e `toque(..., duplo, shift)`; `Cena.deslocar` / `Tatico.deslocar` movem a câmera pelo teclado. |
 | `RP.social` (cliente) | Peças comuns do social: `cargaTxt`, `cargaHTML`, `brasao`, `stepper`, `chipsRecurso`, `campoRecado`; evento `rp:social` nos avisos `alianca`, `comercio` e `mensagem`. |
 | `Fauna.Limpar`, `MundoTeste(fauna: true)`, `ServidorTeste.Iniciar(fauna: true)` | Testes sem sorteios de fauna por padrão. |
@@ -112,7 +110,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Extracoes` (`Liquidar`, `Reagendar`, `Enviar`), ordens `extrair`/`entregar`/`escavar`/`buscar-reliquia` | Trabalho de exércitos no mapa; `Marcha.ExtraiJazidaId`/`EscavaRuinaId` dizem quem está trabalhando. |
 | `Coletas` (`Recurso`, `Motivo`, `Disponivel`, `Liquidar`, `Reagendar`, `Enviar`, `Deposito`), `PontoColeta` (`m.PontosColeta`), ordens `coletar`/`entregar-coleta` | Coleta de madeira e pedra no mapa sem tique ([0028](decisoes/0028-vida-e-coleta.md)); `Marcha.ColetaPontoId` diz quem está coletando. Civis sem trabalho vão no exército (`Pessoas.LevarParaColeta`, `Coletores`, `CivisColetando`, estado `coletando`) e voltam para casa num gancho no início de `Marcha.AoEncerrar` (`Pessoas.SoltarColetores`). |
 | `Pessoas.Vidas` (`Max`, `Atual`, `Ferir`, `AposBatalha`, `CheiaEm`), `Pessoa.Dano/DanoEm` | Vida sem tique: guarde o dano pelo `Ferir` (que diz se chegou a zero; quem chama remove a pessoa). `Marcha.SofrerGolpes` e `Marcha.AlvosDeFauna`: ataque de fauna como dano e quem ele fere (carregadores fogem). |
-| `ReliquiasLendarias.NoMapa`, `ReliquiasLendarias.Oculta`, `VisaoValiosos.ReliquiasConhecidas` (Api) | O que o reino vê das relíquias; marchas que outros não veem (furtivas); relíquias reveladas por espionagem na tela Relíquias. |
+| `ReliquiasLendarias.NoMapa`, `ReliquiasLendarias.Oculta`, `VisaoValiosos.ReliquiasConhecidas` (Api) | O que o reino vê das relíquias (local com relíquia é público, sem o tipo); marchas que outros não veem (furtivas); relíquias reveladas por espionagem na tela Relíquias. |
 | `RP.valiosos` (cliente) | Peças comuns de caravana, extração e relíquias (caminhos, gráfico de cenários, escolta, `V.tentar`). |
 | `RP.ordensEnvio`, `RP.acoesTropas`, `RP.extrasTropas`, `RP.NOMES_MARCHA` (cliente) | Ordens extras no envio pelo mapa (`{ ordem, rotulo, verbo, icone, descricao, dados, quando(hex, dados, envio) }`), cartões e blocos da tela Tropas, nome dos tipos de marcha. |
 | `RP.TIPOS_ATAQUE`, `RP.graficoBatalha`, `RP.mapa.tiposObjeto.torre/batalha` (cliente) | Tipos de ataque; gráfico de força dos lados (`serie` com `t, meu, eles, proj`); objetos do mapa. O mapa que desenha `tiposObjeto` sozinho marca `RP.mapa.desenhaTiposObjeto = true` e o combate deixa de desenhar e de pôr linhas na folha. |
@@ -138,9 +136,9 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `CriacaoReino.BrasaoLiberado`, `CriacaoReino.CriarNaRegiao/VagaPerto`, `Brasao.Valido(extras, moldura)` | Brasões liberados pela linhagem; região inicial. |
 | `Temporada.Ranking`, `Reino.RankBaixas/RankPerdas/VenceuCerco` | Ranking da temporada e conquistas rastreadas na temporada. |
 | `Temporada.PrecisaDeVoce.Listar/Extras` | "Precisa de você" (GET /agora): itens `{ grupo, icone, titulo, texto, href, botao, fim }`. |
-| `Exploracao.Avistamentos.AoRegistrar` | Reagir a um avistamento (gatilho da espionagem). |
+| `Exploracao.Avistamentos.AoRegistrar`, `Combate.Avistamentos.Visao/Arredondado` | Reagir a um avistamento de espião; visão de um reino sem marcar a névoa; número arredondado para o que se vê de fora. |
 | `RP.agoraItemHTML`, telas `#/temporada`, `#/ranking`, `#/agora`, `#/regencia`, aviso SSE `temporada`, `RP.extrasConstrucao[].sistema` (cliente) | Item do "precisa de você"; telas da temporada; aba de construção que só aparece depois do gatilho do sistema; `RP.reino.legado` (`linhagem`, `titulo`, `regiaoExilio`) e `RP.reino.regencia` (do sistema de IA). |
-| `RP.seloVeterania`, `RP.mapa.tiposObjeto.avistamento`, telas `#/exilio` e `#/interceptar?marcha=` (cliente) | Selo de veterania; avistamentos no mapa (se a exploração registrar o mesmo tipo antes, ela desenha); exílio e interceptação. |
+| `RP.seloVeterania`, `RP.mapa.tiposObjeto.avistamento`, telas `#/exilio` e `#/interceptar?marcha=` (cliente) | Selo de veterania; espião visto no mapa; exílio e interceptação. |
 | `m.IA` (`Ativa`, `CriarReinos`), `MundoIA.Novo` (testes) | Liga a IA no processo (não é gravado): sessões e regência; meta de ocupação (`REINO_IA=0` desliga só esta). `MundoTeste` sobe com a IA desligada. |
 | `Ocupacao.Completar/CriarUm/Abdicar/LiberarVaga/VagaLonge` | Meta de ocupação (leva inicial, mínimo de ativos), reino de IA novo, abdicação (castelo em ruína, locais como terra livre) e vaga para jogador. |
 | `CriacaoReino.IdNovo` | Id do reino e dos locais iniciais (a IA sorteia de uma reserva para a ordem dos ids não revelar quem é IA). |

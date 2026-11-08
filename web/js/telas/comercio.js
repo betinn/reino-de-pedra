@@ -1,5 +1,5 @@
 /* Reino de Pedra — Comércio e diplomacia (#/comercio), Propor troca (#/troca?reino=<id>) e Propor pacto (#/pacto?reino=<id>).
-   Sem mercado global: troca só com reinos conhecidos; as cargas saem dos locais mais próximos e viajam visíveis (roubáveis).
+   Sem mercado global: troca direta com qualquer reino; as cargas saem dos locais mais próximos e viajam visíveis (roubáveis).
    Pacto garantido pelo jogo, resgate de explorador e limite do novato. Porte de prototipo/js/comercio.js. */
 (function () {
   'use strict';
@@ -13,7 +13,7 @@
       return d;
     });
   }
-  function conhecido(id) { return dados.conhecidos.filter(function (c) { return c.reino.id === id; })[0]; }
+  function reinoDe(id) { return dados.reinos.filter(function (c) { return c.reino.id === id; })[0]; }
   function dias(n) { return n + (n > 1 ? ' dias' : ' dia'); }
   function seloValor(recebe, da) {
     var a = S.valor(recebe), b = S.valor(da), d = b ? Math.round(100 * (a - b) / b) : 0;
@@ -32,7 +32,7 @@
 
   /* ---------------------------------------------------------------- tela Comércio */
   function cardTroca(p) {
-    var c = conhecido(p.de.id), aviso = restoNovato(c, Math.abs(S.valor(p.da) - S.valor(p.quer)));
+    var c = reinoDe(p.de.id), aviso = restoNovato(c, Math.abs(S.valor(p.da) - S.valor(p.quer)));
     return '<div class="card pilha"><div class="linha">' + S.brasao(p.de) + '<span style="flex:1;min-width:0"><b>' + RP.esc(S.nome(p.de)) + '</b><br><small class="fraco">troca · responda até ' + RP.fmtHora(p.ate) + '</small></span>' + seloValor(p.da, p.quer) + '</div>' +
       '<div class="troca-linhas"><div><span class="rotulo">Você recebe</span>' + S.cargaHTML(p.da) + '<small class="fraco">valor ' + RP.num(p.valorDa) + '</small></div>' +
       '<div><span class="rotulo">Você dá</span>' + RP.custoHTML(p.quer, 1, '*') + '<small class="fraco">valor ' + RP.num(p.valorQuer) + '</small></div></div>' + S.recadoHTML(p.recado) +
@@ -73,13 +73,13 @@
       var ofertas = d.paraMim.filter(function (p) { return p.estado === 'aberta' && p.tipo === 'troca'; });
       var propostas = d.paraMim.filter(function (p) { return p.estado === 'aberta' && p.tipo === 'pacto'; });
       RP.$('.com-conteudo', el).innerHTML =
-        '<div class="nota-regra">' + RP.icone('troca', 'ico-p') + '<span><b>Sem mercado global.</b> Troca direta só com reinos que você conhece: aliados, espionados ou identificados por estandarte, bandeira ou mensagem. A proposta revela quem propõe, e as cargas <b>viajam</b> pelo mapa: podem ser roubadas.</span></div>' +
+        '<div class="nota-regra">' + RP.icone('troca', 'ico-p') + '<span><b>Sem mercado global.</b> Troca direta com qualquer reino. As cargas <b>viajam</b> pelo mapa: podem ser roubadas.</span></div>' +
         (d.eu.escudo ? '<p class="nota-antiga">' + RP.icone('escudo', 'ico-p') + '<span>Seu reino está sob escudo de novato: a diferença entre o que dá e recebe fica em até ' + RP.num(d.novatoDia) + ' de valor por dia (restam ' + RP.num(d.eu.novatoRestante) + ' hoje).</span></p>' : '') +
         '<div class="linha" style="margin-top:var(--esp-3)"><a class="btn btn-p btn-primario" href="#/troca" style="flex:1">' + RP.icone('troca') + 'Propor troca</a><a class="btn btn-p" href="#/pacto" style="flex:1">' + RP.icone('pacto') + 'Propor pacto</a></div>' +
         (ofertas.length ? '<div class="secao-titulo">Ofertas para você</div><div class="pilha">' + ofertas.map(cardTroca).join('') + '</div>' : '') +
         '<div class="secao-titulo">Pactos de não agressão</div><div class="pilha">' + propostas.map(cardPropostaPacto).join('') + d.pactos.map(cardPacto).join('') +
         (!propostas.length && !d.pactos.length ? S.vazio('Nenhum pacto.') : '') + '</div>' +
-        '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">De ' + d.pacto.diasMin + ' a ' + d.pacto.diasMax + ' dias, até ' + d.pacto.ativosMax + ' ativos. Qualquer lado propõe e o pagamento pode ir em qualquer direção. Tropas enviadas a um local do outro descobrem o pacto ao chegar e voltam sem combate.</p>' +
+        '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">De ' + d.pacto.diasMin + ' a ' + d.pacto.diasMax + ' dias, até ' + d.pacto.ativosMax + ' ativos. Qualquer lado propõe e o pagamento pode ir em qualquer direção. O pacto é público: o envio de tropas a um local do outro é recusado.</p>' +
         (d.resgates.length ? '<div class="secao-titulo">Exploradores capturados</div><div class="pilha">' + d.resgates.map(cardResgate).join('') + '</div>' : '') +
         '<div class="secao-titulo">Suas propostas</div><div class="pilha">' + (d.minhas.length ? d.minhas.map(cardMinha).join('') : S.vazio('Nenhuma proposta enviada.')) + '</div>' +
         '<div class="secao-titulo">Valor de referência</div><div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Em recursos básicos. Orienta as trocas, sem obrigar: vale o que os dois combinarem.</p>' +
@@ -118,13 +118,13 @@
   });
   document.addEventListener('rp:social', function (e) { if (e.detail === 'comercio') S.redesenhar('comercio', desenhar); });
 
-  /* escolher reino: só conhecidos */
+  /* escolher reino: qualquer um do mundo */
   function escolhaReinos(attr, sel, filtro) {
-    var lista = dados.conhecidos.filter(filtro || function () { return true; });
-    if (!lista.length) return S.vazio('Você ainda não conhece outros reinos. Espione um local, receba uma mensagem ou veja uma bandeira.');
+    var lista = dados.reinos.filter(filtro || function () { return true; });
+    if (!lista.length) return S.vazio('Nenhum outro reino disponível.');
     return '<div class="escolhas escolhas-lista">' + lista.map(function (c) {
       return '<button type="button" class="escolha escolha-linha" ' + attr + '="' + c.reino.id + '" aria-pressed="' + (sel === c.reino.id) + '">' + S.brasao(c.reino, 30) + '<span class="escolha-txt"><b>' + RP.esc(c.reino.nome) + '</b><small class="fraco">' +
-        (c.aliado ? 'Aliado' : c.pacto ? 'Pacto ' + (c.pacto === 'ativo' ? 'em vigor' : 'aguardando pagamento') : 'Reino conhecido') + (c.escudo ? ' · sob escudo de novato' : '') + '</small></span></button>';
+        (c.aliado ? 'Aliado' : c.pacto ? 'Pacto ' + (c.pacto === 'ativo' ? 'em vigor' : 'aguardando pagamento') : 'Sem acordo') + (c.escudo ? ' · sob escudo de novato' : '') + '</small></span></button>';
     }).join('') + '</div>';
   }
 
@@ -132,8 +132,8 @@
   var tr = { reino: null, da: 'madeira', qDa: 50, quer: 'ouro', qQuer: 2, recado: '' };
   function cargas() { var a = {}, b = {}; a[tr.da] = tr.qDa; b[tr.quer] = tr.qQuer; return { da: a, quer: b }; }
   function desenharTroca(el) {
-    if (!dados.conhecidos.some(function (c) { return c.reino.id === tr.reino; })) tr.reino = dados.conhecidos.length ? dados.conhecidos[0].reino.id : null;
-    var cg = cargas(), c = tr.reino ? conhecido(tr.reino) : null, temDa = RP.qtdRecurso(tr.da, '*') >= tr.qDa;
+    if (!dados.reinos.some(function (c) { return c.reino.id === tr.reino; })) tr.reino = dados.reinos.length ? dados.reinos[0].reino.id : null;
+    var cg = cargas(), c = tr.reino ? reinoDe(tr.reino) : null, temDa = RP.qtdRecurso(tr.da, '*') >= tr.qDa;
     var av = c ? restoNovato(c, Math.abs(S.valor(cg.da) - S.valor(cg.quer))) : null;
     RP.$('.tr-conteudo', el).innerHTML =
       '<div class="secao-titulo" style="margin-top:0">Com quem</div>' + escolhaReinos('data-tr-reino', tr.reino) + notaNovato(c) +
@@ -143,7 +143,7 @@
       '<div class="linha-entre"><span class="fraco">Equilíbrio</span>' + seloValor(cg.quer, cg.da) + '</div>' +
       '<small class="obra-estoque' + (temDa ? ' vem' : ' falta') + '">' + RP.icone('carroca', 'ico-p') + RP.esc(temDa ? 'Se aceitarem, sua parte sai dos locais mais próximos, a pé.' : 'Faltam ' + RP.num(tr.qDa - RP.qtdRecurso(tr.da, '*')) + ' de ' + RP.nomeRecurso(tr.da) + ' no reino todo.') + '</small>' +
       (av ? '<p class="nota-antiga">' + RP.icone('escudo', 'ico-p') + RP.esc(av) + '</p>' : '') +
-      '<p class="fraco" style="font-size:var(--fs-2)">A proposta revela que foi você. As duas cargas viajam visíveis no mapa e podem ser roubadas.</p></div>' +
+      '<p class="fraco" style="font-size:var(--fs-2)">As duas cargas viajam visíveis no mapa e podem ser roubadas.</p></div>' +
       S.campoRecado('recado-troca', tr.recado, dados.recadoMax) + '<div style="height:var(--esp-8)"></div>';
     RP.$('.rodape-resumo', el).innerHTML = '<div class="resumo-linha"><b>' + RP.esc(S.cargaTxt(cg.da)) + ' por ' + RP.esc(S.cargaTxt(cg.quer)) + '</b></div><div class="resumo-linha fraco">para ' + RP.esc(c ? c.reino.nome : '—') + '</div>';
     RP.$('[data-tr-enviar]', el).classList.toggle('btn-inativo', !c || !temDa || !!av || tr.da === tr.quer);
@@ -169,7 +169,7 @@
           var cg = cargas();
           RP.tentar(RP.post('/comercio/troca', { reinoId: tr.reino, da: cg.da, quer: cg.quer, recado: (tr.recado || '').trim() })).then(function (x) {
             tr.recado = '';
-            RP.aviso({ titulo: 'Proposta enviada', texto: S.nome(x.para) + ' recebe pelo sino e vê que foi você.', icone: 'troca', tipo: 'sucesso' });
+            RP.aviso({ titulo: 'Proposta enviada', texto: S.nome(x.para) + ' recebe pelo sino.', icone: 'troca', tipo: 'sucesso' });
             RP.ir('comercio');
           }).catch(function () { /* aviso já mostrado */ });
         }
@@ -185,9 +185,9 @@
   var pc = { reino: null, dias: 3, direcao: 'eu', rec: 'prata', q: 50, recado: '' };
   var DIRECOES = [['eu', 'Eu pago', 'Você paga para não ser atacado'], ['outro', 'Eu cobro', 'Eles pagam para você não atacar'], ['sem', 'Sem pagamento', 'Trégua mútua']];
   function desenharPacto(el) {
-    var alvos = dados.conhecidos.filter(function (c) { return !c.aliado; });
+    var alvos = dados.reinos.filter(function (c) { return !c.aliado; });
     if (!alvos.some(function (c) { return c.reino.id === pc.reino; })) pc.reino = alvos.length ? alvos[0].reino.id : null;
-    var c = pc.reino ? conhecido(pc.reino) : null;
+    var c = pc.reino ? reinoDe(pc.reino) : null;
     if (pc.direcao === 'outro' && c && c.escudo) pc.direcao = 'eu';
     var carga = {}; carga[pc.rec] = pc.q;
     var ja = c && c.pacto, cheio = dados.pactos.length >= dados.pacto.ativosMax;

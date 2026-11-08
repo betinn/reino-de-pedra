@@ -38,22 +38,20 @@ public class ResgateReconhecimentoTestes
         Assert.Throws<RegraException>(() => Comercio.OferecerResgate(s.M, s.Def, p.Id, R(("comida", 50))));   // só o dono oferece
         Assert.Throws<RegraException>(() => Comercio.OferecerResgate(s.M, s.Atk, p.Id, R(("comida", 1e6))));  // precisa ter o que oferece
 
-        // oferecer não revela quem capturou; recusar também não
+        // a oferta vai ao captor, e o dono sabe quem recusou (o captor é conhecido desde a captura)
         Comercio.OferecerResgate(s.M, s.Atk, p.Id, R(("comida", 50)));
         Assert.Equal(50, p.Oferta.Qtd("comida"));
         Assert.Contains(s.M.Notificacoes, n => n.ReinoId == s.Def.Id && n.Titulo == "Oferta pelo prisioneiro");
         Capturas.Decidir(s.M, s.Def, p.Id, "recusar");
         Assert.Empty(p.Oferta);
-        Assert.False(Conhecimento.Conhece(s.Atk, s.Def.Id));
         var recusa = Assert.Single(s.M.Notificacoes, n => n.ReinoId == s.Atk.Id && n.Titulo == "Oferta recusada");
-        Assert.DoesNotContain(s.Def.Nome, recusa.Texto);
+        Assert.Contains(s.Def.Nome, recusa.Texto);
 
-        // contraproposta do captor: o pedido revela quem pede e apaga a oferta
+        // contraproposta do captor: o pedido apaga a oferta
         Comercio.OferecerResgate(s.M, s.Atk, p.Id, R(("comida", 50)));
         Capturas.Decidir(s.M, s.Def, p.Id, "resgate", R(("comida", 120)));
         Assert.Equal(Capturas.ResgatePedido, p.Estado);
         Assert.Empty(p.Oferta);
-        Assert.True(Conhecimento.Conhece(s.Atk, s.Def.Id));
 
         // o dono contrapropõe de novo; o captor aceita: o pagamento sai na hora e, ao chegar, o explorador é solto
         Comercio.OferecerResgate(s.M, s.Atk, p.Id, R(("comida", 80)));
@@ -128,20 +126,16 @@ public class ResgateReconhecimentoTestes
     }
 
     [Fact]
-    public void Espionagem_mostra_os_presos_do_local_e_revela_onde_e_quem()
+    public void Espionagem_nao_mostra_os_presos_do_local()
     {
         var s = new CombateCenario();
         var cela = s.Alvo(TipoLocal.Mina, G(("lanceiro", 2)), 5);
-        var p = Preso(s, s.Atk, cela);
-        var outro = s.T.NovoReino();
-        Preso(s, outro, cela);
-        Assert.False(p.LocalConhecido);
+        Preso(s, s.Atk, cela);
+        Preso(s, s.T.NovoReino(), cela);
         var rel = Espionagem.Relatar(s.M, s.Atk, s.Def, cela, 0, 0, false);
-        var presos = Assert.IsType<JsonArray>(rel.Dados["presos"]);
-        Assert.Single(presos);   // só os do reino que espiona aparecem com nome
-        Assert.Contains(rel.Dados["linhas"]!.AsArray(), l => l!["rotulo"]!.GetValue<string>() == "Presos" && l["valor"]!.GetValue<string>().Contains("1 de outro reino"));
-        Assert.True(p.LocalConhecido);
-        Assert.True(p.CaptorRevelado);
+        Assert.Null(rel.Dados["presos"]);
+        Assert.DoesNotContain(rel.Dados["linhas"]!.AsArray(), l => l!["rotulo"]!.GetValue<string>() == "Presos");
+        Assert.DoesNotContain("Fulano", rel.Dados.ToJsonString());
     }
 
     // ---------------------------------------------------------------- força inimiga antes da batalha
@@ -152,7 +146,6 @@ public class ResgateReconhecimentoTestes
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 5), ("arqueiro", 2)), 10, dist: 9);
         s.Guarnecer(s.CasteloAtk, G(("lanceiro", 12)));
-        s.Conhecer(s.Atk, alvo);
         var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, G(("lanceiro", 12)), alvo.Hex, OrdemReconhecer.Id);
         var d = Reconhecimentos.Distancia(s.M, ex.Tropas);
         Assert.InRange(s.M.G.Distancia(ex.Destino, alvo.Hex), 1, d);
@@ -162,21 +155,26 @@ public class ResgateReconhecimentoTestes
         var rel = Assert.Single(s.M.Relatorios, r => r.ReinoId == s.Atk.Id && r.Tipo == "reconhecimento");
         var est = rel.Dados["estimativa"]!.AsObject();
         Assert.Equal("vista", est["fonte"]!.GetValue<string>());
-        Assert.Equal(7, est["tropas"]!.GetValue<int>());
-        Assert.Equal(10, est["civis"]!.GetValue<int>());
-        Assert.Null(est["bonusDefesa"]);   // sem espionagem, os bônus de defesa não são conhecidos
-        var esperado = s.M.F.Batalha(ex.Tropas, alvo.Guarnicao, new ExtraDefesa { Pop = 10 }, s.M.P.Combate.Taticas[s.M.P.Combate.TaticaPadrao]);
+        // à vista, sem batedor: só o tamanho aproximado; guarnição exata, civis e bônus continuam segredo
+        var aprox = ReinoDePedra.Jogo.Combate.Avistamentos.Aproximado(s.M, 7);
+        Assert.Equal(aprox, est["tropasAprox"]!.GetValue<string>());
+        Assert.Null(est["guarnicao"]);
+        Assert.Null(est["tropas"]);
+        Assert.Null(est["civis"]);
+        Assert.Null(est["bonusDefesa"]);
+        // a conta usa o que é público: guarnição arredondada e milícia estimada pelas famílias, nunca os civis de verdade
+        var civis = ReinoDePedra.Jogo.Publico.RegraPublica.CivisEstimados(s.M, alvo);
+        var esperado = s.M.F.Batalha(ex.Tropas, G(("lanceiro", ReinoDePedra.Jogo.Combate.Avistamentos.Arredondado(s.M, 7))), new ExtraDefesa { Pop = civis }, s.M.P.Combate.Taticas[s.M.P.Combate.TaticaPadrao]);
         Assert.Equal(Math.Round(esperado.D), est["defesa"]!.GetValue<double>());
         Assert.Equal(esperado.VenceA, est["vence"]!.GetValue<bool>());
+        Assert.Equal(Math.Floor(civis * s.M.P.MiliciaPorPop + 1e-9), est["milicia"]!.GetValue<double>());
         Assert.Equal(rel.Dados["marchaId"]!.GetValue<long>(), ex.Id);
         // a foto do reconhecimento fica gravada no local e não muda quando a guarnição muda
         var foto = s.Atk.LocaisReconhecidos[alvo.Id];
         Assert.Equal("reconhecimento", foto["fonte"]!.GetValue<string>());
-        Assert.Equal(7, foto["tropas"]!.GetValue<int>());
+        Assert.Equal(aprox, foto["tropasAprox"]!.GetValue<string>());
         alvo.Guarnicao["lanceiro"] = 40;
-        Assert.Equal(7, s.Atk.LocaisReconhecidos[alvo.Id]["tropas"]!.GetValue<int>());
-        // o relatório não revela o dono
-        Assert.DoesNotContain(s.Def.Nome, rel.Dados.ToJsonString());
+        Assert.Equal(aprox, s.Atk.LocaisReconhecidos[alvo.Id]["tropasAprox"]!.GetValue<string>());
         // dali, o ataque de tropa em campo segue normalmente
         Exercitos.DarOrdem(s.M, s.Atk, ex.Id, OrdemAtacar.Id, alvo.Hex, null, CombateCenario.Plano());
         s.AvancarAte(ex.Chegada);
@@ -184,11 +182,10 @@ public class ResgateReconhecimentoTestes
     }
 
     [Fact]
-    public void Estimativa_so_com_vista_ou_espionagem_e_a_espionagem_traz_o_bonus()
+    public void Guarnicao_exata_so_com_espionagem_e_o_bonus_nunca_aparece()
     {
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 4)), 6, dist: 14);
-        s.Conhecer(s.Atk, alvo);
         Assert.DoesNotContain(alvo.Hex, Nevoas.VisiveisAgora(s.M, s.Atk.Id));
         var grupo = G(("lanceiro", 10));
         var nada = Reconhecimentos.Estimar(s.M, s.Atk, alvo, grupo, 0, null);
@@ -200,7 +197,9 @@ public class ResgateReconhecimentoTestes
         var esp = Reconhecimentos.Estimar(s.M, s.Atk, alvo, grupo, 0, null);
         Assert.Equal("espionagem", esp["fonte"]!.GetValue<string>());
         Assert.Equal(4, esp["tropas"]!.GetValue<int>());
-        Assert.Equal(0.2, esp["bonusDefesa"]!.GetValue<double>(), 3);
+        Assert.Equal(4, esp["guarnicao"]!["lanceiro"]!.GetValue<int>());
+        Assert.Null(esp["bonusDefesa"]);   // nem a espionagem revela o bônus de defesa
+        Assert.Null(esp["civis"]);
         Assert.NotNull(esp["espionadoEm"]);
     }
 
@@ -210,7 +209,6 @@ public class ResgateReconhecimentoTestes
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 1)), 0, dist: 2);
         s.Guarnecer(s.CasteloAtk, G(("lanceiro", 3)));
-        s.Conhecer(s.Atk, alvo);
         Assert.Throws<RegraException>(() => Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, G(("lanceiro", 1)), alvo.Hex, OrdemReconhecer.Id));
         Assert.Equal(3, s.CasteloAtk.Guarnicao["lanceiro"]);
     }

@@ -351,7 +351,7 @@
     var E = H.R / 30, hexes = hexesNoRetangulo(r, 4), conhecidos = [], itens = [];
     hexes.forEach(function (h) {
       var e = M.estado(h);
-      if (e.v === 'desconhecido') return;
+      if (e.v === 'desconhecido') return;   /* fora do mapa */
       conhecidos.push({ h: h, c: H.c(h), l: H.l(h), e: e, pal: e.v === 'explorado' ? PA : P, t: d.ter[h], rio: d.rio[h], ce: H.centroH(h) });
     });
     /* chão */
@@ -613,7 +613,6 @@
     /* ameaças: marchas alheias a caminho de um local seu */
     var meusHex = {}, ameacados = {};
     ((RP.reino && RP.reino.locais) || []).forEach(function (l) { meusHex[l.hex] = l; });
-    d.marchas.forEach(function (m) { if (m.dono !== 'meu' && m.dono !== 'aliado' && m.caminho && meusHex[m.caminho[m.caminho.length - 1]] && M.chegada(m) > ag) ameacados[m.caminho[m.caminho.length - 1]] = true; });
 
     /* objetos parados (locais, jazidas, ruínas e tipos de outros sistemas) */
     d.objs.forEach(function (o) {
@@ -647,7 +646,7 @@
           var rx = p.x + (castelo ? -46 : -18), ry = p.y + (castelo ? 30 : 12);
           itens.push({ y: ry, x: rx, d: function () { obj(c, V, rx, ry); A.pedestalReliquia(c, t, pal, o.reliquia.tipo || 'desconhecido', anim); }, alvo: alvo(rx, ry - 12, 26, 34, ['local', o.id], o) });
         }
-        if (castelo && !o.ruina) rot(p.x, p.y, 26, meu ? (RP.reino ? RP.reino.nome : o.nome) : 'Castelo', 'castelo', A.corDono(o.dono, o));
+        if (castelo && !o.ruina) rot(p.x, p.y, 26, meu ? (RP.reino ? RP.reino.nome : o.nome) : (o.reino ? o.reino.nome : 'Castelo'), 'castelo', A.corDono(o.dono, o));
         if (meu && ameacados[h]) rot(p.x, p.y, -46, 'Ameaçado', 'perigo', Cs.perigo);
         return;
       }
@@ -769,12 +768,12 @@
       RP.sons.mundo(fontes, self);
     }
 
-    /* névoa à deriva sobre o desconhecido */
+    /* névoa à deriva sobre o que o reino nunca explorou */
     var pf = A.puff();
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     hexesNoRetangulo(vis, 0).forEach(function (h) {
       var cc = H.c(h), ll = H.l(h);
-      if (A.hash(cc, ll, 230) > 0.12 || M.estado(h).v !== 'desconhecido') return;
+      if (A.hash(cc, ll, 230) > 0.12 || !M.estado(h).nunca) return;
       var ce = H.centroH(h), ph = A.hash(cc, ll, 231) * 6.28;
       var p = self.tela(ce.x + Math.sin(t * 0.07 + ph) * 22, ce.y + Math.cos(t * 0.05 + ph) * 12);
       var sz = 110 * s;
@@ -822,7 +821,7 @@
   };
 
   /* pessoas de uma marcha, uma por figura: as próprias pelo nome (pessoaIds); sem os nomes, pelas tropas; de outros
-     reinos, pelo tamanho aproximado que o servidor manda ("poucas", "≈ 10"). Nunca uma formação fixa. */
+     reinos, sempre a mesma formação de 3: o tamanho de uma marcha é segredo. */
   var MAX_MARCHA = 16;
   function figurasDaMarcha(m, revelado) {
     var lista = [];
@@ -832,8 +831,7 @@
     Object.keys(tr).forEach(function (u) { for (var i = 0; i < tr[u]; i++) lista.push({ id: m.id * 100 + k++, oficio: u, estado: 'marcha' }); });
     if (/explor|batedor|prospector/.test(String(m.marcha))) lista.unshift({ id: m.id * 100 + 99, oficio: m.oficio || 'explorador-pe', estado: 'marcha' });
     if (lista.length) return lista;
-    var tam = String(m.tamanho || ''), n = /\d+/.test(tam) ? +tam.match(/\d+/)[0] : 3;
-    for (var j = 0; j < Math.max(1, n); j++) lista.push({ id: m.id * 100 + j, oficio: j % 3 === 1 ? 'arqueiro' : 'lanceiro', estado: 'marcha' });
+    for (var j = 0; j < 3; j++) lista.push({ id: m.id * 100 + j, oficio: j % 3 === 1 ? 'arqueiro' : 'lanceiro', estado: 'marcha' });
     return lista;
   }
   /* o que cada um faz no trabalho do exército parado: escavar (pá e picareta), extrair e coletar (picareta ou machado), caçar */
@@ -848,11 +846,11 @@
     return o;
   }
 
-  /* uma marcha na Vista: formação, carregadores, explorador... Forças sem estandarte: cinza, sem bandeira */
+  /* uma marcha na Vista: formação, carregadores, explorador..., na cor do dono */
   C.desenharMarcha = function (c, V, m, pos, t, ag, itens, rot) {
     var Cs = A.cores(), MAPA = RP.mapa, propria = m.dono === 'meu' || m.dono === 'aliado';
-    var revelado = propria || !!(m.estandarte && (m.cor || m.brasao));
-    var cor = revelado ? A.corDono(m.dono, m) : P.hostil;
+    var revelado = true;
+    var cor = A.corDono(m.dono, m);
     var dir = Math.cos(pos.ang + AZ) >= 0 ? 1 : -1, ux = Math.cos(pos.ang), uy = Math.sin(pos.ang);
     var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
@@ -896,7 +894,7 @@
       for (var q = 0; q < nv; q++) (function (q) { add(pt(q * 22, 0), function () { A.carroca(c, t, P, dir, revelado ? cor : '#8a8174', q * 1.7); }); })(q);
       prefixo = 'Caravana · ';
     } else {
-      /* exército: exatamente as pessoas da marcha (as próprias pelo nome; as de outros reinos, pelo tamanho aproximado) */
+      /* exército: exatamente as pessoas da marcha (as próprias pelo nome; as de outros reinos, sempre a mesma formação) */
       var figs = figurasDaMarcha(m, revelado), nfig = Math.min(figs.length, MAX_MARCHA);
       var parada = !!(m.parado || (cheg && cheg <= ag && propria)), trab = m.estado === 'trabalhando' ? m.ordem : null;
       var porFila = nfig <= 3 ? nfig : nfig <= 8 ? 3 : 4;
@@ -925,9 +923,9 @@
       }
     }
     if (m.reliquia) { var pb = pt(12, 0); add({ x: pb.x, y: pb.y + 1 }, function () { A.bauReliquia(c, t, P, m.reliquia.tipo || 'desconhecido'); }); prefixo = 'Relíquia · '; }
-    var desconhecida = !revelado && tipo !== 'mensageiro';
     var tempo = !cheg ? '' : cheg > ag ? RP.fmtResta(cheg - ag) : (propria ? 'parada' : '');
-    rot(pos.x, pos.y, -40, (desconhecida ? '? ' : '') + prefixo + tempo, desconhecida ? 'perigo' : 'marcha', desconhecida ? Cs.perigo : cor);
+    if (m.dono !== 'meu' && m.reino) prefixo = m.reino.nome;
+    rot(pos.x, pos.y, -40, prefixo + tempo, 'marcha', cor);
   };
 
   function alvoTela(cena, x, y, w, h, ent, o) {

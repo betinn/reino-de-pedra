@@ -62,12 +62,12 @@ public static class VisaoTropas
     private static long? MaterialPartida(Mundo m, ItemFila i) =>
         m.Marchas.OfType<Carregadores>().Where(x => x.ItemId == i.Id).OrderByDescending(x => x.Chegada).Select(x => (long?)x.Partida).FirstOrDefault();
 
-    /// <summary>Nome que o reino pode ver de um local: o próprio pelo nome; o de outro reino, só pelo tipo.</summary>
+    /// <summary>Nome de um local: público, de qualquer reino.</summary>
     public static string? NomeLocal(Mundo m, Reino r, long? id)
     {
         var l = id is long x ? m.Locais.Obter(x) : null;
         if (l == null) return null;
-        return l.ReinoId == r.Id ? l.Nome : l.Ruina ? "Ruína" : l.Tipo.NomeGenerico();
+        return l.ReinoId == r.Id ? l.Nome : Jogo.Combate.Ataques.NomeAlvo(l);
     }
 
     public static object Exercito(Mundo m, Exercito e)
@@ -204,7 +204,7 @@ public static class VisaoTropas
         var l = m.LocalNoHex(para);
         var vis = Nevoas.VisiveisAgora(m, r.Id);
         if (l != null && l.ReinoId == r.Id && !l.Ruina) return null;
-        try { return Jogo.Combate.Reconhecimentos.Estimar(m, r, Jogo.Combate.Ataques.Alvo(m, r, para, vis), grupo, bonusA, null, vis); }
+        try { return Jogo.Combate.Reconhecimentos.Estimar(m, r, Jogo.Combate.Ataques.Alvo(m, r, para), grupo, bonusA, null, vis); }
         catch (RegraException) { return null; }
     }
 }

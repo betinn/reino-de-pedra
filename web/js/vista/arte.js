@@ -68,10 +68,10 @@
     };
     return CORES;
   }
-  /* pano cru para bandeiras de dono desconhecido (sem cor de reino) */
+  /* pano cru para quem não tem brasão à mão */
   var CRU = '#a39d90';
   function tintura(nome) { return nome ? getComputedStyle(document.documentElement).getPropertyValue('--tin-' + nome).trim() || null : null; }
-  /* cor de um dono como o servidor o descreve: 'meu', 'aliado', 'desconhecido', 'livre' (ou cor revelada em o.cor / o.brasao) */
+  /* cor de um dono como o servidor o descreve: 'meu', 'aliado', 'outro' (a cor do brasão em o.brasao), 'livre' */
   function corDono(dono, o) {
     var C = cores();
     if (dono === 'meu') return C.meu;

@@ -62,7 +62,7 @@
 
   /* risco da fauna conhecida no caminho (vem da prévia do servidor) */
   RP.blocoRisco = function (rs, sozinho) {
-    if (!rs || !rs.nivel) return '<div class="risco-linha ok">' + RP.icone('check') + '<span><b>Sem fauna perigosa conhecida no caminho</b><br><small>Área desconhecida pode esconder animais.</small></span></div>';
+    if (!rs || !rs.nivel) return '<div class="risco-linha ok">' + RP.icone('check') + '<span><b>Sem fauna perigosa conhecida no caminho</b><br><small>Área nunca explorada pode esconder animais.</small></span></div>';
     var A = RP.ANIMAIS[rs.animal] || { nome: 'Animais', icone: 'pata' };
     if (rs.risco === 'nenhum') return '<div class="risco-linha ok">' + RP.icone('escudo') + '<span><b>Grupo forte o bastante</b><br><small>Com o dobro da força dos animais (' + RP.num(rs.limite) + ' aqui), o grupo passa ileso por ' + A.nome.toLowerCase() + '.</small></span></div>';
     return '<div class="perigo-linha nivel-' + rs.risco + '">' + RP.icone(A.icone) + '<span><b>Risco ' + RP.NOME_NIVEL[rs.risco].toLowerCase() + '</b> · ' + A.nome.toLowerCase() + ' no caminho' +
@@ -132,7 +132,7 @@
         var estado = p.pagamento ? 'pagamento a caminho' : p.estado === 'resgate' ? 'resgate pedido: ' + RP.esc(resgateTxt(p.resgate)) : 'sem decisão';
         return '<div class="card pilha preso-card" data-preso-card="' + p.id + '"><div class="linha">' + RP.iconeReino(p.origem, 32) + '<span style="flex:1;min-width:0"><b>' + RP.esc((p.pessoa ? p.pessoa + ', ' : '') + p.nome.toLowerCase()) + ' de ' + RP.esc(p.origem ? p.origem.nome : '?') + '</b><br>' +
           '<small class="fraco">Pego no hexágono ' + p.c + ', ' + p.l + (p.cela ? ' · preso em ' + RP.esc(p.cela.nome) : '') + ' · ' + estado + '</small></span></div>' +
-          (p.oferta ? '<div class="nota-regra">' + RP.icone('troca', 'ico-p') + '<span><b>O dono oferece ' + RP.esc(resgateTxt(p.oferta)) + '</b> (valor ' + RP.num(p.ofertaValor) + (p.resgateValor ? ', contra ' + RP.num(p.resgateValor) + ' do seu pedido' : '') + '). Aceitar manda o pagamento sair na hora e revela quem você é.</span></div>' : '') +
+          (p.oferta ? '<div class="nota-regra">' + RP.icone('troca', 'ico-p') + '<span><b>O dono oferece ' + RP.esc(resgateTxt(p.oferta)) + '</b> (valor ' + RP.num(p.ofertaValor) + (p.resgateValor ? ', contra ' + RP.num(p.resgateValor) + ' do seu pedido' : '') + '). Aceitar manda o pagamento sair na hora.</span></div>' : '') +
           '<div class="linha-entre"><span class="fraco" style="font-size:var(--fs-2)">Libertado sozinho em <b class="num" data-fim="' + p.ate + '">' + RP.fmtResta(p.ate - RP.agora()) + '</b></span></div>' +
           (p.pagamento ? '' : '<div class="linha preso-acoes">' +
             (p.oferta ? '<button type="button" class="btn btn-p btn-primario" data-preso-acao="aceitar" data-preso="' + p.id + '">' + RP.icone('check') + 'Aceitar a oferta</button>' +
@@ -144,8 +144,8 @@
     }
     if (d.capturados.length) {
       h += '<div class="secao-titulo">Seus exploradores presos</div><div class="pilha">' + d.capturados.map(function (p) {
-        var com = p.captor ? 'Com ' + RP.esc(p.captor.nome) : 'Com quem o pegou (desconhecido)';
-        var onde = p.cela ? 'preso em ' + RP.esc(p.cela.nome) + ' (' + p.cela.c + ', ' + p.cela.l + ')' : p.levado ? 'levado para o ' + RP.esc(p.levado) + ' de onde foi pego (' + p.c + ', ' + p.l + ')' : 'preso perto de ' + p.c + ', ' + p.l;
+        var com = RP.iconeReino(p.captor, 18) + ' Com ' + RP.esc(p.captor ? p.captor.nome : 'outro reino');
+        var onde = p.cela ? 'preso em ' + RP.esc(p.cela.nome) + ' (' + p.cela.c + ', ' + p.cela.l + ')' : 'preso perto de ' + p.c + ', ' + p.l;
         var neg = p.pagamento ? '<span class="selo selo-info">' + RP.icone('carroca') + 'Resgate a caminho: solto quando chegar</span>'
           : (p.resgate ? '<span class="selo selo-destaque">' + RP.icone('troca') + 'Pedem ' + RP.esc(resgateTxt(p.resgate)) + '</span>' : '') +
             (p.oferta ? '<span class="selo selo-antigo">' + RP.icone('troca') + 'Sua oferta: ' + RP.esc(resgateTxt(p.oferta)) + ' · esperando resposta</span>' : '');
@@ -155,9 +155,7 @@
           (p.pagamento ? '' : '<div class="linha preso-acoes">' +
             (p.resgate ? '<button type="button" class="btn btn-p btn-primario" data-capt-pagar="' + p.id + '">' + RP.icone('carroca') + 'Pagar o pedido</button>' : '') +
             '<button type="button" class="btn btn-p' + (p.resgate ? '' : ' btn-primario') + '" data-capt-oferta="' + p.id + '">' + RP.icone('troca') + (p.resgate ? 'Contrapropor' : p.oferta ? 'Mudar a oferta' : 'Oferecer pagamento') + '</button>' +
-            (p.cela ? '<a class="btn btn-p btn-perigo" href="#/envio?alvo=' + p.cela.hex + '">' + RP.icone('espada') + 'Resgatar à força</a>'
-              : '<a class="btn btn-p" href="#/mapa?foco=' + p.hex + '">' + RP.icone('batedor') + 'Procurar onde está</a>') + '</div>') +
-          (p.pagamento || p.cela ? '' : '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' Para resgatar à força, descubra o local: espione os locais de outros reinos perto de onde ele foi pego. Vencer uma batalha nesse local o liberta.</p>') +
+            (p.cela ? '<a class="btn btn-p btn-perigo" href="#/envio?alvo=' + p.cela.hex + '">' + RP.icone('espada') + 'Resgatar à força</a>' : '') + '</div>') +
           (p.cela && !p.pagamento ? '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' Qualquer ataque vitorioso neste local liberta o explorador, que volta para casa sozinho.</p>' : '') + '</div>';
       }).join('') + '</div>';
     }
@@ -174,14 +172,14 @@
     return '<div class="card pilha espia-card"><div class="linha-entre"><b>Chance de ser visto</b><b class="num">' + (est != null ? '≈ ' + pct(est) : pct(min) + ' a ' + pct(max)) + '</b></div>' +
       '<div class="barra"><i style="width:' + Math.round(100 * (est != null ? est : min) / max) + '%"></i></div>' +
       '<small class="fraco">' + RP.esc(p.nome) + ': ' + pct(e.base) + ' de base + ' + pct(e.porTorre) + ' por torre no alcance + ' + (Math.round(e.porTropa * 1000) / 10).toLocaleString('pt-BR') + '% por tropa da guarnição' +
-      (p.antigo ? ' (espionagem ' + RP.fmtHa((RP.agora() - p.antigo.quando) / 3600000) + ': ' + p.antigo.tropas + ' tropas, ' + p.antigo.torres + ' torres)' : ', ainda desconhecida') + '. Máximo de ' + pct(max) + '.</small>' + regra + '</div>';
+      (p.antigo ? ' (espionagem ' + RP.fmtHa((RP.agora() - p.antigo.quando) / 3600000) + ': ' + p.antigo.tropas + ' tropas, ' + p.antigo.torres + ' torres)' : ', sem relatório ainda') + '. Máximo de ' + pct(max) + '.</small>' + regra + '</div>';
   }
 
   function destinoHTML() {
     var dm = RP.mapa && RP.mapa.dados && RP.mapa.dados();
     function nome(h) {
-      var t = dm && dm.terreno ? dm.terreno[h] : null;
-      return (t && t !== '?' ? H.NOME_TERRENO[H.TERRENO[t.toLowerCase()]] : 'Terra desconhecida') + ' · ' + coord(h);
+      var t = dm && dm.terreno ? dm.terreno[h] : null, nunca = dm && dm.idade && dm.idade[h] === -1;
+      return (t ? H.NOME_TERRENO[H.TERRENO[t.toLowerCase()]] : 'Terreno') + (nunca ? ' · Nunca visto' : '') + ' · ' + coord(h);
     }
     if (ex.ordem === 'rota') {
       return '<div class="card pilha destino-card">' + (ex.pontos.length ? ex.pontos.map(function (h, i) {
@@ -528,7 +526,7 @@
     RP.abrirFolha({
       titulo: 'Pedir resgate', veu: true,
       subtitulo: '<span class="fraco">' + RP.esc(p.nome) + ' de ' + RP.esc(p.origem ? p.origem.nome : '?') + '</span>',
-      corpo: '<p class="nota-regra">' + RP.icone('info', 'ico-p') + '<span>O pedido revela quem você é ao dono. Pago, o explorador volta para casa; sem pagamento até o prazo, ele é libertado do mesmo jeito.</span></p>' +
+      corpo: '<p class="nota-regra">' + RP.icone('info', 'ico-p') + '<span>Pago, o explorador volta para casa; sem pagamento até o prazo, ele é libertado do mesmo jeito.</span></p>' +
         '<div class="pilha">' + recs.map(function (k) {
           return '<label class="linha-entre resgate-campo"><span class="linha">' + RP.icone(k, 'r-' + k) + RP.esc(RP.NOMES_REC[k]) + '</span><input class="campo" type="number" min="0" step="1" inputmode="numeric" value="' + (k === 'prata' ? 20 : 0) + '" data-resgate-rec="' + k + '" aria-label="' + RP.esc(RP.NOMES_REC[k]) + '"></label>';
         }).join('') + '</div>',
@@ -543,7 +541,7 @@
     if (RP.envio && RP.envio.ativo()) return '';
     var obj = objetosHex(h, dados), html = '';
     var meu = obj.filter(function (o) { return o.tipo === 'local' && o.dono === 'meu'; })[0];
-    var alheio = obj.filter(function (o) { return o.tipo === 'local' && o.dono === 'desconhecido' && !o.ruina; })[0];
+    var alheio = obj.filter(function (o) { return o.tipo === 'local' && o.dono === 'outro' && !o.ruina; })[0];
     if (!meu) html += '<a class="btn btn-p" href="#/exploradores?alvo=' + h + '&ordem=explorar">' + RP.icone('explorador') + 'Explorar área</a>';
     if (alheio && RP.sistema('espionagem')) html += '<a class="btn btn-p" href="#/exploradores?alvo=' + h + '&tipo=batedor&ordem=espionar">' + RP.icone('batedor') + 'Espionar</a>';
     RP.mapa.marchasEm(h, dados).filter(function (o) { return o.tipo === 'marcha' && o.dono === 'meu' && o.marcha === 'explorador'; }).forEach(function (o) {
@@ -554,9 +552,8 @@
   RP.mapa.extrasFolhaHex.push(function (h, dados) {
     var obj = objetosHex(h, dados), html = '';
     obj.forEach(function (o) {
-      if (o.tipo === 'local' && o.foto) html += linha('Último estado', '<span class="selo selo-antigo">' + RP.icone('relogio') + 'visto ' + RP.fmtHa((RP.agora() - o.visto) / 3600000) + '</span>');
       if (o.tipo === 'espionado') html += linha('Espionagem', (o.dono ? RP.iconeReino(o.dono, 20) + ' <b>' + RP.esc(o.dono.nome) + '</b>' : '') + ' · nível ' + o.nivel + ' · ' + RP.fmtHa((RP.agora() - o.quando) / 3600000));
-      if (o.tipo === 'avistamento') html += linha(o.avistado === 'espiao' ? 'Espião visto' : 'Tropas vistas', RP.fmtHa((RP.agora() - o.quando) / 3600000) + ' · some em <span data-fim="' + o.ate + '">' + RP.fmtResta(o.ate - RP.agora()) + '</span>');
+      if (o.tipo === 'avistamento') html += linha('Espião visto', RP.fmtHa((RP.agora() - o.quando) / 3600000) + ' · some em <span data-fim="' + o.ate + '">' + RP.fmtResta(o.ate - RP.agora()) + '</span>');
     });
     return html;
   });
@@ -605,11 +602,9 @@
 
   RP.desenhosRelatorio.espionagem = function (rel) {
     var d = rel.dados || {}, df = d.defesa || {}, l = d.local || {};
-    return (d.dono ? '<div class="card linha atacante">' + RP.iconeReino(d.dono, 40) + '<span><b>' + RP.esc(d.dono.nome) + '</b><br><small class="fraco">Dono de ' + RP.esc(l.nome || 'local') + ', revelado pela espionagem</small></span></div>' : '') +
+    return (d.dono ? '<div class="card linha atacante">' + RP.iconeReino(d.dono, 40) + '<span><b>' + RP.esc(d.dono.nome) + '</b><br><small class="fraco">Dono de ' + RP.esc(l.nome || 'local') + '</small></span></div>' : '') +
       '<div class="card info">' + linha('Local', RP.esc((l.nome || '') + ' · nível ' + (l.nivel || '?'))) +
       linha('Guarnição', df.tropas ? RP.selosGrupo ? RP.selosGrupo(df.guarnicao) : RP.num(df.tropas) : 'nenhuma') +
-      linha('Torres no alcance', String(df.torres || 0)) + linha('Milícia', '≈ ' + RP.num(df.milicia || 0)) +
-      linha('Postura', RP.esc((RP.POSTURAS || {})[(df.postura || '').charAt(0).toLowerCase() + (df.postura || '').slice(1)] || df.postura || '')) +
       linha('Estoque', estoqueTxt(d.estoque)) +
       linha('Batedor', d.visto ? '<span class="selo selo-perigo">Visto</span>' : '<span class="selo selo-visivel">Não foi visto</span>') + '</div>' +
       ((d.reliquias || []).length ? '<div class="secao-titulo">Relíquias guardadas</div><div class="pilha">' + d.reliquias.map(function (x) {
@@ -621,7 +616,7 @@
   RP.desenhosRelatorio.captura = function (rel) {
     var d = rel.dados || {};
     var preso = d.prisioneiro && RP.exploracao.dados && RP.exploracao.dados.presos.some(function (p) { return p.id === d.prisioneiro; });
-    return (d.origem ? '<div class="card linha atacante">' + RP.iconeReino(d.origem, 40) + '<span><b>' + RP.esc(d.origem.nome) + '</b><br><small class="fraco">' + (d.prisioneiro ? 'Reino de origem do explorador' : 'Quem pede o resgate') + '</small></span></div>' : '') +
+    return (d.origem ? '<div class="card linha atacante">' + RP.iconeReino(d.origem, 40) + '<span><b>' + RP.esc(d.origem.nome) + '</b><br><small class="fraco">' + (d.dono ? 'Quem capturou seu explorador' : 'Reino de origem do explorador') + '</small></span></div>' : '') +
       '<p class="suave">' + RP.esc(d.resumo || '') + '</p>' + linhasPadrao(d) +
       (d.ate ? '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Prazo: ' + RP.fmtHora(d.ate) + '.</p>' : '') +
       '<div class="linha" style="margin-top:var(--esp-3)">' + (d.prisioneiro ? '<a class="btn btn-p btn-primario" href="#/exploradores">' + RP.icone('batedor') + (d.dono ? 'Negociar ou resgatar' : preso !== false ? 'Decidir' : 'Exploradores') + '</a>' : '') + verNoMapa(d) + '</div>';

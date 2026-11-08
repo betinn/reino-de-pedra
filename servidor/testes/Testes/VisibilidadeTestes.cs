@@ -65,7 +65,7 @@ public class VisibilidadeTestes
         // prévia de ataque a uma ruína que o reino já viu
         t.M.AdicionarLocal(new Local { ReinoId = 0, Tipo = TipoLocal.Vila, Ruina = true, Nivel = 1, Hex = alvo, Nome = "Ruína" });
         Nevoas.RevelarArea(t.M, r.Id, alvo, 0);
-        var pa = new VisaoCombate.PedidoAtaque(c.Id, null, tropas, alvo, null, null, null, null, null, null, null, true);
+        var pa = new VisaoCombate.PedidoAtaque(c.Id, null, tropas, alvo, null, null, null, null, null, null, true);
         var pv = J(VisaoCombate.Previa(t.M, r, pa, alvo));
         Assert.Equal(curtaVel, Caminho(pv.GetProperty("segura")));
 
@@ -80,10 +80,10 @@ public class VisibilidadeTestes
         Assert.Equal(Caminhos.Calcular(t.M, c.Hex, dest.Hex, plano.Vel).Hexes, plano.Levar!.Hexes);
     }
 
-    // ---------------------------------------------------------------- prévia e envio de ataque na névoa (achado 7)
+    // ---------------------------------------------------------------- prévia e envio de ataque na névoa
 
     [Fact]
-    public void Ataque_a_hexagono_que_o_reino_nao_conhece_responde_igual_tenha_ou_nao_local()
+    public void Previa_e_ataque_valem_na_nevoa_e_mostram_o_dono_mas_nao_a_guarnicao()
     {
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino();
@@ -91,24 +91,32 @@ public class VisibilidadeTestes
         var ca = t.M.Locais[a.CasteloId];
         var cb = t.M.Locais[b.CasteloId];
         Assert.False(Nevoas.Explorado(t.M, a.Id, cb.Hex));
-        Guarnecer(t, a, ca, "lanceiro", 4);
+        Guarnecer(t, a, ca, "lanceiro", 8);
+        cb.Guarnicao["arqueiro"] = 3;
         var tropas = new Dictionary<string, int> { ["lanceiro"] = 4 };
-        VisaoCombate.PedidoAtaque P(int h) => new(ca.Id, null, tropas, h, null, null, null, null, null, null, null, false);
-        var vazio = t.M.G.Area(cb.Hex, 6).First(h => t.M.LocalNoHex(h) == null && !Nevoas.Explorado(t.M, a.Id, h));
-        var comLocal = Assert.Throws<RegraException>(() => VisaoCombate.Previa(t.M, a, P(cb.Hex), cb.Hex)).Message;
-        var semLocal = Assert.Throws<RegraException>(() => VisaoCombate.Previa(t.M, a, P(vazio), vazio)).Message;
-        Assert.Equal(semLocal, comLocal);
-        var envio = Assert.Throws<RegraException>(() => Exercitos.Enviar(t.M, a, ca.Id, tropas, cb.Hex, ReinoDePedra.Jogo.Combate.OrdemAtacar.Id, false, VisaoCombate.Dados(P(cb.Hex)))).Message;
-        Assert.Equal(semLocal, envio);
+        VisaoCombate.PedidoAtaque P(int h) => new(ca.Id, null, tropas, h, null, null, null, null, null, null, false);
+        var pv = J(VisaoCombate.Previa(t.M, a, P(cb.Hex), cb.Hex));
+        var alvo = pv.GetProperty("alvo");
+        Assert.Equal("outro", alvo.GetProperty("dono").GetString());
+        Assert.Equal(b.Nome, alvo.GetProperty("reino").GetProperty("nome").GetString());
+        Assert.False(alvo.GetProperty("aoVivo").GetBoolean());
+        // fora da vista e sem espionagem: a guarnição, o estoque e a milícia não vêm
+        var forca = pv.GetProperty("forcaInimiga");
+        Assert.Equal("nenhuma", forca.GetProperty("fonte").GetString());
+        foreach (var k in new[] { "guarnicao", "tropas", "tropasAprox", "milicia", "civis", "defesa", "estoque" }) Assert.False(forca.TryGetProperty(k, out _), k);
+        // hexágono vazio responde que não há local, e o envio vale
+        var vazio = t.M.G.Area(cb.Hex, 6).First(h => t.M.LocalNoHex(h) == null);
+        Assert.Throws<RegraException>(() => VisaoCombate.Previa(t.M, a, P(vazio), vazio));
+        var ex = Exercitos.Enviar(t.M, a, ca.Id, tropas, cb.Hex, ReinoDePedra.Jogo.Combate.OrdemAtacar.Id, false, VisaoCombate.Dados(P(cb.Hex)));
+        Assert.Equal(cb.Id, ex.AlvoLocalId);
 
-        // explorado e fora da vista: a prévia mostra o último estado conhecido (a foto), não o atual
+        // o estado é o atual, em qualquer ponto do mapa: não há foto
         var vila = t.M.LocaisDe(b.Id).First(l => l.Id != b.CasteloId);
-        Nevoas.RevelarArea(t.M, a.Id, vila.Hex, 0);
         Assert.DoesNotContain(vila.Hex, Nevoas.VisiveisAgora(t.M, a.Id));
         t.M.MudarDono(vila, 0); vila.Ruina = true;
-        var pv = J(VisaoCombate.Previa(t.M, a, P(vila.Hex), vila.Hex)).GetProperty("alvo");
-        Assert.Equal("desconhecido", pv.GetProperty("dono").GetString());
-        Assert.NotEqual("Ruína", pv.GetProperty("nome").GetString());
+        var ruina = J(VisaoCombate.Previa(t.M, a, P(vila.Hex), vila.Hex)).GetProperty("alvo");
+        Assert.Equal("livre", ruina.GetProperty("dono").GetString());
+        Assert.Equal("Ruína", ruina.GetProperty("nome").GetString());
     }
 
     // ---------------------------------------------------------------- caravana e relíquia para local alheio (achados 8 e 9)
@@ -155,7 +163,7 @@ public class VisibilidadeTestes
     // ---------------------------------------------------------------- hexágono livre pelo que o reino sabe (achado 10)
 
     [Fact]
-    public void Motivo_de_torre_e_de_fundacao_nao_revela_jazida_oculta_nem_local_fora_da_vista()
+    public void Motivo_de_torre_e_de_fundacao_nao_revela_jazida_oculta_e_local_fora_da_vista_conta_como_ocupado()
     {
         var t = new MundoTeste();
         var a = t.NovoReino(); var b = t.NovoReino();
@@ -172,71 +180,89 @@ public class VisibilidadeTestes
         t.M.Jazidas.Adicionar(new ReinoDePedra.Jogo.Mapa.Jazida { Hex = h2, Recurso = "prata", Inicial = 100, Restante = 100, DescobertaPor = [a.Id] });
         Assert.Equal("O hexágono não está livre.", ReinoDePedra.Jogo.Combate.Defesas.MotivoTorre(t.M, a, h2));
 
-        // explorado e fora da vista: um local novo de outro reino não aparece no motivo
-        var longe = Enumerable.Range(0, 60).Select(p => HexLonge(t, ca.Hex, 16, p))
-            .First(h => Obras.Fundaveis.Any(kv => kv.Value.terrenos.Contains(t.M.Mapa.Terrenos[h])));   // terreno em que se funda algo
-        Nevoas.RevelarArea(t.M, a.Id, longe, 0);
+        // explorado e fora da vista: local de outro reino é público, e o motivo diz que o hexágono está ocupado
+        var (longe, tipo) = Enumerable.Range(0, 60).Select(p => HexLonge(t, ca.Hex, 16, p))
+            .SelectMany(x => Obras.Fundaveis.Keys.Select(k => (hex: x, tipo: k)))
+            .First(x => { Nevoas.RevelarArea(t.M, a.Id, x.hex, 1); return Obras.MotivoNaoFundar(t.M, a, x.tipo, x.hex) == null; });
         Assert.DoesNotContain(longe, Nevoas.VisiveisAgora(t.M, a.Id));
-        var tipo = Obras.Fundaveis.First(kv => kv.Value.terrenos.Contains(t.M.Mapa.Terrenos[longe])).Key;
-        var antes = Obras.MotivoNaoFundar(t.M, a, tipo, longe);
+        Assert.Null(Obras.MotivoNaoFundar(t.M, a, tipo, longe));
         t.M.AdicionarLocal(new Local { ReinoId = b.Id, Tipo = TipoLocal.Vila, Produz = "comida", Nivel = 1, Hex = longe, Nome = "Vila" });
-        Assert.Equal(antes, Obras.MotivoNaoFundar(t.M, a, tipo, longe));
+        Assert.NotNull(Obras.MotivoNaoFundar(t.M, a, tipo, longe));
     }
 
-    // ---------------------------------------------------------------- torres alheias no último estado conhecido (achado 18)
+    // ---------------------------------------------------------------- torres alheias são públicas, ao vivo
 
     [Fact]
-    public void Torre_alheia_fora_da_vista_aparece_como_foi_vista()
+    public void Torre_alheia_aparece_ao_vivo_na_nevoa()
     {
         var t = ComApi();
         var a = t.NovoReino(); var b = t.NovoReino();
         var cb = t.M.Locais[b.CasteloId];
         var th = t.M.G.Area(cb.Hex, 2).First(x => x != cb.Hex && Obras.HexLivre(t.M, x) && !t.M.Mapa.Rio[x]);
         var torre = t.M.Torres.Adicionar(new ReinoDePedra.Jogo.Combate.Torre { ReinoId = b.Id, Hex = th, Nivel = 1, Estrutura = ReinoDePedra.Jogo.Combate.Defesas.EstruturaCheia(t.M, 1) });
-        Nevoas.RevelarArea(t.M, a.Id, th, 0);   // viu a torre no nível 1
-        Assert.DoesNotContain(th, Nevoas.VisiveisAgora(t.M, a.Id));
+        Assert.False(Nevoas.Explorado(t.M, a.Id, th));
+        IEnumerable<JsonElement> Torres() => J(VisaoMapa.Montar(t.M, a)).GetProperty("objetos").EnumerateArray()
+            .Where(o => o.GetProperty("tipo").GetString() == "torre" && o.GetProperty("hex").GetInt32() == th);
+        Assert.Equal(1, Assert.Single(Torres()).GetProperty("nivel").GetInt32());
+        Assert.Equal(b.Id, Assert.Single(Torres()).GetProperty("reinoId").GetInt64());
         torre.Nivel = 3;
-        JsonElement TorreNoMapa() => J(VisaoMapa.Montar(t.M, a)).GetProperty("objetos").EnumerateArray()
-            .Single(o => o.GetProperty("tipo").GetString() == "torre" && o.GetProperty("hex").GetInt32() == th);
-        Assert.Equal(1, TorreNoMapa().GetProperty("nivel").GetInt32());
-        // derrubada fora da vista: continua no mapa até ser vista de novo
+        Assert.Equal(3, Assert.Single(Torres()).GetProperty("nivel").GetInt32());
         t.M.Torres.Remover(torre);
-        Assert.Equal(1, TorreNoMapa().GetProperty("nivel").GetInt32());
+        Assert.Empty(Torres());
     }
 
-    // ---------------------------------------------------------------- marchas alheias: só o trecho à vista (achado 11)
+    // ---------------------------------------------------------------- marchas alheias: só o passo atual
 
     [Fact]
-    public void Marcha_alheia_vem_so_com_o_trecho_a_vista_sem_origem_nem_destino_na_nevoa()
+    public void Marcha_alheia_vem_so_com_o_passo_atual_sem_tamanho_nem_destino()
     {
         var t = ComApi();
         var a = t.NovoReino(); var b = t.NovoReino();
-        var ca = t.M.Locais[a.CasteloId]; var cb = t.M.Locais[b.CasteloId];
-        var vis = Nevoas.VisiveisAgora(t.M, a.Id);
+        var cb = t.M.Locais[b.CasteloId];
         Guarnecer(t, b, cb, "lanceiro", 4);
         var tropas = new Dictionary<string, int> { ["lanceiro"] = 4 };
-        var vel = ReinoDePedra.Jogo.Reinos.Tropas.Velocidade(t.M, tropas);
-        // um destino na névoa de A cujo caminho a partir de B atravessa a visão de A
-        var destino = t.M.G.Area(ca.Hex, 14).Where(h => !vis.Contains(h) && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null && t.M.G.Distancia(h, ca.Hex) >= 10)
-            .First(h => Caminhos.Calcular(t.M, cb.Hex, h, vel) is var rr && rr.Hexes[^1] == h && rr.Hexes.Any(vis.Contains) && !vis.Contains(rr.Hexes[^2]));
+        var destino = t.M.G.Area(cb.Hex, 8).First(h => t.M.G.Distancia(h, cb.Hex) == 8 && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null);
         var ex = Exercitos.Enviar(t.M, b, cb.Id, tropas, destino, OrdemMover.Id);
-        var k = ex.Caminho.FindIndex(vis.Contains);
+        Assert.True(ex.Caminho.Count > 3);
+        var k = ex.Caminho.Count / 2;
         t.Avancar(TimeSpan.FromMilliseconds(ex.Tempos[k] - t.M.Agora + 1));
+        // na névoa de A: a marcha vai igual, com o hexágono atual e o próximo
+        var hexAgora = ex.HexEm(t.M.Agora);
+        Assert.DoesNotContain(hexAgora, Nevoas.VisiveisAgora(t.M, a.Id));
         var o = J(VisaoMapa.Montar(t.M, a)).GetProperty("objetos").EnumerateArray()
             .Single(x => x.GetProperty("tipo").GetString() == "marcha" && x.GetProperty("id").GetInt64() == ex.Id);
         var cm = Caminho(o);
-        Assert.DoesNotContain(cb.Hex, cm);       // a origem (o castelo de B) não vai
-        Assert.DoesNotContain(destino, cm);      // nem o destino na névoa
-        Assert.Contains(o.GetProperty("hex").GetInt32(), cm);
-        Assert.Equal(cm.Count, o.GetProperty("tempos").GetArrayLength());
-        Assert.True(cm.Take(cm.Count - 1).All(vis.Contains));   // à vista, mais o próximo hexágono para animar
-        Assert.False(o.TryGetProperty("progresso", out _));
+        Assert.Equal(2, cm.Count);
+        Assert.Equal(hexAgora, cm[0]);
+        Assert.Equal(hexAgora, o.GetProperty("hex").GetInt32());
+        Assert.Equal(ex.Caminho[ex.Caminho.IndexOf(hexAgora) + 1], cm[1]);
+        Assert.Equal(2, o.GetProperty("tempos").GetArrayLength());
+        Assert.Equal(b.Id, o.GetProperty("reinoId").GetInt64());
+        Assert.Equal("exercito", o.GetProperty("marcha").GetString());
+        Assert.DoesNotContain(cb.Hex, cm);       // a origem não vai
+        Assert.DoesNotContain(destino, cm);      // nem o destino
+        var chaves = o.EnumerateObject().Select(x => x.Name).ToHashSet();
+        foreach (var segredo in new[] { "tamanho", "destino", "paraMim", "tropas", "resumo", "carga", "cargaMax", "cargaUsada", "pessoas", "pessoaIds", "ordem", "alvo", "chegada", "progresso" })
+            Assert.DoesNotContain(segredo, chaves);
     }
 
-    // ---------------------------------------------------------------- ícone só para quem conhece o reino (achado 16)
+    [Fact]
+    public void Batedor_de_elite_em_marcha_nao_aparece_para_os_outros()
+    {
+        var t = ComApi();
+        var a = t.NovoReino(); var b = t.NovoReino();
+        var cb = t.M.Locais[b.CasteloId];
+        b.ExploradoresLivres["batedor"] = 1;
+        var destino = t.M.G.Area(cb.Hex, 6).First(h => t.M.G.Distancia(h, cb.Hex) == 6 && !t.M.Mapa.Rio[h] && t.M.LocalNoHex(h) == null);
+        var e = Exploradores.Enviar(t.M, b, "batedor", Exploradores.Explorar, destino);
+        Assert.DoesNotContain(J(VisaoMapa.Montar(t.M, a)).GetProperty("objetos").EnumerateArray(), x => x.GetProperty("tipo").GetString() == "marcha" && x.GetProperty("id").GetInt64() == e.Id);
+        Assert.Contains(J(VisaoMapa.Montar(t.M, b)).GetProperty("objetos").EnumerateArray(), x => x.GetProperty("tipo").GetString() == "marcha" && x.GetProperty("id").GetInt64() == e.Id);
+    }
+
+    // ---------------------------------------------------------------- ícone para quem joga (identidade é pública)
 
     [Fact]
-    public async Task Icone_proprio_so_e_servido_a_quem_conhece_o_reino()
+    public async Task Icone_proprio_e_servido_a_qualquer_jogador()
     {
         await using var s = await ServidorTeste.Iniciar();
         using var a = s.NovoCliente(); using var b = s.NovoCliente();
@@ -248,9 +274,10 @@ public class VisibilidadeTestes
         var put = await a.Http.PutAsync("reino/icone", new ByteArrayContent(png) { Headers = { ContentType = new("image/png") } });
         Assert.True(put.IsSuccessStatusCode, put.StatusCode.ToString());
         Assert.Equal(System.Net.HttpStatusCode.OK, (await a.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);    // o próprio
-        Assert.Equal(System.Net.HttpStatusCode.NotFound, (await b.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);   // não conhece
-        await s.Motor.Executar(m => Conhecimento.Conhecer(m, m.Reinos[idB], m.Reinos[idA], "teste"));
-        Assert.Equal(System.Net.HttpStatusCode.OK, (await b.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.OK, (await b.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);    // o de outro jogador
+        using var anonimo = s.NovoCliente();
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, (await anonimo.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);   // sem conta, não: o feed público não leva a imagem
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, (await b.Http.GetAsync($"reinos/{idB}/icone")).StatusCode);   // sem imagem própria
     }
 
     // ---------------------------------------------------------------- nomes da IA sem padrão fixo (achado 17)

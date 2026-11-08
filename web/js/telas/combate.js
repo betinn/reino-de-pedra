@@ -71,10 +71,10 @@
     descricao: function (h, dados, est) {
       var torres = ((dados && dados.objetos) || []).filter(function (o) { return o.tipo === 'torre' && o.dono !== 'meu' && H.dist(o.hex, h) <= o.alcance; });
       return linha('Tipo', 'Saque') + linha('Objetivos', 'Relíquia à vista e o recurso principal do local') + linha('Sem o que levar', 'Voltam sem seguir lutando') +
-        linha('Tática', 'Média · ' + RP.textoTatica('media').toLowerCase()) + linha('Estandarte', 'Não levado: o alvo não sabe quem foi') +
+        linha('Tática', 'Média · ' + RP.textoTatica('media').toLowerCase()) +
         (torres.length ? linha('Torres no alcance', String(torres.length)) : '');
     },
-    /* a tela completa do ataque (tipo, objetivos, tática, estandarte), de um local ou de uma tropa em campo */
+    /* a tela completa do ataque (tipo, objetivos, tática), de um local ou de uma tropa em campo */
     ajuste: function (h, est) {
       if (est.marchaId) return '#/envio?alvo=' + h + '&marcha=' + est.marchaId + (est.pessoas ? '&pessoas=' + est.pessoas.join(',') + '&grupo=' + grupoParam(est.grupo) : '');
       return '#/envio?alvo=' + h + '&de=' + est.de + '&grupo=' + grupoParam(est.grupo);
@@ -91,9 +91,9 @@
   if (RP.ORDENS_NOMES) RP.ORDENS_NOMES.reconhecer = 'Reconhecer';
 
   /* ================================================================ força inimiga antes da batalha
-     f = estimativa do servidor (prévia do ataque, prévia de tropas ou relatório de reconhecimento): o que se vê (vista) ou o
-     que a espionagem contou, sem o dono. */
-  var FONTES = { vista: ['selo-visivel', 'olho', 'À vista agora'], espionagem: ['selo-antigo', 'batedor', 'Pela espionagem'], nenhuma: ['selo-desconhecido', 'nevoa', 'Desconhecida'], reconhecimento: ['selo-antigo', 'olho', 'Reconhecimento'] };
+     f = estimativa do servidor (prévia do ataque, prévia de tropas ou relatório de reconhecimento): o tamanho aproximado que
+     se vê de fora (vista), a guarnição que a espionagem contou (espionagem) ou só as torres (nenhuma). */
+  var FONTES = { vista: ['selo-visivel', 'olho', 'À vista agora'], espionagem: ['selo-antigo', 'batedor', 'Pela espionagem'], nenhuma: ['selo-desconhecido', 'nevoa', 'Fora da vista'], reconhecimento: ['selo-antigo', 'olho', 'Reconhecimento'] };
   var VEREDITOS = { vantagem: ['selo-visivel', 'Vantagem'], apertado: ['selo-destaque', 'Apertado'], desvantagem: ['selo-perigo', 'Desvantagem'] };
   RP.forcaInimigaHTML = function (f, opts) {
     if (!f) return '';
@@ -103,8 +103,10 @@
     if (f.semDefesa) return '<div class="card pilha forca-inimiga">' + selo + '<p class="fraco">' + RP.esc(f.texto || '') + '</p></div>';
     var h = '<div class="card pilha forca-inimiga" data-forca-fonte="' + RP.esc(f.fonte) + '"><div class="linha-entre">' + selo +
       (f.veredito ? '<span class="selo ' + VEREDITOS[f.veredito][0] + '">' + RP.icone(f.vence ? 'espada' : 'escudo') + VEREDITOS[f.veredito][1] + '</span>' : '') + '</div>';
+    var torres = linha('Torres no alcance', RP.num(f.torres || 0) + (f.arqueirosNoAlto ? ' · ' + RP.num(f.arqueirosNoAlto) + ' arqueiros no alto' : ''));
+    var milicia = f.milicia != null ? linha('Milícia estimada', '≈ ' + RP.num(f.milicia)) : '';
     if (f.fonte === 'nenhuma') {
-      return h + '<div class="info">' + linha('Torres no alcance', RP.num(f.torres || 0) + (f.arqueirosNoAlto ? ' · ' + RP.num(f.arqueirosNoAlto) + ' arqueiros no alto' : '')) + '</div>' +
+      return h + '<div class="info">' + milicia + torres + '</div>' +
         '<p class="fraco env-nota">' + RP.esc(f.texto || '') + '</p>' + (opts.acoes || '') + '</div>';
     }
     if (f.ataque != null) {
@@ -114,13 +116,13 @@
         '<div class="bat-vs">×</div><div class="bat-lado eles"><span class="rotulo">Defesa do local</span><b class="num">' + RP.num(f.defesa) + '</b><small class="fraco">perdas estimadas ' + Math.round(100 * f.perdasDeles) + '%</small></div></div>' +
         '<div class="barra-dupla" role="img" aria-label="Suas tropas ' + Math.round(100 * f.ataque / tot) + '%, defesa ' + Math.round(100 * f.defesa / tot) + '%"><i class="d" style="width:' + (100 * f.ataque / tot).toFixed(1) + '%"></i><i class="a" style="width:' + (100 * f.defesa / tot).toFixed(1) + '%"></i></div>';
     }
-    var g = f.guarnicao || {};
-    h += '<div class="info">' + linha('Guarnição', RP.somaGrupo(g) ? RP.selosGrupo(g) : 'nenhuma ' + (f.fonte === 'vista' ? 'à vista' : 'no relatório')) +
-      linha('Milícia', '≈ ' + RP.num(f.milicia || 0) + ' · ' + RP.num(f.civis || 0) + ' civis') +
-      linha('Torres no alcance', RP.num(f.torres || 0) + (f.arqueirosNoAlto ? ' · ' + RP.num(f.arqueirosNoAlto) + ' arqueiros no alto' : '')) +
-      (f.portoes ? linha('Portões', 'nível ' + f.portoes) : '') +
-      linha('Bônus de defesa', f.bonusDefesa != null ? '+' + Math.round(100 * f.bonusDefesa) + '%' : 'desconhecido (só a espionagem revela)') + '</div>' +
-      (f.texto ? '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' ' + RP.esc(f.texto) + '</p>' : '') + (opts.acoes || '') + '</div>';
+    /* de fora só se vê o tamanho aproximado; a guarnição exata vem do batedor de elite */
+    var g = f.guarnicao || {}, aprox = f.tropasAprox;
+    var guarnicao = aprox != null ? (aprox === 'nenhuma' ? 'nenhuma à vista' : RP.esc(aprox) + ' tropas') : RP.somaGrupo(g) ? RP.selosGrupo(g) : 'nenhuma no relatório';
+    var nota = f.texto || (aprox != null ? 'Estimativa pelo que se vê de fora. A guarnição exata, só um batedor de elite revela.' : '');
+    h += '<div class="info">' + linha('Guarnição', guarnicao) + milicia + torres +
+      (f.portoes ? linha('Portões', 'nível ' + f.portoes) : '') + '</div>' +
+      (nota ? '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' ' + RP.esc(nota) + '</p>' : '') + (opts.acoes || '') + '</div>';
     return h;
   };
 
@@ -128,7 +130,7 @@
     ordem: 'reconhecer', rotulo: 'Reconhecer', verbo: 'Reconhecer', icone: 'olho', titulo: 'Reconhecer',
     quando: function (h, dados) { var l = localAlheio(h, dados); return !!l && !semDono(l); },
     descricao: function () {
-      return linha('Ordem', 'Param à vista do alvo, a até 3 hexágonos, sem atacar') + linha('Na chegada', 'Relatório com guarnição, milícia, torres e a força contra a sua') +
+      return linha('Ordem', 'Param à vista do alvo, a até 3 hexágonos, sem atacar') + linha('Na chegada', 'Relatório com o tamanho da guarnição, milícia, torres e a força contra a sua') +
         linha('Depois', 'Atacar dali ou voltar');
     }
   });
@@ -287,7 +289,7 @@
   }
   function corpoPrevia() {
     return { deLocalId: env.marchaId ? null : env.de, marchaId: env.marchaId || null, pessoas: env.pessoas || null, tropas: env.grupo, destinoHex: env.hex, tipo: env.tipo, objetivos: env.objetivos, tatica: env.tatica,
-      completar: env.completar, estandarte: env.estandarte, seguro: env.seguro, divisao: env.divisao, recuarVazio: env.recuarVazio };
+      completar: env.completar, seguro: env.seguro, divisao: env.divisao, recuarVazio: env.recuarVazio };
   }
   function pedirPrevia(el) {
     clearTimeout(previaTimer);
@@ -363,7 +365,7 @@
   function previsaoObj(o) {
     if (o.k === 'tomar') return 'O local passa a ser seu até alguém retomar.';
     if (o.k === 'reliquia') return env.tipo === 'ocupacao' ? 'Fica no local tomado.' : 'Volta com as tropas; não ocupa carga.';
-    if (o.k === 'torre') { var n = env.previa ? env.previa.alvo.torres.length : 0; return n ? n + (n > 1 ? ' torres conhecidas' : ' torre conhecida') + ' no alcance. Aríetes derrubam.' : 'Nenhuma torre conhecida no alcance.'; }
+    if (o.k === 'torre') { var n = env.previa ? env.previa.alvo.torres.length : 0; return n ? n + (n > 1 ? ' torres' : ' torre') + ' no alcance. Aríetes derrubam.' : 'Nenhuma torre no alcance.'; }
     if (o.k === 'portoes') return 'Aríetes e trebuchets derrubam portões.';
     if (o.k === 'populacao') return 'A população reage como milícia.';
     if (o.k === 'construcao') return 'O local perde níveis; no nível 1, é destruído.';
@@ -389,7 +391,7 @@
   function aplicarModelo(md, id) {
     var tipos = (env.previa && env.previa.tipos) || [];
     env.tipo = !tipos.length || tipos.indexOf(md.tipo) >= 0 ? md.tipo : null;
-    env.tatica = md.tatica; env.estandarte = !!md.estandarte; env.completar = !!md.completar;
+    env.tatica = md.tatica; env.completar = !!md.completar;
     env.divisao = md.divisao || 'prioridade'; env.recuarVazio = md.recuarVazio !== false;
     if (md.deLocalId && origens().some(function (x) { return x.id === md.deLocalId; })) env.de = md.deLocalId;
     var d = disponiveis(), g = {};
@@ -405,7 +407,7 @@
         '<div class="campo"><label for="env-modelo-nome">Nome</label><input id="env-modelo-nome" maxlength="' + ((modelos && modelos.nomeMax) || 30) + '" value="' + RP.esc((RP.TIPOS_ATAQUE[env.tipo] || {}).nome || 'Ataque') + ' ' + RP.somaGrupo(env.grupo) + '"></div>',
       acoes: [{ rotulo: RP.icone('check') + 'Salvar', classe: 'btn-primario', acao: function () {
         var inp = document.getElementById('env-modelo-nome'), alvoProd = env.previa && env.previa.alvo && env.previa.alvo.produz;
-        RP.tentar(RP.post('/ataques/modelos', { nome: inp ? inp.value : '', tipo: env.tipo, tatica: env.tatica, estandarte: env.estandarte, completar: env.completar, tropas: env.grupo, divisao: env.divisao, recuarVazio: env.recuarVazio,
+        RP.tentar(RP.post('/ataques/modelos', { nome: inp ? inp.value : '', tipo: env.tipo, tatica: env.tatica, completar: env.completar, tropas: env.grupo, divisao: env.divisao, recuarVazio: env.recuarVazio,
           objetivos: (env.objetivos || []).map(function (o) { return { k: o.k, r: o.k === 'recurso' && alvoProd && o.r === alvoProd ? 'auto' : o.r, q: o.q }; }) })).then(function (md) {
           RP.aviso({ titulo: 'Modelo salvo', texto: md.nome + ': aparece no topo do envio.', icone: 'check', tipo: 'sucesso' });
           carregarModelos(el);
@@ -431,10 +433,10 @@
       (p.bloqueio ? '<div class="faixa-alerta">' + RP.icone('pacto') + '<span class="txt"><b>Não dá para enviar</b><br>' + RP.esc(p.bloqueio) + '</span></div>' : '') +
       htmlModelos() +
       '<div class="secao-titulo"' + (modelos ? '' : ' style="margin-top:0"') + '>1. Alvo</div><div class="card pilha"><div class="linha">' +
-      '<span class="ico-placa dono-desconhecido">' + RP.icone(RP.iconeLocal({ tipo: a.local }) || 'castelo') + '</span>' +
-      '<span style="flex:1;min-width:0"><b>' + RP.esc(a.nome) + '</b><br><small class="fraco">' + (a.dono === 'livre' ? 'Sem dono' : 'Dono desconhecido') + ' · hexágono ' + a.c + ', ' + a.l + '</small></span>' +
+      '<span class="ico-placa">' + RP.icone(RP.iconeLocal({ tipo: a.local }) || 'castelo') + '</span>' +
+      '<span style="flex:1;min-width:0"><b>' + RP.esc(a.nome) + '</b><br><small class="fraco">' + (a.nivel ? 'Nível ' + a.nivel + ' · ' : '') + 'hexágono ' + a.c + ', ' + a.l + '</small></span>' +
       '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + a.hex + '">' + RP.icone('mapa') + 'Mapa</a></div>' +
-      '<div class="info">' + linha('Dono', a.dono === 'livre' ? 'nenhum' : 'desconhecido') +
+      '<div class="info">' + linha('Dono', a.reino ? RP.iconeReino(a.reino, 20) + ' <b>' + RP.esc(a.reino.nome) + '</b>' : 'nenhum') +
       (a.torres.length ? linha('Torres no alcance', a.torres.length + ' · ' + a.torres.map(function (t) { return 'nível ' + t.nivel; }).join(', ')) : '') + '</div>' +
       (a.torres.length ? '<p class="nota-antiga">' + RP.icone('torre', 'ico-p') + '<span>Arqueiros nas torres atiram do alto, protegidos. Aríetes derrubam torres; derrubar a torre é objetivo de sabotagem e de cerco.</span></p>' : '') + '</div>';
     var fi = p.forcaInimiga;
@@ -462,13 +464,8 @@
       '<div><span class="fraco">Velocidade</span><b>' + RP.esc(RP.VELOCIDADES[p.vel] || p.vel) + '</b></div></div>' +
       (env.tipo === 'cerco' && !(env.grupo.ariete || env.grupo.trebuchet) ? '<p class="nota-antiga">' + RP.icone('cerco', 'ico-p') + '<span>Sem aríetes, portões e torres não sofrem dano.</span></p>' : '') + '</div>';
     h += htmlObjetivos(p);
-    h += '<div class="secao-titulo">6. Estandarte</div>' +
-      '<button type="button" class="alternar env-alternar" data-env-estandarte aria-pressed="' + !!env.estandarte + '">' + RP.icone('estandarte') + '<span>Levar o estandarte de ' + RP.esc(RP.reino.nome) + '</span><i aria-hidden="true"></i></button>' +
-      '<div class="card previa-relatorio"><span class="rotulo">O defensor verá no relatório</span><div class="linha" style="margin-top:6px">' +
-      (env.estandarte ? RP.iconeReino(RP.reino, 28) + '<span><b>' + RP.esc(p.defensorVera.nome) + '</b><br><small class="fraco">identificado pelo estandarte</small></span>'
-        : RP.brasao(null, { tamanho: 28, desconhecido: true }) + '<span><b>Forças desconhecidas</b><br><small class="fraco">tropas, tipo e direção de origem</small></span>') + '</div></div>';
     var mesma = p.segura.ok && p.curta.ok && p.segura.hexes === p.curta.hexes && p.segura.min === p.curta.min;
-    h += '<div class="secao-titulo">7. Caminho</div>' + (p.curta.ok ? '<div class="pilha">' + opcaoCaminho('curta', p.curta) + (mesma ? '' : opcaoCaminho('segura', p.segura)) + '</div>' +
+    h += '<div class="secao-titulo">6. Caminho</div>' + (p.curta.ok ? '<div class="pilha">' + opcaoCaminho('curta', p.curta) + (mesma ? '' : opcaoCaminho('segura', p.segura)) + '</div>' +
       '<p class="fraco env-nota">A viagem segue a unidade mais lenta (' + RP.esc(RP.VELOCIDADES[p.vel] || p.vel) + '). O atacante chega só com as tropas enviadas.' + (mesma ? ' A rota curta já é a mais segura que se conhece.' : '') + '</p>'
       : '<p class="fraco">' + (n ? 'Não há caminho até o alvo.' : 'Escolha as tropas para ver o caminho.') + '</p>');
     (p.avisos || []).filter(function (x) { return x.tipo === 'info'; }).forEach(function (x) { h += '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' ' + RP.esc(x.texto) + '</p>'; });
@@ -515,10 +512,9 @@
     };
     RP.modal({
       titulo: 'Confirmar ' + t.nome.toLowerCase(),
-      corpo: '<p class="suave">' + RP.esc(p.alvo.nome) + ' · ' + (p.alvo.dono === 'livre' ? 'sem dono' : 'dono desconhecido') + '<br>' + RP.esc(RP.partesGrupo(env.grupo)) + ' · chegada em ' + RP.fmtDuracao(r.min * 60) + '</p>' +
+      corpo: '<p class="suave">' + RP.esc(p.alvo.nome) + ' · ' + (p.alvo.reino ? 'reino de ' + RP.esc(p.alvo.reino.nome) : 'sem dono') + '<br>' + RP.esc(RP.partesGrupo(env.grupo)) + ' · chegada em ' + RP.fmtDuracao(r.min * 60) + '</p>' +
         '<ol class="obj-confirma">' + env.objetivos.map(function (o) { return '<li>' + RP.icone(iconeObj(o), 'ico-p' + (o.k === 'recurso' ? ' r-' + o.r : o.k === 'reliquia' ? ' r-lendario' : '')) + RP.esc(RP.nomeObjetivo(o)) + '</li>'; }).join('') + '</ol>' +
-        '<p class="suave" style="font-size:var(--fs-2)"><b>Quando param:</b> ' + RP.esc(p.quandoParam.join(' ')) + '</p>' +
-        '<p class="selo ' + (env.estandarte ? 'selo-info' : 'selo-desconhecido') + '" style="margin-top:var(--esp-3)">' + RP.icone('estandarte') + (env.estandarte ? 'Com estandarte: o defensor saberá que foi você' : 'Sem estandarte: você não será identificado') + '</p>',
+        '<p class="suave" style="font-size:var(--fs-2)"><b>Quando param:</b> ' + RP.esc(p.quandoParam.join(' ')) + '</p>',
       acoes: [{ rotulo: RP.icone('espada') + (env.tipo === 'ocupacao' ? 'Enviar' : 'Enviar ataque'), classe: 'btn-primario', acao: enviar }, { rotulo: 'Voltar' }]
     });
   }
@@ -549,7 +545,6 @@
         if (e.target.closest('[data-env-completar]')) { env.completar = !env.completar; pedirPrevia(el); return; }
         if (e.target.closest('[data-env-recuar]')) { env.recuarVazio = !env.recuarVazio; pedirPrevia(el); return; }
         if ((b = e.target.closest('[data-env-divisao]'))) { env.divisao = b.getAttribute('data-env-divisao'); pedirPrevia(el); return; }
-        if (e.target.closest('[data-env-estandarte]')) { env.estandarte = !env.estandarte; pedirPrevia(el); return; }
         if ((b = e.target.closest('[data-env-caminho]'))) { env.seguro = b.getAttribute('data-env-caminho') === 'segura'; desenharEnvio(el); return; }
         if (e.target.closest('[data-env-enviar]')) { if (env.previa) confirmarEnvio(el); return; }
         if (e.target.closest('[data-env-reconhecer]')) { reconhecer(); return; }
@@ -573,7 +568,7 @@
       var hex = q.get('alvo') ? +q.get('alvo') : NaN;
       if (!(hex >= 0)) { env = null; semAlvo(el, 'Escolha o alvo no mapa', 'Clique num local de outro reino no mapa e escolha Atacar. O envio abre aqui com o alvo escolhido.'); return; }
       var rod = RP.$('.rodape-acao', el); if (rod) rod.hidden = false;
-      env = { hex: hex, de: q.get('de') ? +q.get('de') : null, marchaId: q.get('marcha') ? +q.get('marcha') : null, pessoas: q.get('pessoas') ? q.get('pessoas').split(',').map(Number) : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, estandarte: false, seguro: false, previa: null, modelo: null, divisao: 'prioridade', recuarVazio: true };
+      env = { hex: hex, de: q.get('de') ? +q.get('de') : null, marchaId: q.get('marcha') ? +q.get('marcha') : null, pessoas: q.get('pessoas') ? q.get('pessoas').split(',').map(Number) : null, grupo: {}, tipo: null, objetivos: [], tatica: null, completar: false, seguro: false, previa: null, modelo: null, divisao: 'prioridade', recuarVazio: true };
       desenharEnvio(el);
       var repetir = q.get('repetir') === '1';
       Promise.all([RP.carregarTropas(), carregarModelos()]).then(function () {
@@ -761,7 +756,7 @@
       '<div class="card pilha bat-placar">' + placarHTML(b, rot) +
       tendenciaHTML(b) +
       '<div class="bat-composicao"><small class="fraco"><b>' + RP.esc(rot.meu) + ':</b> ' + RP.esc(ladoTxt(b.meu, b, true)) + '</small><small class="fraco"><b>' + RP.esc(b.eles.nome) + ':</b> ' + RP.esc(ladoTxt(b.eles, b, false)) + '</small></div>' +
-      (b.eles.atacante ? '<div class="linha bat-estandarte">' + RP.brasao(b.eles.atacante.brasao, { tamanho: 28 }) + '<span><b>Reino de ' + RP.esc(b.eles.atacante.nome) + '</b><br><small class="fraco">identificado pelo estandarte</small></span></div>' : '') + '</div>' +
+      (b.eles.atacante ? '<div class="linha bat-estandarte">' + RP.iconeReino(b.eles.atacante, 28) + '<span><b>Reino de ' + RP.esc(b.eles.atacante.nome) + '</b></span></div>' : '') + '</div>' +
       frentesHTML(b) +
       '<div class="secao-titulo">Força ao longo da batalha</div><div class="card">' + RP.graficoBatalha(b.serie, dur, Math.min(agora, b.fim) - b.inicio, rot) + tabelaSerie(b.serie, rot) + '</div>' +
       '<div class="secao-titulo">Acontecimentos</div><ol class="diario">' + b.diario.slice().reverse().map(function (d) {
@@ -1009,7 +1004,7 @@
   function graficoRel(d, papel) {
     var s = d.serie || []; if (s.length < 2) return '';
     var serie = s.map(function (p) { return { t: p.t, meu: papel === 'ataque' ? p.a : p.d, eles: papel === 'ataque' ? p.d : p.a, proj: false }; });
-    var rot = papel === 'ataque' ? { meu: 'Suas tropas', eles: 'Defesa', meuCurto: 'Você', elesCurto: 'Eles' } : { meu: 'Seu lado', eles: d.atacante ? d.atacante.nome : 'Forças desconhecidas', meuCurto: 'Você', elesCurto: 'Eles' };
+    var rot = papel === 'ataque' ? { meu: 'Suas tropas', eles: 'Defesa', meuCurto: 'Você', elesCurto: 'Eles' } : { meu: 'Seu lado', eles: d.atacante ? d.atacante.nome : 'Atacante', meuCurto: 'Você', elesCurto: 'Eles' };
     return '<div class="secao-titulo">Força ao longo da batalha</div><div class="card">' + RP.graficoBatalha(serie, serie[serie.length - 1].t || 1, serie[serie.length - 1].t, rot) + '</div>';
   }
   /* os nomes das unidades vêm de GET /tropas: no primeiro relatório aberto, carrega e redesenha */
@@ -1030,8 +1025,7 @@
       (d.defesa ? linha('Defesa vista', RP.esc((RP.partesGrupo(d.defesa.tropas) || 'sem tropas') + (d.defesa.milicia || d.tipo !== 'interceptacao' ? ' · milícia ' + RP.num(d.defesa.milicia) : '') + (d.defesa.arqueirosNoAlto ? ' · ' + d.defesa.arqueirosNoAlto + ' arqueiros no alto' : '') + (d.defesa.portoes ? ' · portões ' + d.defesa.portoes : ''))) +
         linha('Perdas deles', RP.somaGrupo(d.defesa.perdas) ? RP.esc(RP.partesGrupo(d.defesa.perdas)) : 'nenhuma') : '') +
       (d.levaram && Object.keys(d.levaram).length ? linha('Levaram', ganhoHTML(d.levaram, '+')) : '') +
-      (d.reliquias && d.reliquias.length ? linha('Relíquia', RP.esc(d.reliquias.join(', '))) : '') +
-      linha('Estandarte', d.estandarte ? 'Levado: o defensor sabe que foi você' : 'Não levado: o alvo não sabe quem foi') + '</div>';
+      (d.reliquias && d.reliquias.length ? linha('Relíquia', RP.esc(d.reliquias.join(', '))) : '') + '</div>';
     if (d.objetivos && d.objetivos.length) h += '<div class="secao-titulo">Objetivos</div><div class="card lista">' + d.objetivos.map(function (o, i) {
       var ic = o.estado === 'cumprido' ? 'check' : o.estado === 'parcial' ? 'alerta' : 'fechar', cls = o.estado === 'cumprido' ? 'selo-visivel' : o.estado === 'parcial' ? 'selo-antigo' : 'selo-perigo';
       return '<div class="lista-item"><span class="obj-n">' + (i + 1) + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(o.texto) + '</b><br><small class="fraco">' + RP.esc(o.obtido || '') + '</small></span><span class="selo ' + cls + '">' + RP.icone(ic) + RP.esc(o.estado) + '</span></div>';
@@ -1046,9 +1040,7 @@
   RP.desenhosRelatorio.defesa = function (rel) {
     var d = rel.dados || {}, p = d.perdas || {}, a = d.atacante;
     var h = (d.resumo ? '<p class="suave">' + RP.esc(d.resumo) + '</p>' : '') +
-      '<div class="secao-titulo">Atacante</div><div class="card linha atacante">' +
-      (a ? RP.brasao(a.brasao, { tamanho: 40 }) + '<span><b>Reino de ' + RP.esc(a.nome) + '</b><br><small class="fraco">Identificado: levava o estandarte</small></span>'
-        : RP.brasao(null, { tamanho: 40, desconhecido: true }) + '<span><b>Forças desconhecidas</b><br><small class="fraco">Sem estandarte. Batedores podem descobrir quem foi.</small></span>') + '</div>' +
+      (a ? '<div class="secao-titulo">Atacante</div><div class="card linha atacante">' + RP.iconeReino(a, 40) + '<span><b>Reino de ' + RP.esc(a.nome) + '</b></span></div>' : '') +
       '<div class="card info" style="margin-top:var(--esp-3)">' + linha('Local', RP.esc(d.local || '')) + linha('Tipo de ataque', RP.esc(d.tipoNome || '')) +
       linha('Tropas vistas', RP.selosGrupo(d.tropasVistas)) + (d.direcao ? linha('Vindas do', RP.esc(d.direcao)) : '') + linha('Resultado', seloRes(d.resultado)) +
       (d.perdas ? linha('Suas perdas', (RP.somaGrupo(p.guarnicao) ? RP.esc(RP.partesGrupo(p.guarnicao)) : 'nenhuma tropa') + (p.milicia ? ' · ' + RP.num(p.milicia) + ' da milícia' : '')) +

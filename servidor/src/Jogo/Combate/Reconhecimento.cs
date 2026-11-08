@@ -9,14 +9,14 @@ using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
 namespace ReinoDePedra.Jogo.Combate;
 
-/// <summary>Torre que o reino sabe que cobre um local (como está à vista, ou como a foto da névoa a guardou).</summary>
+/// <summary>Torre que cobre um local.</summary>
 public sealed record TorreConhecida(int Hex, int Nivel, int Alcance);
 
 /// <summary>
 /// Força inimiga antes da batalha: o que o reino sabe da defesa de um local alheio e como ela se compara às tropas que ele
-/// mandaria. Presença física revela o que se vê (guarnição por unidade, civis da milícia, torres, portões), sem o dono e sem
-/// bônus; a espionagem revela também o bônus de defesa (armaduras, veterania, relíquias, equipamento) e vale, envelhecida,
-/// fora da vista. A estimativa usa a mesma fórmula da batalha; escudo, pacto e reforços que cheguem só se descobrem ao lutar.
+/// mandaria. Só o batedor de elite revela a guarnição exata, e o relatório dele vale, envelhecido, depois que ele sai. À vista,
+/// sem espionagem, só se vê o tamanho aproximado. A milícia é sempre estimada pelo que é público (famílias do ranking por
+/// local). Bônus de defesa, escudo e reforços que cheguem só se descobrem ao lutar.
 /// </summary>
 public static class Reconhecimentos
 {
@@ -26,24 +26,9 @@ public static class Reconhecimentos
     /// <summary>A quantos hexágonos do alvo as tropas param para vê-lo: a visão do grupo, até <see cref="DistanciaMax"/>.</summary>
     public static int Distancia(Mundo m, IReadOnlyDictionary<string, int> tropas) => Math.Clamp(GT.Visao(m, tropas), 1, DistanciaMax);
 
-    /// <summary>
-    /// Torres que cobrem o local pelo que o reino sabe: as próprias e as à vista como estão agora; fora da vista, as da foto
-    /// da névoa como foram vistas (nível e alcance daquele momento).
-    /// </summary>
-    public static List<TorreConhecida> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null)
-    {
-        vis ??= Nevoas.VisiveisAgora(m, r.Id);
-        var lista = Defesas.NoAlcance(m, l).Where(t => t.ReinoId == r.Id || vis.Contains(t.Hex))
-            .Select(t => new TorreConhecida(t.Hex, t.Nivel, Defesas.Alcance(m, t))).ToList();
-        foreach (var (h, objs) in Fotos.De(m, r.Id).Objetos)
-        {
-            if (vis.Contains(h)) continue;
-            foreach (var o in objs)
-                if (o["tipo"]?.GetValue<string>() == "torre" && o["alcance"]?.GetValue<int>() is int alc && m.G.Distancia(h, l.Hex) <= alc)
-                    lista.Add(new TorreConhecida(h, o["nivel"]?.GetValue<int>() ?? 1, alc));
-        }
-        return lista;
-    }
+    /// <summary>Torres que cobrem o local: são públicas, com nível e alcance.</summary>
+    public static List<TorreConhecida> TorresConhecidas(Mundo m, Local l) =>
+        Defesas.NoAlcance(m, l).Select(t => new TorreConhecida(t.Hex, t.Nivel, Defesas.Alcance(m, t))).ToList();
 
     /// <summary>Bônus de ataque de tropas que saem de um local (como teriam no exército: armas, relíquias, linhagem, veterania da guarnição).</summary>
     public static double BonusDoLocal(Mundo m, Reino r, Local origem, IReadOnlyDictionary<string, int> grupo)
@@ -60,7 +45,7 @@ public static class Reconhecimentos
     public static JsonObject Estimar(Mundo m, Reino r, Local alvo, IReadOnlyDictionary<string, int> grupo, double bonusA, string? tatica, HashSet<int>? vis = null)
     {
         vis ??= Nevoas.VisiveisAgora(m, r.Id);
-        var torres = TorresConhecidas(m, r, alvo, vis);
+        var torres = TorresConhecidas(m, alvo);
         var arqTorre = torres.Sum(t => t.Nivel * m.P.Torre.ArqPorNivel);
         var j = new JsonObject
         {
@@ -73,23 +58,28 @@ public static class Reconhecimentos
             j["texto"] = "Sem dono: as tropas ocupam na chegada, sem batalha.";
             return j;
         }
-        var aoVivo = !alvo.Fantasma && vis.Contains(alvo.Hex);
+        var aoVivo = vis.Contains(alvo.Hex);
         var esp = r.LocaisEspionados.GetValueOrDefault(alvo.Id);
-        Dictionary<string, int> guarnicao; int civis, portoes; string fonte;
-        if (aoVivo)
-        {
-            var dono = m.Reinos.Obter(alvo.ReinoId);
-            guarnicao = GT.Limpo(alvo.Guarnicao);
-            civis = dono != null ? (int)Combates.PopDoLocal(m, dono, alvo) : 0;
-            portoes = alvo.Tipo == TipoLocal.Castelo ? Math.Clamp(alvo.Portoes, 0, Defesas.PortoesMax(m)) : 0;
-            fonte = "vista";
-        }
-        else if (esp != null)
+        var civis = Publico.RegraPublica.CivisEstimados(m, alvo);
+        var portoes = alvo.Tipo == TipoLocal.Castelo ? Math.Clamp(alvo.Portoes, 0, Defesas.PortoesMax(m)) : 0;
+        Dictionary<string, int> guarnicao; string fonte;
+        if (esp != null)
         {
             guarnicao = esp.Guarnicao.Count > 0 || esp.Tropas == 0 ? new(esp.Guarnicao) : new() { ["lanceiro"] = esp.Tropas };   // relatório antigo: só o total
-            civis = esp.Civis > 0 || esp.Milicia == 0 ? esp.Civis : (int)Math.Round(esp.Milicia / Math.Max(1e-9, m.P.MiliciaPorPop));
-            portoes = Math.Clamp(esp.Portoes, 0, Defesas.PortoesMax(m));
             fonte = "espionagem";
+            var g = new JsonObject();
+            foreach (var (k, v) in guarnicao) g[k] = v;
+            j["guarnicao"] = g;
+            j["tropas"] = GT.Total(guarnicao);
+            j["espionadoEm"] = esp.Quando; j["espionadoHaH"] = Math.Round((m.Agora - esp.Quando) / (double)T.Hora, 1);
+        }
+        else if (aoVivo)
+        {
+            // à vista, sem batedor: só o tamanho aproximado; a conta trata todos como lanceiros
+            var n = GT.Total(alvo.Guarnicao);
+            guarnicao = n > 0 ? new() { ["lanceiro"] = Avistamentos.Arredondado(m, n) } : new();
+            fonte = "vista";
+            j["tropasAprox"] = Avistamentos.Aproximado(m, n);
         }
         else
         {
@@ -98,16 +88,9 @@ public static class Reconhecimentos
             return j;
         }
         j["fonte"] = fonte;
-        if (esp != null) { j["espionadoEm"] = esp.Quando; j["espionadoHaH"] = Math.Round((m.Agora - esp.Quando) / (double)T.Hora, 1); }
-        var g = new JsonObject();
-        foreach (var (k, v) in guarnicao) g[k] = v;
-        j["guarnicao"] = g;
-        j["tropas"] = GT.Total(guarnicao);
-        j["civis"] = civis;
         j["milicia"] = Math.Floor(civis * m.P.MiliciaPorPop + 1e-9);
         j["portoes"] = portoes;
-        var bonusD = esp?.BonusD ?? 0;
-        j["bonusDefesa"] = esp != null ? (JsonNode)Math.Round(bonusD, 3) : null;
+        const double bonusD = 0;   // os bônus de defesa não aparecem em nenhuma fonte
         if (GT.Total(grupo) == 0) return j;
         var x = new ExtraDefesa { Pop = civis, ArqTorre = arqTorre, BonusD = bonusD, BonusA = bonusA, Portoes = portoes };
         double? lim = null;
@@ -124,18 +107,18 @@ public static class Reconhecimentos
         j["perdasDeles"] = Math.Round(res.PerdaD, 3);
         j["baixasMinhas"] = Combates.Perdas(grupo, res.PerdaA).Values.Sum();
         j["veredito"] = !res.VenceA ? "desvantagem" : razao >= 1.5 ? "vantagem" : "apertado";
-        j["texto"] = Veredito(m, res, razao, fonte, esp != null);
+        j["texto"] = Veredito(res, razao, fonte);
         return j;
     }
 
-    private static string Veredito(Mundo m, ResultadoBatalha res, double razao, string fonte, bool espionado)
+    private static string Veredito(ResultadoBatalha res, double razao, string fonte)
     {
         var base_ = !res.VenceA
-            ? (res.Recuou ? "A defesa é mais forte: pela tática, as tropas recuariam com " + Math.Round(res.PerdaA * 100) + "% de baixas." : "A defesa é mais forte: as tropas cairiam todas.")
+            ? (res.Recuou ? "A defesa parece mais forte: pela tática, as tropas recuariam com " + Math.Round(res.PerdaA * 100) + "% de baixas." : "A defesa parece mais forte: as tropas cairiam todas.")
             : razao >= 1.5 ? "Vantagem clara: perdas estimadas de " + Math.Round(res.PerdaA * 100) + "%."
             : "Vitória apertada: perdas estimadas de " + Math.Round(res.PerdaA * 100) + "%.";
         var ressalva = fonte == "vista"
-            ? espionado ? "" : " Sem espionagem, os bônus de defesa (armaduras, veterania, relíquias) não entram."
+            ? " Estimativa pelo que se vê de fora. A guarnição exata, só um batedor de elite revela."
             : " Pelo relatório de espionagem: a guarnição pode ter mudado.";
         return base_ + ressalva;
     }
@@ -149,7 +132,8 @@ public static class Reconhecimentos
             var d = g.ToDictionary(kv => kv.Key, kv => kv.Value!.GetValue<int>());
             l.Add(Fauna.Linha("Guarnição", d.Count > 0 ? GT.Partes(m, d) : "nenhuma à vista"));
         }
-        if (e["milicia"] is JsonNode mil) l.Add(Fauna.Linha("Milícia", "≈ " + mil.GetValue<double>() + " (" + e["civis"]!.GetValue<int>() + " civis)"));
+        if (e["tropasAprox"] is JsonNode ap) l.Add(Fauna.Linha("Guarnição", ap.GetValue<string>()));
+        if (e["milicia"] is JsonNode mil) l.Add(Fauna.Linha("Milícia estimada", "≈ " + mil.GetValue<double>()));
         l.Add(Fauna.Linha("Torres no alcance", e["torres"]!.GetValue<int>() + (e["arqueirosNoAlto"]!.GetValue<int>() > 0 ? " · " + e["arqueirosNoAlto"]!.GetValue<int>() + " arqueiros no alto" : "")));
         if (e["portoes"] is JsonNode po && po.GetValue<int>() > 0) l.Add(Fauna.Linha("Portões", "nível " + po.GetValue<int>()));
         if (e["ataque"] is JsonNode a) l.Add(Fauna.Linha("Força", a.GetValue<double>() + " das suas tropas contra " + e["defesa"]!.GetValue<double>() + " da defesa"));
@@ -190,8 +174,8 @@ public static class Reconhecimentos
 
 /// <summary>
 /// Ordem "reconhecer": as tropas vão em direção a um local de outro reino e param à vista dele, a até
-/// <see cref="Reconhecimentos.DistanciaMax"/> hexágonos (ou a visão do grupo), sem atacar. Na chegada, o relatório mostra a
-/// guarnição, a milícia, as torres e a força estimada contra a delas; dali, o jogador ataca (ataque de tropa em campo) ou manda voltar.
+/// <see cref="Reconhecimentos.DistanciaMax"/> hexágonos (ou a visão do grupo), sem atacar. Na chegada, o relatório mostra o
+/// tamanho aproximado da guarnição, a milícia estimada, as torres e a força estimada contra a delas; dali, o jogador ataca (ataque de tropa em campo) ou manda voltar.
 /// </summary>
 public sealed class OrdemReconhecer : IOrdemExercito
 {
@@ -203,7 +187,6 @@ public sealed class OrdemReconhecer : IOrdemExercito
         var alvo = Ataques.Alvo(m, r, destino);
         ex.AlvoLocalId = alvo.Id;
         ex.Dados = new JsonObject { ["alvoHex"] = destino };
-        ex.Estandarte = false;
     }
 
     public Rota Trajeto(Mundo m, Exercito ex, int destino, int de)

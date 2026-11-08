@@ -1,6 +1,7 @@
 using ReinoDePedra.Api.Visoes;
 using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Combate;
+using ReinoDePedra.Jogo.Publico;
 using ReinoDePedra.Jogo.Exploracao;
 using ReinoDePedra.Jogo.Marchas;
 using ReinoDePedra.Jogo.Nucleo;
@@ -150,21 +151,17 @@ public static class ExtrasCombate
             var lista = new List<object>();
             foreach (var t in mm.Torres)
             {
-                var meu = t.ReinoId == r.Id;
-                var visivel = vis.Contains(t.Hex);
-                if (!meu && !visivel) continue;   // fora da vista, a torre alheia vem da foto da névoa (como foi vista)
-                lista.Add(new
-                {
-                    tipo = "torre", id = t.Id, hex = t.Hex, nivel = t.Nivel, alcance = Defesas.Alcance(mm, t),
-                    dono = meu ? "meu" : "desconhecido", arqueiros = meu ? Defesas.Arqueiros(mm, t) : (int?)null, aoVivo = meu || visivel,
-                });
+                var o = RegraPublica.Torre(mm, t);
+                o["dono"] = VisaoMapa.Dono(mm, r, t.ReinoId);
+                o["aoVivo"] = true;
+                if (t.ReinoId == r.Id) o["arqueiros"] = Defesas.Arqueiros(mm, t);
+                lista.Add(o);
             }
-            // um objeto por local: as frentes que o reino disputa vão juntas, para o mapa mostrar um placar só
+            // um objeto por local, de qualquer reino: as frentes que o reino disputa vão juntas, para o mapa mostrar um placar só
             foreach (var g in mm.Batalhas.Where(b => !b.Encerrada).GroupBy(b => b.LocalId))
             {
                 var minhas = g.Where(b => b.AtacanteId == r.Id || b.DefensorId == r.Id).OrderBy(b => b.Id).ToList();
                 var b0 = minhas.FirstOrDefault() ?? g.First();
-                if (minhas.Count == 0 && !vis.Contains(b0.Hex)) continue;
                 var papel = minhas.Count > 0 ? VisaoCombate.Papel(b0, r) : null;
                 lista.Add(new
                 {

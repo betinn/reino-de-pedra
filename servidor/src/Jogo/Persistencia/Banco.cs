@@ -53,6 +53,8 @@ public sealed class Banco : IDisposable
             CREATE INDEX IF NOT EXISTS sessoes_conta ON sessoes(conta_id);
             CREATE TABLE IF NOT EXISTS icones (reino_id INTEGER PRIMARY KEY, tipo TEXT NOT NULL, dados BLOB NOT NULL, versao INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS meta (chave TEXT PRIMARY KEY, valor TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS convites (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, pedido_em INTEGER NOT NULL, estado TEXT NOT NULL, token_hash BLOB, link_em INTEGER, expira_em INTEGER, usado_em INTEGER);
+            CREATE UNIQUE INDEX IF NOT EXISTS convites_token ON convites(token_hash) WHERE token_hash IS NOT NULL;
             """);
     }
 
@@ -64,6 +66,18 @@ public sealed class Banco : IDisposable
             c.CommandText = sql;
             foreach (var (n, v) in ps) c.Parameters.AddWithValue(n, v ?? DBNull.Value);
             c.ExecuteNonQuery();
+        }
+    }
+
+    /// <summary>Como <see cref="Exec"/>, devolvendo quantas linhas mudaram (o UPDATE condicional é atômico).</summary>
+    public int ExecN(string sql, params (string, object?)[] ps)
+    {
+        lock (_trava)
+        {
+            using var c = _con.CreateCommand();
+            c.CommandText = sql;
+            foreach (var (n, v) in ps) c.Parameters.AddWithValue(n, v ?? DBNull.Value);
+            return c.ExecuteNonQuery();
         }
     }
 
@@ -105,7 +119,8 @@ public sealed class Banco : IDisposable
         foreach (var (col, id, tipo, dados) in linhas)
         {
             if (!porNome.TryGetValue(col, out var c)) continue;   // coleção que não existe mais
-            var d = (Documento)JsonSerializer.Deserialize(dados, RegistroTipos.Tipo(tipo), Json)!;
+            if (RegistroTipos.TipoOuNulo(tipo) is not { } classe) continue;   // classe que não existe mais (evento de um sistema retirado)
+            var d = (Documento)JsonSerializer.Deserialize(dados, classe, Json)!;
             d.Id = id;
             c.AdicionarCarregado(d);
             _hashes[(col, id)] = Fnv(dados);

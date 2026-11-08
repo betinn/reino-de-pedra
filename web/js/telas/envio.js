@@ -334,9 +334,9 @@
     var vb = [a.x - H.W, a.y - H.R, b.x - a.x + 2 * H.W, b.y - a.y + 2 * H.R], out = '', c, l;
     for (l = l0; l <= l1; l++) for (c = c0; c <= c1; c++) {
       var h = H.idx(c, l), ce = H.centro(c, l), e = M.estado(h), t = M.terreno(h);
-      var cls = e.v === 'desconhecido' || !t ? 'mr-nevoa' : 't-' + t;
-      out += '<polygon class="hx ' + cls + (e.v === 'explorado' ? ' mr-antigo' : '') + '" points="' + H.cantos(ce.x, ce.y, H.R + 0.6) + '"/>';
-      if (t && e.v !== 'desconhecido' && M.rio(h)) out += '<circle class="mr-rio" cx="' + ce.x.toFixed(0) + '" cy="' + ce.y.toFixed(0) + '" r="' + (H.R * 0.4).toFixed(0) + '"/>';
+      var cls = e.nunca || !t ? 'mr-nevoa' : 't-' + t;
+      out += '<polygon class="hx ' + cls + (e.v === 'explorado' && !e.nunca ? ' mr-antigo' : '') + '" points="' + H.cantos(ce.x, ce.y, H.R + 0.6) + '"/>';
+      if (t && !e.nunca && M.rio(h)) out += '<circle class="mr-rio" cx="' + ce.x.toFixed(0) + '" cy="' + ce.y.toFixed(0) + '" r="' + (H.R * 0.4).toFixed(0) + '"/>';
     }
     function linhaCaminho(hs, cls) {
       return '<polyline class="mr-caminho ' + cls + '" points="' + hs.map(function (x) { var q = H.centroH(x); return q.x.toFixed(0) + ',' + q.y.toFixed(0); }).join(' ') + '"/>';

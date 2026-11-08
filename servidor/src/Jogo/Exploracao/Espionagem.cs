@@ -14,29 +14,19 @@ namespace ReinoDePedra.Jogo.Exploracao
         public long Quando { get; set; }
         public int Tropas { get; set; }
         public int Torres { get; set; }
-        /// <summary>Civis presentes no local na hora (a milícia que a IA estima).</summary>
-        public int Milicia { get; set; }
-        /// <summary>Guarnição por unidade, civis presentes, nível dos portões e bônus de defesa (armaduras, veterania, relíquias) vistos.</summary>
+        /// <summary>Guarnição por unidade, na hora.</summary>
         public Dictionary<string, int> Guarnicao { get; set; } = new();
-        public int Civis { get; set; }
-        public int Portoes { get; set; }
-        public double BonusD { get; set; }
     }
 
     /// <summary>
     /// Espionagem com o batedor de elite: fica <c>P.espiao.tempoNoLocal</c> no local; a chance de ser visto vem de
     /// <c>F.ChanceEspiao</c> (torres no alcance e tropas da guarnição). Visto: o dono vê "espião visto" por 10 h e,
-    /// metade das vezes, o batedor é capturado (sem relatório). Não capturado: relatório com dono, defesa, estoque e relíquias.
+    /// metade das vezes, o batedor é capturado (sem relatório). Não capturado: relatório com estoque, guarnição e relíquias.
     /// </summary>
     public static class Espionagem
     {
         /// <summary>Torres de arqueiros com alcance sobre o local (o sistema de torres registra aqui).</summary>
         public static List<Func<Mundo, Local, int>> TorresNoAlcance { get; } = new();
-        /// <summary>Milícia estimada do local: os civis presentes × <c>P.miliciaPorPop</c>. O combate pode trocar.</summary>
-        public static Func<Mundo, Local, double> Milicia { get; set; } = (m, l) =>
-            m.Reinos.Obter(l.ReinoId) is { } r ? Math.Floor(Combate.Combates.PopDoLocal(m, r, l) * m.P.MiliciaPorPop) : 0;
-        /// <summary>Sistemas acrescentam dados ao relatório de espionagem (bônus, feridos...).</summary>
-        public static List<Action<Mundo, Reino, Local, JsonObject>> ExtrasRelatorio { get; } = new();
 
         public static int Torres(Mundo m, Local l) => TorresNoAlcance.Sum(f => f(m, l));
         public static double Chance(Mundo m, Local l) => m.F.ChanceEspiao(Torres(m, l), l.TropasNaGuarnicao);
@@ -79,23 +69,19 @@ namespace ReinoDePedra.Jogo.Exploracao
             Exploradores.IrParaCasa(m, e);
         }
 
-        /// <summary>Monta o relatório, guarda o que se soube na foto do reino e marca o dono como conhecido.</summary>
+        /// <summary>Monta o relatório e guarda o que se soube: só estoque, guarnição e relíquias (dono, nível e torres já são públicos).</summary>
         public static Relatorio Relatar(Mundo m, Reino r, Reino dono, Local l, int torres, double chance, bool visto)
         {
             Economia.Atualizar(m, dono);
             var g = new JsonObject();
             foreach (var (k, v) in l.Guarnicao.Where(kv => kv.Value > 0)) g[k] = v;
-            var milicia = Milicia(m, l);
             var reliquias = new JsonArray();
             foreach (var rel in Reliquias.NoLocal(m, l.Id)) reliquias.Add(new JsonObject { ["id"] = rel.Id, ["nome"] = rel.Nome, ["tipo"] = rel.Tipo });
             var estoque = Capturas.Json(l.Estoque);
             var linhas = new JsonArray
             {
-                Fauna.Linha("Dono", dono.Nome),
-                Fauna.Linha("Local", l.Nome + " · nível " + l.Nivel),
+                Fauna.Linha("Local", l.Nome + " · " + dono.Nome),
                 Fauna.Linha("Guarnição", l.TropasNaGuarnicao > 0 ? Reinos.Tropas.Partes(m, l.Guarnicao) : "nenhuma"),
-                Fauna.Linha("Torres no alcance", torres.ToString()),
-                Fauna.Linha("Milícia", "≈ " + milicia),
                 Fauna.Linha("Estoque", l.Estoque.Arredondado().Count > 0 ? string.Join(", ", l.Estoque.Arredondado().Select(kv => kv.Value + " " + Logistica.NomeRecurso(kv.Key))) : "vazio"),
                 Fauna.Linha("Relíquias", reliquias.Count > 0 ? string.Join(", ", Reliquias.NoLocal(m, l.Id).Select(x => x.Nome)) : "nenhuma"),
             };
@@ -104,25 +90,21 @@ namespace ReinoDePedra.Jogo.Exploracao
                 ["resumo"] = visto ? "O batedor foi visto, mas fugiu com o relatório." : "O batedor não foi visto.",
                 ["dono"] = Identidade(dono),
                 ["local"] = new JsonObject { ["id"] = l.Id, ["nome"] = l.Nome, ["tipo"] = l.Tipo.Chave(), ["produz"] = l.Produz, ["nivel"] = l.Nivel },
-                ["defesa"] = new JsonObject { ["guarnicao"] = g, ["tropas"] = l.TropasNaGuarnicao, ["torres"] = torres, ["milicia"] = milicia, ["postura"] = l.Postura.ToString() },
+                ["defesa"] = new JsonObject { ["guarnicao"] = g, ["tropas"] = l.TropasNaGuarnicao },
                 ["estoque"] = estoque, ["reliquias"] = reliquias,
                 ["visto"] = visto, ["chance"] = Math.Round(chance, 3), ["hex"] = l.Hex, ["linhas"] = linhas,
             };
-            foreach (var f in ExtrasRelatorio) f(m, dono, l, dados);
-            Capturas.NoRelatorio(m, r, l, dados);
             r.LocaisEspionados[l.Id] = new LocalEspionado
             {
-                DonoId = dono.Id, Nivel = l.Nivel, Quando = m.Agora, Tropas = l.TropasNaGuarnicao, Torres = torres, Milicia = (int)Math.Round(milicia),
-                Guarnicao = Reinos.Tropas.Limpo(l.Guarnicao), Civis = (int)Combate.Combates.PopDoLocal(m, dono, l),
-                Portoes = l.Tipo == TipoLocal.Castelo ? l.Portoes : 0, BonusD = Combate.Bonus.SomaDefesa(m, l),
+                DonoId = dono.Id, Nivel = l.Nivel, Quando = m.Agora, Tropas = l.TropasNaGuarnicao, Torres = torres,
+                Guarnicao = Reinos.Tropas.Limpo(l.Guarnicao),
             };
             m.Sujar(r);
-            Conhecimento.Conhecer(m, r, dono, "espionagem");
             m.Avisar(r.Id, "mapa");
             return Registros.Relatar(m, r.Id, "espionagem", "Espionagem: " + l.Nome, dados, "exploracao");
         }
 
-        /// <summary>Identidade de um reino para quem o conhece (nome e brasão).</summary>
+        /// <summary>Identidade de um reino no jogo: nome, brasão e imagem própria.</summary>
         public static JsonObject Identidade(Reino r) => new()
         {
             ["id"] = r.Id, ["nome"] = r.Nome, ["iconeProprio"] = r.IconeProprio, ["iconeVersao"] = r.IconeVersao,
@@ -143,28 +125,6 @@ namespace ReinoDePedra.Jogo.Exploracao
             if (m.Marchas.Obter(MarchaId) is not Explorador e || e.EspionagemEventoId != Id) return;
             if (m.Locais.Obter(LocalId) is not { } l) { e.EspionagemEventoId = null; Exploradores.IrParaCasa(m, e); return; }
             Espionagem.Concluir(m, e, l);
-        }
-    }
-
-    // ---------------------------------------------------------------- reinos conhecidos
-
-    /// <summary>
-    /// Reinos que um reino conhece (espionagem, captura, resgate, estandarte, bandeira, aliança...). Troca direta e
-    /// propostas só com reinos conhecidos; conhecer o primeiro reino é o gatilho de alianças e comércio.
-    /// </summary>
-    public static class Conhecimento
-    {
-        /// <summary>(mundo, quem passou a conhecer, quem foi conhecido, como: "espionagem", "captura"...).</summary>
-        public static event Action<Mundo, Reino, Reino, string>? AoConhecer;
-
-        public static bool Conhece(Reino r, long outro) => r.Id == outro || r.ReinosConhecidos.Contains(outro);
-
-        public static bool Conhecer(Mundo m, Reino quem, Reino conhecido, string como)
-        {
-            if (quem.Id == conhecido.Id || !quem.ReinosConhecidos.Add(conhecido.Id)) return false;
-            m.Sujar(quem);
-            AoConhecer?.Invoke(m, quem, conhecido, como);
-            return true;
         }
     }
 
@@ -217,8 +177,6 @@ namespace ReinoDePedra.Jogo.Reinos
     {
         /// <summary>Locais de outros reinos espionados por este reino: id do local → o que se soube.</summary>
         public Dictionary<long, LocalEspionado> LocaisEspionados { get; set; } = new();
-        /// <summary>Reinos conhecidos (ver <see cref="Conhecimento"/>).</summary>
-        public HashSet<long> ReinosConhecidos { get; set; } = new();
         /// <summary>Último reconhecimento de cada local de outro reino: id do local → a estimativa como foi vista na hora (não se atualiza sozinha).</summary>
         public Dictionary<long, System.Text.Json.Nodes.JsonObject> LocaisReconhecidos { get; set; } = new();
     }

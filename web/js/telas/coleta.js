@@ -14,7 +14,7 @@
   function recursoEm(h, dados) {
     if (h == null || !M.dados) return null;
     var t = M.terreno(h), rec = RECURSO[t];
-    if (!rec || M.estado(h).v === 'desconhecido') return null;
+    if (!rec || M.estado(h).nunca) return null;
     var objs = (dados && dados.porHex && dados.porHex[h]) || M.objetosEm(h);
     if (objs.some(function (o) { return o.tipo === 'local' && !o.ruina; })) return null;
     return rec;

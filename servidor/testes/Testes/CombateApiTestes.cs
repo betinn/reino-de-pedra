@@ -10,7 +10,7 @@ public class CombateApiTestes
     public CombateApiTestes() => AjustesTeste.Garantir();
 
     [Fact]
-    public async Task Previa_envio_batalha_anonima_recuo_relatorio_e_defesas_pela_api()
+    public async Task Previa_envio_batalha_com_nome_recuo_relatorio_e_defesas_pela_api()
     {
         await using var s = await ServidorTeste.Iniciar();
         using var a = s.NovoCliente();
@@ -27,23 +27,25 @@ public class CombateApiTestes
             var c = m.Locais[casteloA];
             c.Guarnicao["cavalaria"] = 20; c.Guarnicao["milicia"] = 3;
             m.Sujar(c); m.Sujar(def);
-            ReinoDePedra.Jogo.Exploracao.Nevoas.RevelarArea(m, m.Locais[casteloA].ReinoId, alvoHex, 0);   // A já viu a mina
         });
 
+        // A nunca viu a mina: os locais são públicos, a prévia diz de quem é e não diz o que há dentro
         var (sp, previa) = await a.Post("ataques/previa", new { deLocalId = casteloA, tropas = new { cavalaria = 20 }, destinoHex = alvoHex });
         Assert.True(sp == HttpStatusCode.OK, previa.ToString());
         Assert.Equal("saque", previa.GetProperty("plano").GetProperty("tipo").GetString());
-        Assert.Equal("desconhecido", previa.GetProperty("alvo").GetProperty("dono").GetString());
-        Assert.Equal("Mina", previa.GetProperty("alvo").GetProperty("nome").GetString());
-        Assert.DoesNotContain("Valdren", previa.ToString());
+        Assert.Equal("outro", previa.GetProperty("alvo").GetProperty("dono").GetString());
+        Assert.Equal(minaD.GetProperty("nome").GetString(), previa.GetProperty("alvo").GetProperty("nome").GetString());
+        Assert.Equal("Valdren", previa.GetProperty("alvo").GetProperty("reino").GetProperty("nome").GetString());
+        Assert.Equal("nenhuma", previa.GetProperty("forcaInimiga").GetProperty("fonte").GetString());
+        Assert.False(previa.GetProperty("forcaInimiga").TryGetProperty("guarnicao", out _));
+        Assert.False(previa.TryGetProperty("defensorVera", out _));
+        Assert.False(previa.TryGetProperty("estandarte", out _));
         Assert.True(previa.GetProperty("curta").GetProperty("ok").GetBoolean());
-        Assert.Equal("Forças desconhecidas", previa.GetProperty("defensorVera").GetProperty("nome").GetString());
         Assert.Contains("ocupacao", previa.GetProperty("tipos").EnumerateArray().Select(x => x.GetString()));
         Assert.DoesNotContain("cerco", previa.GetProperty("tipos").EnumerateArray().Select(x => x.GetString()));
         Assert.True(previa.GetProperty("quandoParam").GetArrayLength() >= 2);
-        var (sp2, p2) = await a.Post("ataques/previa", new { deLocalId = casteloA, tropas = new { cavalaria = 20 }, destinoHex = alvoHex, estandarte = true, tipo = "saque", tatica = "agressiva" });
+        var (sp2, p2) = await a.Post("ataques/previa", new { deLocalId = casteloA, tropas = new { cavalaria = 20 }, destinoHex = alvoHex, tipo = "saque", tatica = "agressiva" });
         Assert.Equal(HttpStatusCode.OK, sp2);
-        Assert.Equal("Reino de Pedralva", p2.GetProperty("defensorVera").GetProperty("nome").GetString());
         Assert.Equal(0.6, p2.GetProperty("plano").GetProperty("limite").GetDouble(), 6);
         Assert.Equal(HttpStatusCode.BadRequest, (await a.Post("ataques/previa", new { deLocalId = casteloA, tropas = new { cavalaria = 20 }, destinoHex = alvoHex, tipo = "cerco" })).status);
         Assert.Equal(HttpStatusCode.BadRequest, (await a.Post("ataques", new { deLocalId = casteloA, tropas = new { milicia = 3 }, destinoHex = alvoHex })).status);
@@ -61,14 +63,13 @@ public class CombateApiTestes
         var id = bat.GetProperty("id").GetInt64();
         var (sb, bd) = await d.Get("batalhas/" + id);
         Assert.Equal(HttpStatusCode.OK, sb);
-        Assert.Equal("Forças desconhecidas", bd.GetProperty("eles").GetProperty("nome").GetString());
-        Assert.DoesNotContain("Pedralva", bd.ToString());
+        Assert.Equal("Exército de Pedralva", bd.GetProperty("eles").GetProperty("nome").GetString());
+        Assert.Equal("Pedralva", bd.GetProperty("eles").GetProperty("atacante").GetProperty("nome").GetString());
         Assert.True(bd.GetProperty("serie").GetArrayLength() > 2);
         Assert.False(bd.GetProperty("encerrada").GetBoolean());
         var (_, ba) = await a.Get("batalhas/" + id);
         Assert.Equal("ataque", ba.GetProperty("papel").GetString());
-        Assert.DoesNotContain("Valdren", ba.ToString());
-        Assert.Equal("Mina", ba.GetProperty("nome").GetString());
+        Assert.Equal(minaD.GetProperty("nome").GetString(), ba.GetProperty("nome").GetString());
         var (_, reinoD) = await d.Get("reino");
         Assert.Single(reinoD.GetProperty("batalhas").EnumerateArray());
         using var c3 = s.NovoCliente();
@@ -84,7 +85,7 @@ public class CombateApiTestes
         var (_, rels) = await d.Get("relatorios?tipo=defesa");
         var relId = rels.EnumerateArray().First().GetProperty("id").GetInt64();
         var (_, rel) = await d.Get("relatorios/" + relId);
-        Assert.DoesNotContain("Pedralva", rel.ToString());
+        Assert.Equal("Pedralva", rel.GetProperty("dados").GetProperty("atacante").GetProperty("nome").GetString());
         Assert.Equal("vitoria", rel.GetProperty("dados").GetProperty("resultado").GetString());
         var (_, relsA) = await a.Get("relatorios?tipo=ataque");
         Assert.Single(relsA.EnumerateArray());
@@ -121,8 +122,10 @@ public class CombateApiTestes
         Assert.Equal(1, df2.GetProperty("castelo").GetProperty("portoes").GetInt32());
         var (_, mapa) = await d.Get("mapa");
         Assert.Contains(mapa.GetProperty("objetos").EnumerateArray(), o => o.GetProperty("tipo").GetString() == "torre" && o.GetProperty("dono").GetString() == "meu");
-        // o atacante não vê a torre de longe (área nunca vista)
+        // torres são públicas: o atacante vê a torre de longe, em área nunca vista, com nível e alcance
         var (_, mapaA) = await a.Get("mapa");
-        Assert.DoesNotContain(mapaA.GetProperty("objetos").EnumerateArray(), o => o.GetProperty("tipo").GetString() == "torre" && o.GetProperty("hex").GetInt32() == hexTorre);
+        var torreA = Assert.Single(mapaA.GetProperty("objetos").EnumerateArray(), o => o.GetProperty("tipo").GetString() == "torre" && o.GetProperty("hex").GetInt32() == hexTorre);
+        Assert.Equal("outro", torreA.GetProperty("dono").GetString());
+        Assert.False(torreA.TryGetProperty("arqueiros", out _));
     }
 }

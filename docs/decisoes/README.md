@@ -38,5 +38,6 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0033](0033-frentes-e-saque-por-prioridade.md) | Frentes simultâneas com a defesa dividida, tempo de batalha que encurta, placar ao vivo, recuar sem o que levar, saque por prioridade e repouso no castelo |
 | [0034](0034-resgate-de-explorador-e-forca-inimiga.md) | Explorador capturado preso num local do captor, oferta do dono e resgate à força; força inimiga antes da batalha (estimativa por vista ou espionagem) e ordem "reconhecer" |
 | [0035](0035-regiao-dos-reinos-e-poeira-das-marchas.md) | Região de cada reino marcada desde o início e poeira das marchas grandes fora da vista, sem dono nem detalhes; a IA usa as mesmas informações |
+| [0036](0036-mapa-publico-e-convites.md) | Mapa público ao vivo, entrada por convite com link de uso único, feed filtrado no servidor e fim do anonimato. Substitui a 0035 |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

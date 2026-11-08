@@ -1,6 +1,6 @@
 /* Reino de Pedra — social: peças comuns de Aliança, Comércio e Mensagens; Bandeiras (#/bandeiras, #/bandeira-nova?alvo=c,l);
    mensageiros, cargas entre reinos e bandeiras no mapa; reforço a aliado e derrubar bandeira pelo envio de tropas;
-   entradas em Mais (Aliança e Comércio só depois do gatilho: RP.sistema). Porte de prototipo/js/social.js (bandeiras). */
+   entradas em Mais. Porte de prototipo/js/social.js (bandeiras). */
 (function () {
   'use strict';
   var RP = window.RP, H = RP.hex;
@@ -20,7 +20,7 @@
     return Object.keys(c || {}).reduce(function (s, k) { return s + (c[k] || 0) * (v[k] || 1); }, 0);
   };
   S.brasao = function (id, t) { return id ? RP.iconeReino(id, t || 32) : RP.brasao(null, { tamanho: t || 32, desconhecido: true }); };
-  S.nome = function (id) { return id ? id.nome : 'Dono desconhecido'; };
+  S.nome = function (id) { return id ? id.nome : 'Sem dono'; };
   S.recadoHTML = function (t) { return t ? '<p class="msg-texto">“' + RP.esc(t) + '”</p>' : ''; };
   S.campoRecado = function (id, valor, max) {
     return '<div class="campo" style="margin-top:var(--esp-3)"><label for="' + id + '">Recado (opcional)</label><input id="' + id + '" type="text" maxlength="' + max + '" value="' + RP.esc(valor || '') + '" placeholder="Ex.: Entrega pela Estrada do Rei." autocomplete="off">' +
@@ -51,8 +51,8 @@
   /* ---------------------------------------------------------------- entradas em Mais, Reino e Tropas */
   RP.itensMais = RP.itensMais || [];
   RP.itensMais.push(
-    { icone: 'estandarte', titulo: 'Aliança', texto: 'Membros, pedidos de recursos e conversa', href: '#/alianca', sistema: 'alianca' },
-    { icone: 'troca', titulo: 'Comércio e diplomacia', texto: 'Trocas, pactos e resgates', href: '#/comercio', sistema: 'comercio' },
+    { icone: 'estandarte', titulo: 'Aliança', texto: 'Membros, pedidos de recursos e conversa', href: '#/alianca' },
+    { icone: 'troca', titulo: 'Comércio e diplomacia', texto: 'Trocas, pactos e resgates', href: '#/comercio' },
     { icone: 'mensagem', titulo: 'Mensagens', texto: 'Mensageiros para outros reinos', href: '#/mensagens' },
     { icone: 'bandeira', titulo: 'Bandeiras', texto: 'Sinais para outros jogadores', href: '#/bandeiras' }
   );
@@ -113,7 +113,7 @@
   }
   function objs(h, d) { return (d && d.porHex && d.porHex[h]) || []; }
   function localEm(h, d) { return objs(h, d).filter(function (o) { return o.tipo === 'local'; })[0]; }
-  function bandeirasAlheias(h, d) { return objs(h, d).filter(function (o) { return o.tipo === 'bandeira' && o.dono !== 'meu' && !o.foto; }); }
+  function bandeirasAlheias(h, d) { return objs(h, d).filter(function (o) { return o.tipo === 'bandeira' && o.dono !== 'meu'; }); }
 
   RP.mapa.extrasFolhaHex.push(function (h, d) {
     var l = localEm(h, d);
@@ -123,14 +123,10 @@
   RP.mapa.acoesFolhaHex.push(function (h, d) {
     if (RP.envio && RP.envio.ativo()) return '';
     var e = RP.mapaModelo.estado(h), html = '', l = localEm(h, d);
-    if (l && l.dono === 'aliado' && l.reino) {
-      html += '<a class="btn btn-p" href="#/pedido?reino=' + l.reino.id + '">' + RP.icone('carroca') + 'Pedir recursos</a>';
-      html += '<a class="btn btn-p btn-fantasma" href="#/mensagem?para=' + l.reino.id + '">' + RP.icone('mensagem') + 'Mensageiro</a>';
-    } else if (l && l.dono === 'desconhecido' && !l.ruina && !l.foto) {
-      html += '<a class="btn btn-p btn-fantasma" href="#/mensagem?local=' + l.id + '">' + RP.icone('mensagem') + 'Mensageiro</a>';
-    }
+    if (l && l.dono === 'aliado' && l.reino) html += '<a class="btn btn-p" href="#/pedido?reino=' + l.reino.id + '">' + RP.icone('carroca') + 'Pedir recursos</a>';
+    if (l && (l.dono === 'aliado' || l.dono === 'outro') && l.reino && !l.ruina) html += '<a class="btn btn-p btn-fantasma" href="#/mensagem?para=' + l.reino.id + '">' + RP.icone('mensagem') + 'Mensageiro</a>';
     var minha = objs(h, d).some(function (o) { return o.tipo === 'bandeira' && o.dono === 'meu'; });
-    if (e.v !== 'desconhecido' && !minha) html += '<a class="btn btn-p btn-fantasma" href="#/bandeira-nova?alvo=' + H.c(h) + ',' + H.l(h) + '">' + RP.icone('bandeira') + 'Bandeira</a>';
+    if (!e.nunca && !minha) html += '<a class="btn btn-p btn-fantasma" href="#/bandeira-nova?alvo=' + H.c(h) + ',' + H.l(h) + '">' + RP.icone('bandeira') + 'Bandeira</a>';
     return html;
   });
 
@@ -149,7 +145,7 @@
     quando: function (h, d) { return bandeirasAlheias(h, d).length > 0; },
     descricao: function (h, d) {
       var b = bandeirasAlheias(h, d)[0];
-      return S.linha('Bandeira', RP.esc(b ? '“' + b.recado + '”' : '')) + S.linha('Estandarte', 'Não levado: o dono não sabe quem foi') + S.linha('Depois', 'As tropas voltam');
+      return S.linha('Bandeira', RP.esc(b ? '“' + b.recado + '”' : '')) + S.linha('Aviso', 'O dono é avisado de quem foi') + S.linha('Depois', 'As tropas voltam');
     },
     dados: function (h, d) { var b = bandeirasAlheias(h, d)[0]; return b ? { bandeira: b.id } : {}; }
   });
@@ -158,7 +154,6 @@
   RP.extrasTropas = RP.extrasTropas || [];
   var meusReforcos = [];
   function carregarReforcos() {
-    if (!RP.sistema('alianca')) return;
     RP.get('/alianca').then(function (d) {
       meusReforcos = d.reforcos.meus;
       var box = RP.$('[data-reforcos-aliados]'); if (box) box.outerHTML = htmlReforcos();
@@ -193,7 +188,7 @@
       RP.fecharFolha();
       RP.modal({
         titulo: 'Derrubar esta bandeira?',
-        corpo: '<p class="suave">Escolha as tropas e clique na bandeira: elas vão até lá, derrubam e voltam. O dono é avisado, mas não sabe quem foi (a não ser com estandarte).</p>',
+        corpo: '<p class="suave">Escolha as tropas e clique na bandeira: elas vão até lá, derrubam e voltam. O dono é avisado de quem foi.</p>',
         acoes: [{ rotulo: RP.icone('tropas') + 'Escolher tropas', classe: 'btn-primario', acao: function () {
           RP.ir('mapa?centro=' + hex);
           setTimeout(function () { if (RP.envio) RP.envio.iniciar({}); }, 80);
@@ -211,9 +206,8 @@
   ];
   var dadosB = null;
   function itemBandeira(b, minha) {
-    var visto = !minha && b.foto ? ' · visto ' + RP.fmtHa((RP.agora() - b.visto) / 3600000) : '';
     return '<div class="card band-item"><div class="linha">' + (minha ? RP.iconeReino(RP.reino, 30) : S.brasao(b.autor, 30)) +
-      '<span style="flex:1;min-width:0"><b>“' + RP.esc(b.recado) + '”</b><br><small class="fraco">' + RP.esc(RP.TIPOS_BANDEIRA[b.tipo] || 'Aviso') + ' · ' + (minha ? 'você' : RP.esc(S.nome(b.autor))) + ' · ' + b.c + ', ' + b.l + visto + '</small></span></div>' +
+      '<span style="flex:1;min-width:0"><b>“' + RP.esc(b.recado) + '”</b><br><small class="fraco">' + RP.esc(RP.TIPOS_BANDEIRA[b.tipo] || 'Aviso') + ' · ' + (minha ? 'você' : RP.esc(S.nome(b.autor))) + ' · ' + b.c + ', ' + b.l + '</small></span></div>' +
       '<div class="linha band-acoes"><a class="btn btn-p" href="#/mapa?foco=' + b.hex + '">' + RP.icone('mapa') + 'Ver</a>' +
       (minha ? '<button type="button" class="btn btn-p btn-fantasma" data-remover-bandeira="' + b.id + '">' + RP.icone('fechar') + 'Remover</button>'
         : '<button type="button" class="btn btn-p" data-derrubar-bandeira="' + b.id + '" data-hex="' + b.hex + '">' + RP.icone('tropas') + 'Derrubar</button>') + '</div></div>';
@@ -223,8 +217,8 @@
       dadosB = d;
       RP.$('.band-conteudo', el).innerHTML =
         '<div class="secao-titulo" style="margin-top:0">Suas bandeiras · ' + d.minhas.length + ' de ' + d.max + '</div><div class="pilha">' + (d.minhas.length ? d.minhas.map(function (b) { return itemBandeira(b, true); }).join('') : S.vazio('Nenhuma bandeira colocada. Clique num hexágono do mapa e escolha Bandeira.')) + '</div>' +
-        '<div class="secao-titulo">Vistas por você</div><div class="pilha">' + (d.vistas.length ? d.vistas.map(function (b) { return itemBandeira(b, false); }).join('') : S.vazio('Nenhuma bandeira de outro reino à vista.')) + '</div>' +
-        RP.comoFunciona('<p>Bandeiras são sinais para outros jogadores: valor social, sem efeito no jogo. <b>Sempre mostram quem as colocou.</b></p><p>Qualquer jogador pode derrubá-las com tropas no local; você é avisado, sem saber quem foi.</p>') + '<div style="height:120px"></div>';
+        '<div class="secao-titulo">De outros reinos</div><div class="pilha">' + (d.vistas.length ? d.vistas.map(function (b) { return itemBandeira(b, false); }).join('') : S.vazio('Nenhuma bandeira de outro reino.')) + '</div>' +
+        RP.comoFunciona('<p>Bandeiras são sinais para outros jogadores: valor social, sem efeito no jogo. <b>Sempre mostram quem as colocou.</b></p><p>Qualquer jogador pode derrubá-las com tropas no local; você é avisado de quem foi.</p>') + '<div style="height:120px"></div>';
     }).catch(function (e) { RP.$('.band-conteudo', el).innerHTML = S.vazio(RP.esc(e.message)); });
   }
   RP.registrarTela('bandeiras', {
@@ -243,13 +237,13 @@
   }
   function desenharNova(el) {
     var max = (dadosB && dadosB.caracteres) || 60, min = (dadosB && dadosB.minimo) || 3;
-    var a = nova.alvo, h = a ? H.idx(a[0], a[1]) : null, e = h != null && RP.mapaModelo ? RP.mapaModelo.estado(h) : { v: 'desconhecido' };
+    var a = nova.alvo, h = a ? H.idx(a[0], a[1]) : null, e = h != null && RP.mapaModelo ? RP.mapaModelo.estado(h) : { nunca: true };
     var ter = h != null && RP.mapaModelo ? RP.mapaModelo.terreno(h) : null;
     var lugar = a ? (ter ? ({ planicie: 'Planície', floresta: 'Floresta', colina: 'Colina', montanha: 'Montanha', pantano: 'Pântano' }[ter] || 'Terreno') : 'Lugar explorado') + ' · ' + a[0] + ', ' + a[1] : 'Escolha no mapa';
     var n = nova.texto.trim().length;
     RP.$('.bn-conteudo', el).innerHTML =
       '<div class="secao-titulo" style="margin-top:0">Onde</div><div class="card linha destino-card"><span class="ico-placa">' + RP.icone(a ? 'alvo' : 'mapa') + '</span><div style="flex:1"><b>' + RP.esc(lugar) + '</b><br><small class="fraco">' +
-      (e.v === 'desconhecido' && a ? 'Só em lugar que o seu reino já explorou.' : 'Em qualquer hexágono que você já explorou.') + '</small></div><a class="btn btn-p" href="#/mapa">' + RP.icone('mapa') + 'Trocar</a></div>' +
+      (e.nunca && a ? 'Só em lugar que o seu reino já explorou.' : 'Em qualquer hexágono que você já explorou.') + '</small></div><a class="btn btn-p" href="#/mapa">' + RP.icone('mapa') + 'Trocar</a></div>' +
       '<div class="secao-titulo">Tipo</div><div class="escolhas escolhas-linhas">' + TIPOS_B.map(function (tb2) {
         return '<button type="button" class="escolha escolha-linha" data-tipo-bandeira="' + tb2.id + '" aria-pressed="' + (nova.tipo === tb2.id) + '"><span class="ico-placa">' + RP.icone(tb2.icone) + '</span><span class="escolha-txt"><b>' + RP.TIPOS_BANDEIRA[tb2.id] + '</b><small class="fraco">' + tb2.txt + '</small></span></button>';
       }).join('') + '</div>' +
@@ -277,7 +271,7 @@
           if (nova.texto.trim().length < min) { RP.aviso({ titulo: 'Escreva o recado', texto: 'Pelo menos ' + min + ' letras.', icone: 'info', tipo: 'alerta' }); RP.$('#texto-bandeira', el).focus(); return; }
           RP.tentar(RP.post('/bandeiras', { c: nova.alvo[0], l: nova.alvo[1], tipo: nova.tipo, recado: nova.texto.trim() })).then(function (x) {
             nova.texto = '';
-            RP.aviso({ titulo: 'Bandeira colocada', texto: 'Visível para quem passar por ali.', icone: 'bandeira', tipo: 'sucesso' });
+            RP.aviso({ titulo: 'Bandeira colocada', texto: 'Todos a veem no mapa.', icone: 'bandeira', tipo: 'sucesso' });
             if (RP.mapaModelo) RP.mapaModelo.carregar().catch(function () { /* offline */ });
             RP.ir('mapa?foco=' + x.hex);
           }).catch(function () { /* aviso já mostrado */ });

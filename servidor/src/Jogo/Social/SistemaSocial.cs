@@ -9,7 +9,7 @@ namespace ReinoDePedra.Jogo.Social
 {
     /// <summary>
     /// Ganchos do social: quem não pode atacar quem (aliança, trégua de saída, pacto), capturas entre aliados e pactuados,
-    /// reforço entre aliados, teto de população, gatilhos de alianças e comércio, bandeiras na foto da névoa e estandartes.
+    /// reforço entre aliados, teto de população e cargas entre reinos.
     /// </summary>
     [Sistema]
     public static class SistemaSocial
@@ -20,15 +20,11 @@ namespace ReinoDePedra.Jogo.Social
 
         public static void AoIniciar(Mundo m) => Sistemas.UmaVez("social", () =>
         {
-            Sistemas.Registrar("alianca", "Alianças", "Reinos aliados se reconhecem, pedem recursos, reforçam uns aos outros e conversam.", "alianca");
-            Sistemas.Registrar("comercio", "Comércio e diplomacia", "Trocas diretas, pactos de não agressão e resgates com reinos que você conhece.", "comercio");
-            // gatilho de alianças e comércio: conhecer o primeiro reino
-            Conhecimento.AoConhecer += (mm, quem, _, _) => { Sistemas.Revelar(mm, quem, "alianca"); Sistemas.Revelar(mm, quem, "comercio"); };
+            // alianças e comércio ficam abertos desde o início (nenhum gatilho: chave não registrada aparece sempre)
 
-            // quem pode atacar quem: aliados nunca; trégua e pacto, recusados no envio se o atacante sabe de quem é o local,
-            // e descobertos ao chegar (ou no encontro) se não sabe
-            Permissoes.AntesDeEnviar.Add((mm, a, b) => Aliancas.SaoAliados(mm, a.Id, b.Id) ? MotivoAliado : null);
-            Permissoes.AntesDeEnviarNoLocal.Add((mm, a, b, l) => SabeODono(a, l) ? Bloqueio(mm, a, b) : null);
+            // quem pode atacar quem: aliados nunca; trégua e pacto são públicos, recusados já no envio. Ao chegar, vale de novo
+            // para o pacto que começou com as tropas a caminho
+            Permissoes.AntesDeEnviar.Add((mm, a, b) => Aliancas.SaoAliados(mm, a.Id, b.Id) ? MotivoAliado : Bloqueio(mm, a, b));
             Permissoes.AoChegar.Add(Bloqueio);
             Capturas.Ignorar.Add((mm, captor, dono) => Aliancas.SaoAliados(mm, captor.Id, dono.Id) || Comercio.PactoAtivo(mm, captor.Id, dono.Id));
 
@@ -40,14 +36,6 @@ namespace ReinoDePedra.Jogo.Social
             Economia.OcupantesExtras.Add(Mensageiros.Ocupantes);
             Combates.AoTerminar.Add(Reforcos.AoTerminar);
 
-            // estandarte e bandeira tornam o reino conhecido
-            Combates.AoTerminar.Add((mm, rc) =>
-            {
-                if (mm.Batalhas.Obter(rc.BatalhaId) is not { Estandarte: true }) return;
-                if (mm.Reinos.Obter(rc.DefensorId) is { } d && mm.Reinos.Obter(rc.AtacanteId) is { } a) Conhecimento.Conhecer(mm, d, a, "estandarte");
-            });
-            Fotos.Fotografos.Add(Bandeiras.Foto);
-
             // cargas entre reinos: o que acontece quando chegam (ou são roubadas)
             Remessas.AoTerminar[Comercio.Troca] = (mm, r, ok) => Comercio.Entregue(mm, r, ok, Comercio.Troca);
             Remessas.AoTerminar[Comercio.Pedido] = (mm, r, ok) => Comercio.Entregue(mm, r, ok, Comercio.Pedido);
@@ -55,9 +43,6 @@ namespace ReinoDePedra.Jogo.Social
             Remessas.AoTerminar[Comercio.Resgate] = Comercio.PagamentoResgate;
             Capturas.AoPedirResgate += (mm, p) => mm.Avisar(p.DonoId, "comercio");
         });
-
-        /// <summary>O atacante sabe quem é o dono do local (espionou e o dono não mudou).</summary>
-        private static bool SabeODono(Reino a, Local l) => a.LocaisEspionados.TryGetValue(l.Id, out var e) && e.DonoId == l.ReinoId;
 
         private static string? Bloqueio(Mundo m, Reino a, Reino b) =>
             Aliancas.EmTregua(m, a.Id, b.Id) ? MotivoTregua : Comercio.PactoAtivo(m, a.Id, b.Id) ? MotivoPacto : null;

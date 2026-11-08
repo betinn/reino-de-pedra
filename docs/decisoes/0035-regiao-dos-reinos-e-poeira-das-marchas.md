@@ -1,5 +1,7 @@
 # 0035 — Região dos reinos e poeira das marchas grandes
 
+> Substituída pela [0036](0036-mapa-publico-e-convites.md): reinos e marchas são públicos, e estes sistemas saíram.
+
 **Problema.** Com a névoa cobrindo tudo, o jogador não sabe para onde ir: os reinos ficam escondidos até alguém tropeçar neles, e uma força grande passa a poucos hexágonos sem que ninguém perceba. Pouca informação desestimula o confronto. Tirar a névoa inteira resolveria isso, mas acabaria com a exploração, a espionagem e o anonimato.
 
 ## Decisão

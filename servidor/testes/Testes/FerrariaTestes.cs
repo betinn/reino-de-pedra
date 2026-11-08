@@ -354,7 +354,7 @@ public class FerrariaTestes
     }
 
     [Fact]
-    public void Interceptado_entrega_o_lendario_ao_vencedor_e_espionagem_mostra_na_guarnicao()
+    public void Interceptado_entrega_o_lendario_ao_vencedor_e_espionagem_nao_o_mostra()
     {
         var s = new CombateCenario();
         var m = s.M;
@@ -371,10 +371,9 @@ public class FerrariaTestes
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 3)), 50);
         m.Lendarios.Adicionar(new EquipamentoLendario { DonoId = s.Def.Id, ForjadoPor = s.Def.Id, Tipo = Ferrarias.Defesa, Nome = "Armadura lendária", LocalId = alvo.Id });
         var rel = Espionagem.Relatar(m, s.Atk, s.Def, alvo, 0, 0, false);
-        var arr = Assert.IsType<JsonArray>(rel.Dados["lendario"]);
-        Assert.Equal("Armadura lendária", (string?)arr[0]!["nome"]);
-        Assert.Equal(Ferrarias.Defesa, (string?)arr[0]!["tipo"]);
-        Assert.Null(arr[0]!["forjadoPor"]);
+        Assert.Null(rel.Dados["lendario"]);
+        Assert.DoesNotContain("Armadura lendária", rel.Dados.ToJsonString());
+        Assert.DoesNotContain("lendári", rel.Dados.ToJsonString());
     }
 
     [Fact]

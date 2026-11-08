@@ -59,14 +59,17 @@
   }
 
   /* ---------------------------------------------------------------- folhas */
+  /* construções, marchas e bandeiras são públicas: "nunca explorado" só faz sentido para o chão */
+  function seloObjeto(e) { return e.nunca ? '' : seloEstado(e); }
   function seloEstado(e) {
     if (e.v === 'visivel') return '<span class="selo selo-visivel">' + RP.icone('olho') + 'Visível agora</span>';
+    if (e.nunca) return '<span class="selo selo-desconhecido">' + RP.icone('nevoa') + 'Nunca explorado</span>';
     if (e.v === 'explorado') return '<span class="selo selo-antigo">' + RP.icone('relogio') + 'Visto ' + RP.fmtHa(e.horas) + '</span>';
     return '<span class="selo selo-desconhecido">' + RP.icone('nevoa') + 'Desconhecido</span>';
   }
   function coordTxt(h) { return '<span class="fraco num">' + H.c(h) + ' · ' + H.l(h) + '</span>'; }
   function linhaInfo(r, v) { return '<div class="info-linha"><span class="fraco">' + r + '</span><span>' + v + '</span></div>'; }
-  function notaAntiga(e) { return e.v === 'explorado' ? '<p class="nota-antiga">' + RP.icone('relogio', 'ico-p') + 'Último estado conhecido, ' + RP.fmtHa(e.horas) + '. Pode ter mudado.</p>' : ''; }
+  function notaAntiga(e) { return e.v === 'explorado' && !e.nunca ? '<p class="nota-antiga">' + RP.icone('relogio', 'ico-p') + 'Último estado conhecido, ' + RP.fmtHa(e.horas) + '. Pode ter mudado.</p>' : ''; }
   function abrirFolhaMapa(o, h) {
     selecionar(h);
     tela.classList.add('com-folha');
@@ -82,7 +85,7 @@
   function nomeObjeto(o) {
     var tp = MAPA.tiposObjeto[o.tipo];
     if (tp && tp.nome) return tp.nome(o);
-    if (o.tipo === 'marcha') return RP.mapaTatico.revelada(o) ? (MAPA.tiposMarcha[o.marcha] || {}).nome || NOME_MARCHA[o.marcha] || 'Sua marcha' : 'Forças desconhecidas';
+    if (o.tipo === 'marcha') return (MAPA.tiposMarcha[o.marcha] || {}).nome || NOME_MARCHA[o.marcha] || 'Marcha';
     if (o.tipo === 'local') return o.ruina ? 'Ruína' : o.dono === 'livre' ? 'Terra livre' : o.nome || RP.TIPOS_LOCAL[o.local] || 'Local';
     if (o.tipo === 'jazida') return 'Jazida de ' + RP.nomeRecurso(o.recurso);
     if (o.tipo === 'ruina-antiga') return 'Ruína antiga';
@@ -101,7 +104,7 @@
     if (o.dono === 'meu') return 'Seu reino';
     if (o.dono === 'aliado') return 'Aliado';
     if (o.dono === 'livre' || o.ruina) return 'Sem dono';
-    return 'Dono desconhecido';
+    return o.reino ? o.reino.nome : 'Outro reino';
   }
   function itemConteudo(o) {
     var cls = o.tipo === 'local' ? ' ' + RP.mapaTatico.classeDono(o.dono) : '';
@@ -122,23 +125,15 @@
     /* a tropa selecionada escolheu este hexágono sem pedir: fechar a folha desfaz */
     function fechou(troca) { if (!troca && RP.envio && RP.envio.implicito()) RP.envio.cancelar(); }
     var vivos = d.marchas.filter(function (m) { var p = M.posMarcha(m, RP.agora()); return p.hex === h && M.marchaVisivel(m, p); });
-    if (e.v === 'desconhecido') {
-      return {
-        titulo: 'Terra desconhecida', subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(h) + '</div>',
-        icone: '<span class="ico-placa folha-ico">' + RP.icone('nevoa') + '</span>',
-        corpo: '<p class="suave">Ninguém do seu reino passou por aqui. Terreno, recursos, animais e reinos só aparecem depois de explorados.</p>' +
-          MAPA.extrasFolhaHex.map(function (f) { return f(h, d) || ''; }).join(''),
-        acoes: MAPA.acoesFolhaHex.map(function (f) { return f(h, d) || ''; }).join(''), aoFechar: fechou
-      };
-    }
-    var corpo = notaAntiga(e) + '<div class="info">' + linhaInfo('Terreno', TERRENOS[t][1]) +
+    if (e.v === 'desconhecido') return { titulo: 'Fora do mapa', corpo: '', acoes: '', aoFechar: fechou };
+    var corpo = notaAntiga(e) + (e.nunca ? '<p class="suave">Ninguém do seu reino passou por aqui: a riqueza do chão e os animais só aparecem depois de explorados.</p>' : '') + '<div class="info">' + linhaInfo('Terreno', TERRENOS[t][1]) +
       (M.rio(h) ? linhaInfo('Rio', M.ponte(h) ? 'com ponte' : 'travessia pelo vau, mais lenta') : '') +
       (M.rota(h) ? linhaInfo('Rota', 'rua pública, mais rápida') : '') +
       objs.concat(vivos).map(function (o) { var tp = MAPA.tiposObjeto[o.tipo]; return tp && tp.folha ? tp.folha(o, d) || '' : ''; }).join('') +
       MAPA.extrasFolhaHex.map(function (f) { return f(h, d) || ''; }).join('') + '</div>' +
       (objs.length || vivos.length ? '<div class="secao-titulo">Neste hexágono</div><div class="lista-conteudo pilha">' + objs.concat(vivos).map(itemConteudo).join('') + '</div>' : '');
     var acoes = '';
-    var livre = !objs.length && !M.rio(h);
+    var livre = !objs.length && !M.rio(h) && !e.nunca;
     /* escolhendo destino, as ações são as ordens da tropa */
     if (livre && !emEnvio) acoes += '<a class="btn btn-p btn-primario" href="#/construcao?aba=novos" data-tecla="B">' + RP.icone('castelo') + 'Fundar local</a>';
     var meu = objs.filter(function (o) { return o.tipo === 'local' && o.dono === 'meu'; })[0];
@@ -168,7 +163,6 @@
     var guarda = o.local === 'castelo' || o.local === 'armazem';
     var saque = guarda ? 'recursos guardados, inclusive os valiosos' : nomes ? nomes + ' que o local produz e guarda (até 10 h de produção)' : 'o que estiver guardado no local';
     return linhaInfo('Saque', RP.esc(saque) + ' · a quantidade só a espionagem revela') +
-      linhaInfo('Relíquia', 'se houver uma guardada aqui (só a espionagem revela)') +
       (o.local === 'castelo' ? linhaInfo('Cerco', 'relíquias e recursos guardados; se o castelo cai, vira ruína')
         : linhaInfo('Ocupação', 'o local passa a ser seu' + (nomes ? ' e a produzir ' + RP.esc(nomes) + ' para você' : '') + ', no mesmo nível'));
   }
@@ -176,8 +170,9 @@
     var d = M.dados, h = o.hex;
     var e = M.estado(h), tp = MAPA.tiposObjeto[o.tipo], corpo = notaAntiga(e) + '<div class="info">', acoes = '';
     if (o.tipo === 'local') {
-      corpo += linhaInfo('Tipo', RP.esc(RP.TIPOS_LOCAL[o.local] || o.local)) + linhaInfo('Dono', donoTxt(o)) + linhaInfo('Terreno', RP.esc(nomeTerreno(h)));
-      if (o.dono !== 'livre' && !o.ruina) corpo += '</div><p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>Explorar não revela o dono. Só a espionagem com batedores de elite mostra quem é.</span></p><div>';
+      corpo += linhaInfo('Tipo', RP.esc(RP.TIPOS_LOCAL[o.local] || o.local)) + linhaInfo('Dono', RP.esc(donoTxt(o))) + (o.nivel ? linhaInfo('Nível', o.nivel) : '') + linhaInfo('Terreno', RP.esc(nomeTerreno(h)));
+      if (o.reliquias) corpo += linhaInfo('Relíquia', o.reliquias + (o.reliquias > 1 ? ' guardadas' : ' guardada') + ' · o tipo, só a espionagem revela');
+      if (o.dono !== 'livre' && !o.ruina) corpo += '</div><p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>Estoque, guarnição e o tipo da relíquia, só um batedor de elite revela.</span></p><div>';
       else corpo += '</div><p class="nota-regra">' + RP.icone('escombros', 'ico-p') + '<span>Ruínas e terra livre podem ser ocupadas ou reconstruídas.</span></p><div>';
       if (o.dono !== 'meu' && !o.ruina && o.dono !== 'livre') corpo += '</div><div class="secao-titulo">Atacar pode render</div><div class="info">' + ganhosLocal(o) + '</div><div>';
       /* o último reconhecimento deste local, como foi visto na hora: não se atualiza sozinho, vale de qualquer distância */
@@ -188,8 +183,8 @@
         ((RP.config && RP.config.valor && RP.config.valor[o.recurso]) ? linhaInfo('Vale', RP.config.valor[o.recurso] + ' básicos cada') : '');
       corpo += '</div><p class="nota-regra">' + RP.icone('picareta', 'ico-p') + '<span>Nada é obrigatório: qualquer tropa pode coletar. Mais tropas, posto e rotas rendem mais.</span></p><div>';
     } else if (o.tipo === 'ruina-antiga') {
-      corpo += linhaInfo('Relíquia', o.esgotada ? 'já escavada' : 'guarda 1 relíquia');
-      if (!o.esgotada) corpo += '</div><div class="secao-titulo">Escavar pode render</div>' + RP.ganhosRuina(d.reliquiaTipos) + '<div>';
+      corpo += linhaInfo('Relíquia', o.esgotada === true ? 'já escavada' : o.esgotada === false ? 'guarda 1 relíquia' : 'é preciso ir ver se ainda guarda');
+      if (o.esgotada !== true) corpo += '</div><div class="secao-titulo">Escavar pode render</div>' + RP.ganhosRuina(d.reliquiaTipos) + '<div>';
       corpo += '</div><p class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>Uma unidade já escava. Mais tropas e um posto encurtam o tempo.</span></p><div>';
     } else if (tp && tp.folha) corpo += tp.folha(o, d) || '';
     else corpo += linhaInfo('Tipo', RP.esc(o.tipo));
@@ -197,7 +192,7 @@
     if (tp && tp.acoes) acoes += tp.acoes(o, d) || '';
     acoes += '<button type="button" class="btn btn-p btn-fantasma" data-abrir-hex="' + h + '" data-tecla="X">' + RP.icone('hexagonos') + 'Hexágono</button>';
     return {
-      titulo: RP.esc(nomeObjeto(o)), subtitulo: '<div class="linha">' + seloEstado(e) + coordTxt(h) + '</div>',
+      titulo: RP.esc(nomeObjeto(o)), subtitulo: '<div class="linha">' + (o.tipo === 'jazida' ? seloEstado(e) : seloObjeto(e)) + coordTxt(h) + '</div>',
       icone: '<span class="ico-placa folha-ico' + (o.tipo === 'local' ? ' ' + RP.mapaTatico.classeDono(o.dono) : '') + '">' + RP.icone(iconeObjeto(o), o.tipo === 'jazida' ? 'r-' + o.recurso : '') + '</span>',
       corpo: corpo, acoes: acoes
     };
@@ -208,17 +203,14 @@
     abrirFolhaMapa(m, m.hex);
   }
   function montarMarchaAlheia(o) {
-    var ag = RP.agora(), pos = M.posMarcha(o, ag), cheg = M.chegada(o), rev = RP.mapaTatico.revelada(o), def = MAPA.tiposMarcha[o.marcha] || {};
-    var nome = def.nome || NOME_MARCHA[o.marcha] || 'Tropas';
-    var titulo = rev ? nome : 'Forças desconhecidas';
-    var corpo = '<div class="info">' + linhaInfo('Quem', o.dono === 'aliado' ? 'Aliado' : rev ? 'Identificado pelo estandarte' : 'Desconhecido · sem estandarte') +
-      (o.tamanho ? linhaInfo('Tamanho', RP.esc(o.tamanho)) : '') +
-      (cheg && fimConhecido(o) ? linhaInfo('Chegada', '<span data-fim="' + cheg + '">' + RP.fmtResta(cheg - ag) + '</span>') : '') +
-      (o.caminho ? linhaInfo('Rumo', destinoTxt(o)) : '') + '</div>' +
-      (rev ? '' : '<p class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Ser atacado não revela o atacante. Só o estandarte ou a espionagem mostram quem é.</span></p>');
+    var ag = RP.agora(), pos = M.posMarcha(o, ag), def = MAPA.tiposMarcha[o.marcha] || {};
+    var titulo = def.nome || NOME_MARCHA[o.marcha] || 'Marcha';
+    var corpo = '<div class="info">' + linhaInfo('De quem', o.dono === 'aliado' ? 'Aliado · ' + RP.esc(donoTxt({ reino: o.reino })) : RP.esc(donoTxt(o))) + '</div>' +
+      (o.reliquia ? '<p class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>Leva uma relíquia. O tipo não se vê.</span></p>' : '') +
+      '<p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>O tamanho e o destino de uma marcha ninguém vê: só onde ela está agora.</span></p>';
     return {
-      hex: pos.hex, titulo: titulo, subtitulo: '<div class="linha">' + seloEstado(M.estado(pos.hex)) + coordTxt(pos.hex) + '</div>',
-      icone: '<span class="ico-placa folha-ico marcha-ico ' + RP.mapaTatico.classeDono(o.dono) + (rev ? '' : ' hostil') + '">' + RP.icone(RP.mapaTatico.iconeMarcha(o)) + '</span>',
+      hex: pos.hex, titulo: titulo, subtitulo: '<div class="linha">' + seloObjeto(M.estado(pos.hex)) + coordTxt(pos.hex) + '</div>',
+      icone: '<span class="ico-placa folha-ico marcha-ico ' + RP.mapaTatico.classeDono(o.dono) + '">' + RP.icone(RP.mapaTatico.iconeMarcha(o)) + '</span>',
       corpo: corpo, acoes: ''
     };
   }
@@ -293,12 +285,6 @@
       });
     }
   });
-  /* de marcha alheia, o servidor manda só o trecho à vista: o fim dos tempos é a chegada só quando ela vem a um local seu */
-  function fimConhecido(o) { return o.dono === 'meu' || o.dono === 'aliado' || !!o.paraMim; }
-  function destinoTxt(o) {
-    var fim = o.caminho[o.caminho.length - 1], l = RP.reino && (RP.reino.locais || []).filter(function (x) { return x.hex === fim; })[0];
-    return l ? RP.esc(l.nome) + ' (seu)' : 'incerto';
-  }
 
   /* ---------------------------------------------------------------- fundar pelo mapa */
   function atualizarFaixaFundar() {
@@ -514,10 +500,11 @@
     var box = tela && RP.$('.mapa-faixas', tela), d = M.dados;
     if (!box || !d) return;
     var ag = RP.agora();
-    var hostis = d.marchas.filter(function (m) { var p = M.posMarcha(m, ag); return !RP.mapaTatico.revelada(m) && M.chegada(m) > ag && M.marchaVisivel(m, p); });
+    /* exércitos de outros reinos dentro da visão: de quem são, sem tamanho nem destino */
+    var hostis = d.marchas.filter(function (m) { var p = M.posMarcha(m, ag); return m.dono === 'outro' && m.marcha === 'exercito' && M.estado(p.hex).v === 'visivel'; });
     var faixas = hostis.map(function (m) {
       return '<button type="button" class="faixa-alerta" data-faixa-marcha="' + m._k + '">' + RP.icone('alerta', 'pulso') +
-        '<span class="txt"><b>Forças desconhecidas</b> → ' + destinoTxt(m) + '<br>' + (fimConhecido(m) ? 'chegada em <b class="num" data-fim="' + M.chegada(m) + '">' + RP.fmtResta(M.chegada(m) - ag) + '</b>' : 'em movimento à vista') + '</span>' + RP.icone('avancar', 'ico-p') + '</button>';
+        '<span class="txt"><b>Exército de ' + RP.esc(m.reino ? m.reino.nome : 'outro reino') + '</b><br>em movimento à vista</span>' + RP.icone('avancar', 'ico-p') + '</button>';
     });
     box.innerHTML = faixas.slice(0, 2).join('') + (faixas.length > 2
       ? '<div class="faixas-extra" id="faixas-extra" hidden>' + faixas.slice(2).join('') + '</div><button type="button" class="faixa-mais" data-faixas-mais aria-expanded="false" aria-controls="faixas-extra">' +
@@ -539,7 +526,7 @@
         '<div class="secao-titulo">Névoa</div>' +
         '<div class="legenda-item"><span class="amostra-hex t-planicie"></span><span><b>Visível</b><small>Dentro da visão de locais, tropas e exploradores. Tudo ao vivo.</small></span></div>' +
         '<div class="legenda-item"><span class="amostra-hex nevoa-exp t-planicie"></span><span><b>Explorado</b><small>Mostra o último estado conhecido e há quanto tempo foi visto.</small></span></div>' +
-        '<div class="legenda-item"><span class="amostra-hex nevoa-desc"></span><span><b>Desconhecido</b><small>Nunca visto. Envie exploradores.</small></span></div>' +
+        '<div class="legenda-item"><span class="amostra-hex nevoa-desc"></span><span><b>Nunca explorado</b><small>Cobre a riqueza do chão e os animais, não reinos nem marchas. Envie exploradores.</small></span></div>' +
         (MAPA.perigoHex ? '<div class="secao-titulo">Perigo</div>' +
           '<div class="legenda-item"><span class="amostra-hex pg-amostra pg-baixo t-planicie"></span><span><b>Baixo</b><small>Animais fracos ou área cortada por rota.</small></span></div>' +
           '<div class="legenda-item"><span class="amostra-hex pg-amostra pg-medio t-planicie"></span><span><b>Médio</b></span></div>' +
@@ -547,8 +534,8 @@
         '<div class="secao-titulo">Terrenos</div>' + terr +
         '<div class="secao-titulo">Donos</div>' +
         '<div class="legenda-item"><span class="ponto-dono dono-meu"></span><span><b>Seu reino</b></span></div>' +
-        '<div class="legenda-item"><span class="ponto-dono dono-desconhecido"></span><span><b>Dono desconhecido</b><small>Locais de outros reinos e forças sem estandarte. Explorar não revela o dono.</small></span></div>' +
-        '<div class="legenda-item"><span class="ponto-dono dono-aliado"></span><span><b>Aliado</b><small>Membros da sua aliança se reconhecem.</small></span></div>' +
+        '<div class="legenda-item"><span class="ponto-dono dono-desconhecido"></span><span><b>Outro reino</b><small>Todo local e toda marcha mostram o dono. Tamanho, destino e o que há dentro ficam em segredo.</small></span></div>' +
+        '<div class="legenda-item"><span class="ponto-dono dono-aliado"></span><span><b>Aliado</b><small>Membros da sua aliança.</small></span></div>' +
         '<div class="legenda-item"><span class="ico-placa">' + RP.icone('escombros') + '</span><span><b>Ruína / terra livre</b><small>Sem dono. Podem ser ocupadas e reconstruídas.</small></span></div>' +
         MAPA.legendaExtras.map(function (f) { return f() || ''; }).join('')
     });
@@ -598,13 +585,13 @@
       p = H.centroH(i); e = d.idade[i];
       c.fillStyle = d.rio[i] ? tk.rioAgua : tk.t[d.ter[i]][0];
       c.fillRect(p.x - H.W / 2 - 1, p.y - H.R * 0.8, H.W + 2, H.R * 1.6);
-      if (e > 0) { c.fillStyle = tk.veu; c.fillRect(p.x - H.W / 2 - 1, p.y - H.R * 0.8, H.W + 2, H.R * 1.6); }
+      if (e !== 0) { c.fillStyle = tk.veu; c.fillRect(p.x - H.W / 2 - 1, p.y - H.R * 0.8, H.W + 2, H.R * 1.6); }
     }
     var Cs = A.cores();
     d.objs.forEach(function (o) {
-      if (o.tipo !== 'local' || M.estado(o.hex).v === 'desconhecido') return;
+      if (o.tipo !== 'local' || o.dono === 'livre') return;
       p = H.centroH(o.hex);
-      c.fillStyle = o.dono === 'meu' ? Cs.meu : o.dono === 'aliado' ? Cs.aliado : Cs.desconhecido;
+      c.fillStyle = A.corDono(o.dono, o);
       c.beginPath(); c.arc(p.x, p.y, o.local === 'castelo' ? 34 : 20, 0, 6.2832); c.fill();
     });
     mmVersao = M.versao;
@@ -654,7 +641,8 @@
       '<div class="modo-mapa abas" role="group" aria-label="Tipo de visão" data-dica="Trocar a visão <kbd class=\'tecla\'>M</kbd>">' +
       '<button type="button" class="aba" data-modo-btn="cena" aria-pressed="true">' + RP.icone('vista') + 'Vista</button>' +
       '<button type="button" class="aba" data-modo-btn="tatico" aria-pressed="false">' + RP.icone('hexagonos') + 'Mapa</button></div>' +
-      '<div class="minimapa" role="group" aria-label="Minimapa: clique para ir até um ponto"><canvas></canvas><div class="mm-vista"></div></div>';
+      '<div class="minimapa" role="group" aria-label="Minimapa: clique para ir até um ponto"><canvas></canvas><div class="mm-vista"></div></div>' +
+      '<aside class="cronica cronica-jogo" aria-label="Crônica do mundo"><ol data-cronica></ol></aside>';
     mm = RP.$('.minimapa canvas', el); mmCtx = mm.getContext('2d'); mmVista = RP.$('.mm-vista', el);
     cena = new RP.Cena(RP.$('.cena-cv', el), {
       interativa: true, camadas: MAPA.camadas,
@@ -700,6 +688,7 @@
       else if (e.target.closest('[data-camadas]')) abrirCamadas();
       else if (e.target.closest('[data-atalhos]')) RP.ajudaTeclas();
       else if ((b = e.target.closest('[data-modo-btn]'))) { var md = b.getAttribute('data-modo-btn'); if (md !== modo) definirModo(md); }
+      else if ((b = e.target.closest('[data-cronica-hex]'))) centrarHex(+b.getAttribute('data-cronica-hex'), true);
       else if (e.target.closest('[data-cancelar-fundar]')) { alvoFundar = null; atualizarFaixaFundar(); RP.fecharFolha(); }
     });
   }
@@ -714,6 +703,13 @@
     cena.invalidar(); tat.invalidar(); desenharMinimapa(); atualizarFaixas();
   });
   document.addEventListener('rp:reino', function () { if (ativa() && modo === 'tatico') tat.atualizarSvg(); });
+  /* as mensagens globais do servidor: as três mais novas no canto da tela do mundo */
+  document.addEventListener('rp:vivo', function (ev) {
+    if (!ativa()) return;
+    var box = RP.$('[data-cronica]', tela);
+    if (box) box.innerHTML = (ev.detail.mensagens || []).slice(0, 3).map(M.mensagemHTML).join('');
+    atualizarFaixas();
+  });
   document.addEventListener('rp:tique', function () { if (ativa() && M.dados && RP.agora() % 10000 < 1000) atualizarFaixas(); });
 
   /* O mundo é a tela de fundo: montado uma vez, nunca escondido enquanto há reino (os painéis ficam por cima).

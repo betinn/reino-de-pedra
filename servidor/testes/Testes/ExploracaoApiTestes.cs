@@ -92,17 +92,18 @@ public class ExploracaoApiTestes
         var (s2, caca) = await c.Post("tropas/enviar", new { deLocalId = castelo.GetProperty("id").GetInt64(), tropas = new { arqueiro = 4 }, destinoHex = bando, ordem = "cacar" });
         Assert.True(s2 == HttpStatusCode.Created, caca.ToString());
 
-        // foto: um local de outro reino visto há tempos aparece com "foto" e sem dono
+        // um local de outro reino nunca visto: público, ao vivo, com dono, sem nada do que há dentro; a névoa só cobre a riqueza do chão
         using var c2 = s.NovoCliente();
         var outro = await c2.ContaComReino("caio@exemplo.com", "Lumen");
         var hexOutro = outro.GetProperty("locais").EnumerateArray().First(l => l.GetProperty("tipo").GetString() == "castelo").GetProperty("hex").GetInt32();
-        await s.Motor.Executar(m => Nevoas.RevelarArea(m, rid, hexOutro, 0));
-        await s.Avancar(TimeSpan.FromHours(1));
         (_, mapa) = await c.Get("mapa");
-        var foto = Assert.Single(Objetos(mapa, "local"), o => o.GetProperty("hex").GetInt32() == hexOutro);
-        Assert.True(foto.GetProperty("foto").GetBoolean());
-        Assert.Equal("desconhecido", foto.GetProperty("dono").GetString());
-        Assert.Equal("Castelo", foto.GetProperty("nome").GetString());
-        Assert.True(foto.GetProperty("visto").GetInt64() < s.Relogio.Agora);
+        Assert.Equal(-1, mapa.GetProperty("idade")[hexOutro].GetInt32());
+        var loc = Assert.Single(Objetos(mapa, "local"), o => o.GetProperty("hex").GetInt32() == hexOutro);
+        Assert.Equal("outro", loc.GetProperty("dono").GetString());
+        Assert.Equal(outro.GetProperty("id").GetInt64(), loc.GetProperty("reinoId").GetInt64());
+        Assert.Equal(outro.GetProperty("nivelCastelo").GetInt32(), loc.GetProperty("nivel").GetInt32());
+        foreach (var segredo in new[] { "foto", "visto", "guarnicao", "tropas", "civis", "estoque" }) Assert.False(loc.TryGetProperty(segredo, out _), segredo);
+        // jazidas de outro reino não vão
+        Assert.Empty(Objetos(mapa, "jazida"));
     }
 }

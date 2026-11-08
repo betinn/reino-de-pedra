@@ -305,10 +305,11 @@ public class TemporadaTestes
         var l0 = PrecisaDeVoce.Listar(m, r);
         Assert.Contains(l0, x => x.Titulo == "Nenhuma obra na fila");
         Assert.Contains(l0, x => x.Titulo == "Nada sendo recrutado");
-        // ameaça: ataque a caminho à vista, feridos e escudo acabando
+        // um exército vindo para cá não é ameaça listada: quem vê a marcha não sabe para onde ela vai
         var ex = s.Atacar(meu, G(("arqueiro", 10)));
         s.AvancarAte(ex.Partida + (ex.Chegada - ex.Partida) * 3 / 4);
-        Assert.Contains(PrecisaDeVoce.Listar(m, r), x => x.Grupo == PrecisaDeVoce.Urgente && x.Titulo.StartsWith("Ataque a caminho") && !x.Texto.Contains(s.Atk.Nome));
+        Assert.DoesNotContain(PrecisaDeVoce.Listar(m, r), x => x.Titulo.Contains("a caminho", StringComparison.OrdinalIgnoreCase) || x.Texto.Contains(s.Atk.Nome));
+        // ameaça: feridos e escudo acabando
         Feridos.Adicionar(m, r, G(("lanceiro", 3)), "teste", m.Agora + T.Hora);
         r.EscudoAte = m.Agora + 2 * T.Hora;
         var l1 = PrecisaDeVoce.Listar(m, r);
@@ -356,7 +357,7 @@ public class TemporadaTestes
     }
 
     [Fact]
-    public void Torres_aparecem_ao_ver_forcas_desconhecidas_perto_do_reino()
+    public void Torres_aparecem_ao_ver_forcas_de_outro_reino_perto_do_reino()
     {
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 2)), 50, dist: 6);

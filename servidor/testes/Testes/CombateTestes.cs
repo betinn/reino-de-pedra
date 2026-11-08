@@ -225,25 +225,21 @@ public class CombateTestes
         Assert.Equal("sem-combate", rel.Dados["resultado"]!.GetValue<string>());
         Assert.Contains("escudo", rel.Dados["porQueVoltaram"]!.GetValue<string>());
         var relD = s.M.Relatorios.Single(r => r.ReinoId == s.Def.Id && r.Tipo == "defesa");
-        Assert.DoesNotContain(s.Atk.Nome, relD.Dados.ToJsonString());
+        Assert.Contains(s.Atk.Nome, relD.Dados["atacante"]!.ToJsonString());   // o defensor sabe quem veio; o escudo continua só descoberto na chegada
         // escudo de exílio é o mesmo campo
         s.Def.EscudoAte = s.M.Agora + T.DeHoras(s.M.P.EscudoExilioH);
         Assert.NotNull(Permissoes.MotivoChegada(s.M, s.Atk, s.Def));
     }
 
     [Fact]
-    public void Local_conhecido_que_sumiu_na_nevoa_so_e_descoberto_na_chegada()
+    public void Local_que_some_com_as_tropas_a_caminho_e_descoberto_na_chegada()
     {
         var s = new CombateCenario();
         var mina = s.Alvo(TipoLocal.Mina, G(), 100, dist: 8);
-        s.Guarnecer(s.CasteloAtk, G(("lanceiro", 5)));
-        s.Conhecer(s.Atk, mina);
         Assert.DoesNotContain(mina.Hex, ReinoDePedra.Jogo.Exploracao.Nevoas.VisiveisAgora(s.M, s.Atk.Id));
-        s.M.RemoverLocal(mina);   // some de verdade; a foto do atacante ainda guarda a mina
-        var alvo = Ataques.Alvo(s.M, s.Atk, mina.Hex);
-        Assert.True(alvo.Fantasma);
-        Assert.Contains(Ataques.Saque, Ataques.TiposPara(s.M, alvo));   // planeja como local com dono, igual à foto
-        var ex = Exercitos.Enviar(s.M, s.Atk, s.CasteloAtk.Id, G(("lanceiro", 5)), mina.Hex, OrdemAtacar.Id, false, CombateCenario.Plano());
+        var ex = s.Atacar(mina, G(("lanceiro", 5)));   // local público: ataca na névoa, sem ter visto
+        s.M.RemoverLocal(mina);
+        Assert.Throws<RegraException>(() => Ataques.Alvo(s.M, s.Atk, mina.Hex));   // novo envio já sabe que não há nada ali
         s.T.Avancar(TimeSpan.FromMilliseconds(ex.Chegada - s.M.Agora + 1000));
         var rel = s.M.Relatorios.Where(x => x.ReinoId == s.Atk.Id).OrderByDescending(x => x.Id).First();
         Assert.Contains("não existe mais", rel.Dados["porQueVoltaram"]!.GetValue<string>());
@@ -512,59 +508,39 @@ public class CombateTestes
         Assert.Equal(Defesas.EstruturaCheia(s.M, 3) - 2 * s.M.B.U["trebuchet"].Cerco, t.Estrutura, 6);
     }
 
-    // ---------------------------------------------------------------- relatórios e anonimato
+    // ---------------------------------------------------------------- relatórios
 
     [Fact]
-    public void Relatorio_do_defensor_e_anonimo_sem_estandarte()
+    public void Relatorio_do_defensor_nomeia_o_atacante()
     {
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 5)), 100);
         var ex = s.Atacar(alvo, G(("cavalaria", 20)), CombateCenario.Plano("saque", "media"));
         s.Terminar(s.Chegar(ex));
         var rel = s.M.Relatorios.Single(r => r.ReinoId == s.Def.Id && r.Tipo == "defesa");
-        var json = rel.Dados.ToJsonString();
-        Assert.DoesNotContain(s.Atk.Nome, json);
-        Assert.DoesNotContain(s.M.Locais[s.Atk.CasteloId].Nome, json);
-        Assert.Null(rel.Dados["atacante"]);
-        Assert.Contains("Forças desconhecidas", rel.Dados["resumo"]!.GetValue<string>());
+        Assert.Equal(s.Atk.Id, rel.Dados["atacante"]!["id"]!.GetValue<long>());
+        Assert.Equal(s.Atk.Nome, rel.Dados["atacante"]!["nome"]!.GetValue<string>());
+        Assert.Contains(s.Atk.Nome, rel.Dados["resumo"]!.GetValue<string>());
         Assert.Equal(s.M.G.Direcao(alvo.Hex, s.CasteloAtk.Hex), rel.Dados["direcao"]!.GetValue<string>());
         Assert.Equal(20, rel.Dados["tropasVistas"]!["cavalaria"]!.GetValue<int>());
         Assert.Equal("saque", rel.Dados["tipo"]!.GetValue<string>());
-        Assert.DoesNotContain(s.Atk.Id.ToString(), rel.Dados["atacante"]?.ToJsonString() ?? "");
-        // o atacante também não fica sabendo de quem é o local
-        var relA = s.M.Relatorios.Single(r => r.ReinoId == s.Atk.Id && r.Tipo == "ataque");
-        Assert.DoesNotContain(s.Def.Nome, relA.Dados.ToJsonString());
-        Assert.DoesNotContain("Mina Rubra", relA.Dados.ToJsonString());
         Assert.Contains(s.M.Notificacoes, n => n.ReinoId == s.Def.Id && n.Categoria == "batalhas");
         Assert.Contains(s.M.Notificacoes, n => n.ReinoId == s.Atk.Id && n.Categoria == "batalhas");
     }
 
     [Fact]
-    public void Com_estandarte_o_defensor_sabe_quem_foi()
-    {
-        var s = new CombateCenario();
-        var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 5)), 100);
-        var ex = s.Atacar(alvo, G(("cavalaria", 20)), CombateCenario.Plano("saque", "media", estandarte: true));
-        Assert.True(ex.Estandarte);
-        s.Terminar(s.Chegar(ex));
-        var rel = s.M.Relatorios.Single(r => r.ReinoId == s.Def.Id && r.Tipo == "defesa");
-        Assert.Equal(s.Atk.Nome, rel.Dados["atacante"]!["nome"]!.GetValue<string>());
-        Assert.Contains(s.Atk.Nome, rel.Dados["resumo"]!.GetValue<string>());
-    }
-
-    [Fact]
-    public void Defensor_e_avisado_quando_o_ataque_entra_na_visao_e_quando_a_batalha_comeca()
+    public void Defensor_e_avisado_quando_o_exercito_entra_na_visao_e_quando_a_batalha_comeca()
     {
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(), 100, dist: 6);
         var ex = s.Atacar(alvo, G(("lanceiro", 12)));
-        Assert.NotNull(ex.AvistamentoId);
-        var ev = (AvistamentoAtaqueEvento)s.M.Eventos.Obter(ex.AvistamentoId!.Value)!;
+        var ev = s.M.Eventos.OfType<AvistamentoAtaqueEvento>().Single(e => e.MarchaId == ex.Id && e.DefensorId == s.Def.Id);
         Assert.True(ev.Quando > ex.Partida && ev.Quando <= ex.Chegada);
         s.AvancarAte(ev.Quando);
         var n = s.M.Notificacoes.Single(x => x.ReinoId == s.Def.Id && x.Categoria == "ataques");
-        Assert.StartsWith("Forças desconhecidas a caminho", n.Titulo);
-        Assert.DoesNotContain(s.Atk.Nome, n.Titulo + n.Texto);
+        Assert.Equal("Exército de " + s.Atk.Nome + " à vista", n.Titulo);
+        // diz de quem é e por onde anda; nunca o tamanho nem para onde vai
+        Assert.DoesNotContain("12", n.Titulo + n.Texto);
         s.AvancarAte(ex.Chegada);
         Assert.Equal(2, s.M.Notificacoes.Count(x => x.ReinoId == s.Def.Id && x.Categoria == "ataques"));
     }
@@ -580,7 +556,6 @@ public class CombateTestes
         var terceiro = s.T.NovoReino(); terceiro.EscudoAte = 0;
         var ct = s.M.Locais[terceiro.CasteloId];
         s.Guarnecer(ct, G(("cavalaria", 5)));
-        s.Conhecer(terceiro, alvo);
         var e3 = Exercitos.Enviar(s.M, terceiro, ct.Id, G(("cavalaria", 5)), alvo.Hex, OrdemAtacar.Id, false, CombateCenario.Plano());
         s.AvancarAte(Math.Max(e2.Chegada, Math.Min(e3.Chegada, b.FimPrevisto - 1)));
         if (e2.Chegada < b.FimPrevisto) Assert.Contains(e2.Id, b.Exercitos);

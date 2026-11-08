@@ -351,38 +351,28 @@ public static class Governo
         if (AlvoExploracao(m, r, castelo) is int h) Exploradores.Enviar(m, r, Exploradores.Pe, Exploradores.Explorar, h, seguro: true);
     }
 
-    /// <summary>Onde explorar: primeiro procura o reino da região mais perto ainda não achada; sem nenhuma, um hexágono ao acaso.</summary>
-    public static int? AlvoExploracao(Mundo m, Reino r, Local castelo) => RegiaoAProcurar(m, r, castelo) ?? NaoVisto(m, r, castelo);
+    /// <summary>Onde explorar: um hexágono ainda não visto. Exploração agora serve para achar riqueza: os reinos já estão no mapa.</summary>
+    public static int? AlvoExploracao(Mundo m, Reino r, Local castelo) => NaoVisto(m, r, castelo);
 
     /// <summary>
-    /// Regiões de reino (decisão 0035), a mesma informação que o jogador vê no mapa: a mais perto do castelo, a até
-    /// <c>ia.exploracao.regiaoAlcance</c>, em que o reino ainda não conhece nenhum local de outro reino. Devolve o hexágono
-    /// ainda não visto da região mais perto do castelo (a busca avança pelo lado de cá), ou null.
+    /// Exército de outro reino (não aliado) a até <c>ia.ataque.vigiaAlcance</c> de um local dela, com o próximo passo chegando
+    /// mais perto: a IA segura as tropas em casa. A mesma informação que o jogador vê: dono e passo, sem tamanho nem destino.
     /// </summary>
-    public static int? RegiaoAProcurar(Mundo m, Reino r, Local castelo)
-    {
-        var alcance = m.P.IA.Exploracao.RegiaoAlcance;
-        if (alcance <= 0) return null;
-        var nevoa = Nevoas.De(m, r.Id);
-        var conhecidos = LocaisConhecidos(m, r).Where(x => !x.livre).Select(x => x.hex).ToList();
-        foreach (var rg in Rumores.Regioes(m, r.Id).OrderBy(x => m.G.Distancia(x.Centro, castelo.Hex)).ThenBy(x => x.Chave, StringComparer.Ordinal))
-        {
-            if (m.G.Distancia(rg.Centro, castelo.Hex) > alcance) break;
-            if (conhecidos.Any(h => m.G.Distancia(h, rg.Centro) <= rg.Raio)) continue;   // já achou um local de reino ali
-            var alvo = m.G.Area(rg.Centro, rg.Raio).Where(h => nevoa.MinutoVisto(h) == 0)
-                .OrderBy(h => m.G.Distancia(h, castelo.Hex)).ThenBy(h => h).Select(h => (int?)h).FirstOrDefault();
-            if (alvo != null) return alvo;
-        }
-        return null;
-    }
-
-    /// <summary>Poeira de marcha grande vindo na direção do reino (o rumo aproxima de um local dele): a IA segura as tropas em casa.</summary>
-    public static bool PoeiraVindo(Mundo m, Reino r)
+    public static bool MarchaVindo(Mundo m, Reino r)
     {
         var locais = m.LocaisDe(r.Id).Where(l => !l.Ruina).Select(l => l.Hex).ToList();
         if (locais.Count == 0) return false;
+        var alcance = m.P.IA.Ataque.VigiaAlcance;
         int Perto(int h) => locais.Min(l => m.G.Distancia(l, h));
-        return Rumores.Rastros(m, r.Id, Nevoas.VisiveisAgora(m, r.Id)).Any(x => Perto(x.RumoHex) < Perto(x.Hex));
+        foreach (var x in m.Marchas.OfType<Exercito>())
+        {
+            if (x.ReinoId == r.Id || !Publico.RegraPublica.MarchaVisivel(x) || Social.Aliancas.SaoAliados(m, r.Id, x.ReinoId)) continue;
+            var (caminho, _) = Publico.RegraPublica.Passo(x, m.Agora);
+            if (caminho.Count < 2) continue;
+            var d = Perto(caminho[0]);
+            if (d <= alcance && Perto(caminho[1]) < d) return true;
+        }
+        return false;
     }
 
     /// <summary>Caça quando falta couro: lanceiros numa região de fauna conhecida perto do castelo, só se passam ilesos.</summary>
@@ -480,19 +470,11 @@ public static class Governo
 
     // ---------------------------------------------------------------- guerra (só a informação que um jogador teria)
 
-    /// <summary>Locais de outros reinos (ou sem dono) que o reino conhece pela foto da névoa, com o hexágono.</summary>
-    private static IEnumerable<(int hex, long id, bool livre)> LocaisConhecidos(Mundo m, Reino r)
-    {
-        foreach (var (h, objs) in Fotos.De(m, r.Id).Objetos)
-            foreach (var o in objs)
-            {
-                if (o["tipo"]?.GetValue<string>() != "local") continue;
-                var dono = o["dono"]?.GetValue<string>();
-                yield return (h, o["id"]?.GetValue<long>() ?? 0, dono == "livre");
-            }
-    }
+    /// <summary>Locais de outros reinos (ou sem dono), com o hexágono: são públicos.</summary>
+    private static IEnumerable<(int hex, long id, bool livre)> LocaisConhecidos(Mundo m, Reino r) =>
+        m.Locais.Where(l => l.ReinoId != r.Id).Select(l => (l.Hex, l.Id, Ataques.SemDono(m, l)));
 
-    /// <summary>Perfil expansionista: ocupa uma ruína ou terra livre à vista, perto do castelo.</summary>
+    /// <summary>Perfil expansionista: ocupa uma ruína ou terra livre perto do castelo.</summary>
     public static void Ocupar(Mundo m, Reino r, Local castelo)
     {
         var p = m.P.IA.Ocupacao;
@@ -503,7 +485,7 @@ public static class Governo
             .OrderBy(x => m.G.Distancia(x.hex, castelo.Hex)).ThenBy(x => x.hex).Select(x => (int?)x.hex).FirstOrDefault();
         if (alvo is not int h) return;
         var l = m.LocalNoHex(h);
-        if (l == null || !Ataques.SemDono(m, l)) return;   // a foto estava velha: o jogador também descobriria ao tentar
+        if (l == null || !Ataques.SemDono(m, l)) return;
         Exercitos.Enviar(m, r, castelo.Id, new Dictionary<string, int> { ["lanceiro"] = n }, h, OrdemOcupar.Id, seguro: true);
     }
 
@@ -521,11 +503,11 @@ public static class Governo
         if (alvo is int h) Exploradores.Enviar(m, r, Exploradores.Batedor, Exploradores.Espionar, h, seguro: true);
     }
 
-    /// <summary>Defesa estimada de um local espionado: guarnição (como lanceiros), arqueiros das torres e a milícia vista (civis presentes; sem ela, as vagas do nível).</summary>
-    public static double DefesaEstimada(Mundo m, LocalEspionado e)
+    /// <summary>Defesa estimada de um local espionado: guarnição (como lanceiros), arqueiros das torres e a milícia estimada pelo que é público (famílias do reino por local).</summary>
+    public static double DefesaEstimada(Mundo m, LocalEspionado e, Local l)
     {
         var lan = m.B.U["lanceiro"]; var arq = m.B.U["arqueiro"];
-        var milicia = (e.Milicia > 0 ? e.Milicia : m.F.Trabalhadores(e.Nivel)) * m.P.MiliciaPorPop * m.P.DefMilicia;
+        var milicia = Publico.RegraPublica.CivisEstimados(m, l) * m.P.MiliciaPorPop * m.P.DefMilicia;
         return e.Tropas * lan.Def + e.Torres * m.P.Torre.ArqPorNivel * arq.Def * m.P.Torre.BonusAlto + milicia;
     }
 
@@ -538,7 +520,7 @@ public static class Governo
         var p = m.P.IA.Ataque;
         if (castelo.Nivel < p.Castelo) return;
         if (Exercitos.De(m, r.Id).Any(e => e.Ordem == OrdemAtacar.Id || e.BatalhaId != null)) return;
-        if (PoeiraVindo(m, r)) return;   // força grande vindo para cá: não esvazia a defesa
+        if (MarchaVindo(m, r)) return;   // exército vindo para cá: não esvazia a defesa
         var livres = TropasDeAtaque(m, castelo);
         var envio = Parte(livres, Math.Min((int)Math.Floor(GT.Total(livres) * p.FracTropas), GT.Total(livres) - p.Reserva));
         if (GT.Total(envio) == 0) return;
@@ -556,7 +538,7 @@ public static class Governo
             if (m.G.Distancia(l.Hex, castelo.Hex) > p.Alcance) continue;
             if (Ataques.SaquesRecentes(m, r, l.Id) > 0) continue;
             if (Permissoes.MotivoEnvio(m, r, dono, l) != null) continue;
-            if (ataque < DefesaEstimada(m, e) * p.Forca) continue;
+            if (ataque < DefesaEstimada(m, e, l) * p.Forca) continue;
             var plano = new PlanoAtaque { Tipo = Ataques.Saque, Tatica = p.Tatica };
             Exercitos.Enviar(m, r, castelo.Id, envio, l.Hex, OrdemAtacar.Id, seguro: true, plano.ParaJson());
             return;

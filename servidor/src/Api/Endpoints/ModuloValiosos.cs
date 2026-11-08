@@ -193,7 +193,7 @@ public static class ExtrasValiosos
         VisaoMapa.Extras.Add((mm, r, vis) =>
         {
             Apresentacao.Conferir(mm, r);
-            return ReliquiasLendarias.NoMapa(mm, r.Id, vis).Select<ReliquiaNoMapa, object>(x => x.Tipo switch
+            return ReliquiasLendarias.NoMapa(mm, r.Id).Select<ReliquiaNoMapa, object>(x => x.Tipo switch
             {
                 "farol" => new { tipo = "farol", id = x.LocalId, hex = x.Hex, n = x.N },
                 "brilho" => new { tipo = "brilho", id = x.LocalId, hex = x.Hex, n = x.N },

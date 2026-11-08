@@ -27,10 +27,23 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Diferencial: **exploração real** de um mapa grande, com recursos valiosos escondidos que precisam ser descobertos.
 - O mundo continua funcionando com o jogador offline: construções terminam, tropas marcham e defesas reagem.
 - **Multiplayer desde o início**: todos os jogadores no mesmo mapa.
-- **Um único mundo**, por enquanto. Novos jogadores entram enquanto houver vaga ou reino de IA para dar lugar; com o mundo cheio e sem IA, ninguém mais entra até a próxima temporada. Não há ajuda especial para quem entra tarde.
+- **Um único mundo**, por enquanto, com **entrada só por convite** (ver Site público e convites). Com o mundo cheio e sem reino de IA para dar lugar, ninguém mais entra até a próxima temporada. Não há ajuda especial para quem entra tarde.
 - Uma vaga com local de outro reino em algum dos seus hexágonos não recebe reino novo; ruína ou terra livre sem dono dá lugar, salvo se guarda relíquia ou equipamento lendário.
 - Sessões curtas: o jogador dá ordens longas, sai e recebe notificações.
 - Notificações são **configuráveis por categoria** (inclusive ataques), liga e desliga, sem horário de silêncio.
+
+---
+
+## Site público e convites
+
+- **A porta de entrada é o próprio mapa**, real e ao vivo, sem login: o visitante vê o mundo andando, com selo AO VIVO, a crônica de batalhas, reinos, alianças e pactos. Não há "vaga livre" nem "fundar aqui".
+- **Princípio: o site mostra só o que todo jogador vê.** Qualquer jogador pode abrir o site em outra aba, então ele não dá vantagem: o servidor monta o feed e o mapa de outros reinos pela mesma regra (`RegraPublica`), e nunca envia o segredo para o cliente esconder.
+- **Público**: terreno, rotas, castelos, locais, torres e ruínas com dono e nível; marchas com dono e posição, ao vivo; batalhas ao vivo; mortos com nome; bandeiras; alianças; pactos; ranking; marcha com baú e local com relíquia, sem o tipo.
+- **Secreto, nem o jogador recebe**: tamanho das tropas em marcha (nem aproximado), destino e objetivos da marcha, guarnição exata e civis de cada local, estoque, jazidas valiosas e lendárias até serem descobertas, conteúdo das ruínas, mensagens, propostas, conversa da aliança, escudo de novato, regência, última entrada e quais reinos são de IA.
+- De uma marcha de outro reino se vê o hexágono em que ela está e o próximo, o bastante para animar o passo. Vale para todos, inclusive aliados e o reino para onde ela vai: ninguém sabe se ela vem para cá até ela chegar.
+- **Mensagens globais do servidor**, no site e no jogo: batalha começou, "Reino X perdeu N tropas na batalha em Y" com os nomes dos mortos, explorador capturado, castelo caído. Nunca dizem o tamanho de uma força, o tipo do ataque ou os objetivos.
+- **Pedir convite**: o visitante deixa um e-mail, que entra numa fila no servidor. A resposta é sempre a mesma (não diz se já estava na fila), com limite por origem. E-mail é dado pessoal: nunca em log, repositório ou feed.
+- **Link de uso único**: o administrador vê a fila, gera o link de um pedido e o envia; o jogo não manda e-mail. Quem abre cria a senha, o nome do reino e o brasão, e funda o reino. O link vale 14 dias, funda um reino uma única vez e pode ser revogado. Sem link válido não há cadastro. Contas antigas sem reino (temporada nova) fundam normalmente.
 
 ---
 
@@ -38,10 +51,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: **312 × 240 hexágonos pequenos** (cerca de 2.500 por reino); a travessia com tropa lenta leva perto de 1 h (menos com rota ou cavalaria), o reino vizinho fica a 10 a 15 min e as curtas distâncias (6 a 10 hexágonos) levam 1 a 2 min. Um reino pode não encontrar todos os outros na temporada.
 - **Construções ocupam vários hexágonos**, conforme o tamanho: o castelo ocupa 7 (o hexágono e o anel em volta), os outros locais 3 (o hexágono e os vizinhos de leste e oeste), o posto 1. Fundar exige o espaço inteiro explorado, sem rio e livre; tocar em qualquer parte da construção é tocar no local.
-- Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido. Na Vista, a névoa é uma bruma de tom médio com borda suave (sem aresta de hexágono); o explorado fica com as cores apagadas, e a visão atual, com cor e movimento.
-- **Região dos reinos**: desde o início, explorada ou não, cada reino do mundo aparece como uma área marcada por cima da névoa (raio 14), com o castelo em algum lugar dentro dela, não no centro. Não diz de quem é nem o que tem: aponta onde procurar.
-- **Poeira**: marcha de outro reino com 12 pessoas ou mais, andando fora da vista, levanta poeira vista a até 14 hexágonos de um local ou marcha sua: posição aproximada, tamanho aproximado e rumo, sem dono. Marchas pequenas, paradas, de batedor e de aliados não levantam poeira.
-- A IA usa as mesmas regiões e poeiras: explora primeiro a região mais perto onde ainda não achou o reino, e não manda o exército atacar fora com poeira vindo na direção dela.
+- Coberto por **névoa**, que cobre a riqueza do chão (jazidas, ruínas por dentro, perigo da fauna) e a informação interna, não reinos nem marchas. O terreno, as construções e as marchas de todos são públicos. O que o jogador explorou fica guardado, e o perigo envelhece. Na Vista, a névoa é uma bruma de tom médio com borda suave sobre o chão (sem aresta de hexágono); o explorado fica com as cores apagadas, e a visão atual, com cor e movimento.
+- A IA usa o mesmo mapa público: não precisa procurar reinos, explora para achar riqueza e não manda o exército atacar fora com exército de outro reino vindo na direção dela.
 - Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
   - Planície: deslocamento rápido, comida, cavalos de raça e sal.
   - Floresta: lenta, madeira e caça.
@@ -57,14 +68,14 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 | A pé | Lenta | Média | Barato | Sem penalidade em floresta e pântano |
 | A cavalo | Rápida | Alta | Médio | Penalizado em floresta e montanha |
 | Prospector | Lenta | Baixa | Caro | Único que revela jazidas valiosas e lendárias |
-| Batedor de elite | Rápida | Alta | Caro | Furtivo; espiona exércitos e reinos inimigos |
+| Batedor de elite | Rápida | Alta | Caro | Furtivo (não aparece no mapa de ninguém); revela estoque, guarnição e relíquia de um local |
 
 - Cada explorador é **uma pessoa do reino, com nome** (treinada no castelo a partir de um civil). Pode ser capturado ou morto; o relatório diz quem.
-- Quem captura um explorador vê o **reino de origem** e o **nome** da pessoa, e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado e a mesma pessoa volta para casa.
+- Quem captura um explorador vê o **reino de origem** e o **nome** da pessoa, e tem **24 h** para pedir resgate, libertar ou executar. Sem decisão, o explorador é libertado e a mesma pessoa volta para casa. **O captor é público**: o dono sabe quem o pegou desde a captura, e a captura sai nas mensagens globais.
 - Só explorador **sem escolta** é capturado, ao passar à vista de tropas de outro reino; o batedor de elite só é pego espionando. Resgate pedido e não pago no prazo também liberta.
 - O preso fica num **local de quem capturou**: a guarnição que o viu, o local espionado ou, se foram tropas em campo, o local do captor mais perto de onde ele foi pego.
-- **O dono negocia** sem precisar saber quem capturou: oferece um pagamento ou contrapropõe o resgate pedido; quem capturou aceita, recusa ou pede outro valor. Aceita, o pagamento sai na hora, viaja visível e pode ser roubado; ao chegar, o explorador é solto. Pedir resgate e aceitar a oferta revelam quem capturou; oferecer e recusar, não.
-- **Resgate à força**: qualquer ataque vitorioso no local onde ele está preso o liberta, e ele volta para casa. O dono sabe onde ele foi pego e para que direção foi levado; o local exato, só se ele foi pego espionando aquele local ou se um batedor espiona o local e o vê lá (a espionagem mostra os presos e revela o captor). Local tomado ou arruinado solta todos os presos dali.
+- **O dono negocia**: oferece um pagamento ou contrapropõe o resgate pedido; quem capturou aceita, recusa ou pede outro valor. Aceita, o pagamento sai na hora, viaja visível e pode ser roubado; ao chegar, o explorador é solto.
+- **Resgate à força**: qualquer ataque vitorioso no local onde ele está preso o liberta, e ele volta para casa. O dono sabe em que local ele está. Local tomado ou arruinado solta todos os presos dali.
 - Ordens possíveis: explorar área, seguir rota, patrulhar, retornar.
 - **Seguir rota se desenha no mapa**: escolhida a ordem, cada clique num hexágono é um ponto, sem diálogo. A linha no chão é o caminho real, pela rota segura ou curta, e o tracejado vai do último ponto ao mouse. Enter envia, Z desfaz, O fecha o circuito, Esc cancela.
 - **O explorador não volta sozinho.** Ao chegar ao destino, fica lá esperando nova ordem (outro lugar, rota, patrulha ou voltar), mantendo a área à vista. A rota é desenhada ponto a ponto; no fim, espera no último ponto, ou recomeça do primeiro se for um circuito.
@@ -156,19 +167,16 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - São obtidas por **escavação nas ruínas antigas**: lenta e finita.
 - O jogador **guarda a relíquia num local** do reino, e ela melhora o desempenho daquele local.
 - Tipos: **ataque**, **produção** e **resistência** (defesa).
-- Relíquias podem ser **roubadas** e são **descobertas por espionagem**.
+- Relíquias podem ser **roubadas**. O tipo só a espionagem revela.
 - Relíquias **não se movem sozinhas**: são sempre transportadas por tropas, e podem ser **roubadas no meio do caminho**.
-- Relíquias podem ficar juntas no mesmo local, mas **quanto mais relíquias no mesmo lugar, maior a visibilidade** desse local para os outros jogadores:
-  - 1 relíquia: só a espionagem revela.
-  - 2 no mesmo local: visíveis para quem já explorou a área.
-  - 3 ou mais: o local vira **farol**, visível para todos, até na névoa.
+- Relíquias podem ficar juntas no mesmo local. **Local com relíquia é público**, sem o tipo; com 3 ou mais, vira **farol**, em destaque no mapa.
 - Cada ruína antiga guarda **1 relíquia**, de tipo desconhecido até ser achada, e se esgota depois. Uma unidade já escava; mais tropas e posto encurtam, com tempo mínimo. Tropas mandadas depois à mesma ruína se juntam ao grupo que já escava, sem recomeçar: mais gente, menos tempo. O grupo que escava leva a relíquia ao local escolhido antes de partir.
 - Mover uma relíquia: tropas saem, buscam e levam; até ser pega, ela continua fortalecendo a origem.
 - A escavação depende do número de tropas, não da carga; interrompida, recomeça do zero. Se outro grupo acha a relíquia antes, os demais voltam.
 - Uma marcha que leva relíquia aparece com um baú para quem a vê, sem revelar o tipo.
 - **Saque, ocupação ou cerco** vitorioso levam a relíquia; sabotagem e massacre, não. No saque e no cerco, as tropas a carregam de volta; na ocupação, ela fica no local tomado.
-- Uma marcha que leva relíquia pode ser **interceptada**: as tropas precisam chegar antes a um ponto do caminho.
-- Qualquer marcha alheia à vista (exército, caravana, carregadores) pode ser interceptada. As tropas esperam no ponto de encontro; se a marcha mudar de rota, a interceptação falha e elas voltam.
+- Uma marcha que leva relíquia pode ser **interceptada**: as tropas precisam chegar antes a um ponto do trecho à frente dela.
+- Qualquer marcha alheia (exército, caravana, carregadores) pode ser interceptada, num ponto dos próximos hexágonos do caminho dela (o resto é segredo). As tropas esperam no ponto de encontro; se a marcha mudar de rota, a interceptação falha e elas voltam.
 - Relíquias lendárias ficam na temporada e são distintas das relíquias da temporada (legado).
 - Objetivo: tornar o PvP mais desejável, com alvos que dão vantagem real além de recursos.
 
@@ -214,15 +222,15 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Armas e armaduras** na ferraria, por família (infantaria, arqueiros, cavalaria): armas dão ataque, armaduras dão defesa, **+8% por nível, até o nível 3**. O nível 1 usa ferro e couro; os níveis 2 e 3 pedem aço de qualidade, e o 3 também ouro. A ferraria tem fila própria de até 10 itens. Num grupo misto, cada família recebe o bônus dela (o do grupo é a média ponderada pela força de cada família). A milícia, inclusive a da população, é infantaria; os arqueiros no alto das torres usam as armaduras dos arqueiros. Os requisitos de nível olham a maior ferraria (e o maior quartel) do reino.
 - **Cavaleiro de elite**: mais forte por pessoa que a cavalaria e mais caro por força; cada um usa 1 cavalo de raça.
 - **Veterania por pessoa**: cada soldado guarda as próprias marcas. Vitória com perdas abaixo de 50% contra inimigo com pelo menos 30% da força do grupo dá 1 marca a cada sobrevivente; cada derrota tira 1; combate com fauna não conta. O bônus do grupo (exército ou guarnição) é a média das marcas: com 2, 5 e 9, +5%, +10% e +15% de ataque e defesa. Recrutas novos diluem a média; ao enviar por quantidade, os mais veteranos saem primeiro.
-- **Equipamento lendário**: forjado com minério raro, dá **+25% de ataque ou de defesa** a um exército de até 8 tropas (num exército maior, o bônus se dilui). Cada reino forja um por temporada (o capturado não conta). Fica sempre com um grupo: nasce na guarnição da ferraria, vai com o próximo exército que sair do local quando o jogador marca "levar" e fica na guarnição do local onde o exército entrar. Vale para a guarnição (defesa) e para o exército (ataque ou defesa em campo); conta um de cada tipo por grupo, e na guarnição a milícia e os arqueiros no alto também diluem. O grupo que perde a batalha, mesmo recuando, ou que é vencido no caminho, deixa o equipamento no campo e o vencedor o leva (na ocupação, ele fica no local tomado). Se o grupo some sem batalha (morto pela fauna, por exemplo), ninguém o leva: o equipamento volta à guarnição do castelo do dono. A espionagem do local mostra o equipamento na guarnição, sem revelar quem o forjou.
+- **Equipamento lendário**: forjado com minério raro, dá **+25% de ataque ou de defesa** a um exército de até 8 tropas (num exército maior, o bônus se dilui). Cada reino forja um por temporada (o capturado não conta). Fica sempre com um grupo: nasce na guarnição da ferraria, vai com o próximo exército que sair do local quando o jogador marca "levar" e fica na guarnição do local onde o exército entrar. Vale para a guarnição (defesa) e para o exército (ataque ou defesa em campo); conta um de cada tipo por grupo, e na guarnição a milícia e os arqueiros no alto também diluem. O grupo que perde a batalha, mesmo recuando, ou que é vencido no caminho, deixa o equipamento no campo e o vencedor o leva (na ocupação, ele fica no local tomado). Se o grupo some sem batalha (morto pela fauna, por exemplo), ninguém o leva: o equipamento volta à guarnição do castelo do dono.
 - **Teto de bônus**: armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo **+50%**. Torres e portões ficam fora do teto.
 - **Um exército é um grupo de pessoas.** O jogador forma o grupo tocando um soldado, juntando vários (modo de seleção ou laço) ou por atalho ("todos deste tipo aqui", "todo o grupo"), e dá a ele uma **missão**: mover, atacar, caçar, extrair, escavar, interceptar, guarnecer ou reforçar um aliado. Os serviços continuam aceitando quantidade por tipo (ataque rápido, modelos, IA): nesse caso o servidor escolhe as pessoas, as mais veteranas para atacar.
-- Exércitos em marcha são visíveis no mapa; o tempo de viagem depende de distância, terreno, rotas e da unidade mais lenta.
+- Exércitos em marcha são visíveis no mapa de todos, com o dono; o tamanho e o destino, não. O tempo de viagem depende de distância, terreno, rotas e da unidade mais lenta.
 - Além de ir a um lugar, as tropas seguem a **linha exata desenhada no mapa** (arrastando ou de hexágono em hexágono): **patrulhar** repete até nova ordem, indo e voltando numa linha aberta ou dando a volta num circuito fechado; **só uma vez** para no fim da linha. Primeiro vão até o começo da linha pelo caminho de sempre.
 - **Juntar tropas:** duas tropas em campo viram uma. No mesmo hexágono, na hora; em hexágonos diferentes, a primeira vai até a outra (e segue atrás, se ela andar) e se junta ao chegar. Fica a segunda, com a ordem e a postura dela; carga, relíquias e equipamento lendário passam para ela, e o passo é o da unidade mais lenta. Soldados de uma guarnição também podem sair para se juntar a uma tropa.
 - **Separar tropas:** quem sai forma uma tropa nova, parada onde está, com a parte da carga que cabe a ela; relíquias e equipamento ficam com quem fica.
 - Em batalha, ou caçando, extraindo, escavando, coletando ou atacando, a tropa não se separa nem recebe gente.
-- **Toda tropa revela a névoa** por onde passa e onde fica (parada, caçando ou extraindo), com o raio de visão da unidade de maior visão do grupo: milícia, lanceiro e máquinas de cerco 2 hexágonos; arqueiro, cavalaria e cavaleiro de elite 4 (exploradores têm a visão própria). A névoa se abre quase ao vivo enquanto a marcha anda. Uma marcha do próprio reino nunca some do mapa do dono.
+- **Toda tropa revela a névoa** por onde passa e onde fica (parada, caçando ou extraindo), com o raio de visão da unidade de maior visão do grupo: milícia, lanceiro e máquinas de cerco 2 hexágonos; arqueiro, cavalaria e cavaleiro de elite 4 (exploradores têm a visão própria). A névoa se abre quase ao vivo enquanto a marcha anda.
 
 ---
 
@@ -261,11 +269,11 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Ruína e terra livre sem defesa são ocupadas na chegada, sem batalha.
 - Torres ficam a até 4 hexágonos de um local próprio.
 - Se um objetivo não existe no local, as tropas passam ao próximo. Recursos ocupam carga; a relíquia não ocupa carga. Há a opção de completar a carga com o que houver no local.
-- O ataque rápido usa o padrão: saque, objetivos automáticos (relíquia à vista e o recurso principal do local), carga por prioridade, recuar sem o que levar, tática média, sem estandarte e rota curta, com as tropas do último ataque.
-- Clicar num local de outro reino mostra o que atacar pode render: o recurso que ele produz (se vê de fora), relíquia se houver e o próprio local na ocupação. Quanto há guardado, só a espionagem revela.
-- A espionagem revela também o **estoque** do alvo. O relatório mostra o resultado de cada objetivo e por que as tropas voltaram.
-- **Força inimiga antes da batalha**: o envio de ataque mostra a guarnição do local por unidade, a milícia (civis presentes), as torres e os portões, e a batalha estimada pela mesma fórmula contra as tropas escolhidas (força dos dois lados, perdas, vantagem ou desvantagem). À vista agora, vale o que se vê, sem os bônus de defesa; fora da vista, o último relatório de espionagem, com a idade, que também revela os bônus. Sem nenhum dos dois, só as torres conhecidas. Não revela o dono, o escudo nem o pacto.
-- **Reconhecer**: as tropas vão em direção ao local e param à vista dele, a até 3 hexágonos (ou a visão do grupo, se menor), sem atacar. O relatório traz a força estimada; dali, o jogador ataca ou manda voltar. O último reconhecimento fica gravado no local: clicar nele no mapa, de qualquer distância, mostra o que se viu naquele momento (guarnição por unidade, quantidade, milícia, torres e a força contra a das tropas que foram), com a idade, sem se atualizar sozinho.
+- O ataque rápido usa o padrão: saque, objetivos automáticos (relíquia à vista e o recurso principal do local), carga por prioridade, recuar sem o que levar, tática média e rota curta, com as tropas do último ataque.
+- Clicar num local de outro reino mostra o dono, o nível, o que atacar pode render (o recurso que ele produz, relíquia se houver e o próprio local na ocupação). Quanto há guardado, só a espionagem revela.
+- O relatório do ataque mostra o resultado de cada objetivo e por que as tropas voltaram.
+- **Força inimiga antes da batalha**: o envio de ataque mostra as torres (públicas), os portões e a batalha estimada pela mesma fórmula contra as tropas escolhidas (força dos dois lados, perdas, vantagem ou desvantagem). Com relatório de espionagem, vale a guarnição exata daquele momento, com a idade. Sem ele, à vista agora, só o tamanho aproximado da guarnição. Sem nenhum dos dois, a guarnição é desconhecida. A milícia é sempre estimada pelo que é público (as famílias do reino divididas pelos locais dele); os bônus de defesa só se descobrem ao lutar.
+- **Reconhecer**: as tropas vão em direção ao local e param à vista dele, a até 3 hexágonos (ou a visão do grupo, se menor), sem atacar. O relatório traz o tamanho aproximado da guarnição e a força estimada; dali, o jogador ataca ou manda voltar. O último reconhecimento fica gravado no local: clicar nele no mapa, de qualquer distância, mostra o que se viu naquele momento, com a idade, sem se atualizar sozinho.
 
 ### Defesa
 
@@ -293,18 +301,18 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - O ponto do exílio é **aleatório e longe de quem derrubou** o reino; escolher a região depende da linhagem.
 - O castelo caído vira ruína sem dono, que pode ser ocupada ou reconstruída como qualquer ruína. No exílio, o reino recomeça só com um castelo nível 1, o kit e a população de recomeço; exércitos em campo e o que carregam seguem com ele. O material das obras na fila e as carroças, exploradores e mensageiros parados no castelo se perdem.
 
-### Anonimato e bandeiras
+### Identidade, espionagem e bandeiras
 
-- Ser atacado **não revela o atacante**. O relatório mostra apenas forças desconhecidas (tropas, tipo, direção de origem).
-- A identidade só é revelada se o atacante escolher levar seu **estandarte**, ou se o defensor descobrir via batedores e espionagem.
+- **Não há ataque anônimo.** Todo ataque, marcha e local tem dono à vista: o relatório diz quem atacou, e o jogo é confronto puro.
+- Quem tem exército entrando na visão do reino é avisado de quem é e onde está. Não sabe o tamanho nem se é com ele.
 - **Bandeiras** podem ser colocadas em qualquer lugar do mapa, como sinal para outros jogadores (reivindicação, ameaça, aliança). Têm valor social, não mecânico.
-- Bandeiras **mostram quem as colocou**.
-- Cada jogador tem **até 20 bandeiras ativas**, com recado de 3 a 60 caracteres, em hexágonos que já explorou. **Outros jogadores podem derrubá-las** com tropas no local, que voltam depois. Ver uma bandeira torna o autor conhecido.
-- O dono é avisado quando a bandeira cai, sem saber quem derrubou, a não ser que as tropas levassem estandarte.
-- Explorar um local de outro reino **não revela o dono**; espionar o local com batedores de elite revela.
+- Bandeiras **mostram quem as colocou** e aparecem para todos.
+- Cada jogador tem **até 20 bandeiras ativas**, com recado de 3 a 60 caracteres, em hexágonos que já explorou. **Outros jogadores podem derrubá-las** com tropas no local, que voltam depois.
+- O dono é avisado de quem derrubou a bandeira.
+- **Espionagem**: o batedor de elite revela só o **estoque**, a **guarnição** e a **relíquia** (com o tipo) de um local. O resto já é público.
 - Espiões são **descobertos se alguma tropa os vir**. Ficam no mapa como "visto há X horas" por apenas **10 horas**.
 - Ao espionar um local, o batedor pode ser visto: a chance cresce com as torres no alcance e com a guarnição, até um máximo. Visto, metade das vezes é capturado e o relatório não volta.
-- Para não poluir o mapa, objetos vistos ("visto há X") são **limpos periodicamente**. Vale para espiões e exércitos vistos; o nível de perigo da fauna segue a regra da névoa.
+- Para não poluir o mapa, os espiões vistos são **limpos periodicamente**; o nível de perigo da fauna segue a regra da névoa.
 
 ### Território
 
@@ -315,9 +323,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 ### Pontos de atenção no balanceamento
 
 - Evitar farm de iniciantes: escudo de novato, rendimento decrescente em saques repetidos ao mesmo alvo, milícia proporcional à população.
-- O escudo de novato **só é descoberto ao chegar**: o atacante não vê a proteção antes, e as tropas voltam sem combate. A notificação já diz o motivo.
+- O escudo de novato **só é descoberto ao chegar** (é segredo, não está no mapa): as tropas voltam sem combate. A notificação já diz o motivo.
 - Saques repetidos ao mesmo alvo rendem **progressivamente menos**, e o atacante é avisado antes de enviar.
-- Monitorar abuso do anonimato para assédio.
 
 ---
 
@@ -337,7 +344,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Cada temporada começa com mais reinos de IA, que vão saindo conforme a base de jogadores cresce.
 - Valores atuais: a temporada começa com 25 reinos de IA e o mundo nunca fica com menos de 20 reinos ativos; o reino de IA novo surge na vaga livre mais longe dos jogadores.
 - Abdica o reino de IA de menor porte: o castelo vira ruína e os outros locais, terra livre. Reino de IA que perde o último local não vai ao exílio: sai do mundo.
-- A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h, estimando a milícia pelos civis que o batedor viu. Caça enquanto tem pouco couro, para treinar os batedores. Usa os mesmos serviços por quantidade; a atribuição automática cuida das vagas dela.
+- A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h, estimando a milícia pelo que é público (famílias do reino por local). Caça enquanto tem pouco couro, para treinar os batedores. Usa os mesmos serviços por quantidade; a atribuição automática cuida das vagas dela.
 - A regência não funda, não ataca, não espiona e não negocia. O jogador que volta vê o que ela fez e o que se perdeu.
 
 ---
@@ -346,18 +353,18 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - Reinos podem formar **alianças** e **pedir recursos a aliados**.
 - Alianças têm **limite de membros**, por balanceamento: alianças muito grandes geram problemas. Valor inicial: **5 reinos** por aliança.
-- Aliados se reconhecem (nome e brasão) e veem as marchas uns dos outros. Locais de aliados não são alvo de ataque.
+- Locais de aliados não são alvo de ataque.
 - **Reforço entre aliados**: um aliado pode mandar tropas para defender um local seu. As tropas continuam ocupando o teto de população de quem mandou. Não há ataque conjunto.
 - O reforço não leva carga (tropas carregadas voltam para casa com ela), não sai pela postura do local e seus feridos vão para o castelo de quem mandou.
 - **Conversa da aliança**: os membros conversam entre si; é o único chat do jogo.
 - Um pedido de recursos é aceito ou recusado pelo aliado. A ajuda sai dos locais mais próximos dele e viaja visível no mapa, podendo ser roubada.
 - **Cargos**: líder (convida, expulsa e promove), até 2 conselheiros (convidam e aceitam pedidos de entrada) e membros.
-- **Saída**: qualquer membro sai quando quiser, e o líder pode expulsar. Ao sair ou ser expulso, vale uma **trégua de 24 h** entre o reino e a aliança, garantida pelo jogo, e o reino só entra em outra aliança depois de 24 h. A visão das marchas acaba na hora.
+- **Saída**: qualquer membro sai quando quiser, e o líder pode expulsar. Ao sair ou ser expulso, vale uma **trégua de 24 h** entre o reino e a aliança, garantida pelo jogo, e o reino só entra em outra aliança depois de 24 h.
 - **Traição**: não há ataque surpresa entre membros. Quem quer atacar um aliado precisa sair e esperar a trégua.
 - Se o líder entra em regência ou sai, a liderança passa ao conselheiro mais antigo na aliança, ou ao membro mais antigo.
-- Convite só para reinos conhecidos; pedido de entrada só a aliança com algum membro conhecido. Convites e pedidos valem 24 h.
+- Qualquer reino pode ser convidado, e qualquer aliança pode receber pedido de entrada. Convites e pedidos valem 24 h.
 - O reforço de um aliado defende com a guarnição, mas o dono do local não o usa; divide as perdas da defesa e volta para casa se a defesa recuar ou a aliança entre os dois acabar.
-- Pacto e trégua são descobertos ao chegar; o envio só é recusado se o atacante já sabe de quem é o local (espionado).
+- Pacto e trégua são públicos: o envio é recusado já ao mandar. Um pacto que começa com as tropas a caminho as faz voltar ao chegar.
 
 ---
 
@@ -365,14 +372,14 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 - **Sem mercado global**: um mercado único quebraria as regras de recurso no local e de roubo no caminho.
 - **Sem chat geral.** Fora da aliança, a comunicação é por **mensageiro** e pelos recados curtos que acompanham as propostas.
-- **Mensageiro**: treinado no castelo; unidade que ocupa 1 de população e leva uma mensagem até um local de outro reino, inclusive de dono desconhecido. Vai com bandeira branca, evidente no mapa como não agressivo; tropas e fauna não o atacam. A mensagem revela quem a mandou; o destinatário só se revela se responder. Depois de entregar, o mensageiro volta.
-- **Troca direta** ("dou X, quero Y") só com reinos conhecidos: aliados, espionados ou identificados por estandarte ou bandeira. A proposta revela quem propõe. Se aceita, as duas cargas saem dos locais mais próximos e viajam visíveis no mapa, podendo ser roubadas.
+- **Mensageiro**: treinado no castelo; unidade que ocupa 1 de população e leva uma mensagem a qualquer reino. Vai com bandeira branca, evidente no mapa como não agressivo; tropas e fauna não o atacam. Depois de entregar, o mensageiro volta.
+- **Troca direta** ("dou X, quero Y") com qualquer reino. Se aceita, as duas cargas saem dos locais mais próximos e viajam visíveis no mapa, podendo ser roubadas.
 - **Reinos de IA comerciantes** compram abaixo e vendem acima do valor de referência, só com o próprio estoque e pelas mesmas regras dos jogadores. Mantêm o comércio vivo quando há poucos jogadores.
   - Compram a 85% e vendem a 115%, com a prata pelo valor cheio; nunca dão mais que metade do que guardam de um recurso. Os outros reinos de IA pedem o dobro da margem.
 - **Pacto de não agressão**: qualquer lado propõe, com pagamento em qualquer direção (quem ameaça cobra para não atacar, ou quem teme paga para não ser atacado) ou sem pagamento.
   - Dura de **1 a 7 dias**; cada reino tem até **3 pactos ativos**.
   - Começa quando o pagamento chega; se a carga for roubada no caminho, não começa.
-  - **O jogo garante o pacto**: enquanto durar, nenhum dos dois consegue atacar, saquear ou interceptar o outro. Tropas enviadas a um local do outro descobrem o pacto ao chegar e voltam sem combate.
+  - **O jogo garante o pacto**, que é público: enquanto durar, nenhum dos dois consegue atacar, saquear ou interceptar o outro, e o envio é recusado.
 - **Resgate de explorador**: ver Exploradores.
 - **Limites para o novato**: enquanto um reino está sob escudo de novato, a diferença entre o que ele dá e o que recebe (trocas, ajuda de aliados, pagamentos de pacto e resgate), somada transação a transação em valor de referência, tem limite por dia (janela de 24 h), para que contas secundárias não alimentem outra. Ninguém pode cobrar pacto de um reino sob escudo. O escudo e o limite de outro reino não aparecem a quem não é aliado: a recusa sai no aceite, sem revelar o escudo a quem propôs.
 
@@ -384,20 +391,18 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **O reino nasce com os primeiros passos já dados**: castelo e locais acima do nível 1, moradias prontas, uma guarnição pequena (lanceiros e arqueiros com nome) e exploradores prontos no castelo (a pé, a cavalo e prospector), com o entorno do castelo já explorado. Quem entra explora, caça, prospecta e manda os civis sem trabalho e as tropas coletarem madeira e pedra na hora, sem passar a primeira sessão só esperando timers: as primeiras melhorias saem nos primeiros minutos. Vale igual para reinos de IA.
 - Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
 - **Enviar tropas para cá**: sem tropa selecionada, o botão direito num hexágono oferece esse item primeiro. Ele abre o painel da base com de onde saem (o local mais perto ou o último usado, ou uma tropa em campo) e quantas vão (as últimas enviadas assim, metade ou todas); Enter envia. Destino que pede escolha (atacar, caçar...) termina na folha com as ordens.
-- **Atacar em 2 cliques**: clicar na tropa e clicar com o botão direito no alvo. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática, estandarte) ficam numa opção de **ajuste**, de um local ou de uma tropa em campo, e Shift + botão direito mostra todas as ordens.
+- **Atacar em 2 cliques**: clicar na tropa e clicar com o botão direito no alvo. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática) ficam numa opção de **ajuste**, de um local ou de uma tropa em campo, e Shift + botão direito mostra todas as ordens.
 - Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.
-- **Ver é jogar.** A Vista desenha cada pessoa do reino onde ela está (trabalhando com a ferramenta do ofício, em formação na guarnição, em coluna na marcha, cavando e quebrando pedra na escavação e na extração, treinando, ferida), com bonecos 3D de forma humana (e cavalos de verdade para quem monta) renderizados uma vez por ofício, pose e direção. Castelo, locais, torres e ruínas também são construções 3D, que crescem com o nível e levam a bandeira na cor do dono. Árvores, arbustos, flores, cogumelos, juncos, rochas e picos de montanha são 3D, com tipos e tamanhos que variam de lugar para lugar. Rios têm margem, canal fundo e reflexos, vitórias-régias, pedras e uma canoa aqui e ali; a ponte é de pedra, em arco, e atravessa o rio na direção da estrada. Ao girar a câmera, as construções giram em 3D junto, ao vivo, sem salto ao soltar; a vegetação fica em pé. Uma marcha mostra exatamente as pessoas que estão nela; com o zoom afastado, ou acima de 12 figuras no hexágono, vira uma pilha com contador. Pessoas de outros reinos aparecem só dentro da visão atual, em roupa sem cor de dono e sem nome. A foto da névoa guarda construções, não pessoas. Uma batalha em andamento aparece animada; o resultado continua vindo da fórmula.
+- **Ver é jogar.** A Vista desenha cada pessoa do reino onde ela está (trabalhando com a ferramenta do ofício, em formação na guarnição, em coluna na marcha, cavando e quebrando pedra na escavação e na extração, treinando, ferida), com bonecos 3D de forma humana (e cavalos de verdade para quem monta) renderizados uma vez por ofício, pose e direção. Castelo, locais, torres e ruínas também são construções 3D, que crescem com o nível e levam a bandeira na cor do dono. Árvores, arbustos, flores, cogumelos, juncos, rochas e picos de montanha são 3D, com tipos e tamanhos que variam de lugar para lugar. Rios têm margem, canal fundo e reflexos, vitórias-régias, pedras e uma canoa aqui e ali; a ponte é de pedra, em arco, e atravessa o rio na direção da estrada. Ao girar a câmera, as construções giram em 3D junto, ao vivo, sem salto ao soltar; a vegetação fica em pé. Uma marcha mostra exatamente as pessoas que estão nela; com o zoom afastado, ou acima de 12 figuras no hexágono, vira uma pilha com contador. Pessoas de outros reinos aparecem só dentro da visão atual, em roupa sem cor de dono e sem nome, em quantidade arredondada; a marcha de outro reino é sempre a mesma formação na cor do dono, pois o tamanho é segredo. Uma batalha em andamento aparece animada; o resultado continua vindo da fórmula.
 - **Clicar num civil** abre a folha dele; **clicar numa tropa** seleciona, e clicar nela de novo abre a folha. A folha mostra nome, ofício, o que faz e onde, com o tempo que falta, veterania para soldados, e as ações, cada uma com a tecla: civil "Trocar trabalho" (vagas da mais necessária à menos), "Levar para…" e "Recrutar"; soldado "Missão", "Selecionar o grupo" e "Voltar". A tela **Pessoas** (P) lista todo mundo, com filtro por ofício e por local, e é a alternativa acessível ao clique no mapa.
 - **Selecionar e mover, como num RTS**: o botão esquerdo seleciona a tropa (um soldado da guarnição, os soldados de uma pilha ou um exército inteiro em campo; duplo clique pega todos do mesmo tipo no lugar). Com ela selecionada, o **botão direito** no mapa dá a ordem na hora: hexágono livre move, local seu reforça, outra tropa sua junta; alvos que pedem escolha (outro reino, jazida, ruína, animais) abrem a folha com as ordens, e Shift + direito sempre mostra todas. Shift + clique soma à seleção; Shift + arrastar (ou o modo seleção) desenha um laço. O painel de seleção, na base da tela, mostra "7 selecionados · 4 lanceiros, 3 arqueiros" e a carta de comandos com as teclas (Ordem Enter, Patrulhar Q, Voltar V, Parar H, Separar K, Detalhes I, Comportamento C). Ctrl + 1 a 9 guarda a seleção num grupo e o número chama de volta (duas vezes centra); Tab passa pelas tropas. Quem está selecionado ganha um círculo azul em volta dos pés.
 - **Simples, sem caça a botões**: o que acontece no mapa se abre clicando nele mesmo (ex.: o selo "Ver batalha" sobre o hexágono), não por um botão escondido em menu ou folha. Antes de criar um botão, menu ou tela, tirar o que não precisa estar lá.
-- Opções e sistemas só aparecem **quando fazem sentido** para o jogador; nada é bloqueado. Antes do gatilho, somem os menus e botões do sistema; o mundo continua igual. Ao aparecer, um aviso curto apresenta o sistema. Gatilhos:
+- Opções e sistemas só aparecem **quando fazem sentido** para o jogador; nada é bloqueado. Antes do gatilho, somem os menus e botões do sistema; o mundo continua igual. Ao aparecer, um aviso curto apresenta o sistema. Alianças, comércio e diplomacia ficam abertos desde o início. Gatilhos:
   - Transporte manual de recursos: ao fundar o primeiro local longe do castelo (fora da vista dele).
   - Espionagem: ao ver o primeiro espião ou sofrer o primeiro ataque.
-  - Torres de arqueiros: ao ver forças desconhecidas perto do reino.
+  - Torres de arqueiros: ao ver forças de outro reino perto do reino.
   - Relíquias: ao avistar a primeira ruína antiga ou um farol.
-  - Alianças: ao conhecer o primeiro reino.
-  - Comércio e diplomacia: ao conhecer o primeiro reino.
   - Ferraria e eras: ao ter a primeira ferraria (fundada ou ocupada).
 - A câmera da Vista **inclina e gira** em volta do ponto olhado: botão direito ou do meio do mouse arrastando (para cima e para baixo inclina, para os lados gira). O mapa anda com W A S D ou as setas, a roda dá zoom, Espaço centra no castelo, M troca Vista e Mapa tático e Home põe a câmera no padrão. Afastar além do limite da Vista leva ao Mapa tático; aproximar além do limite do Mapa volta à Vista.
 - **Sons de efeito**: cliques, folhas, ações confirmadas, notificações pela categoria e, na Vista, o trabalho e as batalhas à vista (mais alto quanto mais perto e maior o zoom). Liga, desliga e volume em Mais, no aparelho.
