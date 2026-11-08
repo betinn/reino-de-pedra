@@ -140,15 +140,12 @@ public static class Economia
                 m.Sujar(d);
                 if (excedente.Count == 0) break;
             }
-        // população: logística, fechada no intervalo; teto livre = teto − tropas. A parte fracionária fica guardada
-        // (PopFracao) e cada vez que fecha 1 nasce uma pessoa com nome, que vai para a vaga mais necessária.
-        var castelo = m.Locais.Obter(r.CasteloId);
-        var sobra = castelo != null && comidaH > m.F.ProducaoCastelo(castelo.Nivel) * 2;
-        var livreTeto = Math.Max(1, Teto(m, r) - Tropas(m, r));
-        var taxaPop = m.P.CrescPop * (sobra ? 1 + m.P.BonusComida : 1);
-        foreach (var f in ModificadoresCrescimento) taxaPop *= f(m, r);
+        // população: de popMinH a popMaxH pessoas por hora enquanto há espaço no teto livre (teto − tropas), fechada no
+        // intervalo. A parte fracionária fica guardada (PopFracao) e cada vez que fecha 1 nasce uma pessoa com nome, que vai
+        // para a vaga mais necessária.
+        var (livreTeto, mult, _) = Crescimento(m, r, comidaH);
         var atual = r.Pop + r.PopFracao;
-        var depois = Logistica(atual, livreTeto, taxaPop, dtH, m.P.PopSemente);
+        var depois = Crescer(atual, livreTeto, mult, dtH, m.P.PopMinH, m.P.PopMaxH);
         r.AtualizadoEm = agora;
         m.Sujar(r);
         if (depois > atual)
@@ -159,29 +156,68 @@ public static class Economia
         }
     }
 
+    /// <summary>
+    /// Parâmetros do crescimento da população: teto livre (teto − tropas), multiplicador do ritmo (bônus de comida de sobra
+    /// e modificadores) e se há comida de sobra (produção de comida acima do dobro da do castelo).
+    /// </summary>
+    public static (double livreTeto, double mult, bool sobra) Crescimento(Mundo m, Reino r, double? comidaH = null)
+    {
+        var comida = comidaH ?? m.LocaisDe(r.Id).Sum(l => TaxaLocal(m, r, l).Qtd("comida"));
+        var castelo = m.Locais.Obter(r.CasteloId);
+        var sobra = castelo != null && comida > m.F.ProducaoCastelo(castelo.Nivel) * 2;
+        var livreTeto = Math.Max(1, Teto(m, r) - Tropas(m, r));
+        var mult = sobra ? 1 + m.P.BonusComida : 1;
+        foreach (var f in ModificadoresCrescimento) mult *= f(m, r);
+        return (livreTeto, mult, sobra);
+    }
+
+    /// <summary>
+    /// Ritmo atual da população, para mostrar: pessoas por hora (o que cresce na próxima hora), quando nasce a próxima
+    /// pessoa (instante, ou null se não cresce) e se há comida de sobra.
+    /// </summary>
+    public static (double porHora, long? proxima, bool sobra) RitmoPopulacao(Mundo m, Reino r)
+    {
+        var (livre, mult, sobra) = Crescimento(m, r);
+        var atual = r.Pop + r.PopFracao;
+        double Em(double h) => Crescer(atual, livre, mult, h, m.P.PopMinH, m.P.PopMaxH);
+        var porHora = Math.Max(0, Em(1) - atual);
+        var alvo = Math.Floor(r.Pop + 1e-9) + 1;
+        if (porHora <= 1e-9 || Em(10000) < alvo - 1e-9) return (porHora, null, sobra);
+        double lo = 0, hi = 1;
+        while (Em(hi) < alvo && hi < 10000) hi *= 2;
+        for (var i = 0; i < 50; i++) { var mid = (lo + hi) / 2; if (Em(mid) >= alvo) hi = mid; else lo = mid; }
+        return (porHora, r.AtualizadoEm + (long)Math.Ceiling(hi * T.Hora), sobra);
+    }
+
     /// <summary>Multiplicadores da taxa de crescimento da população do reino (legado: relíquia de crescimento).</summary>
     public static List<Func<Mundo, Reino, double>> ModificadoresCrescimento { get; } = new();
 
     /// <summary>
-    /// Solução fechada de dP/dt = k·P·(1 − P/K). Abaixo de <paramref name="semente"/> (P.popSemente) a população cresce em
-    /// linha, k × semente pessoas por hora, até chegar à semente (ou ao teto livre) e daí segue a logística: com a população
-    /// civil em 0 (todos recrutados) o reino volta a crescer.
+    /// População depois de <paramref name="dtH"/> horas, abaixo do teto livre <paramref name="K"/>. O ritmo é
+    /// <c>min(max, mult × (min + (max − min) × (K − P)/K))</c> pessoas por hora: mais rápido com mais espaço livre, nunca
+    /// abaixo de <paramref name="min"/> (com mult ≥ 1) nem acima de <paramref name="max"/>, e para no teto. Solução fechada:
+    /// em linha enquanto o ritmo bate no máximo; daí, com u = K − P, du/dt = −mult·(min + c·u/K), exponencial até u = 0.
     /// </summary>
-    public static double Logistica(double p0, double K, double k, double dtH, double semente = 0)
+    public static double Crescer(double p0, double K, double mult, double dtH, double min, double max)
     {
-        if (p0 >= K) return K;   // população acima do teto livre não cresce (e não some sozinha)
-        if (p0 < semente && k > 0 && dtH > 0)
+        if (p0 >= K || dtH <= 0 || mult <= 0) return p0;   // no teto (ou acima) não cresce nem some
+        var p = Math.Max(0, p0);
+        var c = Math.Max(0, max - min);
+        // fase em linha, no máximo: enquanto mult·(min + c·u/K) ≥ max, isto é, u ≥ uMax
+        var uMax = c > 0 ? K * (max / mult - min) / c : (mult * min >= max ? 0 : double.PositiveInfinity);
+        var u = K - p;
+        if (u > uMax)
         {
-            var alvo = Math.Min(semente, K);
-            var porHora = k * semente;
-            var t = (alvo - Math.Max(0, p0)) / porHora;
-            if (t >= dtH) return Math.Max(0, p0) + porHora * dtH;
-            p0 = alvo; dtH -= t;
-            if (p0 >= K) return K;
+            var t = (u - Math.Max(0, uMax)) / max;
+            if (t >= dtH) return Math.Min(K, p + max * dtH);
+            dtH -= t; u = Math.Max(0, uMax);
         }
-        if (p0 <= 0) return 0;
-        var e = Math.Exp(-k * dtH);
-        return K / (1 + (K - p0) / p0 * e);
+        if (u <= 0) return K;
+        if (c <= 0) return Math.Min(K, K - u + mult * min * dtH);   // sem faixa: ritmo constante
+        // fase exponencial: u(t) = (u0 + a)·e^(−b·t) − a, com a = min·K/c e b = mult·c/K
+        var a = min * K / c; var b = mult * c / K;
+        var un = (u + a) * Math.Exp(-b * dtH) - a;
+        return un <= 0 ? K : K - un;
     }
 
     /// <summary>Recursos guardados no reino inteiro (após <see cref="Atualizar"/>).</summary>

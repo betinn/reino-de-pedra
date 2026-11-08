@@ -39,7 +39,7 @@ public static class VisaoMapa
                 objetos.Add(new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "aliado", ruina = false, reino = Espionagem.Identidade(dl) });
             else objetos.Add(meu
                 ? new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "meu", ruina = l.Ruina }
-                : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina });
+                : new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)null, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico(), dono = l.ReinoId == 0 ? "livre" : "desconhecido", ruina = l.Ruina, produz = l.Ruina ? null : l.Produz });   // o que produz se vê de fora (minério, lavoura)
         }
         foreach (var x in m.Marchas)
         {
@@ -72,7 +72,9 @@ public static class VisaoMapa
         {
             cols = g.Cols, lins = g.Lins, agora, terreno = new string(ter), idade,
             rotas = vias.Rotas.Where(h => nevoa.MinutoVisto(h) > 0), pontes = vias.Pontes.Where(h => nevoa.MinutoVisto(h) > 0),
-            objetos,
+            objetos, reliquiaTipos = VisaoValiosos.Tipos(m),   // o que uma ruína antiga pode render (a folha mostra antes de escavar)
+            // último reconhecimento de cada local alheio (id do local → estimativa), congelado no instante em que foi feito
+            reconhecidos = r.LocaisReconhecidos.Where(kv => m.Locais.Obter(kv.Key) != null).ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
             pessoas = Pessoas(m, r), pessoasOutras = PessoasOutras(m, r, vis),
         };
     }

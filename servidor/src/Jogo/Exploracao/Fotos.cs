@@ -64,7 +64,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                 {
                     ["tipo"] = "local", ["id"] = local.Id, ["local"] = local.Tipo.Chave(),
                     ["nome"] = local.Ruina ? "Ruína" : local.Tipo.NomeGenerico(),
-                    ["dono"] = local.ReinoId == 0 ? "livre" : "desconhecido", ["ruina"] = local.Ruina,
+                    ["dono"] = local.ReinoId == 0 ? "livre" : "desconhecido", ["ruina"] = local.Ruina, ["produz"] = local.Ruina ? null : local.Produz,
                 });
             foreach (var ru in m.Ruinas)
                 if (ru.Hex == h) l.Add(new JsonObject { ["tipo"] = "ruina-antiga", ["id"] = ru.Id, ["esgotada"] = ru.Esgotada });

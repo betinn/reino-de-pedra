@@ -266,7 +266,7 @@ public class PessoasTestes
         t.AvancarHoras(2);
         Assert.Equal(Estados.Ociosa, lenhador.Estado);
         Assert.Equal(r.CasteloId, lenhador.LocalId);
-        Assert.Equal(t.B.P.PopInicial, r.Pop);
+        Assert.True(r.Pop >= t.B.P.PopInicial);   // ninguém some (e nesse tempo nascem 1 a 2 por hora)
     }
 
     [Fact]

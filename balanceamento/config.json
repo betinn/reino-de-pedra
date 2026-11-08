@@ -25,13 +25,13 @@
   "popInicial": 8,
   "custoMoradia": 40,
   "moradiaPasso": 24,
-  "crescPop": 0.05,
+  "popMinH": 1,
+  "popMaxH": 2,
   "bonusComida": 0.3,
   "vagas": {
    "porNivel": 0.3,
    "minimo": 1
   },
-  "popSemente": 3,
   "kit": {
    "madeira": 90,
    "pedra": 60,

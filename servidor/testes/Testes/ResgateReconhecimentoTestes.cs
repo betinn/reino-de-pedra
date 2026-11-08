@@ -169,6 +169,12 @@ public class ResgateReconhecimentoTestes
         Assert.Equal(Math.Round(esperado.D), est["defesa"]!.GetValue<double>());
         Assert.Equal(esperado.VenceA, est["vence"]!.GetValue<bool>());
         Assert.Equal(rel.Dados["marchaId"]!.GetValue<long>(), ex.Id);
+        // a foto do reconhecimento fica gravada no local e não muda quando a guarnição muda
+        var foto = s.Atk.LocaisReconhecidos[alvo.Id];
+        Assert.Equal("reconhecimento", foto["fonte"]!.GetValue<string>());
+        Assert.Equal(7, foto["tropas"]!.GetValue<int>());
+        alvo.Guarnicao["lanceiro"] = 40;
+        Assert.Equal(7, s.Atk.LocaisReconhecidos[alvo.Id]["tropas"]!.GetValue<int>());
         // o relatório não revela o dono
         Assert.DoesNotContain(s.Def.Nome, rel.Dados.ToJsonString());
         // dali, o ataque de tropa em campo segue normalmente

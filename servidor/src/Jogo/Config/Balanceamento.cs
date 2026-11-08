@@ -74,12 +74,12 @@ public sealed class ParametrosP
     public int PopInicial { get; init; }
     public double CustoMoradia { get; init; }
     public double MoradiaPasso { get; init; }
-    public double CrescPop { get; init; }
+    /// <summary>Pessoas por hora com espaço no teto: de PopMinH (teto quase cheio) a PopMaxH (teto vazio), +BonusComida com sobra, até PopMaxH.</summary>
+    public double PopMinH { get; init; }
+    public double PopMaxH { get; init; }
     public double BonusComida { get; init; }
     /// <summary>Vagas de trabalho de um local de produção por nível: max(minimo, round(nível × porNivel)).</summary>
     public VagasP Vagas { get; init; } = new();
-    /// <summary>População civil abaixo disso cresce em linha (CrescPop × PopSemente por hora) até chegar a ela; daí, logística.</summary>
-    public double PopSemente { get; init; }
     public Dictionary<string, double> Kit { get; init; } = new();
     public Dictionary<string, double> KitExtra { get; init; } = new();
     /// <summary>Reino novo com os primeiros passos já dados: níveis, moradias, guarnição, exploradores prontos e entorno explorado.</summary>

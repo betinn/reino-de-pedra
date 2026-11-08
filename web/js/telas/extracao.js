@@ -73,12 +73,13 @@
     RP.$('.topo h1', el).textContent = escav ? 'Escavação de ruína' : 'Extração de recurso';
     var lista = alvos();
     var h = '<div class="nota-regra">' + RP.icone(escav ? 'lendario' : 'info', 'ico-p') + (escav
-      ? '<span><b>Escavação.</b> Ruínas antigas guardam <b>1 relíquia</b>. Escavar é lento e esgota a ruína; o tipo da relíquia só se conhece ao achar. Uma única unidade já escava.</span></div>'
+      ? '<span><b>Escavação.</b> Ruínas antigas guardam <b>1 relíquia</b>. Escavar é lento e esgota a ruína; o tipo da relíquia só se conhece ao achar. Uma única unidade já escava.</span></div>' +
+        '<div class="secao-titulo">Escavar pode render</div><div class="card">' + RP.ganhosRuina(d.reliquiaTipos) + '</div>'
       : '<span><b>Nada é obrigatório.</b> Uma única unidade sem preparo já extrai. Mais tropas, unidades com mais carga, posto e rota só aumentam o rendimento.</span></div>');
     h += '<div class="secao-titulo">Jazidas e ruínas</div>' + (lista.length ? '<div class="escolhas escolhas-lista">' + lista.map(function (x) {
       var ativo = x.hex === ext.hex, sel = ' data-ext-hex="' + x.hex + '" aria-pressed="' + ativo + '"';
       if (x.tipo === 'ruina') return '<button type="button" class="escolha escolha-linha"' + sel + '><span class="ico-placa">' + RP.icone('ruina', 'r-lendario') + '</span>' +
-        '<span class="escolha-txt"><b>Ruína antiga</b><small class="fraco">Escavação · guarda 1 relíquia · ' + idadeTxt(x.r.idadeMin) + (x.r.posto === 'meu' ? ' · com posto' : '') + '</small></span></button>';
+        '<span class="escolha-txt"><b>Ruína antiga</b><small class="fraco">Escavação · ' + RP.esc(RP.ganhosRuina(d.reliquiaTipos, true)) + ' · ' + idadeTxt(x.r.idadeMin) + (x.r.posto === 'meu' ? ' · com posto' : '') + '</small></span></button>';
       var j = x.j;
       return '<button type="button" class="escolha escolha-linha"' + sel + '><span class="ico-placa">' + RP.icone(j.recurso, 'r-' + j.recurso) + '</span>' +
         '<span class="escolha-txt"><b>' + RP.esc(j.nome) + '</b><small class="fraco">' + (j.lendaria ? 'Lendário · ' : '') + RP.num(j.restante) + ' restantes · vale ' + j.valor + ' · ' + idadeTxt(j.idadeMin) +

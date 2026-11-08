@@ -64,7 +64,7 @@ public class ReinoTestes
     }
 
     [Fact]
-    public void Populacao_cresce_logistica_ate_o_teto()
+    public void Populacao_cresce_de_1_a_2_por_hora_ate_o_teto()
     {
         var t = new MundoTeste();
         var r = t.NovoReino();
@@ -72,7 +72,8 @@ public class ReinoTestes
         Economia.Atualizar(t.M, r);
         // comida 5,5/h (castelo 2,5 + vila 3) > 2 × 2,5: sobra de comida, +30%
         var P = t.B.P;
-        Assert.Equal(Economia.Logistica(P.PopInicial, P.TetoCastelo, P.CrescPop * (1 + P.BonusComida), 1, P.PopSemente), r.Pop + r.PopFracao, 6);   // a fração espera a próxima pessoa
+        Assert.Equal(Economia.Crescer(P.PopInicial, P.TetoCastelo, 1 + P.BonusComida, 1, P.PopMinH, P.PopMaxH), r.Pop + r.PopFracao, 6);   // a fração espera a próxima pessoa
+        Assert.InRange(r.Pop + r.PopFracao - P.PopInicial, P.PopMinH, P.PopMaxH);
         t.AvancarHoras(500);
         Economia.Atualizar(t.M, r);
         Assert.InRange(r.Pop, P.TetoCastelo - 1, P.TetoCastelo);

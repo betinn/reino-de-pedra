@@ -330,14 +330,28 @@
   function dicaRecurso(k) {
     var tot = RP.totalRecurso(k), taxa = RP.producao(k), enche = RP.encheEm(k), c = RP.castelo(), noCastelo = RP.qtdRecurso(k);
     return '<b>' + RP.esc(RP.NOMES_REC[k] || k) + '</b>' +
-      '<span>No castelo: <b style="display:inline">' + RP.num(noCastelo) + '</b>' + (c && c.cap && c.cap[k] ? ' de ' + RP.num(c.cap[k]) : '') + ' · no reino: ' + RP.num(tot) + '</span>' +
+      '<span>No reino: <b style="display:inline">' + RP.num(tot) + '</b> · no castelo: ' + RP.num(noCastelo) + (c && c.cap && c.cap[k] ? ' de ' + RP.num(c.cap[k]) : '') + '</span>' +
       '<small>' + (taxa ? '+' + RP.num(taxa) + ' por hora' + (enche != null ? (enche <= 0 ? ' · estoque cheio, produção parada' : ' · enche em ' + RP.fmtDuracao(enche / 1000)) : '') : 'nenhum local produz') + '</small>' +
       '<small>Clique: produção e estoques do reino</small>';
+  }
+  /* ritmo da população: "+0,4/h", ou "parado" quando não cresce (teto cheio) */
+  RP.popHoraTxt = function (r) {
+    var v = (r && r.popHora) || 0;
+    if (v <= 0) return 'parado';
+    return '+' + v.toLocaleString('pt-BR', { maximumFractionDigits: v < 0.1 ? 2 : 1 }) + '/h';
+  };
+  function dicaPop() {
+    var r = RP.reino; if (!r) return '<b>População</b>';
+    var livre = r.teto - r.pop - r.tropas, bonus = Math.round(100 * (r.popBonusComida || 0));
+    return '<b>População</b><span>' + RP.esc(RP.num(r.pop) + ' civis + ' + RP.num(r.tropas) + ' soldados de ' + RP.num(r.teto) + ' moradores') + '</span>' +
+      '<small>' + (r.popHora > 0 ? 'Cresce ' + RP.popHoraTxt(r).replace('/h', ' por hora') + (r.popProxima ? ' · próxima pessoa em ' + RP.fmtResta(r.popProxima - RP.agora()) : '') : 'Não cresce: o teto está cheio. Construa moradias.') + '</small>' +
+      '<small>' + (r.popComidaSobra ? 'Comida de sobra: cresce ' + bonus + '% mais rápido.' : 'Com comida acima do dobro da produção do castelo, cresce ' + bonus + '% mais rápido.') + (livre > 0 && r.popHora > 0 ? ' Quanto mais perto do teto, mais devagar.' : '') + '</small>' +
+      '<small>Clique: Meu reino</small>';
   }
   function mostrarDica(el) {
     if (!dicaEl) dicaEl = RP.$('#dica');
     if (!dicaEl) return;
-    var html = el.hasAttribute('data-dica-rec') ? dicaRecurso(el.getAttribute('data-dica-rec')) : el.hasAttribute('data-dica-pop') ? '<b>População</b><span>' + RP.esc(RP.reino ? RP.num(RP.reino.pop) + ' civis + ' + RP.num(RP.reino.tropas) + ' soldados de ' + RP.num(RP.reino.teto) + ' moradores' : '') + '</span><small>Clique: Meu reino</small>' : el.getAttribute('data-dica');
+    var html = el.hasAttribute('data-dica-rec') ? dicaRecurso(el.getAttribute('data-dica-rec')) : el.hasAttribute('data-dica-pop') ? dicaPop() : el.getAttribute('data-dica');
     if (!html) return;
     dicaEl.innerHTML = html; dicaEl.hidden = false;
     var r = el.getBoundingClientRect(), w = dicaEl.offsetWidth, h = dicaEl.offsetHeight;
@@ -559,6 +573,17 @@
     var v = (RP.config && RP.config.valor) || {};
     return Object.keys(c || {}).reduce(function (s, k) { return s + (c[k] || 0) * (v[k] || 1); }, 0);
   };
+  /* ---------------------------------------------------------------- o que uma ruína antiga pode render
+     Cada ruína guarda 1 relíquia de um dos três tipos, sorteado e só conhecido ao achar. Mostra as possibilidades
+     antes de escavar. tipos = { ataque: { nome, efeito, bonus }, ... } vindo do servidor (reliquiaTipos/tipos). */
+  RP.ganhosRuina = function (tipos, curto) {
+    var ks = ['ataque', 'producao', 'resistencia'].filter(function (k) { return tipos && tipos[k]; });
+    if (!ks.length) return curto ? '1 relíquia: ataque, produção ou resistência' : '';
+    if (curto) return '1 relíquia: ' + ks.map(function (k) { return tipos[k].nome.toLowerCase() + ' +' + Math.round((tipos[k].bonus || 0) * 100) + '%'; }).join(', ') + ' (um deles)';
+    return '<ul class="ruina-ganhos">' + ks.map(function (k) {
+      return '<li class="tipo-' + k + '">' + RP.icone('lendario', 'ico-p') + '<span><b>' + RP.esc(tipos[k].nome) + '</b> · ' + RP.esc(tipos[k].efeito) + '</span></li>';
+    }).join('') + '</ul><small class="fraco">Um destes, com a mesma chance. O tipo só se conhece ao achar.</small>';
+  };
   /* ---------------------------------------------------------------- produção do reino
      Soma das taxas por hora de todos os locais; "quando enche" é o primeiro local que chega à capacidade. */
   RP.producao = function (k) {
@@ -665,22 +690,23 @@
   }
   setInterval(tique, 1000);
 
-  /* ---------------------------------------------------------------- barra de recursos (estoque do castelo) */
+  /* ---------------------------------------------------------------- barra de recursos (estoque do reino todo: obras e
+     recrutamento buscam o material em todos os locais, então o número do topo é o mesmo que eles usam) */
   var ORDEM_REC = ['madeira', 'pedra', 'comida', 'ferro', 'couro', 'peles'];
   RP.ORDEM_REC = ORDEM_REC;
   RP.naoLidas = 0;
   RP.barraRecursos = function (opt) {
     opt = opt || {};
-    var r = RP.reino, c = RP.castelo();
-    var h = '<div class="recursos" role="group" aria-label="Recursos no castelo (sede)">';
+    var r = RP.reino;
+    var h = '<div class="recursos" role="group" aria-label="Recursos do reino">';
     ORDEM_REC.forEach(function (k) {
-      var q = RP.qtdRecurso(k), cap = c && c.cap && c.cap[k];
+      var q = RP.totalRecurso(k), enche = RP.encheEm(k);
       var taxa = RP.producao(k);
-      h += '<button class="rec' + (cap && q >= cap * 0.95 ? ' rec-cheio' : '') + '" type="button" data-abrir-recursos data-dica-rec="' + k + '" aria-label="' + RP.NOMES_REC[k] + ' no castelo: ' + RP.num(q) + '">' +
-        RP.icone(k, 'r-' + k) + '<span class="rec-num" data-rec="' + k + '" data-curto>' + RP.numCurto(q) + '</span>' + (taxa ? '<span class="rec-taxa">+' + RP.numCurto(taxa) + '/h</span>' : '') + '</button>';
+      h += '<button class="rec' + (enche != null && enche <= 0 ? ' rec-cheio' : '') + '" type="button" data-abrir-recursos data-dica-rec="' + k + '" aria-label="' + RP.NOMES_REC[k] + ' no reino: ' + RP.num(q) + '">' +
+        RP.icone(k, 'r-' + k) + '<span class="rec-num" data-rec="' + k + '" data-local="*" data-curto>' + RP.numCurto(q) + '</span>' + (taxa ? '<span class="rec-taxa">+' + RP.numCurto(taxa) + '/h</span>' : '') + '</button>';
     });
     h += '<button class="rec" type="button" data-ir="reino" data-dica-pop aria-label="População">' + RP.icone('populacao', 'r-populacao') +
-      '<span class="rec-num" data-pop data-curto>' + RP.numCurto(r ? r.pop : 0) + '</span>' + (r ? '<span class="rec-taxa">de ' + RP.numCurto(r.teto) + '</span>' : '') + '</button>';
+      '<span class="rec-num" data-pop data-curto>' + RP.numCurto(r ? r.pop : 0) + '</span>' + (r ? '<span class="rec-taxa">de ' + RP.numCurto(r.teto) + ' · ' + RP.popHoraTxt(r) + '</span>' : '') + '</button>';
     if (!opt.semSino) h += '<button class="btn-sino" type="button" data-abrir-notificacoes aria-label="Notificações (' + RP.naoLidas + ' novas)">' +
       RP.icone('sino') + '<span class="contador"' + (RP.naoLidas ? '' : ' hidden') + '>' + RP.naoLidas + '</span></button>';
     return h + '</div>';
@@ -739,7 +765,7 @@
     var r = RP.reino; if (!r) return;
     var corpo = RP.producaoHTML() + RP.contaRecursoHTML() +
       '<details class="detalhe"><summary>Onde estão os recursos</summary>' +
-      '<p class="fraco" style="font-size:var(--fs-2)">Recursos ficam onde são produzidos. Obras e recrutamento buscam sozinhos o que falta nos locais mais próximos; a barra do topo mostra o castelo.</p><div class="lista">' +
+      '<p class="fraco" style="font-size:var(--fs-2)">Recursos ficam onde são produzidos. Obras e recrutamento buscam sozinhos o que falta nos locais mais próximos; a barra do topo mostra o total do reino.</p><div class="lista">' +
       r.locais.map(function (l) {
         var t = Object.keys(l.taxa || {});
         return '<div class="lista-item"><span class="ico-placa dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span><div style="flex:1;min-width:0"><b>' + RP.esc(l.nome) + '</b>' +
