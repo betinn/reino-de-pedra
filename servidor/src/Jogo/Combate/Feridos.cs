@@ -153,6 +153,28 @@ namespace ReinoDePedra.Jogo.Combate
             m.Avisar(r.Id, "reino");
             return item;
         }
+
+        /// <summary>
+        /// Sacrifica os feridos que esperam cura: os de um lote (<paramref name="loteId"/>) ou todos. Morrem na hora e liberam o
+        /// teto para novos nascimentos. Quem já está na fila de cura não entra (cancelar a cura devolve à espera).
+        /// Devolve os nomes de quem morreu.
+        /// </summary>
+        public static List<string> Sacrificar(Mundo m, Reino r, long? loteId = null)
+        {
+            Economia.Atualizar(m, r);
+            var lotes = r.Feridos.Where(l => loteId == null || l.Id == loteId).ToList();
+            if (lotes.Count == 0) throw new RegraException(loteId == null ? "Não há feridos esperando cura." : "Esse grupo de feridos não existe mais.");
+            var nomes = new List<string>();
+            foreach (var l in lotes)
+            {
+                m.Cancelar(l.EventoId);
+                r.Feridos.Remove(l);
+                foreach (var p in Do(m, l).ToList()) { nomes.Add(p.Nome); PS.Remover(m, p); }
+            }
+            m.Sujar(r);
+            m.Avisar(r.Id, "reino");
+            return nomes;
+        }
     }
 
     /// <summary>Os feridos de um lote morrem (ninguém os pôs na fila de cura a tempo).</summary>
