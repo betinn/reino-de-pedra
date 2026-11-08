@@ -83,6 +83,16 @@
    "poucas": 4,
    "passo": 5
   },
+  "regiaoReino": {
+   "raio": 14,
+   "desvio": 9
+  },
+  "rastro": {
+   "tropas": 12,
+   "alcance": 14,
+   "grade": 3,
+   "adiante": 6
+  },
   "custoNovoLocal": 150,
   "novoLocalCresc": 1.22,
   "tempoNovoLocal": 5400,
@@ -888,7 +898,8 @@
      8,
      48
     ],
-    "tentativas": 6
+    "tentativas": 6,
+    "regiaoAlcance": 84
    },
    "caca": {
     "couroMin": 40,

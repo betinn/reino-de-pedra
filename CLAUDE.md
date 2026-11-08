@@ -39,6 +39,9 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Mapa **grande**, que exige deslocamento real: distância e terreno importam. Para 30 reinos: **312 × 240 hexágonos pequenos** (cerca de 2.500 por reino); a travessia com tropa lenta leva perto de 1 h (menos com rota ou cavalaria), o reino vizinho fica a 10 a 15 min e as curtas distâncias (6 a 10 hexágonos) levam 1 a 2 min. Um reino pode não encontrar todos os outros na temporada.
 - **Construções ocupam vários hexágonos**, conforme o tamanho: o castelo ocupa 7 (o hexágono e o anel em volta), os outros locais 3 (o hexágono e os vizinhos de leste e oeste), o posto 1. Fundar exige o espaço inteiro explorado, sem rio e livre; tocar em qualquer parte da construção é tocar no local.
 - Coberto por **névoa**: no início o jogador só conhece o entorno do seu reino. Informações de áreas exploradas envelhecem e mostram o último estado conhecido. Na Vista, a névoa é uma bruma de tom médio com borda suave (sem aresta de hexágono); o explorado fica com as cores apagadas, e a visão atual, com cor e movimento.
+- **Região dos reinos**: desde o início, explorada ou não, cada reino do mundo aparece como uma área marcada por cima da névoa (raio 14), com o castelo em algum lugar dentro dela, não no centro. Não diz de quem é nem o que tem: aponta onde procurar.
+- **Poeira**: marcha de outro reino com 12 pessoas ou mais, andando fora da vista, levanta poeira vista a até 14 hexágonos de um local ou marcha sua: posição aproximada, tamanho aproximado e rumo, sem dono. Marchas pequenas, paradas, de batedor e de aliados não levantam poeira.
+- A IA usa as mesmas regiões e poeiras: explora primeiro a região mais perto onde ainda não achou o reino, e não manda o exército atacar fora com poeira vindo na direção dela.
 - Terrenos afetam velocidade de deslocamento e o que pode ser encontrado:
   - Planície: deslocamento rápido, comida, cavalos de raça e sal.
   - Floresta: lenta, madeira e caça.
