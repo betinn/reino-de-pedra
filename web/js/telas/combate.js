@@ -937,6 +937,20 @@
   function barraEstrutura(v, max) {
     return max ? '<div class="barra" role="progressbar" aria-label="Estrutura"><i style="width:' + Math.min(100, 100 * v / max).toFixed(1) + '%"></i></div><small class="fraco">Estrutura ' + RP.num(v) + ' de ' + RP.num(max) + '</small>' : '';
   }
+  /* dicas dos botões de subir: o que muda (de → para), custo e tempo; o card não repete custo e tempo */
+  function efeitoDica(nome, de, para, fmt) {
+    fmt = fmt || RP.num;
+    return '<span class="dica-efeito">' + nome + ': ' + fmt(de) + ' → <strong>' + fmt(para) + '</strong></span>';
+  }
+  function custoDica(p) { return RP.custoHTML(p.custo) + '<small>' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(p.seg) + ' de obra</small>'; }
+  function mult(v) { return '×' + String(v).replace('.', ','); }
+  function dicaPortoes(c, p) {
+    return '<b>Portões: nível ' + c.portoes + ' → ' + p.nivel + '</b>' + efeitoDica('Defesa do castelo', c.multiplicador, p.multiplicador, mult) + custoDica(p);
+  }
+  function dicaTorre(t, p) {
+    return '<b>Torre: nível ' + t.nivel + ' → ' + p.nivel + '</b>' + efeitoDica('Alcance', t.alcance, p.alcance, function (v) { return v + ' hex.'; }) +
+      efeitoDica('Arqueiros no alto', t.arqueiros, p.arqueiros) + '<small>Mais alcance pode proteger mais locais.</small>' + custoDica(p);
+  }
   function htmlDefesas(d) {
     var c = d.castelo, h = '<div class="nota-regra">' + RP.icone('torre', 'ico-p') + '<span>Não há muros. Torres põem <b>arqueiros no alto</b>, que atiram protegidos e defendem seus locais no alcance. O invasor precisa <b>derrubar a torre</b> (aríetes) para se livrar deles.</span></div>';
     if (c) {
@@ -944,8 +958,8 @@
       h += '<div class="secao-titulo">Castelo</div><div class="card pilha torre-card"><div class="linha"><span class="ico-placa ico-placa-g">' + RP.icone('castelo') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(c.nome) + '</b><br><small class="fraco">Portões nível ' + c.portoes + ' · defesa ×' + String(c.multiplicador).replace('.', ',') +
         (c.torres ? ' · ' + c.torres + (c.torres > 1 ? ' torres' : ' torre') + ' no alcance' : '') + '</small></span><span class="selo">Portões ' + c.portoes + '</span></div>' +
         barraEstrutura(c.estrutura, c.estruturaMax) +
-        (p ? '<div class="torre-acao"><div class="linha-entre"><span><b>Portões nível ' + p.nivel + '</b><small class="fraco"> · defesa ×' + String(p.multiplicador).replace('.', ',') + '</small><br>' + RP.custoHTML(p.custo) + ' <span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(p.seg) + '</span></span>' +
-          (p.bloqueio ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + RP.esc(p.bloqueio) + '</span>' : '<button type="button" class="btn btn-p btn-primario" data-def-portoes>' + RP.icone('martelo') + 'Subir</button>') + '</div></div>'
+        (p ? '<div class="torre-acao">' + (p.bloqueio ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + RP.esc(p.bloqueio) + '</span>'
+          : '<button type="button" class="btn btn-p btn-primario" data-def-portoes data-dica="' + RP.esc(dicaPortoes(c, p)) + '">' + RP.icone('martelo') + 'Portões nível ' + p.nivel + '</button>') + '</div>'
           : '<p class="fraco">Portões no nível máximo.</p>') +
         '<small class="fraco">Aríetes e trebuchets derrubam portões no cerco.</small></div>';
     }
@@ -955,8 +969,7 @@
         '<div class="ext-numeros"><div><span class="fraco">Alcance</span><b class="num">' + t.alcance + ' hex.</b></div><div><span class="fraco">Arqueiros no alto</span><b class="num">' + t.arqueiros + '</b></div><div><span class="fraco">Protege</span><b class="num">' + t.protege.length + (t.protege.length === 1 ? ' local' : ' locais') + '</b></div></div>' +
         barraEstrutura(t.estrutura, t.estruturaMax) +
         '<small class="fraco">Protege: ' + RP.esc(t.protege.map(function (x) { return x.nome; }).join(', ') || 'nenhum local') + '</small>' +
-        (p ? '<div class="torre-acao"><div class="linha-entre"><span><b>Subir para nível ' + p.nivel + '</b><small class="fraco"> · alcance ' + p.alcance + ', ' + p.arqueiros + ' arqueiros</small><br>' + RP.custoHTML(p.custo) + ' <span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(p.seg) + '</span></span>' +
-          '<button type="button" class="btn btn-p btn-primario" data-def-torre="' + t.id + '">' + RP.icone('martelo') + 'Subir</button></div></div>' : '<p class="fraco">Nível máximo.</p>') +
+        (p ? '<div class="torre-acao"><button type="button" class="btn btn-p btn-primario" data-def-torre="' + t.id + '" data-dica="' + RP.esc(dicaTorre(t, p)) + '">' + RP.icone('martelo') + 'Subir para nível ' + p.nivel + '</button></div>' : '<p class="fraco">Nível máximo.</p>') +
         '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + t.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a></div>';
     }).join('') : '<p class="fraco">Nenhuma torre ainda.</p>') + '</div>';
     var n = d.novaTorre;

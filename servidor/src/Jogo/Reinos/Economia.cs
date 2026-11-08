@@ -79,16 +79,19 @@ public static class Economia
     public static List<Func<Mundo, Local, double>> ModificadoresProducao { get; } = new();
 
     /// <summary>Quanto o local guarda da própria produção, por recurso.</summary>
-    public static double Capacidade(Mundo m, Local l, string recurso)
+    public static double Capacidade(Mundo m, Local l, string recurso) => CapacidadeNoNivel(m, l, recurso, l.Nivel);
+
+    /// <summary>Quanto o local guardaria da própria produção num nível (a dica da melhoria compara dois níveis).</summary>
+    public static double CapacidadeNoNivel(Mundo m, Local l, string recurso, int nivel)
     {
         if (l.Tipo == TipoLocal.Castelo)
-            return Math.Max(m.P.EstoqueMinimo, m.F.ProducaoCastelo(l.Nivel) * m.P.EstoqueHoras);
-        if (l.Tipo == TipoLocal.Armazem) return m.F.CapacidadeArmazem(l.Nivel);
+            return Math.Max(m.P.EstoqueMinimo, m.F.ProducaoCastelo(nivel) * m.P.EstoqueHoras);
+        if (l.Tipo == TipoLocal.Armazem) return m.F.CapacidadeArmazem(nivel);
         if (l.Produz == recurso)
         {
             var horas = m.P.EstoqueHoras;
             foreach (var f in HorasDeEstoque) horas = Math.Max(horas, f(m, l));
-            return m.F.ProducaoDe(recurso, l.Nivel) * horas;
+            return m.F.ProducaoDe(recurso, nivel) * horas;
         }
         return 0;
     }
