@@ -5,7 +5,8 @@
    grupo, opcoes, resumo, antes } e RP.envio.paraOrdem(hex, ordem) abre.
    Também dá nova ordem a um exército em campo, desenha no mapa a linha exata de uma patrulha e junta e separa tropas.
    Ponto de extensão: RP.ordensEnvio.push({ ordem, rotulo, icone, verbo, descricao(hex, dados, envio), quando(hex, dados, envio) })
-   — o combate acrescenta "atacar". Porte da ordem rápida de prototipo/js/mapa.js e militar.js. */
+   — o combate acrescenta "atacar". escolha: true marca a ordem cujo alvo pede escolha (caçar o bando): o botão direito
+   ali abre a folha com as ordens, em vez de mover. Porte da ordem rápida de prototipo/js/mapa.js e militar.js. */
 (function () {
   'use strict';
   var RP = window.RP, H = RP.hex;
@@ -97,11 +98,16 @@
   RP.envio.trabalhoAqui = function (h) {
     return RP.ordensEnvio.filter(function (o) { return o.painel && o.quando(h, RP.mapa.dados()); })[0] || null;
   };
+  /* a ordem cujo alvo pede escolha neste hexágono: caçar os animais conhecidos (o mapa só traz o bando à vista e o perigo já visto) */
+  function ordemEscolha(h, dados) {
+    return RP.ordensEnvio.filter(function (o) { try { return o.escolha && o.quando(h, dados, est); } catch (e) { return false; } })[0] || null;
+  }
   /* a ordem que parte na hora para um hexágono: reforçar um local seu, ou mover para um hexágono sem local.
-     Ruína e jazida pedem escolha, salvo para quem já está parado nelas: aí a ordem é trabalhar. */
+     Ruína e jazida pedem escolha, salvo para quem já está parado nelas: aí a ordem é trabalhar. Animais pedem escolha. */
   function ordemDireta(h) {
     var local = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
     if (local) return local.dono === 'meu' && !local.ruina && local.id !== est.de ? 'reforcar' : null;
+    if (ordemEscolha(h, RP.mapa.dados())) return null;
     var trab = RP.envio.trabalhoAqui(h), e = exercitoDe();
     return !trab ? 'mover' : e && e.hex === h && e.estado === 'parado' ? trab.ordem : null;
   }
@@ -383,9 +389,10 @@
       });
       return html;
     }
-    /* "Enviar tropa" parte na hora: um local seu (entra na guarnição) ou um hexágono sem local (fica lá). Na ruína ou na jazida, o trabalho vem em destaque. */
+    /* "Enviar tropa" parte na hora: um local seu (entra na guarnição) ou um hexágono sem local (fica lá). Na ruína ou na jazida, o trabalho vem em destaque; no bando, a caça. */
     var local = obj.filter(function (o) { return o.tipo === 'local'; })[0], botoes = [];
-    var direta = local && local.dono === 'meu' && !local.ruina ? (local.id !== est.de ? 'reforcar' : null) : !local ? 'mover' : null, trab = RP.envio.trabalhoAqui(h);
+    var direta = local && local.dono === 'meu' && !local.ruina ? (local.id !== est.de ? 'reforcar' : null) : !local ? 'mover' : null;
+    var trab = RP.envio.trabalhoAqui(h) || ordemEscolha(h, dados);
     RP.ordensEnvio.forEach(function (o) { try { if (o.quando(h, dados, est)) botoes.push(o.ordem); } catch (e) { console.error(e); } });
     return (direta ? '<button type="button" class="btn btn-p' + (trab ? '' : ' btn-primario') + '" data-envio-ja="' + direta + '" data-envio-hex="' + h + '">' + RP.icone('seta') + (direta === 'reforcar' ? 'Reforçar' : 'Mover para cá') + '</button>' : '') +
       botoes.map(function (id, i) {
