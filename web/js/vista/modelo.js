@@ -314,7 +314,7 @@
       /* a batalha do próprio reino já chega como notificação */
       if (x.tipo === 'batalha' && RP.reino && x.texto.indexOf('Reino ' + RP.reino.nome + ' ') >= 0) return;
       var p = partesMensagem(x.texto);
-      RP.aviso({ titulo: p[0], texto: p[1], icone: ICONE_MSG[x.tipo] || 'info', tipo: x.tipo === 'queda' ? 'alerta' : 'info', anuncio: true, descartavel: true, link: RP.reino && x.hex != null ? 'mapa?centro=' + x.hex : null });
+      RP.aviso({ titulo: p[0], texto: p[1], icone: ICONE_MSG[x.tipo] || 'info', tipo: x.tipo === 'queda' ? 'alerta' : 'info', anuncio: true, pequeno: x.aviso === 'pequeno', descartavel: true, link: RP.reino && x.hex != null ? 'mapa?centro=' + x.hex : null });
       if (RP.sons && (x.tipo === 'batalha' || x.tipo === 'queda')) RP.sons.tocar('atacar', { vol: 0.5 });
     });
   }

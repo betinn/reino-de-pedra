@@ -150,7 +150,7 @@ public static class Escavacoes
                 new JsonObject { ["rotulo"] = "Destino", ["valor"] = dest?.Nome ?? "—" },
             },
             ["hex"] = ru.Hex,
-        }, "reliquias", "Relíquia encontrada: " + rel.Nome);
+        }, "reliquias", "Relíquia encontrada: " + rel.Nome, TamanhoAviso.Grande);
         if (dest == null) { ex.Retornar(m); return; }
         var aqui = ex.HexEm(m.Agora);
         if (dest.Hex == aqui) { ex.EntrarNoLocal(m, dest); return; }

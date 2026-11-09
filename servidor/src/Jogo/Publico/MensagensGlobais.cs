@@ -81,7 +81,7 @@ namespace ReinoDePedra.Jogo.Publico
             var l = new JsonArray();
             foreach (var x in m.MensagensGlobais.OrderByDescending(v => v.Quando).ThenByDescending(v => v.Id).Take(max))
             {
-                var o = new JsonObject { ["id"] = x.Id, ["quando"] = x.Quando, ["tipo"] = x.Tipo, ["texto"] = x.Texto };
+                var o = new JsonObject { ["id"] = x.Id, ["quando"] = x.Quando, ["tipo"] = x.Tipo, ["texto"] = x.Texto, ["aviso"] = Social.TamanhoAviso.DaMensagemGlobal(x.Tipo, x.Mortos.Count) };   // "tamanho" é nome proibido no feed (tamanho de marcha)
                 if (x.Hex is int h) o["hex"] = h;
                 if (x.Mortos.Count > 0)
                 {

@@ -30,6 +30,8 @@ namespace ReinoDePedra.Jogo.Social
         public string? Link { get; set; }
         public long Quando { get; set; }
         public bool Lida { get; set; }
+        /// <summary>"grande" ou "pequeno" (ver <see cref="TamanhoAviso"/>); vazio nas notificações antigas: vale o padrão da categoria.</summary>
+        public string? Tamanho { get; set; }
     }
 
     public static class Registros
@@ -45,24 +47,26 @@ namespace ReinoDePedra.Jogo.Social
             ["reino"] = "Reino (população, escudo, regência)", ["temporada"] = "Temporada e legado",
         };
 
-        public static Relatorio Relatar(Mundo m, long reinoId, string tipo, string titulo, JsonObject? dados = null, string? categoria = null, string? notificacao = null)
+        public static Relatorio Relatar(Mundo m, long reinoId, string tipo, string titulo, JsonObject? dados = null, string? categoria = null, string? notificacao = null, string? tamanho = null)
         {
             var r = m.Relatorios.Adicionar(new Relatorio { ReinoId = reinoId, Tipo = tipo, Titulo = titulo, Quando = m.Agora, Dados = dados ?? new() });
             Podar(m, m.Relatorios.Where(x => x.ReinoId == reinoId), MaxRelatorios, d => m.Relatorios.Remover(d.Id));
             m.Avisar(reinoId, "relatorio", new { id = r.Id, tipo, titulo });
-            if (categoria != null) Notificar(m, reinoId, categoria, notificacao ?? titulo, null, "relatorio?id=" + r.Id);
+            if (categoria != null) Notificar(m, reinoId, categoria, notificacao ?? titulo, null, "relatorio?id=" + r.Id, tamanho);
             return r;
         }
 
-        public static Notificacao? Notificar(Mundo m, long reinoId, string categoria, string titulo, string? texto = null, string? link = null)
+        /// <param name="tamanho">"grande" ou "pequeno" quando a notícia foge do padrão da categoria (ver <see cref="TamanhoAviso"/>).</param>
+        public static Notificacao? Notificar(Mundo m, long reinoId, string categoria, string titulo, string? texto = null, string? link = null, string? tamanho = null)
         {
             var reino = m.Reinos.Obter(reinoId);
             if (reino == null) return null;
-            var n = m.Notificacoes.Adicionar(new Notificacao { ReinoId = reinoId, Categoria = categoria, Titulo = titulo, Texto = texto, Link = link, Quando = m.Agora });
+            var tam = TamanhoAviso.Valido(tamanho) ? tamanho! : TamanhoAviso.DaCategoria(categoria);
+            var n = m.Notificacoes.Adicionar(new Notificacao { ReinoId = reinoId, Categoria = categoria, Titulo = titulo, Texto = texto, Link = link, Quando = m.Agora, Tamanho = tam });
             Podar(m, m.Notificacoes.Where(x => x.ReinoId == reinoId), MaxNotificacoes, d => m.Notificacoes.Remover(d.Id));
             // a preferência decide se o aviso "toca" (push/aviso do navegador); a notificação fica na lista de qualquer jeito
             var ligada = !reino.NotificacoesDesligadas.Contains(categoria);
-            m.Avisar(reinoId, "notificacao", new { id = n.Id, categoria, titulo, texto, link, tocar = ligada });
+            m.Avisar(reinoId, "notificacao", new { id = n.Id, categoria, titulo, texto, link, tocar = ligada, tamanho = tam, prioridade = TamanhoAviso.Prioridade(n) });
             return n;
         }
 

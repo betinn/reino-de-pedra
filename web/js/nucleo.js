@@ -173,13 +173,25 @@
   };
 
   /* ---------------------------------------------------------------- avisos: anúncio no centro da tela, um pouco acima do meio
-     RP.aviso({ titulo, texto, icone, tipo, link, ms, anuncio, descartavel })
-     anuncio: o que aconteceu (ataque, batalha, notificação): grande, um por vez, numa fila, sem um cobrir o outro. Com o
-     tipo 'perigo', vem na frente dos outros. descartavel: pode sair da fila se ela encher (mensagens do mundo).
+     RP.aviso({ titulo, texto, icone, tipo, link, ms, anuncio, pequeno, prioridade, descartavel })
+     anuncio: o que aconteceu, um por vez, numa fila, sem um cobrir o outro, em dois tamanhos no mesmo lugar:
+       grande (padrão): ataque, batalha, captura, castelo caído, morte, mensagem global importante;
+       pequeno: a notícia do dia a dia (obra pronta, treino pronto, explorador no destino, carga entregue): menor, mais
+       discreto e mais curto.
+     Ordem na fila: perigo (prioridade 0), depois os grandes (1), depois os pequenos (2); empate, quem chegou antes. O
+     servidor manda tamanho e prioridade de cada notificação; sem eles, valem tipo e pequeno.
+     descartavel: pode sair da fila se ela encher (mensagens do mundo).
      Sem anuncio: resposta a um gesto (confirmação, erro, dica): menor, logo abaixo, na hora; o novo troca o anterior.
      Nada aqui pega o clique do mapa, a não ser o aviso com link. */
-  var FILA_ANUNCIOS = 5, MS_ANUNCIO = 5200, MS_ANUNCIO_COM_FILA = 3400;
+  var FILA_ANUNCIOS = 6, MS_ANUNCIO = 5200, MS_ANUNCIO_COM_FILA = 3400, MS_PEQUENO = 3200, MS_PEQUENO_COM_FILA = 2000;
   var filaAnuncios = [], anuncioAtual = null, vagaGesto = null;
+  function prioridadeAviso(o) { return o.prioridade != null ? o.prioridade : o.tipo === 'perigo' ? 0 : o.pequeno ? 2 : 1; }
+  /* onde um anúncio entra na fila: depois de todos os de prioridade igual ou mais urgente */
+  RP.posicaoNaFila = function (fila, o) {
+    var p = prioridadeAviso(o), i = 0;
+    while (i < fila.length && prioridadeAviso(fila[i]) <= p) i++;
+    return i;
+  };
   function caixaAvisos(cls) {
     var box = RP.$('#avisos .' + cls);
     if (box) return box;
@@ -189,7 +201,7 @@
   }
   function montarAviso(o) {
     var el = document.createElement('div');
-    el.className = 'aviso aviso-' + (o.tipo || 'info') + (o.anuncio ? ' aviso-anuncio' : '') + (o.link ? ' aviso-link' : '');
+    el.className = 'aviso aviso-' + (o.tipo || 'info') + (o.anuncio ? ' aviso-anuncio' + (o.pequeno ? ' aviso-pequeno' : '') : '') + (o.link ? ' aviso-link' : '');
     el.setAttribute('role', o.tipo === 'perigo' ? 'alert' : 'status');
     el.innerHTML = '<span class="aviso-ico">' + RP.icone(o.icone || 'info', '', '') + '</span><div class="aviso-txt"><b>' + RP.esc(o.titulo) + '</b>' + (o.texto ? '<span>' + RP.esc(o.texto) + '</span>' : '') +
       (o.link ? '<small class="aviso-abrir">Clique para abrir</small>' : '') + '</div>';
@@ -208,20 +220,18 @@
     if (o.link) el.addEventListener('click', function () { RP.ir(o.link); sair(); });
     caixaAvisos('avisos-anuncio').appendChild(el);
     o._el = el;
-    setTimeout(sair, o.ms || (filaAnuncios.length ? MS_ANUNCIO_COM_FILA : MS_ANUNCIO));
+    setTimeout(sair, o.ms || (o.pequeno ? (filaAnuncios.length ? MS_PEQUENO_COM_FILA : MS_PEQUENO) : (filaAnuncios.length ? MS_ANUNCIO_COM_FILA : MS_ANUNCIO)));
   }
   RP.aviso = function (o) {
     if (o.anuncio) {
       var igual = function (x) { return x && x.titulo === o.titulo && x.texto === o.texto; };
       if (igual(anuncioAtual) || filaAnuncios.some(igual)) return;
-      if (o.tipo === 'perigo') {
-        var i = 0;
-        while (i < filaAnuncios.length && filaAnuncios[i].tipo === 'perigo') i++;
-        filaAnuncios.splice(i, 0, o);
-      } else filaAnuncios.push(o);
+      filaAnuncios.splice(RP.posicaoNaFila(filaAnuncios, o), 0, o);
+      /* fila cheia: sai primeiro o que é descartável, depois o menos urgente (o último pequeno) */
       while (filaAnuncios.length > FILA_ANUNCIOS) {
-        var k = filaAnuncios.findIndex(function (x) { return x.descartavel; });
-        filaAnuncios.splice(k >= 0 ? k : 0, 1);
+        var k = -1, j;
+        for (j = filaAnuncios.length - 1; j >= 0; j--) if (filaAnuncios[j].descartavel) { k = j; break; }
+        filaAnuncios.splice(k >= 0 ? k : filaAnuncios.length - 1, 1);
       }
       if (!anuncioAtual) proximoAnuncio();
       return;

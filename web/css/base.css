@@ -393,7 +393,16 @@ a { color: var(--cor-info); }
 .aviso-anuncio .aviso-txt > span { margin-top: 6px; font-size: clamp(17px, 1.6vw, 22px); }
 .aviso-anuncio.aviso-perigo b { color: #ff8d84; }
 .aviso-anuncio.aviso-perigo { background: linear-gradient(90deg, transparent, rgba(46, 8, 8, .92) 16%, rgba(46, 8, 8, .92) 84%, transparent); }
+/* anúncio pequeno: a notícia do dia a dia, no mesmo lugar, menor e mais discreta que o anúncio grande */
+.aviso-anuncio.aviso-pequeno { width: min(680px, 100%); padding: 7px clamp(40px, 8vw, 110px); gap: var(--esp-3); background: linear-gradient(90deg, transparent, rgba(8, 9, 12, .78) 18%, rgba(8, 9, 12, .78) 82%, transparent); }
+.aviso-anuncio.aviso-pequeno::before, .aviso-anuncio.aviso-pequeno::after { height: 1px; opacity: .7; }
+.aviso-anuncio.aviso-pequeno .aviso-ico .ico { width: 22px; height: 22px; }
+.aviso-anuncio.aviso-pequeno b { font-family: inherit; font-size: 18px; font-weight: 600; letter-spacing: 0; }
+.aviso-anuncio.aviso-pequeno .aviso-txt > span { margin-top: 1px; font-size: 14px; color: #d9d2c4; }
+.aviso-anuncio.aviso-pequeno .aviso-abrir { display: none; }
+.aviso-anuncio.aviso-pequeno { animation-name: aviso-entra-pequeno; }
 .aviso.sai { animation: aviso-sai .22s ease-in forwards; }
+@keyframes aviso-entra-pequeno { from { transform: translateY(6px); opacity: 0; } }
 @keyframes aviso-entra { from { transform: scale(1.14); opacity: 0; } }
 @keyframes aviso-sai { to { transform: translateY(-10px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .aviso, .aviso.sai { animation-duration: .01s; } }

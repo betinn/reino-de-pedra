@@ -323,7 +323,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             if (a.Acabou) mc.Encerrar(m);
             else if (exp != null && morreuExplorador) Exploradores.IrParaCasa(m, exp);
             if (r != null)
-                Registros.Relatar(m, r.Id, "fauna", titulo, new JsonObject { ["resumo"] = resumo, ["linhas"] = linhas, ["hex"] = hex }, "exploracao");
+                Registros.Relatar(m, r.Id, "fauna", titulo, new JsonObject { ["resumo"] = resumo, ["linhas"] = linhas, ["hex"] = hex }, "exploracao", tamanho: a.Mortos.Count > 0 ? TamanhoAviso.Grande : null);
             m.Avisar(mc.ReinoId, "reino");
             m.Avisar(mc.ReinoId, "mapa");
         }
