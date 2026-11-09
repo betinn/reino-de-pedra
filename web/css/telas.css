@@ -233,6 +233,9 @@ html.tela-fixa, html.tela-fixa body { overflow: hidden; height: 100%; overscroll
 .mc-eta rect { fill: var(--ent-fundo); stroke: var(--dono); stroke-width: 1.5; }
 .hostil .mc-eta rect { stroke: var(--cor-perigo); }
 .mc-eta text { fill: var(--ent-texto); font: 700 12px var(--fonte-texto); text-anchor: middle; font-variant-numeric: tabular-nums; }
+.mc-eta .mc-barra rect { stroke: none; }
+.mc-eta .mc-barra-fundo { fill: rgba(255, 255, 255, .25); }
+.mc-eta .mc-barra-i { fill: #6fbf73; }
 
 /* níveis de zoom */
 [data-zoom="zoom-perto"] .ent-rotulo { display: block; }

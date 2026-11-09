@@ -106,8 +106,12 @@
   ];
   RP.ORDENS_NOMES = { mover: 'Mover', reforcar: 'Reforçar', retornar: 'Voltar', percorrer: 'Percurso', patrulhar: 'Patrulha', juntar: 'Indo se juntar' };
 
+  /* o que um exército faz parado (e.trabalho, vem do servidor) */
+  RP.NOMES_TRABALHO = { caca: 'Caçando', escavacao: 'Escavando', extracao: 'Extraindo', coleta: 'Coletando' };
+  RP.nomeTrabalho = function (t) { return (t && RP.NOMES_TRABALHO[t.tipo]) || 'Trabalhando'; };
   /* exército em campo: título curto e linha de estado */
   RP.tituloExercito = function (e) {
+    if (e.estado === 'trabalhando') return RP.nomeTrabalho(e.trabalho);
     if (e.estado === 'retornando') return 'Voltando' + (e.alvo ? ' a ' + e.alvo : '');
     if (e.estado === 'parado') return 'Tropas em campo';
     if (e.ordem === 'reforcar') return 'Reforço: ' + (e.alvo || 'local');
@@ -117,6 +121,7 @@
   RP.estadoExercito = function (e) {
     var onde = e.alvo ? e.alvo : 'hexágono ' + e.destinoC + ', ' + e.destinoL;
     if (e.estado === 'parado') return 'parado em ' + onde;
+    if (e.estado === 'trabalhando') return RP.nomeTrabalho(e.trabalho).toLowerCase() + (e.trabalho && e.trabalho.fim ? ' · termina ' + RP.fmtEm(e.trabalho.fim) : '') + ' · ' + onde;
     return (e.estado === 'retornando' ? 'volta ' : 'chega ') + RP.fmtEm(e.chegada) + ' · ' + onde;
   };
   RP.exercito = function (id) { return RP.tropas && RP.tropas.exercitos.filter(function (e) { return e.id === id; })[0]; };
@@ -129,8 +134,8 @@
       var corpo = '<div class="info">' +
         '<div class="info-linha"><span class="fraco">Tropas</span><span>' + RP.selosGrupo(e.tropas) + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Ordem</span><span>' + RP.esc(RP.ORDENS_NOMES[e.ordem] || e.ordem) + '</span></div>' +
-        '<div class="info-linha"><span class="fraco">' + (e.estado === 'parado' ? 'Onde' : e.estado === 'retornando' ? 'Chega em casa' : 'Chegada') + '</span><span>' + (e.estado === 'parado' ? (e.alvo || 'hexágono ' + e.destinoC + ', ' + e.destinoL) : RP.barraTempo(e.partida, e.chegada, { rotulo: e.estado === 'retornando' ? 'Volta para casa' : 'Marcha até o destino' }) + (e.alvo ? ' · ' + RP.esc(e.alvo) : '')) + '</span></div>' +
-        (e.trabalho ? '<div class="info-linha"><span class="fraco">' + (e.trabalho.tipo === 'caca' ? 'Caçando' : e.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo') + '</span><span>' + (e.trabalho.coletado && RP.cargaUsada(e.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(e.trabalho.coletado)) : 'começando') + (e.trabalho.destino ? ' · leva para ' + RP.esc(e.trabalho.destino) : '') + '</span></div>' +
+        '<div class="info-linha"><span class="fraco">' + (e.estado === 'parado' || e.estado === 'trabalhando' ? 'Onde' : e.estado === 'retornando' ? 'Chega em casa' : 'Chegada') + '</span><span>' + (e.estado === 'parado' || e.estado === 'trabalhando' ? (e.alvo || 'hexágono ' + e.destinoC + ', ' + e.destinoL) : RP.barraTempo(e.partida, e.chegada, { rotulo: e.estado === 'retornando' ? 'Volta para casa' : 'Marcha até o destino' }) + (e.alvo ? ' · ' + RP.esc(e.alvo) : '')) + '</span></div>' +
+        (e.trabalho ? '<div class="info-linha"><span class="fraco">' + RP.nomeTrabalho(e.trabalho) + '</span><span>' + (e.trabalho.coletado && RP.cargaUsada(e.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(e.trabalho.coletado)) : 'começando') + (e.trabalho.destino ? ' · leva para ' + RP.esc(e.trabalho.destino) : '') + '</span></div>' +
           (e.trabalho.fim ? '<div class="info-linha info-tempo"><span class="fraco">' + (e.trabalho.tipo === 'extracao' ? 'Carga cheia' : 'Termina') + '</span><span>' + RP.barraTempo(e.trabalho.inicio, e.trabalho.fim, { cor: 'sucesso', rotulo: 'Trabalho' }) + '</span></div>' : '') : '') +
         '<div class="info-linha"><span class="fraco">Saíram de</span><span>' + RP.esc(e.origem || '—') + '</span></div>' +
         '<div class="info-linha"><span class="fraco">Velocidade</span><span>' + RP.esc(RP.VELOCIDADES[e.vel] || e.vel) + (e.seguro ? ' · rota segura' : ' · rota curta') + '</span></div>' +

@@ -159,7 +159,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - O grupo extrai até a carga encher (ou a jazida acabar), leva ao armazém ou castelo mais próximo e, se pedido, volta. Grupos na mesma jazida dividem o que resta. Nova ordem interrompe e leva o que já tirou.
 - O posto vira um local do reino no hexágono da jazida ou ruína; enquanto existir, outro reino não extrai nem escava ali.
 - **A ordem sai pelo painel da base**, igual ao "Enviar tropas para cá": escolher Extrair ou Escavar já abre com de onde saem e quantas vão, e Enter envia. Repetir, posto e o destino da relíquia ficam no mesmo painel. Sem tropa disponível, o painel diz isso e oferece recrutar. Quem já está parado na jazida ou na ruína (ou guarnece o posto) recebe a ordem ali mesmo.
-- Ruína fora da área explorada não se escava: o painel manda as tropas até lá, para revelar a área, e a ordem se dá ao chegar.
+- Ruína fora da área explorada também se escava: a marcha revela a névoa no caminho e o grupo começa ao chegar, sem nova ordem. Se ainda há relíquia só se sabe indo ver: esgotada ou tomada, as tropas voltam e o relatório diz por quê.
+- Quem foi mandado escavar ou extrair trabalha ao chegar, mesmo com o jogador offline. No mapa, na folha e no painel de seleção, o rótulo diz "Escavando" ou "Extraindo", com barra e cronômetro; "parado" é só quem está parado de verdade. Tropa parada na ruína ou na jazida recebe a ordem na hora: botão direito nela ou o botão Escavar/Extrair.
 
 ### Coleta de madeira e pedra
 

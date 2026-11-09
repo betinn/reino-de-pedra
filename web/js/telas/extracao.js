@@ -89,7 +89,7 @@
       RP.aviso({ titulo: 'Posto não construído', texto: er.message, icone: 'alerta', tipo: 'alerta' }); return '';
     });
   }
-  /* ruína é pública, mas só se escava em área explorada: as tropas vão, revelam a área e a ordem se dá ao chegar */
+  /* ruína é pública: fora da área explorada as tropas vão revelando o caminho e escavam ao chegar (a ordem fica no servidor) */
   function ruinaFechada(h) { return !!RP.mapaModelo.estado(h).nunca; }
   function previaGrupo(e, g) { return RP.post('/extracao/previa', { deLocalId: e.de, tropas: g, hex: e.hex }); }
 
@@ -129,13 +129,14 @@
     titulo: function () { return 'Escavar a ruína'; },
     subtitulo: subtituloHex,
     preparar: function (e) { e.opcoes = { posto: false, destino: RP.reino.casteloId }; return carregar().catch(function () { /* o painel abre mesmo assim */ }); },
-    antesDeIr: function (h) { return ruinaFechada(h) ? 'Esta ruína fica fora da área explorada: só dá para escavar depois de ver o lugar. As tropas vão até lá, revelam a área e, ao chegarem, você dá a ordem de escavar.' : null; },
     opcoes: function (e) {
       var r = ruinaDados(e.hex), locais = ((RP.reino && RP.reino.locais) || []).filter(function (l) { return !l.ruina; })
         .sort(function (a, b) { return (a.id === e.opcoes.destino ? -1 : b.id === e.opcoes.destino ? 1 : 0) || RP.hex.dist(a.hex, e.hex) - RP.hex.dist(b.hex, e.hex); }).slice(0, 5);
       return '<div class="envio-opcoes">' + (locais.length > 1 ? '<span class="envio-opcoes-rotulo">Ao achar, a relíquia vai para</span><div class="abas abas-rolagem" role="group" aria-label="Para onde vai a relíquia">' + locais.map(function (l) {
         return '<button type="button" class="aba" data-painel-destino="' + l.id + '" aria-pressed="' + (l.id === e.opcoes.destino) + '">' + RP.esc(l.nome) + '</button>';
-      }).join('') + '</div>' : '') + botaoPosto(e, r && r.posto, 'escavação') + '</div>';
+      }).join('') + '</div>' : '') + (ruinaFechada(e.hex)
+        ? '<p class="nota-regra envio-antes">' + RP.icone('nevoa', 'ico-p') + '<span>Esta ruína fica fora da área explorada. As tropas revelam o caminho e escavam ao chegar; se não houver mais relíquia, voltam e o relatório diz por quê.</span></p>'
+        : botaoPosto(e, r && r.posto, 'escavação')) + '</div>';
     },
     resumo: function (e, g) {
       if (e.marchaId) return Promise.resolve('<p class="fraco">Escavam até achar a relíquia; mais tropas e posto encurtam.</p>');
@@ -168,7 +169,7 @@
     ordem: 'escavar', rotulo: 'Escavar a ruína', verbo: 'Escavar', icone: 'picareta', titulo: 'Escavar', painel: PAINEL_ESCAVAR,
     descricao: function () { return '<div class="info-linha"><span class="fraco">Ordem</span><span>Escavam até achar a relíquia e a levam ao castelo</span></div>'; },
     dados: function (h, d, e) { return { destinoLocalId: (e && e.opcoes && e.opcoes.destino) || RP.reino.casteloId }; },
-    quando: function (h, d) { return !!ruinaEm(h, d) && !ruinaFechada(h); }
+    quando: function (h, d) { return !!ruinaEm(h, d); }
   });
   /* na folha da jazida ou da ruína (tocada no mapa): abre o painel com as tropas */
   function acaoObjeto(tipo, rotulo, ordem, ok) {
@@ -180,6 +181,10 @@
   acaoObjeto('jazida', 'Extrair', 'extrair', function (o) { return o.restante > 0; });
   acaoObjeto('ruina-antiga', 'Escavar', 'escavar', function (o) { return !o.esgotada; });
 
+  RP.ORDENS_NOMES = RP.ORDENS_NOMES || {};
+  RP.ORDENS_NOMES.escavar = 'Escavar';
+  RP.ORDENS_NOMES.extrair = 'Extrair';
+  RP.ORDENS_NOMES.entregar = 'Levar a carga';
   RP.acoesTropas.push({ href: '#/extracao', icone: 'picareta', titulo: 'Extração', texto: 'Jazidas descobertas e ruínas antigas' });
   RP.itensMais.push({ icone: 'picareta', titulo: 'Extração', texto: 'Jazidas descobertas e ruínas antigas, com quem está trabalhando nelas', href: '#/extracao' });
   RP.FILTROS_RELATORIO.push(['extracao', 'Extração']);

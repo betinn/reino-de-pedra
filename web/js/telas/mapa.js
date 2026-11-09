@@ -227,16 +227,16 @@
     var ag = RP.agora(), pos = M.posMarcha(o, ag), cheg = M.chegada(o), def = MAPA.tiposMarcha[o.marcha] || {};
     var ex = o.marcha === 'exercito' ? RP.exercito(o.id) : null, d = ex || o;
     var nome = def.nome || NOME_MARCHA[o.marcha] || 'Sua marcha';
-    var estado = d.estado || (cheg && cheg > ag ? 'marchando' : 'parado');
+    var estado = o.estado || d.estado || (cheg && cheg > ag ? 'marchando' : 'parado'), trab = o.estado ? o.trabalho : d.trabalho;   /* o mapa é o mais recente */
     var destino = d.alvo || (o.caminho && o.caminho.length ? nomeDestino(o.caminho[o.caminho.length - 1]) : null);
     var tropas = d.tropas && RP.somaGrupo(d.tropas) ? RP.selosGrupo(d.tropas) : (o.pessoas ? o.pessoas + ' pessoas' : (d.resumo ? RP.esc(d.resumo) : ''));
     var corpo = '<div class="info">' +
       (tropas ? linhaInfo('Quem', tropas) : '') +
-      linhaInfo('Estado', (ESTADO_MARCHA[estado] || estado) + (d.ordem && d.ordem !== 'mover' && d.ordem !== 'retornar' && RP.ORDENS_NOMES && RP.ORDENS_NOMES[d.ordem] ? ' · ' + RP.esc(RP.ORDENS_NOMES[d.ordem].toLowerCase()) : '')) +
+      linhaInfo('Estado', estado === 'trabalhando' && trab ? RP.nomeTrabalho(trab) : (ESTADO_MARCHA[estado] || estado) + (d.ordem && d.ordem !== 'mover' && d.ordem !== 'retornar' && RP.ORDENS_NOMES && RP.ORDENS_NOMES[d.ordem] ? ' · ' + RP.esc(RP.ORDENS_NOMES[d.ordem].toLowerCase()) : '')) +
       (destino ? linhaInfo(estado === 'retornando' ? 'Volta para' : 'Destino', RP.esc(destino)) : '') +
       (cheg && cheg > ag ? linhaInfo(estado === 'retornando' ? 'Chega em casa' : 'Chegada', RP.barraTempo(o.tempos && o.tempos[0], cheg, { rotulo: estado === 'retornando' ? 'Volta para casa' : 'Marcha até o destino' })) : '') +
-      (d.trabalho ? linhaInfo(d.trabalho.tipo === 'caca' ? 'Caçando' : d.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo', (d.trabalho.coletado && RP.cargaUsada(d.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(d.trabalho.coletado)) : 'começando') + (d.trabalho.destino ? ' · leva para ' + RP.esc(d.trabalho.destino) : '')) +
-        (d.trabalho.fim ? linhaInfo(d.trabalho.tipo === 'extracao' ? 'Carga cheia' : 'Termina', RP.barraTempo(d.trabalho.inicio, d.trabalho.fim, { cor: 'sucesso', rotulo: 'Trabalho' })) : '') : '') +
+      (trab ? (trab.tipo === 'escavacao' ? linhaInfo('A relíquia vai para', RP.esc(trab.destino || 'o castelo')) : linhaInfo('Trabalho', (trab.coletado && RP.cargaUsada(trab.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(trab.coletado)) : 'começando') + (trab.destino ? ' · leva para ' + RP.esc(trab.destino) : ''))) +
+        (trab.fim ? linhaInfo(trab.tipo === 'extracao' ? 'Carga cheia' : 'Termina', RP.barraTempo(trab.inicio, trab.fim, { cor: 'sucesso', rotulo: 'Trabalho' })) : '') : '') +
       '</div>' +
       (d.cargaMax != null || (d.carga && RP.cargaUsada(d.carga)) ? '<div style="margin-top:var(--esp-3)">' + RP.cargaHTML(d.carga, d.cargaMax) + '</div>' : '') +
       (d.bloqueio ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p') + RP.esc(d.bloqueio) + '</p>' : '');
@@ -246,7 +246,9 @@
         (estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-marcha-voltar-exp="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '');
     } else if (o.marcha === 'exercito' || ex) {
       var pode = !d.bloqueio && d.podeOrdem !== false, divide = pode && estado !== 'trabalhando' && RP.somaGrupo(d.tropas || {}) > 1;
-      acoes = (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
+      var aqui = pode && estado === 'parado' && RP.envio.trabalhoAqui(pos.hex);   /* parada na ruína ou na jazida: trabalhar é a ordem à mão */
+      acoes = (aqui ? '<button type="button" class="btn btn-p btn-primario" data-tropa-trabalhar="' + o.id + '" data-hex="' + pos.hex + '">' + RP.icone(aqui.icone) + RP.esc(aqui.verbo) + '</button>' : '') +
+        (pode ? '<button type="button" class="btn btn-p' + (aqui ? '' : ' btn-primario') + '" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
         (pode ? '<button type="button" class="btn btn-p" data-tropa-patrulhar="' + o.id + '" data-tecla="Q">' + RP.icone('rota') + 'Patrulhar</button>' : '') +
         (pode && estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
         (pode && estado !== 'parado' ? '<button type="button" class="btn btn-p" data-exercito-parar="' + o.id + '" data-hex="' + pos.hex + '" data-tecla="H">' + RP.icone('alvo') + 'Parar aqui</button>' : '') +

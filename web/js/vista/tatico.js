@@ -444,14 +444,21 @@
     return '<g class="ent obj-' + String(o.tipo).replace(/[^a-z0-9-]/gi, '') + extra + (info.antigo ? ' antigo' : '') + '" data-k="' + o._k + '"' + (tipo && tipo.pos ? ' data-movel="' + o._k + '"' : '') + ' transform="translate(' + n1(p.x) + ' ' + n1(p.y) + ')">' +
       '<circle class="ponto" r="5"/><g class="ent-k"><circle class="alvo-toque" r="22"/>' + dentro + '</g></g>';
   }
+  /* quem trabalha parado: o que faz, quanto falta e a barra (o tique de 1 s de nucleo.js anda os dois) */
+  function pilulaTrabalho(t, agora) {
+    var nome = RP.nomeTrabalho(t), resta = t.fim ? RP.fmtResta(t.fim - agora) : '', w = (nome.length + resta.length + 1) * 6.6 + 18, w2 = n1(w / 2);
+    var pct = t.inicio && t.fim ? Math.max(0, Math.min(100, 100 * (agora - t.inicio) / Math.max(1, t.fim - t.inicio))) : null;
+    return '<g class="mc-eta mc-trabalho" transform="translate(0 30)"><rect x="-' + w2 + '" y="-10" width="' + n1(w) + '" height="' + (pct != null ? 24 : 20) + '" rx="8"/><text y="4.5">' + RP.esc(nome) + (t.fim ? ' <tspan data-fim="' + t.fim + '">' + resta + '</tspan>' : '') + '</text>' +
+      (pct != null ? '<svg class="mc-barra" x="-' + n1(w / 2 - 6) + '" y="8" width="' + n1(w - 12) + '" height="3"><rect class="mc-barra-fundo" width="100%" height="3"/><rect class="mc-barra-i" height="3" data-ini="' + t.inicio + '" data-barra-fim="' + t.fim + '" style="width:' + pct.toFixed(1) + '%"/></svg>' : '') + '</g>';
+  }
   /* a marcha é gente em pé, andando (vista/marchas.js); o disco fica para os locais. Cada reino na cor dele. */
   function svgMarcha(o, pos, agora) {
     var mm = RP.marchasMapa, cheg = M.chegadaConhecida(o), anda = mm.andando(o, agora, performance.now());
-    var cor = RP.arte.corDono(o.dono, o), fase = -((o.id || 0) % 7) * 0.07;
+    var cor = RP.arte.corDono(o.dono, o), fase = -((o.id || 0) % 7) * 0.07, trab = o.dono === 'meu' && o.estado === 'trabalhando' ? o.trabalho : null;
     return '<g class="ent marcha ' + classeDono(o.dono) + ' mcf-' + mm.figuraDe(o) + (mm.ehExplorador(o) ? ' explorador' : '') + (anda ? '' : ' parada') + '" data-k="' + o._k + '" data-marcha="' + o._k + '" style="--dono:' + RP.esc(cor) + ';--mc-fase:' + fase.toFixed(2) + 's" transform="translate(' + n1(pos.x) + ' ' + n1(pos.y) + ')">' +
       '<g class="ent-k"><circle class="alvo-toque" r="24"/>' + mm.svgMarcador(o, anda, pos.ang) +
       (o.reliquia ? '<g class="relq-badge tipo-' + (o.reliquia.tipo || 'desconhecido') + '" transform="translate(-16 2)"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>' : '') +
-      (cheg && cheg > agora ? '<g class="mc-eta" transform="translate(0 30)"><rect x="-26" y="-10" width="52" height="20" rx="10"/><text y="4.5" data-fim="' + cheg + '">' + RP.fmtResta(cheg - agora) + '</text></g>' : '') +
+      (trab ? pilulaTrabalho(trab, agora) : cheg && cheg > agora ? '<g class="mc-eta" transform="translate(0 30)"><rect x="-26" y="-10" width="52" height="20" rx="10"/><text y="4.5" data-fim="' + cheg + '">' + RP.fmtResta(cheg - agora) + '</text></g>' : '') +
       '</g></g>';
   }
 
