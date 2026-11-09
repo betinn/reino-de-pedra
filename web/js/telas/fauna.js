@@ -173,7 +173,7 @@
       if (b.classList.contains('btn-inativo')) return;
       RP.tentar(RP.post('/rotas', { hex: +b.getAttribute('data-rota-confirmar') })).then(function (it) {
         RP.fecharFolha();
-        RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: it.materialCompleto ? '' : 'Os carregadores levam o material até lá.', icone: 'rota', tipo: 'sucesso' });
+        RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoMaterial(it, 'Os carregadores levam o material até lá.'), icone: 'rota', tipo: 'sucesso' });
         RP.recarregarReino(); if (RP.mapa.recarregar) RP.mapa.recarregar();
       });
     }

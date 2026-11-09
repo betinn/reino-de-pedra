@@ -96,6 +96,11 @@ public sealed class Cliente : IDisposable
         var r = await Http.GetAsync(url);
         return (r.StatusCode, await Ler(r));
     }
+    public async Task<(HttpStatusCode status, JsonElement corpo)> Del(string url)
+    {
+        var r = await Http.DeleteAsync(url);
+        return (r.StatusCode, await Ler(r));
+    }
     private static async Task<JsonElement> Ler(HttpResponseMessage r)
     {
         var s = await r.Content.ReadAsStringAsync();

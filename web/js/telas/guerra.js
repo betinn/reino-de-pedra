@@ -50,7 +50,7 @@
   function feridosHTML() {
     var f = feridos;
     if (!f || (!f.total && !f.emCura)) return '';
-    var n = f.total, podem = f.podem, por = f.porFerido, cur = (f.cura || []);
+    var n = f.total, podem = f.podem, por = f.porFerido, cur = (f.cura || []), semFila = f.semFila === undefined ? n : f.semFila;
     var menor = f.lotes.length ? Math.min.apply(null, f.lotes.map(function (l) { return l.morreEm; })) : 0;
     return '<div class="card pilha feridos-card"><div class="card-titulo" style="margin:0">' + RP.icone('ferido', 'r-ervas') + '<h3>Feridos</h3>' + (n ? '<span class="selo selo-perigo">' + n + '</span>' : '') + '</div>' +
       (n ? '<div class="lista">' + f.lotes.map(function (l) {
@@ -60,7 +60,10 @@
       }).join('') + '</div>' +
         '<p class="fraco" style="font-size:var(--fs-2)">' + Math.round(f.frac * 100) + '% das baixas de quem vence, ou recua pela tática, voltam feridos. Cada um é curado no castelo com ' + por + ' ervas raras em ' + RP.fmtDuracao(f.curaSeg).trim() +
         '. Ervas no reino: <b>' + RP.num(f.ervas) + '</b>' + (podem < n ? ', dá para ' + podem + ' de ' + n + '.' : '.') + '</p>' +
-        '<button type="button" class="btn btn-p btn-primario' + (podem ? '' : ' btn-inativo') + '" data-curar>' + RP.icone('ervas') + 'Curar ' + (podem || '') + (podem === 1 ? ' ferido' : ' feridos') + ' · ' + RP.num(podem * por) + ' ervas</button>' +
+        (semFila ? '<button type="button" class="btn btn-p btn-primario" data-curar>' + RP.icone('ervas') + (podem
+          ? 'Curar ' + podem + (podem === 1 ? ' ferido' : ' feridos') + ' · ' + RP.num(podem * por) + ' ervas'
+          : 'Curar ' + semFila + (semFila === 1 ? ' ferido' : ' feridos') + ' · aguardar ' + RP.num(semFila * por) + ' ervas') + '</button>' +
+          (podem ? '' : '<p class="fraco" style="font-size:var(--fs-2)">Entra na fila e começa sozinho quando houver ervas. O prazo dos feridos continua correndo até lá.</p>') : '') +
         (menor && menor - RP.agora() < 6 * 3600000 ? '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + '<span>O primeiro grupo morre em ' + RP.fmtResta(menor - RP.agora()) + '.</span></p>' : '') : '') +
       cur.map(function (i) { i.fila = 'cura'; return RP.itemFilaServidor(i); }).join('') + '</div>';
   }
@@ -92,12 +95,10 @@
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-curar]');
     if (!b) return;
-    if (!feridos || !feridos.podem) {
-      RP.aviso({ titulo: 'Sem ervas raras', texto: 'Cada ferido pede ' + ((feridos && feridos.porFerido) || 5) + ' ervas. Extraia ervas no pântano ou troque com outro reino.', icone: 'ervas', tipo: 'alerta' });
-      return;
-    }
     RP.tentar(RP.post('/feridos/curar', {})).then(function (it) {
-      RP.aviso({ titulo: 'Cura na fila', texto: RP.num(it.custo.ervas) + ' ervas ' + (it.materialCompleto ? 'no castelo' : 'a caminho do castelo') + '. Os curados voltam à guarnição em ' + RP.fmtDuracao(it.duracao) + '.', icone: 'ervas', tipo: 'sucesso' });
+      RP.aviso({ titulo: 'Cura na fila', texto: it.aguardando
+        ? 'Aguarda ' + RP.num(it.custo.ervas) + ' ervas: começa sozinha quando houver. O prazo dos feridos continua correndo. Extraia ervas no pântano ou troque com outro reino.'
+        : RP.num(it.custo.ervas) + ' ervas ' + (it.materialCompleto ? 'no castelo' : 'a caminho do castelo') + '. Os curados voltam à guarnição em ' + RP.fmtDuracao(it.duracao) + '.', icone: 'ervas', tipo: it.aguardando ? 'alerta' : 'sucesso' });
       chaveF = ''; RP.recarregarReino(); buscarFeridos();
     });
   });

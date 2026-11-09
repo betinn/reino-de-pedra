@@ -243,11 +243,14 @@ public class FerrariaTestes
         Assert.Equal(Ferrarias.Defesa, eq.Tipo);
         Assert.Equal(f.Id, eq.LocalId);
         Assert.NotNull(Ferrarias.MotivoLendario(m, r));
-        // sem minério raro, não entra na fila
+        // sem minério raro, espera na fila sem gastar nada; cancelar devolve a vaga do reino
         var (t2, r2) = Reino(ferraria: 8);
         r2.Eras["aco"] = t2.M.Agora;
         foreach (var l in t2.M.LocaisDe(r2.Id)) l.Estoque.Remove("minerio");
-        Assert.Contains("minério raro", Assert.Throws<RegraException>(() => Ferrarias.ForjarLendario(t2.M, r2, Ferrarias.Ataque)).Message);
+        var parado = Ferrarias.ForjarLendario(t2.M, r2, Ferrarias.Ataque);
+        Assert.True(parado.Aguardando);
+        Assert.Equal(1, r2.LendariosForjados);
+        Filas.Cancelar(t2.M, r2, Ferrarias.Fila, parado.Id);
         Assert.Equal(0, r2.LendariosForjados);
     }
 

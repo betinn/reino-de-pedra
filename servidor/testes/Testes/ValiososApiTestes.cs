@@ -25,14 +25,18 @@ public class ValiososApiTestes
         var vila = locais.First(l => l.GetProperty("tipo").GetString() == "vila");
         Assert.True(vila.GetProperty("podeSalgadeira").GetBoolean());
 
-        // carroça na fila de obras; carroção sem cavalos é recusado
+        // carroça na fila de obras; carroção sem cavalos e salgadeira sem sal entram na fila e aguardam (aqui, cancelados)
         var (sv, item) = await c.Post("veiculos", new { tipo = "carroca", qtd = 1 });
         Assert.Equal(HttpStatusCode.Created, sv);
         Assert.Equal("veiculo", item.GetProperty("tipo").GetString());
-        var (sc, erro) = await c.Post("veiculos", new { tipo = "carrocao" });
-        Assert.Equal(HttpStatusCode.BadRequest, sc);
-        Assert.Contains("cavalos", erro.GetProperty("erro").GetString());
-        Assert.Equal(HttpStatusCode.BadRequest, (await c.Post("salgadeira", new { localId = vila.GetProperty("id").GetInt64() })).status);   // sem sal
+        var (sc, carrocao) = await c.Post("veiculos", new { tipo = "carrocao" });
+        Assert.Equal(HttpStatusCode.Created, sc);
+        Assert.True(carrocao.GetProperty("aguardando").GetBoolean());
+        Assert.Equal(HttpStatusCode.NoContent, (await c.Del("filas/obras/" + carrocao.GetProperty("id").GetInt64())).status);
+        var (ss, salg) = await c.Post("salgadeira", new { localId = vila.GetProperty("id").GetInt64() });
+        Assert.Equal(HttpStatusCode.Created, ss);
+        Assert.True(salg.GetProperty("aguardando").GetBoolean());
+        Assert.Equal(HttpStatusCode.NoContent, (await c.Del("filas/obras/" + salg.GetProperty("id").GetInt64())).status);
         await s.Avancar(TimeSpan.FromMinutes(10));
         var (_, r) = await c.Get("reino");
         Assert.Equal(1, r.GetProperty("veiculos").GetProperty("carroca").GetProperty("livres").GetInt32());

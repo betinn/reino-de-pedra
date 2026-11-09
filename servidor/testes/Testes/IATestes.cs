@@ -190,11 +190,16 @@ public class IATestes(ITestOutputHelper saida)
         Governo.Sessao(t.M, ia, MundoIA.Conduta(t, ia));
         var depois = Tudo(t, ia);
         var gasto = new Recursos();
-        foreach (var f in ia.Filas.Values) foreach (var i in f.Itens) gasto.Somar(i.Custo);
+        var aguarda = new Recursos();
+        foreach (var f in ia.Filas.Values)
+            foreach (var i in f.Itens)
+                (i.Aguardando ? aguarda : gasto).Somar(i.Custo);
         Assert.True(gasto.Total > 0, "a sessão devia ter enfileirado algo");
-        // o que saiu do estoque é exatamente o que as filas pediram (nada criado, nada sumido)
+        // o que saiu do estoque é exatamente o que as filas reservaram (nada criado, nada sumido)
         foreach (var k in antes.Keys.Union(gasto.Keys))
             Assert.Equal(antes.Qtd(k), depois.Qtd(k) + gasto.Qtd(k) - FilasEntregue(ia, k), 3);
+        // e o que aguarda a vez cabe no que ficou: a IA não pede o que não pode pagar
+        foreach (var (k, v) in aguarda) Assert.True(depois.Qtd(k) + 1e-6 >= v, k);
         Assert.True(ia.Pop < popAntes);   // quem foi recrutado saiu da população civil
     }
 

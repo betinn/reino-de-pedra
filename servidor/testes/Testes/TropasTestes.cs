@@ -151,12 +151,12 @@ public class TropasTestes
         var vila = t.M.LocaisDe(r.Id).First(l => l.Tipo == TipoLocal.Vila);
         Assert.Contains("castelo e o quartel", Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, r, vila.Id, "lanceiro", 1)).Message);
         Assert.Contains("quartel", Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, r, r.CasteloId, "cavalaria", 1)).Message);
-        foreach (var u in t.M.P.RecrutaCastelo) Recrutamento.Recrutar(t.M, r, r.CasteloId, u, 1);
         var q = Quartel(t, r);
         var item = Recrutamento.Recrutar(t.M, r, q.Id, "cavalaria", 2);
         Assert.Equal(q.Id, item.LocalId);
         Assert.False(item.MaterialCompleto);   // o quartel está vazio: o material vem por carregadores
         Assert.Contains(t.M.Marchas.OfType<Carregadores>(), c => c.ItemId == item.Id && c.Destino == q.Hex);
+        foreach (var u in t.M.P.RecrutaCastelo) Assert.True(Recrutamento.Recrutar(t.M, r, r.CasteloId, u, 1).Aguardando);   // atrás na fila
         var outro = t.NovoReino();
         Assert.Throws<RegraException>(() => Recrutamento.Recrutar(t.M, outro, q.Id, "lanceiro", 1));
     }

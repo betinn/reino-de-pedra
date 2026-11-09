@@ -50,6 +50,7 @@ public sealed class ObraPosto : ITipoItemFila
 {
     public const string Id = "posto";
     public string Tipo => Id;
+    public string? Revisar(Mundo m, Reino r, ItemFila item) => m.LocalNoHex(item.Hex) != null ? "outro local ocupou o hexágono." : null;
     public void Concluir(Mundo m, Reino r, ItemFila item)
     {
         if (m.LocalNoHex(item.Hex) != null)

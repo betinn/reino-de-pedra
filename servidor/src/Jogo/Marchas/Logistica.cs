@@ -4,44 +4,60 @@ using ReinoDePedra.Jogo.Reinos;
 namespace ReinoDePedra.Jogo.Marchas;
 
 /// <summary>
-/// Requisição automática: o material de uma obra sai do próprio local e, o que faltar, dos locais
-/// mais próximos (em tempo de viagem a pé), levado por carregadores. O recurso é reservado (retirado
-/// da origem) na hora do pedido. Recusa sem mexer em nada se o reino inteiro não tiver o material.
+/// Requisição automática: o material de um item da fila sai do próprio local e, o que faltar, dos locais mais próximos (em
+/// tempo de viagem a pé), levado por carregadores. O recurso é retirado da origem na hora do pedido. Quem decide o pedido é
+/// <see cref="Filas.Avaliar"/>, quando chega a vez do item e o reino tem o bastante.
 /// </summary>
 public static class Logistica
 {
-    public static void Requisitar(Mundo m, Reino r, ItemFila item, string nomeFila)
+    /// <summary>Tira dos estoques <paramref name="pedido"/> (o custo inteiro do item, se null) e manda para o item.</summary>
+    public static void Requisitar(Mundo m, Reino r, ItemFila item, string nomeFila, Recursos? pedido = null)
     {
         Economia.Atualizar(m, r);
-        var faltam = item.Custo.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
-        var total = Economia.TotalGuardado(m, r);
-        var falta = faltam.Where(kv => total.Qtd(kv.Key) + 1e-6 < kv.Value)
-            .Select(kv => $"{Math.Ceiling(kv.Value - total.Qtd(kv.Key))} {NomeRecurso(kv.Key)}").ToList();
-        if (falta.Count > 0) throw new RegraException("Faltam recursos: " + string.Join(", ", falta) + ".");
-
-        var destinoLocal = item.LocalId is long lid ? m.Locais.Obter(lid) : null;
-        // 1) o que já está no local da obra
-        if (destinoLocal != null) TirarDoLocal(m, destinoLocal, item, faltam);
-        if (faltam.Count == 0) return;
-        // 2) dos locais mais próximos, um grupo de carregadores por origem
-        EnviarDosProximos(m, r, item, nomeFila, faltam, destinoLocal);
+        var faltam = (pedido ?? item.Custo).Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+        Buscar(m, r, item, nomeFila, faltam);
     }
 
     /// <summary>
-    /// Material de um item roubado no caminho: pede de novo aos locais mais próximos o que se perdeu.
-    /// O que o reino não tiver fica faltando (o item espera, e o jogador pode cancelar).
+    /// Material de um item roubado no caminho: pede de novo aos locais mais próximos o que se perdeu. O que o reino não tiver fica
+    /// faltando: o item espera e a avaliação das filas pede o resto quando houver (<see cref="Faltando"/>).
     /// </summary>
     public static void Repor(Mundo m, Reino r, string nomeFila, long itemId, Recursos perdido)
     {
         var item = r.FilaSe(nomeFila)?.Itens.FirstOrDefault(i => i.Id == itemId);
         if (item == null || perdido.Count == 0) return;
         Economia.Atualizar(m, r);
-        var faltam = perdido.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
-        var destinoLocal = item.LocalId is long lid ? m.Locais.Obter(lid) : null;
-        if (destinoLocal != null && destinoLocal.ReinoId == r.Id) TirarDoLocal(m, destinoLocal, item, faltam);
-        if (faltam.Count > 0) EnviarDosProximos(m, r, item, nomeFila, faltam, destinoLocal);
+        Buscar(m, r, item, nomeFila, perdido.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value));
         m.Sujar(r);
         Filas.TentarIniciar(m, r, nomeFila);
+        Filas.Acordar(m, r);
+    }
+
+    /// <summary>
+    /// O que falta a um item Reservado, contando o que já chegou e o que está nos carregadores (na carga e nas próximas viagens).
+    /// Vem do estado real, sem campo próprio: pedir o que falta não pede duas vezes, nem depois de reiniciar o servidor.
+    /// </summary>
+    public static Recursos Faltando(Mundo m, ItemFila item)
+    {
+        var f = new Recursos();
+        foreach (var (k, v) in item.Custo)
+            if (v - item.Entregue.Qtd(k) > 1e-6) f[k] = v - item.Entregue.Qtd(k);
+        if (f.Count == 0) return f;
+        foreach (var c in m.Marchas.OfType<Carregadores>().Where(c => c.ItemId == item.Id))
+        {
+            foreach (var (k, v) in c.Carga) f.Retirar(k, v);
+            foreach (var (k, v) in c.Pendente) f.Retirar(k, v);
+        }
+        foreach (var k in f.Keys.ToList()) if (f[k] <= 1e-6) f.Remove(k);
+        return f;
+    }
+
+    /// <summary>O que já está no local da obra, se ele ainda é do reino; depois, um grupo de carregadores por origem, dos mais próximos.</summary>
+    private static void Buscar(Mundo m, Reino r, ItemFila item, string nomeFila, Dictionary<string, double> faltam)
+    {
+        var destinoLocal = item.LocalId is long lid ? m.Locais.Obter(lid) : null;
+        if (destinoLocal != null && destinoLocal.ReinoId == r.Id && !destinoLocal.Ruina) TirarDoLocal(m, destinoLocal, item, faltam);
+        if (faltam.Count > 0) EnviarDosProximos(m, r, item, nomeFila, faltam, destinoLocal);
     }
 
     /// <summary>Entrega ao item, direto, o que já está no local da obra.</summary>
