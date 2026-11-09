@@ -23,8 +23,14 @@
         '<small class="fraco fila-prontos"><span>' + (it.prontos || 0) + ' de ' + q + ' prontos · todos</span>' + RP.barraTempo(ini, fim, { classe: 'curta', rotulo: 'Todas as unidades: ' + it.rotulo }) + '</small></div>' + cancelar + '</div>';
     }
     if (ini && fim) return '<div class="item-fila">' + RP.timerHTML(rot, 0, (fim - ini) / 1000, '', fim) + cancelar + '</div>';
+    /* é a vez dele e o reino não tem o bastante: diz o que falta, sem cronômetro (não se sabe quando vai haver) */
+    if (it.estado === 'recursos') {
+      return '<div class="item-fila"><div class="timer"><div class="timer-topo"><b>' + rot + '</b><span class="selo selo-material">Aguardando recursos</span></div>' +
+        '<small class="fila-material">' + RP.icone('relogio', 'ico-p') + '<span>' + RP.esc(RP.textoFaltam(it)) + '</span></small>' +
+        '</div>' + cancelar + '</div>';
+    }
     /* material a caminho: a viagem dos carregadores também é tempo, com barra (sai da origem → chega à obra) */
-    if (!it.materialCompleto) {
+    if (!it.materialCompleto && !it.aguardando) {
       return '<div class="item-fila"><div class="timer"><div class="timer-topo"><b>' + rot + '</b><span class="fraco">' + RP.fmtDuracao(it.duracao) + '</span></div>' +
         '<small class="fila-material">' + RP.icone('carroca', 'ico-p') + (aguarda ? '<span>Material chega</span>' + RP.barraTempo(it.materialPartida, aguarda, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho: ' + it.rotulo }) : '<span>Esperando material</span>') + '</small>' +
         '</div>' + cancelar + '</div>';
@@ -36,9 +42,22 @@
     var f = ((RP.reino && RP.reino.filas) || {})[nome] || [];
     return f.filter(filtro || function () { return true; }).map(function (i) { i.fila = nome; return RP.itemFilaServidor(i); }).join('');
   };
+  /* "Faltam 40 de madeira, 2 de ouro." (e a gente, se faltar): o que segura um item que aguarda */
+  RP.textoFaltam = function (it) {
+    var ks = Object.keys(it.faltam || {});
+    var txt = ks.length ? 'Faltam ' + ks.map(function (k) { return RP.num(it.faltam[k]) + ' de ' + RP.nomeRecurso(k); }).join(', ') + '.' : '';
+    if (it.impedimento) txt += (txt ? ' ' : '') + it.impedimento;
+    return txt || 'Os recursos já deram: começa em instantes.';
+  };
+  /* aviso de quem pôs algo na fila: aguardando não gastou nada; reservado, o material está a caminho */
+  RP.textoMaterial = function (it, aCaminho) {
+    if (it.aguardando) return it.estado === 'recursos' ? 'Aguarda recursos: começa sozinho quando houver. ' + RP.textoFaltam(it) : 'Confere os recursos quando chegar a vez dele.';
+    return it.materialCompleto ? '' : aCaminho;
+  };
   /* texto curto para o aviso depois de pôr algo na fila: hora de fim só quando já começou (nunca "Invalid Date") */
   RP.textoFilaItem = function (it) {
     if (!it) return '';
+    if (it.aguardando) return RP.textoMaterial(it);
     if (!it.materialCompleto) return 'O material está a caminho; começa quando chegar.';
     if (it.inicio && it.fim && (it.qtd || 1) > 1 && it.proximoFim) return 'A primeira fica pronta ' + RP.fmtEm(it.proximoFim) + '; todas ' + RP.fmtEm(it.fim) + '.';
     if (it.inicio && it.fim) return 'Pronto ' + RP.fmtEm(it.fim) + '.';
@@ -49,7 +68,7 @@
     if (!b) return;
     RP.modal({
       titulo: 'Cancelar este item?',
-      corpo: '<p class="suave">O material que já chegou fica no local da obra. O que está a caminho chega e fica lá também. Num item de várias unidades, as que já ficaram prontas continuam suas.</p>',
+      corpo: '<p class="suave">Item que aguarda recursos não gastou nada. O material que já chegou fica no local da obra. O que está a caminho chega e fica lá também. Num item de várias unidades, as que já ficaram prontas continuam suas.</p>',
       acoes: [
         { rotulo: 'Cancelar item', classe: 'btn-perigo', acao: function () { RP.tentar(RP.del('/filas/' + b.getAttribute('data-fila') + '/' + b.getAttribute('data-cancelar'))).then(RP.recarregarReino); } },
         { rotulo: 'Manter' }
@@ -103,7 +122,7 @@
       (l.moradias ? '<div class="info-linha"><span class="fraco">Moradias</span><span>' + l.moradias + '</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Tropas aqui</span><span>' + (g.length ? RP.esc(RP.partesGrupo(l.guarnicao)) : 'nenhuma, só a população defende') + '</span></div>' +
       '<div class="info-linha"><span class="fraco">Comportamento</span><span class="selo selo-info">' + (RP.POSTURAS[l.postura] || '') + '</span></div>' +
-      (obra ? '<div class="info-linha info-tempo"><span class="fraco">' + RP.esc(obra.rotulo) + '</span><span>' + (obra.inicio && obra.fim ? RP.barraTempo(obra.inicio, obra.fim, { rotulo: 'Obra: ' + obra.rotulo }) : obra.materialChegaEm ? 'material chega ' + RP.barraTempo(obra.materialPartida, obra.materialChegaEm, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho' }) : 'esperando material') + '</span></div>' : '') +
+      (obra ? '<div class="info-linha info-tempo"><span class="fraco">' + RP.esc(obra.rotulo) + '</span><span>' + (obra.inicio && obra.fim ? RP.barraTempo(obra.inicio, obra.fim, { rotulo: 'Obra: ' + obra.rotulo }) : obra.materialChegaEm ? 'material chega ' + RP.barraTempo(obra.materialPartida, obra.materialChegaEm, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho' }) : obra.aguardando ? 'aguardando recursos' : 'esperando material') + '</span></div>' : '') +
       '<div class="info-linha"><span class="fraco">Onde</span><span>' + (RP.hex.NOME_TERRENO[l.terreno] || '') + '</span></div>' +
       RP.extrasFolhaLocal.map(function (f) { return f(l) || ''; }).join('') +
       '</div>';

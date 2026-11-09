@@ -54,6 +54,7 @@ public sealed class ObraRota : ITipoItemFila
 {
     public const string Id = "rota";
     public string Tipo => Id;
+    public string? Revisar(Mundo m, Reino r, ItemFila item) => Rotas.TemRota(m, item.Hex) ? "outro reino já construiu aqui." : null;
     public void Concluir(Mundo m, Reino r, ItemFila item)
     {
         var vias = m.Vias;

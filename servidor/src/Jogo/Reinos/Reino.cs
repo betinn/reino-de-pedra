@@ -35,6 +35,8 @@ public sealed partial class Reino : Documento
     public Fila Fila(string nome) => Filas.TryGetValue(nome, out var f) ? f : Filas[nome] = new Fila();
     /// <summary>Fila pelo nome, só para ler: null se não existe (nunca cria; serve para nomes vindos do cliente).</summary>
     public Fila? FilaSe(string nome) => Filas.TryGetValue(nome, out var f) ? f : null;
+    /// <summary>Evento que reavalia as filas enquanto há item parado (<see cref="AvaliarFilasEvento"/>).</summary>
+    public long? FilasEventoId { get; set; }
 
     public bool EhIA => ContaId == null;
     public bool SobEscudo(long agora) => agora < EscudoAte;

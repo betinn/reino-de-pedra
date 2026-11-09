@@ -115,12 +115,17 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **O reino base já gera recursos básicos** suficientes para recrutar tropas básicas, sem depender de exploração.
 - Recursos ficam **no local** onde estão. Para usar (construir, recrutar), é preciso **transportá-los até o local** onde são necessários; não dá para usar recurso "de qualquer lugar". Vale a mesma lógica das relíquias: o transporte é feito por tropas e a carga pode ser **roubada no meio do caminho**.
 - **Veículos de transporte** (ex.: carroças) facilitam o transporte e também são construídos com recursos.
-- **Construir gera uma requisição**: os recursos que faltam são enviados automaticamente pelos locais **mais próximos**, levados por tropas ou população, sem ação manual. A construção mostra que está **aguardando a chegada dos recursos**, e o transporte é visível no mapa. Quem constrói se preocupa com o tempo, sem precisar aprender a enviar recursos de um lugar para outro desde o início.
+- **Tudo que entra em fila pode entrar sem recursos.** Obras, recrutamento, ferraria, cura, veículos, rotas: as outras validações continuam (limite de 10 itens, terreno, requisitos, nível do castelo, população livre), mas falta de material não recusa. **Enfileirar não gasta nada.**
+- **Ao chegar a vez do item**, o servidor confere a **soma do reino inteiro**. Havendo o bastante, o item reserva o material (e as pessoas, no treino) numa passagem única e dispara a requisição. Sem o bastante, fica **aguardando recursos**, mostra o que falta, e começa sozinho quando houver, mesmo com o jogador offline.
+- **Prioridade entre filas: o item mais antigo tem direito primeiro.** Só o item da vez de cada fila concorre, em ordem de entrada. Quem cabe no disponível reserva; quem não cabe abate o que pede do disponível, só nessa conta, sem gastar nada, para os mais novos não passarem à frente nos recursos que ele disputa. Um item novo só fica retido se precisa de um recurso que o mais antigo ainda vai pegar; se não compete, segue normalmente. Assim itens baratos não atrasam um caro para sempre. Um item antigo que nunca vai poder pagar segura aquele recurso até o jogador cancelar: por isso aparece como **fila parada** na tela de atenção.
+- **Cancelar** devolve só o que foi reservado: item aguardando não gastou nada e nada volta.
+- **Item que aguarda e deixa de fazer sentido sai da fila sozinho**, sem gastar nada e com aviso: o local foi perdido (ocupado, destruído, castelo caído, exílio), alguém ocupou o lugar da fundação ou da torre, a torre caiu, outro reino fez a rota, ou uma sabotagem baixou o castelo abaixo do nível que a melhoria daria.
+- **A requisição**: os recursos que faltam são enviados automaticamente pelos locais **mais próximos**, levados por tropas ou população, sem ação manual. A construção mostra que está **aguardando a chegada dos recursos**, e o transporte é visível no mapa. Quem constrói se preocupa com o tempo, sem precisar aprender a enviar recursos de um lugar para outro desde o início.
 - O **envio manual** de recursos de um local para outro continua possível.
 - Cada local **acumula a própria produção** e guarda até **10 h** dela; o excedente vai para o armazém, onde também ficam os recursos valiosos. O estoque do local é o que um saque pode levar.
 - **Nenhum local passa do nível do castelo.** Melhorar o castelo custa e demora mais que um local do mesmo nível.
 - **Novos locais podem ser fundados em qualquer hexágono livre**, sem limite de distância, de vizinhança ou de quantidade. O custo crescente de cada novo local e o transporte do material até lá são os únicos freios.
-- A obra entra na fila e **só começa quando o material chega**. Os carregadores da requisição são **pessoas do local de origem** (quem está sem trabalho primeiro, depois trabalhadores, que deixam a vaga vazia enquanto carregam), vão a pé e sem escolta, cada uma com um carrinho de mão (30 de carga, contra 5 na mochila de um soldado) e fazem mais viagens quando falta gente; depois da última entrega voltam para casa. Roubados no caminho, perdem a carga e fogem para casa. Sem ninguém livre na origem, a carga ainda viaja: a requisição nunca trava.
+- A obra **só começa quando o material chega**. Os carregadores da requisição são **pessoas do local de origem** (quem está sem trabalho primeiro, depois trabalhadores, que deixam a vaga vazia enquanto carregam), vão a pé e sem escolta, cada uma com um carrinho de mão (30 de carga, contra 5 na mochila de um soldado) e fazem mais viagens quando falta gente; depois da última entrega voltam para casa. Roubados no caminho, perdem a carga e fogem para casa; o item pede de novo o que se perdeu, agora ou quando houver. Sem ninguém livre na origem, a carga ainda viaja: a requisição nunca trava.
 - Civis a caminho dentro do reino (troca de trabalho, carregadores) não são alvo da fauna nem de interceptação: gente desarmada foge.
 - Se o local de uma obra deixa de ser seu (ocupado ou destruído), o material dela volta ao castelo ao cancelar ou ao terminar; nunca fica com o novo dono.
 - Carroças ficam no castelo: saem, buscam a carga na origem e a levam. Escolta é opcional; caravana pouco protegida recebe aviso.
@@ -186,7 +191,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Recursos e construções básicas: **tempos baixos**.
 - Recursos e construções mais fortes ou valiosos: **tempos mais altos**.
 - O equilíbrio entre tempos, custos e rendimento é ponto central de balanceamento e deve ser ajustado com testes.
-- **Filas de construção e de recrutamento aceitam até 10 itens**, executados um por vez, para o jogador planejar horas ou a noite inteira.
+- **Filas de construção e de recrutamento aceitam até 10 itens**, executados um por vez, para o jogador planejar horas ou a noite inteira, inclusive sem ter ainda os recursos (ver Recursos). As filas são separadas: construção, recrutamento, ferraria e cura andam em paralelo, um item por vez em cada uma.
 - Num item com várias unidades (tropas, exploradores, mensageiros, carroças), **cada unidade fica pronta ao fim do seu próprio tempo** (a 1ª em um tempo, a 2ª em dois...) e já pode ser usada antes das seguintes. O item continua um só na fila; cancelar devolve material e população só das que ainda não ficaram prontas.
 - **Deslocamento não deve demorar excessivamente.** Viagens de muitas horas, sem outras ações para o jogador cuidar enquanto espera, afastam o jogador e quebram a imersão.
 
@@ -203,7 +208,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Nascimento com nome.** Enquanto há espaço no teto, nascem de **1 a 2 pessoas por hora**: mais rápido quanto mais espaço livre, 30% mais com excedente de comida, nunca acima de 2/h; com o teto cheio, para. O jogo nunca fica parado com espaço no teto. Cria pessoas inteiras, uma por vez, no castelo; cada uma caminha até a vaga mais necessária.
 - **Vida.** Toda pessoa tem vida, com o máximo pelo ofício, que volta sozinha com o tempo (inteira em algumas horas). Soldado no castelo do próprio reino, fora de batalha, recupera **10% da vida por minuto**. Animais tiram vida; quem sai vivo de uma batalha sai ferido na proporção das perdas do seu lado (sem morrer por isso: quem morre na batalha continua saindo das perdas). A barra de vida aparece na folha da pessoa e, no mapa, sobre quem está ferido.
 - **Morte com nome.** Batalha, fauna (quando a vida chega a zero), massacre, ferimento sem ervas e execução matam pessoas específicas, e o relatório diz quem.
-- **Recrutar converte uma pessoa**: o treino tira um civil (quem está sem trabalho primeiro; senão, um trabalhador do local de nível mais baixo) e o devolve como soldado com o mesmo nome. Cancelar devolve o civil ao ofício anterior. Tropas mortas não retornam; feridos curados com ervas voltam (ver Combate).
+- **Recrutar converte uma pessoa**: ao chegar a vez do item, o treino tira um civil (quem está sem trabalho primeiro; senão, um trabalhador do local de nível mais baixo) e o devolve como soldado com o mesmo nome. Até lá a pessoa segue trabalhando; sem civil livre na vez do item, ele espera. Cancelar devolve o civil ao ofício anterior. Tropas mortas não retornam; feridos curados com ervas voltam (ver Combate).
 - **Carregadores são pessoas** (ver Recursos). **Milícia são as pessoas presentes** (ver Combate).
 - Objetivo: criar a decisão central entre **tropas e economia**, agora com rostos.
 - Moral e migração ficam para depois, apenas se o balanceamento pedir.
@@ -293,6 +298,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **30% das baixas** de quem vence, ou de quem recua pela tática, voltam como feridos. Quem perde sem recuar não tem feridos.
 - **Feridos são pessoas**: cada uma espera no castelo com o próprio nome e o seu prazo. Cada ferido é curado no castelo com **5 ervas raras**. Sem ervas em **24 h**, morre (o aviso diz quem).
 - Os feridos ficam no castelo e ocupam o teto. A cura entra numa fila própria, as ervas vêm pela requisição e cada cura leva 2 h; cancelada, os feridos voltam a esperar com o prazo de antes. Curados, voltam à guarnição do castelo.
+- Pôr na fila sem ervas não salva ninguém: enquanto o item aguarda, o prazo de cada ferido continua correndo. Quem morre sai do item, que encolhe junto com o custo; sem ninguém para curar, ele sai da fila.
 - O jogador pode **sacrificar** um grupo de feridos que espera cura: morrem na hora (o aviso diz quem) e liberam o teto para novos nascimentos. Quem já está na fila de cura não é sacrificado.
 
 ### Queda do castelo
@@ -346,7 +352,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Valores atuais: a temporada começa com 25 reinos de IA e o mundo nunca fica com menos de 20 reinos ativos; o reino de IA novo surge na vaga livre mais longe dos jogadores.
 - Abdica o reino de IA de menor porte: o castelo vira ruína e os outros locais, terra livre. Reino de IA que perde o último local não vai ao exílio: sai do mundo.
 - A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h, estimando a milícia pelo que é público (famílias do reino por local). Caça enquanto tem pouco couro, para treinar os batedores. Usa os mesmos serviços por quantidade; a atribuição automática cuida das vagas dela.
-- A regência não funda, não ataca, não espiona e não negocia. O jogador que volta vê o que ela fez e o que se perdeu.
+- A regência não funda, não ataca, não espiona e não negocia. O jogador que volta vê o que ela fez e o que se perdeu. O que o jogador deixou na fila continua lá e começa sozinho quando houver recursos.
+- Reinos de IA e regência só põem na fila o que podem pagar agora, descontado o que os itens aguardando vão pedir. O reino de IA desiste do item da vez parado há mais de um dia.
 
 ---
 

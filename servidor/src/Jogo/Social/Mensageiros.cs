@@ -62,6 +62,11 @@ namespace ReinoDePedra.Jogo.Social
         public void Concluir(Mundo m, Reino r, ItemFila item) =>
             Registros.Notificar(m, r.Id, "mensagens", item.Qtd > 1 ? "Mensageiros prontos" : "Mensageiro pronto", item.Rotulo, "mensagens");
         public void Cancelado(Mundo m, Reino r, ItemFila item) => PS.TreinoCancelado(m, r, item);
+        public void AoReservar(Mundo m, Reino r, ItemFila item)
+        {
+            if (item.LocalId is long id && m.Locais.Obter(id) is { } l)
+                PS.ParaTreino(m, r, item.PopReserva, Pessoas.Oficios.Mensageiro, item, l);
+        }
     }
 
     public static class Mensageiros
@@ -73,9 +78,9 @@ namespace ReinoDePedra.Jogo.Social
         public static IEnumerable<Mensageiro> EmCampo(Mundo m, long reinoId) => m.Marchas.OfType<Mensageiro>().Where(x => x.ReinoId == reinoId);
 
         /// <summary>Mensageiros livres e em treino ocupam o teto (os em campo contam pela marcha).</summary>
-        public static int Ocupantes(Mundo m, Reino r) => (r.MensageirosLivres + EmTreino(r).Sum(i => i.Restantes)) * m.P.Mensageiro.Pop;
+        public static int Ocupantes(Mundo m, Reino r) => (r.MensageirosLivres + EmTreino(r).Where(i => !i.Aguardando).Sum(i => i.Restantes)) * m.P.Mensageiro.Pop;
 
-        /// <summary>Treina mensageiros no castelo (fila de recrutamento). A população sai na hora; volta se cancelar.</summary>
+        /// <summary>Treina mensageiros no castelo (fila de recrutamento). A população sai ao chegar a vez do item; volta se cancelar.</summary>
         public static ItemFila Treinar(Mundo m, Reino r, int qtd)
         {
             if (qtd < 1) throw new RegraException("Escolha pelo menos 1 mensageiro.");
@@ -83,17 +88,14 @@ namespace ReinoDePedra.Jogo.Social
             if (c == null || c.ReinoId != r.Id || c.Ruina) throw new RegraException("Mensageiros são treinados no castelo.");
             Economia.Atualizar(m, r);
             var pop = qtd * m.P.Mensageiro.Pop;
-            var livre = PS.LivresParaTreino(m, r);
-            if (livre < pop) throw new RegraException($"Falta população civil livre: precisa de {pop}, há {livre}.");
+            var livre = PS.LivresParaTreino(m, r) - Filas.PopAguardando(r);
+            if (livre < pop) throw new RegraException($"Falta população civil livre: precisa de {pop}, há {Math.Max(0, livre)}.");
             var custo = new Recursos(); custo.Somar(m.P.Mensageiro.Custo, qtd);
-            var item = Filas.Enfileirar(m, r, Recrutamento.Fila, new ItemFila
+            return Filas.Enfileirar(m, r, Recrutamento.Fila, new ItemFila
             {
                 Tipo = ItemMensageiro.Id, LocalId = c.Id, Hex = c.Hex, Qtd = qtd,
-                Rotulo = qtd + (qtd > 1 ? " × mensageiros" : " × mensageiro"), Custo = custo, DuracaoSeg = m.P.Mensageiro.Tempo * qtd,
+                Rotulo = qtd + (qtd > 1 ? " × mensageiros" : " × mensageiro"), Custo = custo, DuracaoSeg = m.P.Mensageiro.Tempo * qtd, PopReserva = pop,
             });
-            PS.ParaTreino(m, r, pop, Pessoas.Oficios.Mensageiro, item, c);
-            m.Sujar(r);
-            return item;
         }
 
         /// <summary>

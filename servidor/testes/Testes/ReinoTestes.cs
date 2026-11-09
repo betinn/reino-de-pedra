@@ -133,7 +133,7 @@ public class ReinoTestes
     }
 
     [Fact]
-    public void Falta_recurso_recusa_sem_mexer_no_estoque()
+    public void Falta_recurso_aguarda_sem_mexer_no_estoque()
     {
         var t = new MundoTeste();
         var r = t.NovoReino();
@@ -143,8 +143,8 @@ public class ReinoTestes
         var antes = c.Estoque.Qtd("madeira");
         // um hexágono explorado e livre, de planície
         var hex = t.M.G.Area(c.Hex, 3).First(h => Obras.HexLivre(t.M, h) && !t.M.Mapa.Rio[h] && t.M.Mapa.Terrenos[h] == Jogo.Mapa.Terreno.Planicie);
-        var ex = Assert.Throws<RegraException>(() => Obras.Fundar(t.M, r, "vila", hex));
-        Assert.StartsWith("Faltam recursos", ex.Message);
+        var item = Obras.Fundar(t.M, r, "vila", hex);
+        Assert.True(item.Aguardando);
         Assert.Equal(antes, c.Estoque.Qtd("madeira"));
     }
 

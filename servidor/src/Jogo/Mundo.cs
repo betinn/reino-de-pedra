@@ -30,6 +30,12 @@ public sealed partial class Mundo
     /// <summary>Canal para avisar clientes conectados (SSE). Padrão: não faz nada.</summary>
     public ICanalAvisos Avisos { get; set; } = new CanalNulo();
 
+    /// <summary>
+    /// Ligado enquanto a IA decide: ela não enfileira o que o reino não pode pagar agora (decisão dela, como a de um jogador
+    /// cuidadoso; quem aceita esperar é o jogador). Não é guardado: só vale durante a sessão, na thread do motor.
+    /// </summary>
+    public bool ExigirRecursos { get; set; }
+
     public Colecao<EstadoMundo> Estados { get; } = new("estado");
     public Colecao<Evento> Eventos { get; } = new("eventos");
     public Colecao<Reino> Reinos { get; } = new("reinos");
@@ -199,9 +205,11 @@ public sealed partial class Mundo
     public void MudarDono(Local l, long novoReino)
     {
         if (_locaisDoReino.TryGetValue(l.ReinoId, out var lst)) lst.Remove(l.Id);
+        var antigo = Reinos.Obter(l.ReinoId);
         l.ReinoId = novoReino;
         Indexar(l);
         Sujar(l);
+        if (antigo != null && antigo.Id != novoReino) Filas.Acordar(this, antigo);   // quem perdeu o local: revê o que aguardava nele
     }
 
     // ---------------------------------------------------------------- avisos

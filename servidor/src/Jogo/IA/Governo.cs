@@ -36,7 +36,18 @@ public static class Governo
     {
         var castelo = m.Locais.Obter(r.CasteloId);
         if (castelo == null || castelo.Ruina || castelo.ReinoId != r.Id) return;
+        // a fila aceita item sem recurso, mas a IA (e a regência) só pede o que pode pagar: nada de fila cheia de item parado
+        var antes = m.ExigirRecursos;
+        m.ExigirRecursos = true;
+        try { Decidir(m, r, c, castelo); }
+        finally { m.ExigirRecursos = antes; }
+    }
+
+    private static void Decidir(Mundo m, Reino r, Conduta c, Local castelo)
+    {
         Economia.Atualizar(m, r);
+        Filas.Avaliar(m, r);
+        if (r.EhIA) DesistirDoParado(m, r);
         Nevoas.VisiveisAgora(m, r.Id);   // olha o mapa, como o jogador ao abrir o jogo
         Tentar(() => Defender(m, r, c));
         if (!c.Regencia) Tentar(() => Comerciante.Responder(m, r, c));
@@ -61,6 +72,18 @@ public static class Governo
 
     /// <summary>Uma decisão que esbarra numa regra (fila cheia, falta recurso...) só deixa de acontecer, como para o jogador.</summary>
     private static void Tentar(Action a) { try { a(); } catch (RegraException) { } }
+
+    /// <summary>
+    /// Item da vez que perdeu o material (saque, comércio) há mais de um dia: a IA desiste, como um jogador faria, para ele não
+    /// segurar a fila e os recursos. Só o reino de IA: a regência não mexe no que o jogador deixou na fila.
+    /// </summary>
+    public static void DesistirDoParado(Mundo m, Reino r)
+    {
+        var limite = m.Agora - T.Dia;
+        foreach (var (nome, fila) in r.Filas.ToList())
+            if (fila.Itens.Count > 0 && fila.Itens[0] is { Aguardando: true } it && it.CriadoEm < limite)
+                Filas.Cancelar(m, r, nome, it.Id);
+    }
 
     // ---------------------------------------------------------------- feridos e prisioneiros
 
@@ -242,14 +265,15 @@ public static class Governo
     public static void Recrutar(Mundo m, Reino r, Conduta c, Local castelo)
     {
         var lote = m.B.U["lanceiro"].Custo;
-        var total = Economia.TotalGuardado(m, r);
+        var total = Filas.LivreParaNovos(m, r);   // o que está guardado, menos o que os itens que aguardam vão pedir
         var verba = Formulas.Basicos.Sum(k => total.Qtd(k)) * c.Militar;
         var teto = Economia.Teto(m, r);
         var trab = Economia.TrabalhadoresNecessarios(m, r);
-        var tropas = Economia.Tropas(m, r);
+        var aguardam = Filas.PopAguardando(r);    // ainda são civis, mas já têm destino
+        var tropas = Economia.Tropas(m, r) + aguardam;
         var limites = new List<double>
         {
-            verba / Math.Max(1, lote.Values.Sum()), r.Pop - trab * c.C.MantemTrab, c.FracTropas * teto - tropas,
+            verba / Math.Max(1, lote.Values.Sum()), r.Pop - aguardam - trab * c.C.MantemTrab, c.FracTropas * teto - tropas,
         };
         limites.AddRange(lote.Select(kv => kv.Value > 0 ? total.Qtd(kv.Key) / kv.Value : double.MaxValue));
         var n = (int)Math.Floor(limites.Min());

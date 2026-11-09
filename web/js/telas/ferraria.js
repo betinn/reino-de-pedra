@@ -153,7 +153,7 @@
 
   /* ---------------------------------------------------------------- ações */
   function aposFila(el, it) {
-    RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: it.materialCompleto ? '' : 'O material está a caminho da ferraria.', icone: it.materialCompleto ? 'martelo' : 'carroca', tipo: 'sucesso' });
+    RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoMaterial(it, 'O material está a caminho da ferraria.'), icone: it.materialCompleto ? 'martelo' : 'carroca', tipo: 'sucesso' });
     RP.recarregarReino();
     RP.ferraria.carregar().then(function () { desenhar(el); }, function () { /* offline */ });
   }

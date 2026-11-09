@@ -256,6 +256,7 @@ public sealed class CheckpointReinoEvento : Evento
         var r = m.Reinos.Obter(ReinoId);
         if (r == null || !r.Ativo) return;
         Economia.Atualizar(m, r);
+        Filas.Avaliar(m, r);   // rede de segurança: item da vez sem material e sem evento (carregadores perdidos sem repor) volta a pedir
         foreach (var f in AoCheckpoint) f(m, r);
         m.Agendar(new CheckpointReinoEvento { ReinoId = ReinoId, Quando = m.Agora + T.Hora });
     }

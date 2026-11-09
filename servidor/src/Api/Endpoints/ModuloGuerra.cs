@@ -165,7 +165,7 @@ public static class VisaoGuerra
             total = Jogo.Combate.Feridos.Total(r), emCura = Jogo.Combate.Feridos.EmCura(r),
             cura = r.Filas.TryGetValue(Jogo.Combate.Feridos.Fila, out var f) ? f.Itens.Select(i => VisaoReino.Item(m, r, i)).ToList() : [],
             ervas = Math.Floor(Economia.TotalGuardado(m, r).Qtd("ervas")), porFerido = p.Ervas, curaSeg = p.CuraH * 3600, esperaH = p.EsperaH, frac = p.Frac,
-            podem = Jogo.Combate.Feridos.Podem(m, r),
+            podem = Jogo.Combate.Feridos.Podem(m, r), semFila = Jogo.Combate.Feridos.SemFila(r),
         };
     }
 

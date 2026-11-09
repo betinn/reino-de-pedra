@@ -986,7 +986,7 @@
     else if ((b = e.target.closest('[data-def-torre]'))) p = RP.post('/defesas/torres/' + b.getAttribute('data-def-torre') + '/nivel');
     if (!p) return;
     RP.tentar(p).then(function (it) {
-      RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: it.materialCompleto ? '' : 'O material está a caminho.', icone: 'martelo', tipo: 'sucesso' });
+      RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoMaterial(it, 'O material está a caminho.'), icone: 'martelo', tipo: 'sucesso' });
       RP.recarregarReino(); buscarDefesas();
     });
   });

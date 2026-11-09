@@ -94,64 +94,45 @@ namespace ReinoDePedra.Jogo.Combate
             return lote;
         }
 
-        /// <summary>Quantos feridos as ervas raras do reino curam agora.</summary>
-        public static int Podem(Mundo m, Reino r)
+        /// <summary>Feridos dos lotes com que nenhum item que aguarda na fila de cura conta ainda.</summary>
+        public static int SemFila(Reino r)
         {
-            var ervas = Economia.TotalGuardado(m, r).Qtd("ervas");
-            return (int)Math.Min(Total(r), Math.Floor(ervas / m.P.Feridos.Ervas + 1e-9));
+            var aguardam = r.Filas.TryGetValue(Fila, out var f) ? f.Itens.Where(i => i.Aguardando).Sum(i => i.Qtd) : 0;
+            return Math.Max(0, Total(r) - aguardam);
         }
 
+        /// <summary>Quantos dos feridos sem fila as ervas raras do reino pagam agora (sem as que os itens que aguardam vão pedir).</summary>
+        public static int Podem(Mundo m, Reino r)
+        {
+            var ervas = Filas.LivreParaNovos(m, r).Qtd("ervas");
+            return (int)Math.Min(SemFila(r), Math.Floor(ervas / m.P.Feridos.Ervas + 1e-9));
+        }
+
+        /// <summary>Texto do item de cura para <paramref name="n"/> feridos.</summary>
+        internal static string RotuloCura(int n) => "Cura de " + n + (n == 1 ? " ferido" : " feridos");
+
         /// <summary>
-        /// Põe na fila de cura do castelo até <paramref name="qtd"/> feridos (todos os que as ervas pagam, se null),
-        /// primeiro os que morrem antes. As ervas vêm pela requisição automática.
+        /// Põe na fila de cura do castelo <paramref name="qtd"/> feridos. Sem número: os que as ervas pagam ou, sem ervas nenhuma,
+        /// todos, à espera das ervas. O item não tira ninguém dos lotes até chegar a vez dele e as ervas saírem (<see cref="ItemCurar.AoReservar"/>):
+        /// até lá o prazo de cada lote continua correndo, e entrar na fila sem ervas não salva ninguém.
         /// </summary>
         public static ItemFila Curar(Mundo m, Reino r, int? qtd = null)
         {
             Economia.Atualizar(m, r);
-            var total = Total(r);
-            if (total == 0) throw new RegraException("Não há feridos para curar.");
+            if (Total(r) == 0) throw new RegraException("Não há feridos para curar.");
             var c = m.Locais.Obter(r.CasteloId);
             if (c == null || c.ReinoId != r.Id || c.Ruina) throw new RegraException("Os feridos são curados no castelo.");
-            var porFerido = m.P.Feridos.Ervas;
-            var podem = Math.Min(Podem(m, r), qtd ?? total);
             if (qtd is int q && q < 1) throw new RegraException("Escolha pelo menos 1 ferido.");
-            if (podem <= 0) throw new RegraException("Sem ervas raras: cada ferido pede " + porFerido + ". Extraia ervas no pântano ou troque com outro reino.");
-            // escolhe quem sai dos lotes, sem mexer neles ainda (a fila pode recusar)
-            var leva = new Dictionary<string, int>();
-            var pessoas = new List<Pessoa>();
-            var resta = podem;
-            long morre = long.MaxValue;
-            foreach (var l in r.Feridos.OrderBy(x => x.MorreEm).ThenBy(x => x.Id))
+            var semFila = SemFila(r);
+            if (semFila <= 0) throw new RegraException("Todos os feridos já estão na fila de cura.");
+            var podem = Podem(m, r);
+            var n = Math.Min(semFila, qtd ?? (podem > 0 ? podem : semFila));
+            return Filas.Enfileirar(m, r, Fila, new ItemFila
             {
-                foreach (var p in Do(m, l).OrderBy(p => p.Oficio, StringComparer.Ordinal).ThenBy(p => p.Id))
-                {
-                    if (resta <= 0) break;
-                    leva[p.Oficio] = leva.GetValueOrDefault(p.Oficio) + 1; resta--;
-                    pessoas.Add(p);
-                    morre = Math.Min(morre, l.MorreEm);
-                }
-                if (resta <= 0) break;
-            }
-            var item = Filas.Enfileirar(m, r, Fila, new ItemFila
-            {
-                Tipo = ItemCurar.Id, LocalId = c.Id, Hex = c.Hex, Qtd = podem, Param = ItemCurar.Escrever(leva, morre, pessoas.Select(p => p.Id)),
-                Rotulo = "Cura de " + podem + (podem == 1 ? " ferido" : " feridos"),
-                Custo = Recursos.De(new Dictionary<string, double> { ["ervas"] = podem * porFerido }),
+                Tipo = ItemCurar.Id, LocalId = c.Id, Hex = c.Hex, Qtd = n, Rotulo = RotuloCura(n),
+                Custo = Recursos.De(new Dictionary<string, double> { ["ervas"] = n * m.P.Feridos.Ervas }),
                 DuracaoSeg = m.P.Feridos.CuraH * 3600,
             });
-            foreach (var p in pessoas)
-            {
-                p.ItemId = item.Id; m.Sujar(p);
-                foreach (var l in r.Feridos.Where(l => l.PessoaIds.Remove(p.Id)))
-                {
-                    var resto = l.Unidades.GetValueOrDefault(p.Oficio) - 1;
-                    if (resto > 0) l.Unidades[p.Oficio] = resto; else l.Unidades.Remove(p.Oficio);
-                }
-            }
-            foreach (var l in r.Feridos.Where(x => x.Unidades.Count == 0).ToList()) { m.Cancelar(l.EventoId); r.Feridos.Remove(l); }
-            m.Sujar(r);
-            m.Avisar(r.Id, "reino");
-            return item;
         }
 
         /// <summary>
@@ -201,7 +182,8 @@ namespace ReinoDePedra.Jogo.Combate
 
     /// <summary>
     /// Item da fila "cura": Param = "unidade:n,...;morreEm;ids" (os feridos tirados dos lotes, quando o primeiro deles morreria e
-    /// quem são). Ao terminar, voltam à guarnição do castelo. Cancelado, voltam a esperar (e morrem no prazo antigo).
+    /// quem são), preenchido na reserva: enquanto aguarda, ele não tem ninguém, e os feridos seguem nos lotes. Ao terminar, voltam à
+    /// guarnição do castelo. Cancelado, voltam a esperar (e morrem no prazo antigo).
     /// </summary>
     public sealed class ItemCurar : ITipoItemFila
     {
@@ -233,6 +215,53 @@ namespace ReinoDePedra.Jogo.Combate
                 foreach (var s in partes[2].Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (long.TryParse(s, out var id) && m.Pessoas.Obter(id) is { } p && p.Estado == Estados.Ferida) lista.Add(p);
             return lista;
+        }
+
+        /// <summary>Feridos morreram ou foram sacrificados enquanto o item aguardava: encolhe para os que restam (e o custo junto).</summary>
+        public string? Revisar(Mundo m, Reino r, ItemFila item)
+        {
+            var total = Feridos.Total(r);
+            if (total <= 0) return "não há mais feridos para curar.";
+            if (item.Qtd > total)
+            {
+                item.Qtd = total;
+                item.Rotulo = Feridos.RotuloCura(total);
+                item.Custo = Recursos.De(new Dictionary<string, double> { ["ervas"] = total * m.P.Feridos.Ervas });
+                m.Sujar(r);
+            }
+            return null;
+        }
+
+        /// <summary>Chegou a vez e as ervas saíram: os feridos que morrem antes saem dos lotes e passam a ser deste item.</summary>
+        public void AoReservar(Mundo m, Reino r, ItemFila item)
+        {
+            var leva = new Dictionary<string, int>();
+            var pessoas = new List<Pessoa>();
+            var resta = item.Qtd;
+            long morre = long.MaxValue;
+            foreach (var l in r.Feridos.OrderBy(x => x.MorreEm).ThenBy(x => x.Id))
+            {
+                foreach (var p in Feridos.Do(m, l).OrderBy(p => p.Oficio, StringComparer.Ordinal).ThenBy(p => p.Id))
+                {
+                    if (resta <= 0) break;
+                    leva[p.Oficio] = leva.GetValueOrDefault(p.Oficio) + 1; resta--;
+                    pessoas.Add(p);
+                    morre = Math.Min(morre, l.MorreEm);
+                }
+                if (resta <= 0) break;
+            }
+            item.Param = Escrever(leva, morre, pessoas.Select(p => p.Id));
+            foreach (var p in pessoas)
+            {
+                p.ItemId = item.Id; m.Sujar(p);
+                foreach (var l in r.Feridos.Where(l => l.PessoaIds.Remove(p.Id)))
+                {
+                    var resto = l.Unidades.GetValueOrDefault(p.Oficio) - 1;
+                    if (resto > 0) l.Unidades[p.Oficio] = resto; else l.Unidades.Remove(p.Oficio);
+                }
+            }
+            foreach (var l in r.Feridos.Where(x => x.Unidades.Count == 0).ToList()) { m.Cancelar(l.EventoId); r.Feridos.Remove(l); }
+            m.Sujar(r);
         }
 
         public void Concluir(Mundo m, Reino r, ItemFila item)

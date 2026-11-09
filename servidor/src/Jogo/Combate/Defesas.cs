@@ -185,6 +185,7 @@ namespace ReinoDePedra.Jogo.Combate
     {
         public const string Id = "torre";
         public string Tipo => Id;
+        public string? Revisar(Mundo m, Reino r, ItemFila item) => Obras.HexLivreParaObra(m, r, item.Hex) ? null : "alguém ocupou o hexágono.";
         public void Concluir(Mundo m, Reino r, ItemFila item)
         {
             if (!Obras.HexLivreParaObra(m, r, item.Hex))
@@ -207,6 +208,8 @@ namespace ReinoDePedra.Jogo.Combate
     {
         public const string Id = "torre-nivel";
         public string Tipo => Id;
+        public string? Revisar(Mundo m, Reino r, ItemFila item) =>
+            long.TryParse(item.Param, out var id) && m.Torres.Obter(id) is { } t && t.ReinoId == r.Id ? null : "a torre não existe mais.";
         public void Concluir(Mundo m, Reino r, ItemFila item)
         {
             var t = long.TryParse(item.Param, out var id) ? m.Torres.Obter(id) : null;
