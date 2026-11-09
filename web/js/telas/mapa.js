@@ -346,7 +346,7 @@
     return function (fresco) {
       var op = E.opcoesDiretas(h, ordem), mais = extras ? extras() : [];
       var s = {
-        titulo: mais.length ? 'Quem vai' : op ? (op.antesDeIr ? 'Ir até lá primeiro · ' : op.origem.marchaId ? '' : 'De ') + RP.esc(op.origem.nome) : ordem ? RP.esc(def ? def.rotulo : '') : 'Enviar tropas',
+        titulo: mais.length ? 'Quem vai' : op ? (op.origem.marchaId ? '' : 'De ') + RP.esc(op.origem.nome) : ordem ? RP.esc(def ? def.rotulo : '') : 'Enviar tropas',
         nota: nota, vazio: !RP.tropas ? 'Carregando…' : 'Nenhuma tropa disponível: estão em marcha, trabalhando ou ainda não há soldados.',
         itens: mais.concat(op ? op.opcoes.map(function (q) {
           return {

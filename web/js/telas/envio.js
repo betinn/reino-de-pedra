@@ -256,7 +256,7 @@
     var ajusta = def && ((def.painel && def.painel.grupo) || def.grupo);
     return { grupo: ajusta && l ? ajusta(g, l, { hex: h }) : g };
   }
-  /* a origem que o painel usaria e as opções dela: { origem, opcoes: [{ qual, grupo, n }], antesDeIr } ou null, sem ninguém */
+  /* a origem que o painel usaria e as opções dela: { origem, opcoes: [{ qual, grupo, n }] } ou null, sem ninguém */
   RP.envio.opcoesDiretas = function (h, ordem) {
     if (!RP.tropas) return null;
     var def = ordem ? defOrdem(ordem) : null, u = ultimoRapido();
@@ -269,7 +269,7 @@
     }).filter(function (x) { return x.n > 0; });
     /* duas opções com as mesmas tropas viram uma: fica a última (Todas) */
     lista = lista.filter(function (x, i) { return !lista.slice(i + 1).some(function (y) { return JSON.stringify(y.grupo) === JSON.stringify(x.grupo); }); });
-    return { origem: o, opcoes: lista, antesDeIr: (def && def.painel && def.painel.antesDeIr && def.painel.antesDeIr(h)) || null };
+    return { origem: o, opcoes: lista };
   };
   RP.envio.temDireto = function (h) { return !!destinoDireto(h); };
   /* traz tropas e o que a ordem precisa (a jazida, por exemplo); serve também ao estado do envio */
@@ -281,7 +281,6 @@
     var novo = { hex: h, seguro: false, implicito: true, painel: true, direto: true, fixa: ordem || null, ordem: ordem || destinoDireto(h) };
     return RP.tentar(RP.envio.aquecerDireto(ordem, novo)).then(function () {
       var op = RP.envio.opcoesDiretas(h, ordem), o = (op && op.origem) || origemVista, q = quemVaiDireto(h, ordem, qual, o);
-      if (op && op.antesDeIr) { novo.ordem = 'mover'; novo.antesDeIr = op.antesDeIr; }
       novo.de = o.id; novo.marchaId = o.marchaId; novo.grupo = q.grupo; novo.pessoas = q.pessoas || null;
       est = novo; enviar();
     }).catch(function () { /* aviso já mostrado */ });
