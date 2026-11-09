@@ -431,7 +431,9 @@
      do menu e, clicado, faz exatamente o que o botão faria (links navegam; botões disparam o clique que os sistemas já
      tratam por delegação). `itens` são objetos { rotulo, icone, tecla, classe, acao, href, sub }.
      Submenu: um item com `sub` (ou um botão com data-submenu) abre, ao passar o mouse, o que `submenus[sub]()` devolver:
-     { titulo, itens, vazio }. O item continua sendo um botão: clicar nele faz o que ele faz. */
+     { titulo, itens, vazio, nota, depois }. O item continua sendo um botão: clicar nele faz o que ele faz. `nota` é uma linha de
+     texto acima dos itens; `depois` é uma promessa: quando ela termina, o gerador roda de novo (com fresco = true) e o submenu
+     aberto se atualiza, para os números serem os de agora. */
   var menuEl = null, subEl = null, subDe = null, subItens = [], subTimer = 0;
   function fecharSub() { clearTimeout(subTimer); subTimer = 0; if (subEl) subEl.remove(); subEl = null; subDe = null; subItens = []; }
   RP.fecharMenu = function () { fecharSub(); if (menuEl) { menuEl.remove(); menuEl = null; } };
@@ -460,16 +462,34 @@
   function abrirSubmenu(b, gerar) {
     if (subDe === b) return;
     fecharSub();
-    var s = gerar() || {};
+    pintarSubmenu(b, gerar, false);
+  }
+  function pintarSubmenu(b, gerar, fresco) {
+    var s = gerar(fresco) || {};
+    if (subEl) subEl.remove();
     subDe = b; subItens = s.itens || [];
     subEl = document.createElement('div');
     subEl.className = 'menu-ctx menu-ctx-sub'; subEl.setAttribute('role', 'menu');
     subEl.innerHTML = (s.titulo ? '<div class="menu-ctx-titulo">' + s.titulo + '</div>' : '') +
+      (s.nota ? '<div class="menu-ctx-nota">' + RP.esc(s.nota) + '</div>' : '') +
       (subItens.length ? subItens.map(function (it, i) { return itemMenuHTML(it, i, 'data-si'); }).join('') : '<div class="menu-ctx-vazio">' + RP.esc(s.vazio || 'Nada a fazer aqui.') + '</div>');
     menuEl.appendChild(subEl);
     var r = b.getBoundingClientRect(), m = menuEl.getBoundingClientRect(), w = subEl.offsetWidth, h = subEl.offsetHeight;
-    subEl.style.left = (m.right + w > window.innerWidth - 4 ? -w + 2 : m.width - 4) + 'px';
+    /* à direita do menu; sem espaço, à esquerda; nunca fora da tela */
+    var esq = m.right + w > window.innerWidth - 4 ? -w + 2 : m.width - 4;
+    subEl.style.left = Math.max(4 - m.left, esq) + 'px';
     subEl.style.top = Math.max(4, Math.min(window.innerHeight - h - 4, r.top - 7)) - m.top + 'px';
+    if (s.depois) s.depois.then(function () { if (subDe === b && menuEl) pintarSubmenu(b, gerar, true); }, function () { /* fica o que já estava */ });
+  }
+  /* o mouse está indo do item ao submenu, na diagonal? O ponto de agora cai no triângulo entre onde o mouse estava há
+     pouco e a borda do submenu. Enquanto for assim, passar por outros itens não troca o submenu. */
+  var rastroMouse = [];
+  function indoAoSubmenu() {
+    if (!subEl || rastroMouse.length < 2) return false;
+    var p0 = rastroMouse[0], p = rastroMouse[rastroMouse.length - 1], s = subEl.getBoundingClientRect();
+    var borda = s.left >= p0[0] ? s.left : s.right, t = borda === p0[0] ? 0 : (p[0] - p0[0]) / (borda - p0[0]);
+    if (t <= 0 || t > 1) return false;
+    return p[1] >= p0[1] + (s.top - p0[1]) * t - 2 && p[1] <= p0[1] + (s.bottom - p0[1]) * t + 2;
   }
   RP.menuContexto = function (o) {
     RP.fecharMenu(); RP.esconderDica();
@@ -500,10 +520,17 @@
       if (subEl && subEl.contains(e.target)) { clearTimeout(subTimer); return; }
       var b = e.target.closest('[data-mi]'); if (!b) return;
       clearTimeout(subTimer);
+      /* a caminho do submenu aberto: só troca se o mouse parar neste item */
+      if (subEl && b !== subDe && e.type === 'mouseover' && indoAoSubmenu()) {
+        subTimer = setTimeout(function () { rastroMouse = []; if (b.matches(':hover')) passou({ target: b, type: 'parou' }); }, 300);
+        return;
+      }
       var it = itens[+b.getAttribute('data-mi')];
       if (it && it.sub) abrirSubmenu(b, o.submenus[it.sub]);
       else if (subEl) subTimer = setTimeout(fecharSub, 250);
     }
+    rastroMouse = [];
+    menuEl.addEventListener('mousemove', function (e) { rastroMouse.push([e.clientX, e.clientY]); if (rastroMouse.length > 5) rastroMouse.shift(); });
     menuEl.addEventListener('mouseover', passou);
     menuEl.addEventListener('focusin', passou);
     menuEl.addEventListener('mouseleave', function () { clearTimeout(subTimer); if (subEl) subTimer = setTimeout(fecharSub, 400); });

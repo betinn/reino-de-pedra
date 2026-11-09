@@ -186,7 +186,7 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         /// <summary>Manda um explorador livre do castelo com uma ordem. Escolta opcional, tirada da guarnição do castelo. Rota segura por padrão (desvia do perigo conhecido).</summary>
         public static Explorador Enviar(Mundo m, Reino r, string tipo, string ordem, int? destino, IReadOnlyList<int>? pontos = null,
-            bool seguro = true, IReadOnlyDictionary<string, int>? escolta = null, bool circuito = false)
+            bool seguro = true, IReadOnlyDictionary<string, int>? escolta = null, bool circuito = false, long? pessoaId = null)
         {
             Tipo(m, tipo);
             var casa = m.Locais.Obter(r.CasteloId);
@@ -204,7 +204,10 @@ namespace ReinoDePedra.Jogo.Exploracao
             var primeiro = Preparar(m, r, e, ordem, destino, pontos, casa.Hex);
             var rota = Rota(m, e, casa.Hex, primeiro);
             Economia.Atualizar(m, r);
-            var pessoa = PS.Livre(m, r, Pessoas.Oficios.DeExplorador(tipo)) ?? throw new RegraException("Nenhum " + NomeTipo(m, tipo).ToLowerInvariant() + " livre. Treine um no castelo.");
+            var oficio = Pessoas.Oficios.DeExplorador(tipo);
+            var pessoa = pessoaId is long pid
+                ? (m.Pessoas.Obter(pid) is { } q && q.ReinoId == r.Id && q.Oficio == oficio && q.Estado == Pessoas.Estados.Guarnecida ? q : throw new RegraException("Este explorador não está mais livre."))
+                : PS.Livre(m, r, oficio) ?? throw new RegraException("Nenhum " + NomeTipo(m, tipo).ToLowerInvariant() + " livre. Treine um no castelo.");
             m.Marchas.Adicionar(e);
             e.PessoaId = pessoa.Id;
             PS.Embarcar(m, e, [pessoa]);

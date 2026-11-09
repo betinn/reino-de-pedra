@@ -142,7 +142,7 @@
     if ((RP.envio && RP.envio.ativo())) return '';
     var obj = objetosHex(h, dados), html = '';
     var f = obj.filter(function (o) { return o.tipo === 'fauna'; })[0] || obj.filter(function (o) { return o.tipo === 'perigo'; })[0];
-    if (f) html += '<a class="btn btn-p btn-primario" href="#/caca?fauna=' + f.id + '">' + RP.icone('lobo') + 'Caçar</a>';
+    if (f) html += '<a class="btn btn-p btn-primario" href="#/caca?fauna=' + f.id + '" data-submenu="cacar">' + RP.icone('lobo') + 'Caçar</a>';
     var t = dados && dados.terreno ? dados.terreno[h] : null, explorado = dados && dados.idade && dados.idade[h] >= 0;
     if (t && explorado && !(dados.rotas && dados.rotas.indexOf(h) >= 0)) {
       var rio = t !== t.toLowerCase();

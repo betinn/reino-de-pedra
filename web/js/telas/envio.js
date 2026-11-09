@@ -229,6 +229,60 @@
     }, function () { /* aviso já mostrado */ });
   };
 
+  /* ---------------------------------------------------------------- envio direto: o submenu do botão direito
+     Mesma origem e mesmas contas do painel (Metade e Todas), sem abrir o painel. A ordem pode ajustar as tropas com
+     grupo(g, local, { hex }) (na ordem ou no painel dela) e carregar o que precisa com preparar(est). Com ultimo: true, oferece também
+     as tropas do último ataque. As contas valem para a hora do clique: enviarJa recarrega tudo antes de mandar. */
+  function destinoDireto(h) {
+    var local = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
+    return local && local.dono === 'meu' && !local.ruina ? 'reforcar' : !local ? 'mover' : null;
+  }
+  function quemVaiDireto(h, ordem, qual, o) {
+    if (o.marchaId) {
+      var ex = RP.exercito(o.marchaId), ps = (ex && ex.pessoas) || [], por = {}, ids = [];
+      if (qual === 'todas') return { grupo: (ex && ex.tropas) || {}, pessoas: null };
+      ps.forEach(function (p) { (por[p.oficio] = por[p.oficio] || []).push(p); });
+      Object.keys(por).forEach(function (k) { por[k].slice(0, Math.ceil(por[k].length / 2)).forEach(function (p) { ids.push(p.id); }); });
+      var ge = {}; ps.filter(function (p) { return ids.indexOf(p.id) >= 0; }).forEach(function (p) { ge[p.oficio] = (ge[p.oficio] || 0) + 1; });
+      return { grupo: ge, pessoas: ids };
+    }
+    var l = RP.tropas.locais.filter(function (x) { return x.id === o.id; })[0], disp = (l && l.guarnicao) || {}, g = {}, def = ordem ? defOrdem(ordem) : null;
+    if (qual === 'ultimo') g = (RP.grupoPadraoEnvio && l && RP.grupoPadraoEnvio(l)) || {};
+    else Object.keys(disp).forEach(function (k) { if (disp[k] > 0) g[k] = qual === 'todas' ? disp[k] : Math.ceil(disp[k] / 2); });
+    var ajusta = def && ((def.painel && def.painel.grupo) || def.grupo);
+    return { grupo: ajusta && l ? ajusta(g, l, { hex: h }) : g };
+  }
+  /* a origem que o painel usaria e as opções dela: { origem, opcoes: [{ qual, grupo, n }], antesDeIr } ou null, sem ninguém */
+  RP.envio.opcoesDiretas = function (h, ordem) {
+    if (!RP.tropas) return null;
+    var def = ordem ? defOrdem(ordem) : null, u = ultimoRapido();
+    var ors = origensPara(h, !!ordem).filter(function (o) { return RP.somaGrupo(quemVaiDireto(h, ordem, 'todas', o).grupo) > 0; });
+    var o = (u && ors.filter(function (x) { return x.id === u.de; })[0]) || ors[0];
+    if (!o) return null;
+    var lista = (def && def.ultimo && !o.marchaId ? ['ultimo'] : []).concat(['metade', 'todas']).map(function (q) {
+      var g = quemVaiDireto(h, ordem, q, o).grupo;
+      return { qual: q, grupo: g, n: RP.somaGrupo(g) };
+    }).filter(function (x) { return x.n > 0; });
+    /* duas opções com as mesmas tropas viram uma: fica a última (Todas) */
+    lista = lista.filter(function (x, i) { return !lista.slice(i + 1).some(function (y) { return JSON.stringify(y.grupo) === JSON.stringify(x.grupo); }); });
+    return { origem: o, opcoes: lista, antesDeIr: (def && def.painel && def.painel.antesDeIr && def.painel.antesDeIr(h)) || null };
+  };
+  RP.envio.temDireto = function (h) { return !!destinoDireto(h); };
+  /* traz tropas e o que a ordem precisa (a jazida, por exemplo); serve também ao estado do envio */
+  RP.envio.aquecerDireto = function (ordem, novo) {
+    var def = ordem ? defOrdem(ordem) : null, prep = def && ((def.painel && def.painel.preparar) || def.preparar);
+    return Promise.all([RP.carregarTropas(), prep ? prep(novo || {}) : null]);
+  };
+  RP.envio.enviarJa = function (h, ordem, qual, origemVista) {
+    var novo = { hex: h, seguro: false, implicito: true, painel: true, direto: true, fixa: ordem || null, ordem: ordem || destinoDireto(h) };
+    return RP.tentar(RP.envio.aquecerDireto(ordem, novo)).then(function () {
+      var op = RP.envio.opcoesDiretas(h, ordem), o = (op && op.origem) || origemVista, q = quemVaiDireto(h, ordem, qual, o);
+      if (op && op.antesDeIr) { novo.ordem = 'mover'; novo.antesDeIr = op.antesDeIr; }
+      novo.de = o.id; novo.marchaId = o.marchaId; novo.grupo = q.grupo; novo.pessoas = q.pessoas || null;
+      est = novo; enviar();
+    }).catch(function () { /* aviso já mostrado */ });
+  };
+
   /* ---------------------------------------------------------------- linha da patrulha, desenhada no mapa */
   function comecarLinha(h) {
     est.implicito = false; est.linha = h != null ? [h] : []; est.circuito = false; tracos = []; tracando = false;
@@ -433,7 +487,7 @@
       RP.aviso({ titulo: e.linha ? (e.ordem === 'patrulhar' ? 'Patrulha a caminho' : 'Percurso a caminho') : e.marchaId ? 'Nova ordem dada' : 'Tropas a caminho', texto: (ex && ex.chegada && !e.linha ? (RP.partesGrupo(ex.tropas) + (e.previa && e.previa.curta && !(e.previa.curta.min > 0) ? ' · já estão lá.' : ' · chegam ' + RP.fmtEm(ex.chegada) + '.')) : '') + nota, icone: d.icone || 'seta', tipo: 'sucesso' });
       if (RP.mapa.recarregar) RP.mapa.recarregar();
       RP.recarregarReino(); RP.carregarTropas().catch(function () { /* offline */ });
-    }).catch(function () { e.enviando = false; /* aviso já mostrado: o painel segue aberto */ });
+    }).catch(function () { e.enviando = false; if (e.direto && est === e) cancelar(); /* aviso já mostrado: o painel segue aberto */ });
   }
 
   /* ---------------------------------------------------------------- juntar e separar tropas */

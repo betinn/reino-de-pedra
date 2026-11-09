@@ -173,13 +173,49 @@
       return '<div class="info-linha"><span class="fraco">Ordem</span><span>' + (rec === 'pedra' ? 'Quebram pedra' : 'Cortam madeira') + ' até a carga encher, levam ao local mais próximo e voltam</span></div>';
     },
     dados: function () { return { repetir: true }; },
-    quando: function (h, dados) { return !!recursoEm(h, dados); }
+    quando: function (h, dados) { return !!recursoEm(h, dados); },
+    /* no submenu: só quem carrega, até o limite do hexágono */
+    preparar: function () { return carregar().catch(function () { /* o servidor confere ao enviar */ }); },
+    grupo: function (g, l, e) {
+      var cabe = vagasNoHex(e.hex), r = {}, n = 0;
+      Object.keys(g).forEach(function (k) {
+        var u = RP.unidade(k), q = u && u.carga > 0 ? Math.min(g[k], cabe - n) : 0;
+        if (q > 0) { r[k] = q; n += q; }
+      });
+      return r;
+    }
   });
+  function vagasNoHex(h) {
+    var d = col.dados, max = d && d.regras ? d.regras.maxPessoas : 6;
+    /* quem já vai ou já está neste hexágono: a marcha termina nele */
+    var ja = ((M.dados && M.dados.marchas) || []).filter(function (x) { return x.dono === 'meu' && x.ordem === 'coletar' && x.caminho && x.caminho[x.caminho.length - 1] === h; })
+      .reduce(function (s, x) { return s + ((x.pessoaIds && x.pessoaIds.length) || 0); }, 0);
+    return Math.max(0, max - ja);
+  }
+  /* civis sem trabalho no submenu: do local mais perto que tem algum, até o limite do hexágono */
+  function civisPara(h) {
+    var ls = ((col.dados && col.dados.locais) || []).filter(function (l) { return l.ociosos > 0; })
+      .sort(function (a, b) { return RP.hex.dist(a.hex, h) - RP.hex.dist(b.hex, h); }), l = ls[0];
+    return l ? { local: l, n: Math.min(l.ociosos, vagasNoHex(h)) } : null;
+  }
+  RP.coletaCivis = {
+    opcao: civisPara,
+    enviar: function (h, localVisto) {
+      return carregar().catch(function () { /* o servidor confere ao enviar */ }).then(function () {
+        var c = civisPara(h), de = c ? c.local.id : localVisto, n = c ? c.n : 1;
+        return V.tentar(RP.post('/coleta', { deLocalId: de, tropas: {}, civis: n, hex: h, repetir: true, seguro: false })).then(function (ex) {
+          RP.aviso({ titulo: 'A caminho da coleta', texto: n + (n === 1 ? ' civil chega ' : ' civis chegam ') + RP.fmtEm(ex.chegada) + ' e ' + (n === 1 ? 'começa' : 'começam') + ' a ' + (recursoEm(h) === 'madeira' ? 'cortar madeira.' : 'quebrar pedra.'), icone: recursoEm(h) || 'madeira', tipo: 'sucesso' });
+          if (RP.mapa.recarregar) RP.mapa.recarregar();
+          RP.recarregarReino(); RP.carregarTropas().catch(function () { /* offline */ });
+        });
+      }).catch(function () { /* aviso já mostrado */ });
+    }
+  };
   RP.mapa.acoesFolhaHex.push(function (h, dados) {
     if (RP.envio && RP.envio.ativo()) return '';
     var rec = recursoEm(h, dados);
     if (!rec) return '';
-    return '<a class="btn btn-p" href="#/coleta?hex=' + h + '">' + RP.icone(rec, 'r-' + rec) + (rec === 'madeira' ? 'Cortar madeira' : 'Quebrar pedra') + '</a>';
+    return '<a class="btn btn-p" href="#/coleta?hex=' + h + '" data-submenu="coletar">' + RP.icone(rec, 'r-' + rec) + (rec === 'madeira' ? 'Cortar madeira' : 'Quebrar pedra') + '</a>';
   });
   RP.ORDENS_NOMES = RP.ORDENS_NOMES || {};
   RP.ORDENS_NOMES.coletar = 'Coletar';
