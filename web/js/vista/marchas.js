@@ -194,6 +194,8 @@
   var semAnimar = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function hexes() { return H.W || 26; }
+  /* o rastro acompanha a posição desenhada (suave), para chegar nos pés da figura */
+  function posDe(m, ag) { return M.posSuave ? M.posSuave(m, ag) : M.posMarcha(m, ag); }
   function comprimento(pts) {
     var s = 0;
     for (var i = 1; i < pts.length; i++) s += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
@@ -210,7 +212,7 @@
     }
   }
   function acompanhar(m, ag, agora) {
-    var r = rastros.get(m.id), pos = M.posMarcha(m, ag);
+    var r = rastros.get(m.id), pos = posDe(m, ag);
     if (!r) {
       r = { pts: [], ux: pos.x, uy: pos.y, ut: agora, mov: -1e9, ang: pos.ang };
       rastros.set(m.id, r);
@@ -267,7 +269,7 @@
     var tem = false;
     rastros.forEach(function (r) { if (r.pts.length && naVista(r.ux, r.uy)) tem = true; });
     if (tem) return true;
-    return !!(d && (d.marchas || []).some(function (m) { if (!andando(m, ag, agora)) return false; var p = M.posMarcha(m, ag); return naVista(p.x, p.y); }));
+    return !!(d && (d.marchas || []).some(function (m) { if (!andando(m, ag, agora)) return false; var p = posDe(m, ag); return naVista(p.x, p.y); }));
   }
 
   /* ---------------------------------------------------------------- rastro: desenho (ctx no espaço do mundo, no chão) */
@@ -354,7 +356,7 @@
       var op = opacidade(r, agora);
       if (op <= 0.01) return;
       /* a cabeça é onde a unidade está agora, para o rastro chegar nos pés dela */
-      var cab = r.fim ? null : M.posMarcha(r.m, ag);
+      var cab = r.fim ? null : posDe(r.m, ag);
       desenharRastro(c, r, A.corDono(r.m.dono, r.m), op, cab, t, u);
       feitos++;
     });

@@ -70,3 +70,25 @@ Com o mapa de 312 × 240, hexágonos menores e construções em vários hexágon
 O que cresceu: a sessão de IA (A* e Dijkstra numa grade 9× maior, e os alcances da IA em hexágonos 3× maiores) e a revelação da névoa em intervalos de 10 s de jogo. O que caiu: a névoa gravada comprimida (deflate) tirou a cópia em base64 de 4 bytes por hexágono da memória e do banco. Tudo segue três ordens de grandeza abaixo do orçamento; se a sessão de IA virar problema, limitar o Dijkstra ao alcance da decisão é o primeiro passo.
 
 Com tudo junto (mapa de 312 × 240, vida e coleta da [0028](decisoes/0028-vida-e-coleta.md)), 10 dias, 30 reinos (25 de IA), testes em Debug: 5 665 eventos por dia de jogo, 11,1 s de CPU por dia (1 959 µs por evento), sessão de IA de 63 ms, 0,0128% de um núcleo, pico de 64 MB de memória gerenciada, 7 952 documentos e banco de 5,6 MB.
+
+## Cliente: a Vista com muita gente
+
+Com mais quadros por pose (12 no que se mexe, eram 8), a população inteira à vista e a batalha desenhada combatente a combatente, o custo do quadro da Vista foi medido de novo. Medição no navegador embutido, 800 × 600, zoom 1,5, sprites já prontos, chamando o quadro direto (o painel estava oculto: é o custo de montar e desenhar o quadro em JavaScript; a taxa de quadros real na tela não foi observada).
+
+| Cena | Itens no quadro | Mediana | p90 | p99 |
+|---|---|---|---|---|
+| Reino novo: castelo com 17 pessoas, 4 locais | 101 | 1,8 ms | 6,3 ms (quadros que geram sprite) | — |
+| Carga: 14 marchas de 8 figuras, castelo com 72 pessoas, 4 locais com 7 cada | 401 | 3,9 ms | 4,7 ms | 7,1 ms |
+
+- O laço mira 60 quadros por segundo enquanto o custo médio fica abaixo de 6,5 ms e volta a 30 (o piso de antes) acima de 10,5 ms. `RP.Cena.medida()` mostra o custo médio, a taxa e o tamanho do cache.
+- O cache de sprites 3D guarda até 960 figuras (640 em tela densa). Na cena de carga ele enche; quem fica sem uso sai. A geração de sprites gasta no máximo 7 ms por quadro; sem tempo, vale o quadro pronto mais perto da mesma figura.
+- As aparências (pele, cabelo, barba, calça) saem de 8 variantes por semente, para muita gente dividir as mesmas figuras. Fase e ritmo continuam por pessoa: custam zero sprites.
+
+Marcha de outro reino (o feed traz só o hexágono atual e o próximo, a cada 2,5 s), 24 s de caminhada a 50 quadros por segundo:
+
+| | Posição exata | Posição desenhada |
+|---|---|---|
+| Tropa lenta (3,4 s por hexágono): quadros parada | 43% | 0% |
+| Tropa lenta: maior salto num quadro | 18,8 (0,7 hexágono) | 0,37 |
+| Cavalaria (1,35 s por hexágono): quadros parada | 74% | 4% (só a chegada) |
+| Cavalaria: maior salto num quadro | 50,9 (2 hexágonos) | 0,94 |

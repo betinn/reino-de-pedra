@@ -18,14 +18,22 @@ const BASE = new URL('../../modelos/', import.meta.url).href;
 /* caixas dos sprites em unidades do mundo (as mesmas de RP.sprites para a pessoa: largura, altura acima do pé, folga abaixo) */
 const CX = { pessoa: { W: 40, ALT: 44, PE: 14 }, montado: { W: 60, ALT: 50, PE: 22 } };
 /* pixels por unidade do mundo: 4 em tela densa (celular, retina), 3 nas outras; teto do cache ≈ 30 MB */
-const RES = (window.devicePixelRatio || 1) >= 1.5 ? 4 : 3, SS = 2, MAX = 300, ORCAMENTO_MS = 7, FRAMES = 8;
+const RES = (window.devicePixelRatio || 1) >= 1.5 ? 4 : 3, SS = 2, MAX = RES >= 4 ? 640 : 960, ORCAMENTO_MS = 7, FRAMES = 12;
 const ALTURA_MODELO = 376, ALTURA_PESSOA = 22.5, UNID = ALTURA_PESSOA / ALTURA_MODELO;   /* unidades do mundo por unidade do modelo */
 const CABECA = 0.74;   /* a cabeça do modelo é de desenho animado; menor, o corpo fica com proporção de gente */
 /* duração do ciclo de cada pose (s) */
-const CICLO = { parado: 2.4, andando: 0.95, correndo: 0.62, golpe: 1.05, cavar: 1.25, estocada: 0.8, atirar: 1.7, carregar: 1.0, sentado: 3, montado: 1, ferido: 3 };
+const CICLO = { parado: 2.4, andando: 0.95, correndo: 0.62, golpe: 1.15, cavar: 1.9, peneirar: 1.5, estocada: 0.9, atirar: 1.7, carregar: 1.0, sentado: 3, montado: 1, ferido: 3,
+  olhar: 3.2, apontar: 2.6, conversar: 2.2, 'andando-olhar': 0.95, aparar: 0.9, cair: 0.75, caido: 1 };
+/* quadros por ciclo de cada pose: 12 no que se mexe (eram 8 em tudo); menos no que quase não se mexe, para o cache render mais */
+const QUADROS = { parado: 6, sentado: 4, ferido: 4, caido: 1, conversar: 10, apontar: 6, olhar: 10 };
+/* quantas aparências diferentes (pele, cabelo, barba, calça) saem da semente: poucas, para as mesmas figuras serem
+   reaproveitadas por muita gente. A fase e o ritmo de cada pessoa continuam próprios. */
+const VARIANTES = 8;
 
-const B = RP.bonecos = { pronto: false, falhou: false, FRAMES, CX, tamanho: () => cache.size, limpar: () => cache.clear() };
+const B = RP.bonecos = { pronto: false, falhou: false, FRAMES, QUADROS, CICLO, CX, tamanho: () => cache.size, limpar: () => { cache.clear(); prontos.clear(); } };
 const cache = new Map();
+/* quadros prontos de cada figura (chave sem o quadro): enquanto o quadro pedido não existe, vale o pronto mais perto */
+const prontos = new Map();
 let renderer, cena, camera, luzDir, pessoa, ossos = {}, mixer, acoes = {}, raiz, malha, cavalo, mixerCavalo, acoesCavalo = {}, ossosCavalo = {};
 let pecas = {}, texturas = new Map(), gastoQuadro = 0, quadroAtual = -1;
 
@@ -127,6 +135,8 @@ function montarPecas() {
   /* carga no ombro */
   g = new THREE.Group(); m = new THREE.Mesh(new THREE.SphereGeometry(48, 10, 8), mat(0xcdb98f)); m.scale.set(1, 0.8, 1.1); g.add(m); P.saco = g;
   g = new THREE.Group(); m = cil(22, 22, 230, 0x9a6a42, 9); m.rotation.z = Math.PI / 2; g.add(m); P.tronco = g;
+  /* peneira: aro de madeira com a tela clara no fundo (eixo +Y para cima) */
+  g = new THREE.Group(); m = cil(62, 62, 16, madeira, 14); g.add(m); m = cil(55, 55, 4, 0xd9cfae, 14); m.position.y = 8; g.add(m); P.peneira = g;
   g = new THREE.Group(); m = new THREE.Mesh(new THREE.DodecahedronGeometry(40, 0), mat(0x6b6f78)); g.add(m); P.minerio = g;
   /* bandeira (pano no plano YZ do mastro) */
   g = new THREE.Group(); m = cil(3.5, 3.5, 420, madeira); m.position.y = 150; g.add(m);
@@ -153,6 +163,8 @@ async function carregar() {
   if (ossos.Head) ossos.Head.scale.setScalar(CABECA);
   mixer = new THREE.AnimationMixer(pessoa);
   gp.animations.forEach(a => { const ac = mixer.clipAction(a); ac.play(); ac.enabled = true; ac.setEffectiveWeight(0); acoes[a.name] = ac; });
+  /* o repouso de cada osso, para toda pose partir do mesmo ponto (ver repousar) */
+  repouso = Object.values(ossos).map(o => ({ o, p: o.position.clone(), q: o.quaternion.clone(), s: o.scale.clone() }));
   /* cavalo: escala para a altura de um cavalo ao lado da pessoa; olha para +Z como a pessoa */
   cavalo = gc.scene;
   const rc = new THREE.Group(); rc.add(cavalo); cena.add(rc); cavalo.userData.raiz = rc;
@@ -171,6 +183,17 @@ async function carregar() {
 /* ---------------------------------------------------------------- poses */
 const V3 = THREE.Vector3, Q = THREE.Quaternion;
 const _v = new V3(), _w = new V3(), _q = new Q(), _q2 = new Q();
+/* Toda pose começa do repouso. O mixer só escreve num osso quando o valor da animação muda de uma amostra para a outra:
+   pedir duas vezes a mesma amostra (as poses de trabalho usam sempre o mesmo ponto do idle) não desfazia os giros da pose
+   anterior, e eles se somavam de um quadro para o outro (pernas cada vez mais dobradas, tronco cada vez mais curvado).
+   Aqui os ossos voltam ao repouso e o mixer passa por uma amostra sem peso antes da amostra pedida, o que o obriga a
+   escrever de novo tudo o que a animação mexe. */
+let repouso = [];
+function repousar() {
+  for (const r of repouso) { r.o.position.copy(r.p); r.o.quaternion.copy(r.q); r.o.scale.copy(r.s); }
+  Object.values(acoes).forEach(a => a.setEffectiveWeight(0));
+  mixer.update(0);
+}
 function amostrar(acs, nomes, pesos, fase) {
   Object.values(acs).forEach(a => a.setEffectiveWeight(0));
   nomes.forEach((n, i) => { const a = acs[n]; if (!a) return; a.setEffectiveWeight(pesos[i]); a.time = fase * a.getClip().duration; });
@@ -193,41 +216,122 @@ function braco(lado, frente, abrir, cotovelo) {
   if (abrir) girar(L + 'Arm', FRENTE, s * abrir);
   if (cotovelo) girar(L + 'ForeArm', LADO, -cotovelo);
 }
+/* a mão direita em pala sobre os olhos: o braço sobe aberto para o lado e o antebraço dobra para a frente do rosto */
+function maoNaTesta() { braco('D', 0.15, 2.1, 0); girar('RightForeArm', CIMA, 2.35); }
 function onda(f, a, b) { return a + (b - a) * (0.5 - 0.5 * Math.cos(f * Math.PI * 2)); }
+/* entra e sai devagar (0 → 1): o gesto acelera e freia em vez de andar em linha reta */
+function suave(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
+/* golpe: sobe devagar, desce depressa (gravidade) */
+function queda(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x; }
+/* quadros-chave de um ciclo: tabela de [fase, v1, v2, ...] em ordem; devolve os valores na fase f, com a passagem suave
+   entre uma chave e a próxima (a última liga de volta à primeira) */
+function chaves(f, tab) {
+  const n = tab.length;
+  let i = n - 1;
+  for (let k = 0; k < n; k++) if (f < tab[k][0]) { i = (k + n - 1) % n; break; }
+  const a = tab[i], b = tab[(i + 1) % n];
+  let span = b[0] - a[0], d = f - a[0];
+  if (span <= 0) span += 1;
+  if (d < 0) d += 1;
+  const e = suave(d / span), out = [];
+  for (let k = 1; k < a.length; k++) out.push(a[k] + (b[k] - a[k]) * e);
+  return out;
+}
+/* pá: fase, curvar o tronco, torcer o tronco, braço direito, braço esquerdo, cotovelo, joelho */
+const CAVAR = [
+  [0.00, 0.30, 0.00, 0.95, 1.10, 0.45, 0.20],   /* pá no alto, pronta */
+  [0.22, 0.72, 0.05, 0.55, 0.80, 0.25, 0.45],   /* enterra a pá: tronco bem curvado, joelho dobra */
+  [0.34, 0.78, 0.05, 0.50, 0.75, 0.30, 0.50],   /* pisa e força */
+  [0.56, 0.38, -0.10, 1.05, 1.20, 0.75, 0.25],  /* levanta a terra */
+  [0.74, 0.20, -0.75, 1.45, 1.55, 0.55, 0.10],  /* joga a terra para o lado, por cima do ombro */
+  [0.88, 0.22, -0.30, 1.10, 1.20, 0.50, 0.12]   /* volta */
+];
 function aplicarPose(pose, f, o) {
+  repousar();
   ossos.Hips && (ossos.Hips.userData.y0 ??= ossos.Hips.position.y);
-  if (pose === 'andando' || pose === 'carregar') amostrar(acoes, ['idle', 'run'], [0.4, 0.6], f);
+  if (pose === 'andando' || pose === 'carregar' || pose === 'andando-olhar') amostrar(acoes, ['idle', 'run'], [0.4, 0.6], f);
   else if (pose === 'correndo') amostrar(acoes, ['run'], [1], f);
-  else amostrar(acoes, ['idle'], [1], pose === 'parado' ? f : 0.25);
+  else amostrar(acoes, ['idle'], [1], pose === 'parado' || pose === 'conversar' || pose === 'apontar' || pose === 'olhar' ? f : 0.25);
   mixer.update(0);
   raiz.updateMatrixWorld(true);
   /* braços do idle da Kenney vêm meio abertos: junta ao corpo */
-  if (pose !== 'andando' && pose !== 'correndo' && pose !== 'carregar') { braco('E', 0, -0.12, 0); braco('D', 0, -0.12, 0); }
+  if (pose !== 'andando' && pose !== 'correndo' && pose !== 'carregar' && pose !== 'andando-olhar') { braco('E', 0, -0.12, 0); braco('D', 0, -0.12, 0); }
   switch (pose) {
-    case 'golpe': {   /* machado, picareta, martelo: as duas mãos sobem e descem com força */
-      const sobe = f < 0.62 ? f / 0.62 : f < 0.74 ? 1 - (f - 0.62) / 0.12 : 0;
-      const a = 0.25 + sobe * 2.55;
+    case 'golpe': {   /* machado, picareta, martelo: as duas mãos sobem devagar, param um instante no alto e descem com força */
+      const sobe = f < 0.5 ? suave(f / 0.5) : f < 0.6 ? 1 : f < 0.74 ? 1 - queda((f - 0.6) / 0.14) : 0;
+      const bate = f >= 0.74 && f < 0.86 ? Math.sin((f - 0.74) / 0.12 * Math.PI) : 0;   /* o tranco da batida */
+      const a = 0.25 + sobe * 2.55 - bate * 0.12;
       braco('D', a, 0.18, 0.55 - sobe * 0.3); braco('E', a - 0.1, 0.32, 0.5 - sobe * 0.25);
-      girar('Spine', LADO, 0.08 + (1 - sobe) * 0.32); girar('Chest', LADO, (1 - sobe) * 0.12);
+      girar('Spine', LADO, 0.08 + (1 - sobe) * 0.34 + bate * 0.06 - sobe * 0.1); girar('Chest', LADO, (1 - sobe) * 0.12);
+      girar('LeftUpLeg', LADO, 0.12 + (1 - sobe) * 0.12); girar('LeftLeg', LADO, -0.2 - (1 - sobe) * 0.16);
       break;
     }
-    case 'cavar': {   /* pá ou enxada: tronco curvado, as mãos vão e voltam embaixo */
-      const v = onda(f, 0, 1);
-      girar('Spine', LADO, 0.35 + v * 0.25); girar('Chest', LADO, 0.1);
-      braco('D', 0.75 + v * 0.45, 0.1, 0.35); braco('E', 0.95 + v * 0.35, 0.25, 0.6);
-      girar('RightUpLeg', LADO, 0.25); girar('RightLeg', LADO, -0.35);
+    case 'cavar': {   /* pá ou enxada: enterra, força, levanta a terra e joga para o lado */
+      const k = chaves(f, CAVAR);
+      girar('Spine', LADO, k[0]); girar('Chest', LADO, 0.1); girar('Spine', CIMA, k[1]);
+      braco('D', k[2], 0.1, k[4]); braco('E', k[3], 0.25, k[4] + 0.2);
+      girar('RightUpLeg', LADO, 0.15 + k[5] * 0.6); girar('RightLeg', LADO, -0.25 - k[5] * 0.7);
+      girar('LeftUpLeg', LADO, k[5] * 0.25); girar('LeftLeg', LADO, -k[5] * 0.4);
       break;
     }
-    case 'estocada': {
-      const v = f < 0.3 ? f / 0.3 : 1 - (f - 0.3) / 0.7;
+    case 'peneirar': {   /* agachado, peneira nas duas mãos, sacudindo de um lado para o outro */
+      const s = Math.sin(f * Math.PI * 6) * (0.6 + 0.4 * Math.sin(f * Math.PI * 2));   /* três sacudidas por ciclo, umas mais fortes */
+      girar('LeftUpLeg', LADO, 1.05); girar('RightUpLeg', LADO, 1.2);
+      girar('LeftLeg', LADO, -1.75); girar('RightLeg', LADO, -1.9);
+      girar('Spine', LADO, 0.42 + Math.abs(s) * 0.04); girar('Spine', CIMA, s * 0.16);
+      braco('E', 1.05, 0.12 + s * 0.1, 0.75); braco('D', 1.05, 0.12 - s * 0.1, 0.75);
+      ossos.Hips.position.y = ossos.Hips.userData.y0 * 0.62;
+      break;
+    }
+    case 'olhar': {   /* mão na testa, corpo e cabeça varrem o horizonte de um lado ao outro */
+      const v = Math.sin(f * Math.PI * 2), para = suave(Math.min(1, Math.abs(v) * 1.6)) * Math.sign(v);
+      girar('Spine', CIMA, para * 0.42); girar('Head', CIMA, para * 0.5);
+      maoNaTesta(); braco('E', 0.1, 0.25, 0.5);
+      girar('Spine', LADO, -0.06);
+      break;
+    }
+    case 'andando-olhar': {   /* andando com a mão na testa, olhando para os lados */
+      const v = Math.sin(f * Math.PI * 2);
+      girar('Head', CIMA, v * 0.55); maoNaTesta();
+      break;
+    }
+    case 'apontar': {   /* braço estendido para a frente, a outra mão na cintura; o braço sobe, fica e desce */
+      const v = f < 0.25 ? suave(f / 0.25) : f < 0.75 ? 1 : 1 - suave((f - 0.75) / 0.25);
+      braco('D', 0.1 + v * 1.45, 0.05, 0.25 - v * 0.2); braco('E', 0.15, 0.55, 1.5);
+      girar('Spine', CIMA, -v * 0.18); girar('Spine', LADO, v * 0.07); girar('Head', LADO, -v * 0.08);
+      break;
+    }
+    case 'conversar': {   /* fala com as mãos: uma sobe e desce, a cabeça acompanha */
+      const v = onda(f, 0, 1), w = Math.sin(f * Math.PI * 4);
+      braco('D', 0.55 + v * 0.45, 0.1 + w * 0.08, 1.35 - v * 0.35); braco('E', 0.25 + (1 - v) * 0.2, 0.15, 0.9);
+      girar('Head', LADO, w * 0.07); girar('Head', CIMA, (v - 0.5) * 0.25); girar('Spine', CIMA, (v - 0.5) * 0.12);
+      break;
+    }
+    case 'estocada': {   /* recua a lança, estoca depressa e volta devagar */
+      const v = f < 0.22 ? -0.25 * suave(f / 0.22) : f < 0.36 ? -0.25 + 1.25 * queda((f - 0.22) / 0.14) : 1 - suave((f - 0.36) / 0.64);
       braco('D', 1.25, 0.05, 1.3 - v * 1.2); braco('E', 0.55, 0.2, 1.2);
-      girar('Spine', CIMA, -0.25 + v * 0.25); girar('Spine', LADO, v * 0.15);
-      girar('LeftUpLeg', LADO, 0.35); girar('LeftLeg', LADO, -0.3);
+      girar('Spine', CIMA, -0.25 + v * 0.3); girar('Spine', LADO, Math.max(0, v) * 0.2);
+      girar('LeftUpLeg', LADO, 0.35 + Math.max(0, v) * 0.18); girar('LeftLeg', LADO, -0.3 - Math.max(0, v) * 0.22);
       break;
     }
-    case 'atirar': {
-      const puxa = f < 0.7 ? f / 0.7 : 0;
-      girar('Spine', CIMA, 0.55);
+    case 'aparar': {   /* escudo erguido à frente: apara o golpe e cede meio passo */
+      const v = Math.sin(f * Math.PI);
+      braco('E', 1.15 + v * 0.25, 0.25, 1.5); braco('D', 0.5, 0.1, 1.2);
+      girar('Spine', LADO, -0.08 - v * 0.1); girar('Spine', CIMA, 0.3);
+      girar('RightUpLeg', LADO, -0.2 - v * 0.12); girar('LeftUpLeg', LADO, 0.3); girar('LeftLeg', LADO, -0.35);
+      break;
+    }
+    case 'cair': case 'caido': {   /* atingido: os joelhos cedem, os braços abrem e o corpo vai de costas ao chão */
+      const v = pose === 'caido' ? 1 : f;
+      braco('E', 0.4 + v * 0.9, 0.3 + v * 0.9, 0.4); braco('D', 0.3 + v * 0.8, 0.3 + v * 1.0, 0.5);
+      girar('LeftUpLeg', LADO, 0.5 * Math.sin(v * Math.PI) + v * 0.1); girar('LeftLeg', LADO, -0.9 * Math.sin(v * Math.PI) - v * 0.25);
+      girar('RightUpLeg', LADO, 0.3 * Math.sin(v * Math.PI)); girar('RightLeg', LADO, -0.6 * Math.sin(v * Math.PI));
+      girar('Head', LADO, -v * 0.25);
+      break;
+    }
+    case 'atirar': {   /* puxa a corda devagar, segura um instante e solta */
+      const puxa = f < 0.55 ? suave(f / 0.55) : f < 0.72 ? 1 : f < 0.78 ? 1 - (f - 0.72) / 0.06 : 0;
+      girar('Spine', CIMA, 0.55); girar('Spine', LADO, -puxa * 0.06);
       braco('E', 1.5, 0.05, 0.05); braco('D', 1.45, -0.15, 0.8 + puxa * 1.4);
       break;
     }
@@ -254,16 +358,21 @@ function aplicarPose(pose, f, o) {
     default: break;
   }
   /* quem leva lança parada segura a haste em pé; o escudo vai à frente do corpo */
-  if (o.lanca && pose !== 'estocada' && pose !== 'montado' && pose !== 'golpe') braco('D', 0.3, 0.12, 1.25);
-  if (o.escudo && pose !== 'estocada' && pose !== 'montado') braco('E', 0.35, 0.1, 1.35);
-  if (o.arco && pose !== 'atirar' && pose !== 'montado') braco('E', 0.25, 0.05, 0.4);
+  const livre = !SEM_ARMA_NA_MAO[pose];
+  if (o.lanca && livre && pose !== 'estocada' && pose !== 'montado' && pose !== 'golpe') braco('D', 0.3, 0.12, 1.25);
+  if (o.escudo && livre && pose !== 'estocada' && pose !== 'montado') braco('E', 0.35, 0.1, 1.35);
+  if (o.arco && livre && pose !== 'atirar' && pose !== 'montado') braco('E', 0.25, 0.05, 0.4);
   raiz.updateMatrixWorld(true);
 }
+/* poses em que as mãos estão ocupadas com o gesto: a arma não é segurada do jeito de sempre */
+const SEM_ARMA_NA_MAO = { cair: 1, caido: 1, olhar: 1, apontar: 1, 'andando-olhar': 1, peneirar: 1, cavar: 1, aparar: 1, conversar: 1 };
+/* quem caiu larga a arma: só o que está na cabeça continua */
+const CAIDO = { cair: 1, caido: 1 };
 function pos(nome, alvo) { return ossos[nome].getWorldPosition(alvo || new V3()); }
 /* eixos do personagem no mundo */
 function eixos() {
   const lado = new V3(1, 0, 0).applyQuaternion(raiz.quaternion), frente = new V3(0, 0, 1).applyQuaternion(raiz.quaternion);
-  return { lado, frente, cima: new V3(0, 1, 0) };
+  return { lado, frente, cima: new V3(0, 1, 0).applyQuaternion(raiz.quaternion) };
 }
 /* põe uma peça com o cabo (+Y) em `y` e o fio (+Z) perto de `z`, segurada em `p` */
 function por(peca, p, y, z) {
@@ -275,7 +384,12 @@ function aplicarPecas(pose, f, o) {
   Object.values(pecas).forEach(p => { p.visible = false; });
   const E = eixos(), mD = pos('RightHand'), mE = pos('LeftHand'), aD = pos('RightForeArm'), aE = pos('LeftForeArm');
   const antebracoD = mD.clone().sub(aD).normalize();
-  const cabeca = pos('Head'), centroCabeca = cabeca.clone().add(new V3(0, 70 * CABECA, 0));
+  const cabeca = pos('Head'), centroCabeca = cabeca.clone().add(E.cima.clone().multiplyScalar(70 * CABECA));
+  const caiu = !!CAIDO[pose];
+  if (pose === 'peneirar') {
+    /* peneira entre as duas mãos, deitada */
+    por(pecas.peneira, mD.clone().lerp(mE, 0.5).add(new V3(0, -6, 0)), new V3(0, 1, 0), E.frente);
+  }
   /* ferramenta de golpe: cabo continua o antebraço dobrado para cima */
   const ferr = o.ferramenta || o.trabalho;
   if (ferr && pecas[ferr] && (pose === 'golpe' || pose === 'cavar')) {
@@ -285,12 +399,12 @@ function aplicarPecas(pose, f, o) {
     if (pose === 'cavar') pecas[ferr].position.add(cabo.clone().normalize().multiplyScalar(-90));
   }
   if (o.carga === 'picareta' && !ferr) por(pecas.picareta, mD, antebracoD.clone().add(E.frente.clone().multiplyScalar(0.6)), E.frente);
-  if (o.lanca) {
+  if (o.lanca && !caiu && pose !== 'peneirar' && pose !== 'cavar') {
     const y = pose === 'estocada' ? antebracoD.clone() : E.cima.clone().add(E.frente.clone().multiplyScalar(pose === 'montado' ? 0.55 : 0.08));
     por(pecas.lanca, mD, y, E.frente); pecas.lanca.position.add(y.clone().normalize().multiplyScalar(pose === 'estocada' ? -40 : -60));
   }
-  if (o.arco) por(pecas.arco, mE, E.cima, pose === 'atirar' ? E.frente : E.frente.clone().add(E.lado.clone().multiplyScalar(-0.6)));
-  if (o.escudo) {
+  if (o.arco && !caiu) por(pecas.arco, mE, E.cima, pose === 'atirar' ? E.frente : E.frente.clone().add(E.lado.clone().multiplyScalar(-0.6)));
+  if (o.escudo && !caiu) {
     const p = aE.clone().lerp(mE, 0.55).add(E.frente.clone().multiplyScalar(26)).add(E.lado.clone().multiplyScalar(14));
     por(pecas.escudo, p, E.cima, E.frente.clone().add(E.lado.clone().multiplyScalar(0.35)));
     pintar(pecas.escudo, 'pintura', o.escudo);
@@ -298,13 +412,13 @@ function aplicarPecas(pose, f, o) {
   if (o.capacete) { por(pecas.capacete, centroCabeca.clone().add(new V3(0, 4, 0)), E.cima, E.frente); pintar(pecas.capacete, 'metal', o.capacete); }
   else if (o.capuz) { por(pecas.capuz, centroCabeca.clone().add(new V3(0, 2, 0)), E.cima, E.frente); pintar(pecas.capuz, 'pano', o.capuz); }
   else if (o.chapeu === 'palha') por(pecas.palha, centroCabeca.clone().add(new V3(0, 28, 0)), E.cima, E.frente);
-  if (pose === 'carregar' || (o.carga && o.carga !== 'picareta')) {
+  if (!caiu && (pose === 'carregar' || (o.carga && o.carga !== 'picareta'))) {
     const ombro = pos('RightShoulder').add(new V3(0, 52, 0)).add(E.lado.clone().multiplyScalar(-18));
     const pc = pecas[o.carga === 'tronco' ? 'tronco' : o.carga === 'minerio' ? 'minerio' : 'saco'];
     por(pc, ombro, E.cima, E.frente);
     if (o.carga === 'tronco') pc.quaternion.multiply(new Q().setFromAxisAngle(new V3(0, 1, 0), Math.PI / 2));
   }
-  if (o.bandeira) {
+  if (o.bandeira && !caiu) {
     por(pecas.bandeira, mE.clone().add(new V3(0, -40, 0)), E.cima.clone().add(E.frente.clone().multiplyScalar(-0.15)), E.lado);
     pintar(pecas.bandeira, 'pano', o.bandeira);
     const pano = pecas.bandeira.children[1], pa = pano.geometry.attributes.position;
@@ -316,7 +430,7 @@ function aplicarPecas(pose, f, o) {
 
 /* ---------------------------------------------------------------- roupa a partir das opções de RP.sprites */
 function roupaDe(o) {
-  const s = hash((o.semente || 0) + 7), fem = o.feminina != null ? !!o.feminina : (s % 5 === 0);
+  const s = hash(((o.semente || 0) % VARIANTES) + 7), fem = o.feminina != null ? !!o.feminina : (s % 5 === 0);
   return {
     tunica: o.roupa || '#7a6a4a', calca: o.calca || ['#4a3b2c', '#3f3a33', '#5a4632', '#33302c'][s % 4], pele: PELE[(s >>> 3) % PELE.length],
     cabelo: CABELO[(s >>> 6) % CABELO.length], bota: '#3a2a1c', cinto: o.cinto || '#2b2520', feminina: fem, barba: !fem && (s >>> 9) % 3 === 0,
@@ -328,6 +442,7 @@ function poseDe(o) {
   if (o.sentado) return 'sentado';
   if (o.estocada) return 'estocada';
   if (o.atirando) return 'atirar';
+  if (o.trabalho === 'peneira') return o.andando ? 'andando' : 'peneirar';
   if (o.trabalho === 'pa' || o.ferramenta === 'enxada' || o.ferramenta === 'pa') return o.andando ? 'andando' : 'cavar';
   if (o.trabalho || o.ferramenta) return o.andando ? 'andando' : 'golpe';
   if (o.carga && o.carga !== 'picareta') return o.andando ? 'carregar' : 'parado';
@@ -337,7 +452,12 @@ function poseDe(o) {
 /* 8 direções: 0 = olhando para a direita da tela, no sentido horário (a tela tem y para baixo) */
 function direcao(o) {
   /* o.ang é a direção no chão do mapa; com a câmera girada, na tela ela vira ang + AZ */
-  if (o.ang != null) { const a = o.ang + ((RP.arte && RP.arte.AZ) || 0); return ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8; }
+  if (o.ang != null) {
+    const a = o.ang + ((RP.arte && RP.arte.AZ) || 0);
+    /* dir4: só as quatro diagonais (quem passeia perto de casa): metade dos sprites, e a figura nunca fica de perfil duro */
+    if (o.dir4) return (((Math.floor(a / (Math.PI / 2)) * 2 + 1) % 8) + 8) % 8;
+    return ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+  }
   return (o.dir || 1) > 0 ? 1 : 3;
 }
 function virar(grupo, d) { const a = d * Math.PI / 4; grupo.rotation.set(0, Math.atan2(Math.cos(a), Math.sin(a)), 0); }
@@ -365,6 +485,12 @@ function renderPessoa(o, d, f) {
   const cx = CX.pessoa, pose = poseDe(o);
   cavalo.userData.raiz.visible = false; raiz.visible = true; raiz.position.set(0, 0, 0);
   virar(raiz, d);
+  if (CAIDO[pose]) {
+    /* de costas ao chão: a raiz deita para trás em torno dos pés e avança meio corpo, para a figura caber na caixa */
+    const v = pose === 'caido' ? 1 : queda(f), fr = new V3(0, 0, 1).applyQuaternion(raiz.quaternion);
+    raiz.rotateX(-1.46 * v);
+    raiz.position.set(fr.x * 150 * v, 34 * v, fr.z * 150 * v);
+  }
   malha.material.map = textura(roupaDe(o)); malha.material.needsUpdate = true;
   aplicarPose(pose, f, o);
   aplicarPecas(pose, f, o);
@@ -418,30 +544,47 @@ function quadro(o, t, pose) {
   const ciclo = CICLO[pose] || 1, fase = ((t / ciclo + (o.fase || 0) / (Math.PI * 2)) % 1 + 1) % 1;
   return Math.floor(fase * FRAMES) % FRAMES;
 }
+/* ritmo próprio de cada pessoa: o ciclo de cada uma dura um pouco mais ou um pouco menos (±9%), e com a fase própria
+   ninguém anda nem trabalha em uníssono. Não custa sprite nenhum: muda só a hora em que cada quadro aparece. */
+function ritmoDe(o) { return o.semente == null ? 1 : 0.91 + (hash(o.semente * 31 + 5) % 1000) / 1000 * 0.18; }
 function obter(tipo, o, t, render) {
   if (!B.pronto) return null;
   const d = direcao(o), pose = tipo === 'pessoa' ? poseDe(o) : (o.galope ? 'correndo' : o.andando ? 'andando' : 'parado');
-  const ciclo = tipo === 'montado' ? (o.galope ? 0.6 : o.andando ? 1.05 : 2.6) : CICLO[pose];
-  const fase = ((t / ciclo + (o.fase || 0) / (Math.PI * 2)) % 1 + 1) % 1, fr = Math.floor(fase * FRAMES) % FRAMES;
-  const base = chave(tipo, o, d, fr), k = base + '|' + ((RP.arte && RP.arte.K3D) || 0).toFixed(2);
+  const ciclo = (tipo === 'montado' ? (o.galope ? 0.6 : o.andando ? 1.05 : 2.6) : (CICLO[pose] || 1)) * ritmoDe(o);
+  const nq = tipo === 'montado' ? FRAMES : (QUADROS[pose] || FRAMES);
+  /* o.quadro (0 a 1): gesto que acontece uma vez (a queda), no ponto pedido; senão, o ciclo pelo relógio */
+  const fase = o.quadro != null ? Math.max(0, Math.min(0.9999, o.quadro)) : ((t / ciclo + (o.fase || 0) / (Math.PI * 2)) % 1 + 1) % 1, fr = Math.floor(fase * nq) % nq;
+  const sufixo = '|' + ((RP.arte && RP.arte.K3D) || 0).toFixed(2), figura = chave(tipo, o, d, 'q') + sufixo;
+  const base = chave(tipo, o, d, fr), k = base + sufixo;
   const s = cache.get(k);
   if (s) { cache.delete(k); cache.set(k, s); return s; }
   const agora = performance.now(), q = Math.floor(agora / 16);
   if (q !== quadroAtual) { quadroAtual = q; gastoQuadro = 0; }
   if (gastoQuadro > ORCAMENTO_MS) {
-    /* sem tempo: a mesma figura na inclinação pronta mais perto (o cache guarda várias; sai quem ficou sem uso) */
+    /* sem tempo neste quadro: o quadro pronto mais perto da mesma figura (a animação fica um instante mais dura, mas a
+       figura não troca de desenho); sem nenhum, a mesma figura na inclinação pronta mais perto */
+    const feitos = prontos.get(figura);
+    if (feitos) for (let i = 1; i <= nq >> 1; i++) {
+      const a = feitos[(fr - i + nq) % nq] || feitos[(fr + i) % nq];
+      if (a) { const v = cache.get(a); if (v) return v; }
+    }
     for (const kk of RP.arte.kVizinhos()) { const v = cache.get(base + '|' + kk); if (v) return v; }
     return null;
   }
   let novo;
-  try { novo = render(o, d, (fr + 0.5) / FRAMES); }
+  try { novo = render(o, d, (fr + 0.5) / nq); }
   catch (e) { console.error(e); B.pronto = false; B.falhou = true; return null; }
   gastoQuadro += performance.now() - agora;
   if (cache.size >= MAX) cache.delete(cache.keys().next().value);
   cache.set(k, novo);
+  let lista = prontos.get(figura);
+  if (!lista) { if (prontos.size > 4000) prontos.clear(); lista = []; prontos.set(figura, lista); }
+  lista[fr] = k;
   return novo;
 }
 B.pessoa = (o, t) => obter('pessoa', o, t, renderPessoa);
+/* em que ponto do ciclo (0 a 1) esta pessoa está nesta pose: para o que acompanha o gesto (a terra que a pá joga) */
+B.fase = (o, t, pose) => ((t / ((CICLO[pose] || 1) * ritmoDe(o)) + (o.fase || 0) / (Math.PI * 2)) % 1 + 1) % 1;
 B.montado = (o, t) => obter('montado', o, t, renderMontado);
 B.renderAgora = (tipo, o, t) => { gastoQuadro = -1e9; const s = obter(tipo, o, t, tipo === 'pessoa' ? renderPessoa : renderMontado); return s; };
 B.carregar = carregar;

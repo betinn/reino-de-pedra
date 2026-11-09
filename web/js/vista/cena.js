@@ -5,12 +5,16 @@
      cache estático  chão, rios, estradas, pontes, vegetação, relevo e bancos de névoa (refeito ao sair da área coberta,
                      ao mudar o zoom ou quando chegam dados novos)
      quadro animado  construções, pessoas, tropas, animais, fumaça, brilho do rio, névoa à deriva, rótulos
-   Desempenho: desenha só o visível, no máximo ~30 quadros/s, pausa com a aba oculta e quando a tela sai. */
+   Desempenho: desenha só o visível, pausa com a aba oculta e quando a tela sai. A taxa de quadros se ajusta ao custo:
+   60 quadros/s enquanto o quadro custa pouco (o deslizar das marchas e da câmera fica liso); com muita gente na tela e o
+   quadro caro, volta a 30, que é o piso de sempre. RP.Cena.medida() diz o custo médio e a taxa de agora. */
 (function () {
   'use strict';
   var RP = window.RP, H = RP.hex, A = RP.arte, M = RP.mapaModelo;
   var K = A.K, P = A.P, PA = A.PA;
-  var SMIN = 0.85, SMAX = 3.2, QUADRO_MS = 33, ZOOM_MARCADOR = 1.3;
+  var SMIN = 0.85, SMAX = 3.2, QUADRO_MS = 33, QUADRO_RAPIDO_MS = 16, CUSTO_SOBE_MS = 6.5, CUSTO_DESCE_MS = 10.5, ZOOM_MARCADOR = 1.3;
+  /* a posição desenhada de uma marcha: suave (M.posSuave), com hex e chegada da posição exata */
+  function posDe(m, ag) { return M.posSuave ? M.posSuave(m, ag) : M.posMarcha(m, ag); }
 
   /* uma única escuta de visibilidade para todas as cenas (sem vazamento por instância) */
   /* imagens enviadas pelos reinos: pedidas uma vez e desenhadas quando terminam de carregar */
@@ -265,7 +269,7 @@
     return false;
   };
 
-  /* ---------------------------------------------------------------- laço (≤ 30 quadros/s) */
+  /* ---------------------------------------------------------------- laço (60 quadros/s com folga, 30 sem) */
   C.iniciar = function () {
     if (this.rodando) return;
     this.rodando = true; this.redimensionar();
@@ -276,12 +280,21 @@
     var self = this, ultimo = 0;
     cancelAnimationFrame(this.raf);
     if (!this.rodando || document.hidden) return;
+    if (!this.alvoMs) this.alvoMs = QUADRO_MS;
     (function laco(t) {
       if (!self.rodando || document.hidden) return;
       self.raf = requestAnimationFrame(laco);
-      if (t - ultimo < QUADRO_MS) return;
+      if (t - ultimo < self.alvoMs - 3) return;
+      var passou = t - ultimo;
       ultimo = t;
+      var t0 = performance.now();
       self.quadro(t);
+      /* custo médio do quadro e taxa real; com folga sobe para 60 quadros/s, apertado volta a 30 */
+      var custo = performance.now() - t0;
+      self.custoMs = self.custoMs == null ? custo : self.custoMs * 0.92 + custo * 0.08;
+      if (passou < 1000) self.intervaloMs = self.intervaloMs == null ? passou : self.intervaloMs * 0.92 + passou * 0.08;
+      if (self.custoMs > CUSTO_DESCE_MS) self.alvoMs = QUADRO_MS;
+      else if (self.custoMs < CUSTO_SOBE_MS && !RP.semMovimento) self.alvoMs = QUADRO_RAPIDO_MS;
     })(performance.now());
   };
   C.pausar = function () { cancelAnimationFrame(this.raf); this.raf = 0; };
@@ -628,6 +641,9 @@
     var meusHex = {}, ameacados = {};
     ((RP.reino && RP.reino.locais) || []).forEach(function (l) { meusHex[l.hex] = l; });
 
+    /* onde há batalha agora: a construção fica meio transparente, para a luta aparecer inteira */
+    var emBatalha = {};
+    d.objs.forEach(function (o) { if (o.tipo === 'batalha') emBatalha[o.hex] = true; });
     /* objetos parados (locais, jazidas, ruínas e tipos de outros sistemas) */
     d.objs.forEach(function (o) {
       var tipo = MAPA.tiposObjeto[o.tipo];
@@ -644,8 +660,11 @@
         var obra = meu ? obraDe(o.id, ag) : null;
         itens.push({ y: p.y, x: p.x, d: function () {
           obj(c, V, p.x, p.y);
+          var lutando = emBatalha[h];
+          if (lutando) c.globalAlpha = 0.5;
           if (o.ruina || o.dono === 'livre') A.ruina(c, x, t, pal);
           else A.local(c, x, t, pal, A.corDono(o.dono, o), anim);
+          if (lutando) c.globalAlpha = 1;
           if (obra) { obj(c, V, p.x, p.y); if (obra.ativa) A.andaime(c, castelo ? 30 : 20, P); else A.materiais(c, P); }
         }, alvo: alvo(p.x, p.y, castelo ? 64 : 50, castelo ? 66 : 42, ['local', o.id], o) });
         if (obra && obra.ativa) {
@@ -678,6 +697,13 @@
       }
       /* tipos de outros sistemas, ou marcador genérico */
       var info = { t: t, pal: pal, anim: anim, antigo: antigo, A: A, estado: e, agora: ag };
+      /* tipos que se espalham em várias figuras (a batalha): cada uma entra na ordem de profundidade por conta própria */
+      if (tipo && tipo.itensCena && !antigo) {
+        info.castelo = (d.porHex[h] || []).some(function (x) { return x.tipo === 'local' && x.local === 'castelo'; });
+        try {
+          tipo.itensCena(o, p, info, function (x, y, fn) { itens.push({ y: y, x: x, silhueta: true, d: function () { obj(c, V, x, y); fn(c); } }); });
+        } catch (er) { console.error(er); }
+      }
       itens.push({ y: p.y, x: p.x, som: tipo && tipo.som, d: function () {
         obj(c, V, p.x, p.y);
         try { if (tipo && tipo.desenharCena) tipo.desenharCena(c, o, info); else A.marco(c, t, pal, anim); } catch (er) { console.error(er); }
@@ -755,16 +781,19 @@
     });
 
     /* marchas */
-    if (camadas.marchas !== false) d.marchas.forEach(function (m) {
-      var pos = M.posMarcha(m, ag), cheg = M.chegada(m);
+    if (camadas.marchas !== false) d.marchas.concat(d.fantasmas || []).forEach(function (m) {
       if (M.sumiu(m, ag)) return;
+      var pos = posDe(m, ag), cheg = M.chegada(m);
       if (!M.marchaVisivel(m, pos) || !naTela(pos.x, pos.y)) return;
       self.desenharMarcha(c, V, m, pos, t, ag, itens, rot);
+      /* quem já saiu do feed e só termina de andar (fantasma) não é alvo de toque */
+      if (m.fantasma) return;
       var am = alvoTela(self, pos.x, pos.y, 60, 44, ['marcha', m.id], m); am.hex = pos.hex; self.alvos.push(am);
     });
 
     intercalarNatureza(c, V, r.altos, itens);
     ordenar(itens, this.cam.x);
+    this.nItens = itens.length;
     itens.forEach(function (it) {
       it.d();
       if (it.alvo) { var a = it.alvo; self.alvos.push(alvoTela(self, a.x, a.y, a.w, a.h, a.ent, a.obj)); }
@@ -806,7 +835,7 @@
     if (camadas.marchas !== false && s < ZOOM_MARCADOR) {
       var agoraReal = performance.now();
       d.marchas.forEach(function (m) {
-        var pm = M.posMarcha(m, ag);
+        var pm = posDe(m, ag);
         if (!naTela(pm.x, pm.y)) return;
         var pt = self.tela(pm.x, pm.y), angTela = Math.atan2(Math.sin(pm.ang + AZ) * K, Math.cos(pm.ang + AZ));
         c.setTransform(dpr * 0.82, 0, 0, dpr * 0.82, pt.x * dpr, (pt.y - 30 * s - 13) * dpr);
@@ -875,11 +904,13 @@
     return lista;
   }
   /* o que cada um faz no trabalho do exército parado: escavar (pá e picareta), extrair e coletar (picareta ou machado), caçar */
-  function trabalhoDe(trab, i, p, centro) {
+  var PAPEIS_ESCAVAR = ['pa', 'picareta', 'peneira'];
+  function trabalhoDe(trab, i, p, centro, t, n) {
     var o = { dir: girarV(p.x - centro.x, p.y - centro.y).x <= 0 ? 1 : -1 };
     if (!trab) return o;
     o.lanca = false; o.escudo = null; o.arco = false;
-    if (trab === 'escavar') o.trabalho = i % 2 ? 'picareta' : 'pa';
+    /* escavar: cada um cava, quebra a pedra ou peneira a terra, e troca de serviço de tempos em tempos (um sozinho faz os três) */
+    if (trab === 'escavar') o.trabalho = PAPEIS_ESCAVAR[(i + Math.floor(((t || 0) + i * 3.1) / (n > 2 ? 14 : 7))) % 3];
     else if (trab === 'extrair') o.trabalho = 'picareta';
     else if (trab === 'coletar') o.trabalho = i % 3 === 2 ? 'martelo' : 'picareta';
     else if (trab === 'cacar') { o.lanca = true; o.estocada = true; }
@@ -893,6 +924,8 @@
     var cor = A.corDono(m.dono, m);
     var dir = Math.cos(pos.ang + AZ) >= 0 ? 1 : -1, ux = Math.cos(pos.ang), uy = Math.sin(pos.ang);
     var tipo = String(m.marcha || ''), def = MAPA.tiposMarcha[tipo], cheg = M.chegadaConhecida(m), prefixo = '';
+    /* anda de verdade agora? (a posição suave freia ao chegar: a figura para de dar passos junto) */
+    var mexe = pos.vel == null || pos.vel > 1.4;
     function pt(f, l) { return { x: pos.x - ux * f - uy * l, y: pos.y - uy * f + ux * l }; }
     function add(p, fn, som) { itens.push({ y: p.y, x: p.x, silhueta: true, som: som, d: function () { obj(c, V, p.x, p.y); fn(); } }); }
     /* quem está selecionado nesta marcha: círculo azul nos pés de cada um */
@@ -904,7 +937,7 @@
       var mp = RP.reino && (RP.reino.marchas || []).filter(function (x) { return x.id === m.id; })[0];
       var n = Math.max(1, Math.min(5, (mp && mp.pessoas) || 3));
       for (var k = 0; k < n; k++) (function (k) {
-        add(pt(k * 8, ((k % 2) * 2 - 1) * 3), function () { RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[k % 5], dir: dir, andando: true, fase: k * 0.9, carga: k % 3 === 1 ? 'tronco' : 'saco' }); });
+        add(pt(k * 8 + Math.sin(t * 0.6 + k * 2.3) * 1.3, ((k % 2) * 2 - 1) * 3), function () { RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[k % 5], dir: dir, ang: pos.ang, andando: mexe, semente: m.id * 7 + k, fase: k * 0.9, carga: k % 3 === 1 ? 'tronco' : 'saco' }); });
       })(k);
       prefixo = 'Material · ';
     } else if (tipo === 'pessoas') {
@@ -912,16 +945,20 @@
       var mq = RP.reino && (RP.reino.marchas || []).filter(function (x) { return x.id === m.id; })[0];
       var np = Math.max(1, Math.min(5, (mq && mq.pessoas) || 1));
       for (var j = 0; j < np; j++) (function (j) {
-        add(pt(j * 8, ((j % 2) * 2 - 1) * 3), function () { RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[(j + 2) % 5], dir: dir, andando: true, fase: j * 0.7 }); });
+        add(pt(j * 8 + Math.sin(t * 0.6 + j * 2.3) * 1.3, ((j % 2) * 2 - 1) * 3), function () { RP.sprites.pessoa(c, 0, 0, t, { roupa: P.roupa[(j + 2) % 5], dir: dir, ang: pos.ang, andando: mexe, semente: m.id * 7 + j, fase: j * 0.7 }); });
       })(j);
       prefixo = (np === 1 ? 'Pessoa' : np + ' pessoas') + ' · ';
     } else if (/explor|batedor|prospector/.test(tipo)) {
       /* o explorador é uma pessoa da marcha (oficio explorador-cavalo, prospector...); a escolta vem atrás, uma figura por pessoa */
-      var andaE = !(m.parado || (cheg && cheg <= ag));
+      var andaE = !(m.parado || (cheg && cheg <= ag)) && mexe;
       figurasDaMarcha(m, revelado).forEach(function (f, i) {
-        add(i ? pt(10 + Math.floor((i - 1) / 2) * 9, ((i % 2) * 2 - 1) * 6) : pos, function () {
+        /* quem explora anda, olha em volta e aponta: andando, de vez em quando leva a mão à testa; parado, varre o
+           horizonte, aponta o que viu e descansa. A escolta só acompanha. */
+        var vz = Math.floor((t + (f.id % 53) * 1.7) / 4.4), rr = A.hash(f.id % 997, vz % 997, 71), montado = /cavalo/.test(f.oficio);
+        var gesto = i || montado ? null : andaE ? (rr < 0.3 ? 'andando-olhar' : null) : (rr < 0.45 ? 'olhar' : rr < 0.75 ? 'apontar' : 'parado');
+        add(i ? pt(10 + Math.floor((i - 1) / 2) * 9 + Math.sin(t * 0.7 + i * 1.9) * 1.2, ((i % 2) * 2 - 1) * 6) : pos, function () {
           marcar(f);
-          RP.pessoasVista.figura(c, f, t, dir, cor, !revelado, { andando: andaE, ang: pos.ang });
+          RP.pessoasVista.figura(c, f, t, dir, cor, !revelado, { andando: andaE, ang: pos.ang, pose: gesto });
           if (propria) RP.pessoasVista.barraVida(c, f);
         });
       });
@@ -938,14 +975,24 @@
       var figs = figurasDaMarcha(m, revelado), nfig = Math.min(figs.length, MAX_MARCHA);
       var parada = !!(m.parado || (cheg && cheg <= ag && propria)), trab = m.estado === 'trabalhando' ? m.ordem : null;
       var porFila = nfig <= 3 ? nfig : nfig <= 8 ? 3 : 4;
+      /* a formação se desfaz e se refaz aos poucos: ao parar, cada um vai andando para o seu lugar em volta do ponto */
+      var esp = espalhar(m.id, parada), anel = trab === 'escavar' ? 13 : 9;
+      /* quem escava trabalha na frente da ruína, não atrás dela */
+      var foco = trab === 'escavar' ? { x: pos.x, y: pos.y + 24 } : pos;
+      if (trab === 'escavar') {
+        /* a escavação: a cova aberta, o monte de terra tirada e a terra peneirada, no chão, sob quem trabalha */
+        itens.push({ y: foco.y - 12, x: foco.x, d: function () { obj(c, V, foco.x, foco.y + 4); cova(c, t); } });
+      }
       for (var i = 0; i < nfig; i++) (function (i, f) {
         var fila = Math.floor(i / porFila), col = i % porFila - (Math.min(porFila, nfig) - 1) / 2, p;
-        if (parada) {
-          /* parados ou trabalhando: espalhados em volta do ponto, de frente para ele */
-          var a = (i / Math.max(1, nfig)) * 6.2832 + 0.4, r = nfig === 1 ? 0 : 9 + (i % 2) * 4;
-          p = { x: pos.x + Math.cos(a) * r * 1.3, y: pos.y + Math.sin(a) * r * 0.6 + 4 };
-        } else p = pt(fila * 10 - Math.sin(t * 2 + i) * 0.6, col * 8);
-        var extra = parada ? trabalhoDe(trab, i, p, pos) : { andando: true, ang: pos.ang };
+        /* em marcha: cada um com o próprio balanço, um pouco à frente ou atrás do lugar na fila */
+        var pf = pt(fila * 10 + Math.sin(t * 0.7 + i * 1.9) * 1.3, col * 8 + Math.cos(t * 0.5 + i * 2.3) * 0.9);
+        /* parados ou trabalhando: espalhados em volta do ponto, de frente para ele */
+        var a = (i / Math.max(1, nfig)) * 6.2832 + 0.4, r = nfig === 1 ? (trab === 'escavar' ? 10 : 0) : anel + (i % 2) * 4;
+        var pp = { x: foco.x + Math.cos(a) * r * 1.3, y: foco.y + Math.sin(a) * r * 0.6 + 4 };
+        p = esp <= 0 ? pf : esp >= 1 ? pp : { x: pf.x + (pp.x - pf.x) * esp, y: pf.y + (pp.y - pf.y) * esp };
+        var chegando = esp > 0 && esp < 1;
+        var extra = parada && !chegando ? trabalhoDe(trab, i, p, foco, t, nfig) : { andando: mexe || chegando, ang: chegando ? Math.atan2(pp.y - pf.y, pp.x - pf.x) : pos.ang };
         if (trab === 'coletar' && m.recurso === 'madeira') { extra.trabalho = null; extra.ferramenta = 'machado'; }   /* madeira: machado; pedra: picareta */
         if (!parada && m.cargaUsada > 0 && f.oficio !== 'cavalaria' && f.oficio !== 'elite') extra.carga = m.recurso === 'madeira' ? 'tronco' : i % 2 ? 'saco' : 'minerio';
         add(p, function () {
@@ -953,7 +1000,8 @@
           RP.pessoasVista.figura(c, f, t, extra.dir || dir, revelado ? cor : P.hostil, !revelado, extra);
           if (propria) RP.pessoasVista.barraVida(c, f);
           if (i === 0 && revelado && !trab && nfig > 2) A.bandeira(c, -dir * 2, -A.emPe(26), 18, cor, t, 10, 7);
-        }, parada && trab && trab !== 'cacar' ? (extra.ferramenta === 'machado' ? 'machado' : 'picareta') : null);
+          if (parada && !chegando && trab) efeitoTrabalho(c, extra, f, t);
+        }, parada && trab && trab !== 'cacar' && extra.trabalho !== 'peneira' ? (extra.ferramenta === 'machado' ? 'machado' : 'picareta') : null);
       })(i, figs[i]);
       if (figs.length > nfig) prefixo = figs.length + ' · ';
       if (trab) prefixo = ({ escavar: 'Escavando', extrair: 'Extraindo', cacar: 'Caçando', coletar: 'Coletando' }[trab] || 'Trabalhando') + ' · ' + prefixo;
@@ -972,6 +1020,51 @@
     rot(pos.x, pos.y, this.cam.s < ZOOM_MARCADOR ? -96 : -40, prefixo + tempo, 'marcha', cor, null, null, null, pct);
   };
 
+  /* quanto a formação de cada marcha já se espalhou (0 em fila, 1 em volta do ponto): anda aos poucos de um para o outro */
+  var espalhadas = new Map();
+  function espalhar(id, parada) {
+    var agora = performance.now(), e = espalhadas.get(id);
+    if (!e) { e = { v: parada ? 1 : 0, r: agora }; espalhadas.set(id, e); }
+    var dt = Math.min(0.2, (agora - e.r) / 1000);
+    if (dt > 0.001) { e.v = Math.max(0, Math.min(1, e.v + (parada ? 1 : -1) * dt / 0.9)); e.r = agora; }
+    if (espalhadas.size > 400) espalhadas.forEach(function (v, k) { if (agora - v.r > 20000) espalhadas.delete(k); });
+    return e.v < 0.001 ? 0 : e.v > 0.999 ? 1 : e.v * e.v * (3 - 2 * e.v);
+  }
+  /* a cova da escavação (ctx no pé do ponto): buraco, monte de terra e terra peneirada */
+  function cova(c, t) {
+    A.elipse(c, 0, 0, 13, 6.5 * K / 0.62, 'rgba(58,42,28,0.9)');
+    A.elipse(c, 0, 1, 9.5, 4.2 * K / 0.62, 'rgba(30,22,15,0.95)');
+    /* monte de terra tirada, de um lado; a terra já peneirada, do outro */
+    c.fillStyle = '#7a5a3a'; c.beginPath(); c.moveTo(-28, 3); c.quadraticCurveTo(-20, -11, -12, 3); c.closePath(); c.fill();
+    c.fillStyle = '#93714a'; c.beginPath(); c.moveTo(-25, 3); c.quadraticCurveTo(-20, -7, -15, 3); c.closePath(); c.fill();
+    c.fillStyle = '#b9a47c'; c.beginPath(); c.moveTo(14, 4); c.quadraticCurveTo(20, -4, 26, 4); c.closePath(); c.fill();
+    void t;
+  }
+  /* o que a ferramenta levanta, no compasso do gesto de cada um: a terra que a pá joga, as lascas da picareta, o pó da peneira */
+  function efeitoTrabalho(c, extra, f, t) {
+    var B = RP.bonecos; if (!B || !B.fase || !extra.trabalho) return;
+    var o = { semente: f.id, fase: (f.id % 13) * 0.53 }, k, i, lado = extra.dir || 1;
+    if (extra.trabalho === 'pa') {
+      var fa = B.fase(o, t, 'cavar');
+      if (fa < 0.68 || fa > 0.98) return;
+      k = (fa - 0.68) / 0.3;
+      for (i = 0; i < 5; i++) {
+        var u = Math.min(1, k * (1 + i * 0.12)), x = -lado * (4 + u * (11 + i * 2)), y = -15 - Math.sin(u * Math.PI) * (9 + i) + u * 12;
+        A.elipse(c, x, y, 1.5 - i * 0.12, 1.2, 'rgba(110,80,50,' + (1 - u * 0.6).toFixed(2) + ')');
+      }
+    } else if (extra.trabalho === 'peneira') {
+      for (i = 0; i < 5; i++) {
+        k = (t * 1.6 + i / 5 + (f.id % 7) * 0.13) % 1;
+        A.elipse(c, lado * 6 + (i - 2) * 1.6 + Math.sin(t * 9 + i) * 0.6, -8 + k * 8, 0.8, 0.8, 'rgba(190,168,128,' + (0.85 * (1 - k)).toFixed(2) + ')');
+      }
+    } else if (extra.trabalho === 'picareta' || extra.trabalho === 'martelo' || extra.ferramenta === 'machado') {
+      var fg = B.fase(o, t, 'golpe');
+      if (fg < 0.74 || fg > 0.94) return;
+      k = (fg - 0.74) / 0.2;
+      for (i = 0; i < 3; i++) A.elipse(c, lado * (8 + k * (4 + i * 3)), -3 - Math.sin(k * Math.PI) * (5 + i * 2), 1, 1, 'rgba(210,205,190,' + (1 - k).toFixed(2) + ')');
+    }
+  }
+
   function alvoTela(cena, x, y, w, h, ent, o) {
     var p = cena.tela(x, y), s = cena.cam.s;
     return { x0: p.x - (w / 2) * s, x1: p.x + (w / 2) * s, y0: p.y - h * s, y1: p.y + 10 * s, ent: ent, obj: o, hex: o && o.hex != null ? o.hex : (ent && ent[0] === 'hex' ? ent[1] : null),
@@ -979,6 +1072,12 @@
       perto: function (tx, ty) { return Math.abs(tx - p.x) <= (w / 4) * s && ty >= p.y - (h / 2) * s && ty <= p.y + 10 * s; } };
   }
 
+  /* custo médio do quadro (ms), taxa de quadros real e quantas figuras no último quadro, de cada cena que roda */
+  Cena.medida = function () {
+    return ativas.map(function (c) { return { custoMs: +(c.custoMs || 0).toFixed(2), fps: c.intervaloMs ? +(1000 / c.intervaloMs).toFixed(1) : 0, alvoFps: Math.round(1000 / (c.alvoMs || QUADRO_MS)), itens: c.nItens || 0, sprites: RP.bonecos ? RP.bonecos.tamanho() : 0 }; });
+  };
+  /* as cenas que rodam agora (para medir e conferir em teste) */
+  Cena.ativas = function () { return ativas.slice(); };
   Cena.SMIN = SMIN; Cena.SMAX = SMAX;
   RP.Cena = Cena;
 })();

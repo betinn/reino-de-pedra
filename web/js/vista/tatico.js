@@ -536,7 +536,7 @@
       var el = els[m._k];
       if (el === undefined) el = els[m._k] = g.querySelector('[data-marcha="' + m._k + '"]') || null;
       if (!el) return;
-      var pos = M.posMarcha(m, agora), tr = 'translate(' + n1(pos.x) + ' ' + n1(pos.y) + ')';
+      var pos = M.posSuave ? M.posSuave(m, agora) : M.posMarcha(m, agora), tr = 'translate(' + n1(pos.x) + ' ' + n1(pos.y) + ')';
       if (el._tr !== tr) { el.setAttribute('transform', tr); el._tr = tr; }
       var anda = RP.marchasMapa.andando(m, agora, real);
       if (el._anda !== anda) { el.classList.toggle('parada', !anda); el._anda = anda; }
