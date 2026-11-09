@@ -20,7 +20,6 @@
   }
   function nivelPor(n) { return !dados ? null : n >= dados.farol ? 'farol' : n > 0 ? 'brilho' : null; }
   function qtdRel(n) { n = n || 1; return n + (n > 1 ? ' relíquias' : ' relíquia'); }
-  RP.TEXTO_CONC = { brilho: 'Todos veem que há relíquia aqui, sem o tipo.', farol: 'Farol: todos veem de longe que há várias relíquias aqui, sem os tipos.' };
 
   function cartaoMinha(r) {
     var corpo;
@@ -35,8 +34,7 @@
   }
   function cartaoAVista(x) {
     var espionar = RP.telas.exploradores ? '<a class="btn btn-p btn-primario" href="#/exploradores?tipo=batedor&alvo=' + x.c + ',' + x.l + '">' + RP.icone('batedor') + 'Espionar</a>' : '';
-    return '<div class="card relq-card"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + qtdRel(x.n) + '</b><br><small class="fraco">' + RP.esc(x.nome) + ' · tipo só pela espionagem</small></span><span class="selo selo-destaque">' + (x.nivel === 'farol' ? 'Farol' : 'Brilho') + '</span></div>' +
-      '<p class="fraco" style="font-size:var(--fs-2)">' + RP.TEXTO_CONC[x.nivel] + ' Espione para saber o tipo.</p>' +
+    return '<div class="card relq-card"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + qtdRel(x.n) + '</b><br><small class="fraco">' + RP.esc(x.nome) + '</small></span><span class="selo selo-destaque">' + (x.nivel === 'farol' ? 'Farol' : 'Brilho') + '</span></div>' +
       '<div class="linha relq-acoes">' + espionar + '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + x.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a></div></div>';
   }
   function cartaoConhecida(r) {
@@ -195,8 +193,7 @@
 
   var TIPOS_OBJ = RP.mapa.tiposObjeto, A = RP.arte, TT = RP.mapaTatico;
   var folhaConc = function (o) {
-    return '<div class="info-linha"><span class="fraco">Relíquias</span><span>' + qtdRel(o.n) + ' · tipo só pela espionagem</span></div>' +
-      '<p class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>' + RP.TEXTO_CONC[o.tipo === 'farol' ? 'farol' : 'brilho'] + ' Espione para saber o tipo.</span></p>';
+    return '<div class="info-linha"><span class="fraco">Relíquias</span><span>' + qtdRel(o.n) + '</span></div>';
   };
   var acoesConc = function () { return '<a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquias</a>'; };
   TIPOS_OBJ.brilho = TIPOS_OBJ.brilho || {

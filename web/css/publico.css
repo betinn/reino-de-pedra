@@ -1,5 +1,5 @@
 /* Reino de Pedra — a página de quem não está logado: o mapa real em tela cheia, com o selo AO VIVO, a crônica e o pedido de
-   convite por cima. E a crônica curta dentro do jogo. */
+   convite por cima. */
 .tela-inicio.publico { position: fixed; inset: 0; min-height: 0; display: block; overflow: hidden; background: var(--mapa-fundo); color: var(--cor-texto); z-index: 1; }
 .publico .cena-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .publico .mapa-vp { position: absolute; inset: 0; display: none; }
@@ -44,13 +44,6 @@
 .pub-form-linha input[type="email"] { flex: 1; min-width: 0; }
 .pub-oculto { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .pub-ok { color: var(--cor-sucesso, #7bc47f); font-size: var(--fs-2); }
-
-/* no jogo: as três últimas mensagens, sem tampar o mundo nem pegar o clique dele */
-.cronica-jogo { position: absolute; left: 14px; bottom: calc(14px + 280px * 1545 / 2312 + 10px); width: 280px; pointer-events: none; }
-.cronica-jogo ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.cronica-jogo .cronica-item { pointer-events: auto; background: rgba(13, 15, 18, .72); border-radius: 6px; padding: 4px 8px; }
-.cronica-jogo .cronica-mortos { display: none; }
-html.painel-aberto .cronica-jogo { opacity: .35; }
 
 @media (max-width: 760px) {
   .pub-lado { top: auto; bottom: 150px; left: 14px; right: 14px; width: auto; max-height: 30vh; }

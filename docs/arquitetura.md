@@ -137,6 +137,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Temporada.Ranking`, `Reino.RankBaixas/RankPerdas/VenceuCerco` | Ranking da temporada e conquistas rastreadas na temporada. |
 | `Temporada.PrecisaDeVoce.Listar/Extras` | "Precisa de você" (GET /agora): itens `{ grupo, icone, titulo, texto, href, botao, fim }`. |
 | `Exploracao.Avistamentos.AoRegistrar`, `Combate.Avistamentos.Visao/Arredondado` | Reagir a um avistamento de espião; visão de um reino sem marcar a névoa; número arredondado para o que se vê de fora. |
+| `RP.aviso({ titulo, texto, icone, tipo, link, ms, anuncio, descartavel })` (cliente) | Aviso no centro da tela. Com `anuncio`, grande e em fila (o que aconteceu); sem ele, menor e na hora (resposta a um gesto). |
 | `RP.agoraItemHTML`, telas `#/temporada`, `#/ranking`, `#/agora`, `#/regencia`, aviso SSE `temporada`, `RP.extrasConstrucao[].sistema` (cliente) | Item do "precisa de você"; telas da temporada; aba de construção que só aparece depois do gatilho do sistema; `RP.reino.legado` (`linhagem`, `titulo`, `regiaoExilio`) e `RP.reino.regencia` (do sistema de IA). |
 | `RP.seloVeterania`, `RP.mapa.tiposObjeto.avistamento`, telas `#/exilio` e `#/interceptar?marcha=` (cliente) | Selo de veterania; espião visto no mapa; exílio e interceptação. |
 | `m.IA` (`Ativa`, `CriarReinos`), `MundoIA.Novo` (testes) | Liga a IA no processo (não é gravado): sessões e regência; meta de ocupação (`REINO_IA=0` desliga só esta). `MundoTeste` sobe com a IA desligada. |

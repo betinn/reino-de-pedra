@@ -27,8 +27,13 @@ public static class RegraPublica
         ["simbolo"] = r.Brasao.Simbolo, ["corSimbolo"] = r.Brasao.CorSimbolo,
     };
 
-    /// <summary>Identidade pública: nome e brasão (a imagem enviada pelo jogador só aparece dentro do jogo).</summary>
-    public static JsonObject Reino(Reino r) => new() { ["id"] = r.Id, ["nome"] = r.Nome, ["brasao"] = Brasao(r) };
+    /// <summary>Identidade pública: nome, brasão e, se o jogador enviou, a imagem do reino.</summary>
+    public static JsonObject Reino(Reino r)
+    {
+        var o = new JsonObject { ["id"] = r.Id, ["nome"] = r.Nome, ["brasao"] = Brasao(r) };
+        if (r.IconeProprio) { o["iconeProprio"] = true; o["iconeVersao"] = r.IconeVersao; }
+        return o;
+    }
 
     /// <summary>Relíquias guardadas por local: só a quantidade, nunca o tipo.</summary>
     public static Dictionary<long, int> ReliquiasPorLocal(Mundo m)

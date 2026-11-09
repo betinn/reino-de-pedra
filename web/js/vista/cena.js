@@ -13,6 +13,14 @@
   var SMIN = 0.85, SMAX = 3.2, QUADRO_MS = 33;
 
   /* uma única escuta de visibilidade para todas as cenas (sem vazamento por instância) */
+  /* imagens enviadas pelos reinos: pedidas uma vez e desenhadas quando terminam de carregar */
+  var imagensReino = {};
+  function imagemReino(r) {
+    if (!r || !r.iconeProprio) return null;
+    var url = '/api/v1/reinos/' + r.id + '/icone?v=' + (r.iconeVersao || 0), im = imagensReino[url];
+    if (!im) { im = imagensReino[url] = new Image(); im.src = url; }
+    return im.complete && im.naturalWidth ? im : null;
+  }
   var ativas = [];
   document.addEventListener('visibilitychange', function () {
     ativas.forEach(function (c) { if (document.hidden) c.pausar(); else c.continuar(); });
@@ -608,7 +616,7 @@
 
     var itens = [], rotulos = [];
     function alvo(x, y, w, h, ent, o) { return { x: x, y: y, w: w, h: h, ent: ent, obj: o }; }
-    function rot(x, y, dy, txt, cls, cor, link, o) { rotulos.push({ x: x, y: y, dy: dy, txt: txt, cls: cls, cor: cor, link: link, obj: o }); }
+    function rot(x, y, dy, txt, cls, cor, link, o, reino) { rotulos.push({ x: x, y: y, dy: dy, txt: txt, cls: cls, cor: cor, link: link, obj: o, reino: reino }); }
 
     /* ameaças: marchas alheias a caminho de um local seu */
     var meusHex = {}, ameacados = {};
@@ -646,7 +654,7 @@
           var rx = p.x + (castelo ? -46 : -18), ry = p.y + (castelo ? 30 : 12);
           itens.push({ y: ry, x: rx, d: function () { obj(c, V, rx, ry); A.pedestalReliquia(c, t, pal, o.reliquia.tipo || 'desconhecido', anim); }, alvo: alvo(rx, ry - 12, 26, 34, ['local', o.id], o) });
         }
-        if (castelo && !o.ruina) rot(p.x, p.y, 26, meu ? (RP.reino ? RP.reino.nome : o.nome) : (o.reino ? o.reino.nome : 'Castelo'), 'castelo', A.corDono(o.dono, o));
+        if (castelo && !o.ruina) rot(p.x, p.y, 26, meu ? (RP.reino ? RP.reino.nome : o.nome) : (o.reino ? o.reino.nome : 'Castelo'), 'castelo', A.corDono(o.dono, o), null, null, meu ? RP.reino : o.reino);
         if (meu && ameacados[h]) rot(p.x, p.y, -46, 'Ameaçado', 'perigo', Cs.perigo);
         return;
       }
@@ -804,6 +812,13 @@
         }
         postas.push(q);
         A.pilula(c, q.x, q.y, q.rt.txt, q.rt.cls, q.rt.cor);
+        /* a imagem que o reino enviou, ao lado do nome do castelo */
+        var imagem = imagemReino(q.rt.reino);
+        if (imagem) {
+          var ix = q.x - q.w / 2 - 27, iy = q.y - 12;
+          c.save(); c.beginPath(); c.roundRect(ix, iy, 24, 24, 4); c.clip(); c.drawImage(imagem, ix, iy, 24, 24); c.restore();
+          c.beginPath(); c.roundRect(ix, iy, 24, 24, 4); c.strokeStyle = q.rt.cor; c.lineWidth = 1.5; c.stroke();
+        }
         /* pílula com link (a batalha): é um botão discreto, clicável por cima de tudo */
         if (q.rt.link) self.alvos.push({ x0: q.x - q.w / 2, x1: q.x + q.w / 2, y0: q.y - 11, y1: q.y + 11, ent: ['link', q.rt.link], obj: q.rt.obj, hex: q.rt.obj && q.rt.obj.hex,
           perto: function () { return true; } });

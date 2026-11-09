@@ -356,32 +356,47 @@ a { color: var(--cor-info); }
 .modal h2 { margin-bottom: var(--esp-2); }
 .modal .acoes { display: flex; flex-direction: column; gap: var(--esp-2); margin-top: var(--esp-5); }
 
-/* ---------------------------------------------------------------- Avisos (toasts) */
+/* ---------------------------------------------------------------- Avisos: anúncio no centro da tela, um pouco acima do meio.
+   Uma faixa escura que some nas pontas, com filete na cor do tipo e letra grande: aparece na cara e dá para ler sobre qualquer mapa. */
 .avisos {
-  position: fixed; left: 0; right: 0; top: calc(env(safe-area-inset-top) + 8px); z-index: var(--z-aviso);
+  position: fixed; left: 0; right: 0; top: 27vh; z-index: var(--z-aviso);
   display: flex; flex-direction: column; align-items: center; gap: var(--esp-2);
-  padding: 0 var(--esp-3); pointer-events: none;
+  pointer-events: none;
 }
+.avisos-anuncio, .avisos-gesto { display: flex; flex-direction: column; align-items: center; width: 100%; }
 .aviso {
-  pointer-events: auto;
-  display: flex; align-items: center; gap: var(--esp-3);
-  width: 100%; max-width: 480px; min-height: 56px;
-  padding: var(--esp-3) var(--esp-4);
-  background: var(--barra-fundo); color: var(--barra-texto);
-  border: 1px solid var(--barra-borda); border-left: 4px solid var(--cor-info);
-  border-radius: var(--raio-2);
-  box-shadow: var(--sombra-2);
-  --ico-d-stroke: var(--barra-fundo);
-  animation: aviso-entra var(--dur-3) var(--curva);
+  --aviso-cor: var(--cor-destaque);
+  display: flex; align-items: center; justify-content: center; gap: var(--esp-4);
+  width: min(1000px, 100%); padding: 10px clamp(64px, 12vw, 170px);
+  color: #fff; text-align: center;
+  background: linear-gradient(90deg, transparent, rgba(8, 9, 12, .9) 16%, rgba(8, 9, 12, .9) 84%, transparent);
+  animation: aviso-entra .22s cubic-bezier(.2, .9, .3, 1.15);
+  position: relative;
 }
-.aviso b { display: block; font-size: var(--fs-3); }
-.aviso span { display: block; font-size: var(--fs-2); color: var(--barra-texto-2); }
-.aviso-sucesso { border-left-color: var(--cor-sucesso); }
-.aviso-perigo { border-left-color: var(--cor-perigo); }
-.aviso-alerta { border-left-color: var(--cor-alerta); }
-.aviso.sai { animation: aviso-sai var(--dur-2) ease-in forwards; }
-@keyframes aviso-entra { from { transform: translateY(-16px); opacity: 0; } }
-@keyframes aviso-sai { to { transform: translateY(-16px); opacity: 0; } }
+.aviso::before, .aviso::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--aviso-cor) 22%, var(--aviso-cor) 78%, transparent);
+}
+.aviso::before { top: 0; }
+.aviso::after { bottom: 0; }
+.aviso-ico { flex: none; display: flex; color: var(--aviso-cor); }
+.aviso-ico .ico { width: 26px; height: 26px; }
+.aviso-txt { min-width: 0; }
+.aviso b { display: block; font-size: 22px; font-weight: 600; line-height: 1.2; text-shadow: 0 2px 6px #000; }
+.aviso-txt > span { display: block; margin-top: 2px; font-size: 17px; line-height: 1.3; color: #efe9dd; text-shadow: 0 1px 4px #000; }
+.aviso-sucesso { --aviso-cor: var(--cor-sucesso); }
+.aviso-perigo { --aviso-cor: #ff5a4f; }
+.aviso-alerta { --aviso-cor: var(--cor-alerta); }
+.aviso-anuncio { padding-top: 16px; padding-bottom: 16px; }
+.aviso-anuncio .aviso-ico .ico { width: 44px; height: 44px; }
+.aviso-anuncio b { font-family: var(--fonte-titulo); font-size: clamp(26px, 3vw, 40px); font-weight: 700; letter-spacing: .01em; }
+.aviso-anuncio .aviso-txt > span { margin-top: 6px; font-size: clamp(17px, 1.6vw, 22px); }
+.aviso-anuncio.aviso-perigo b { color: #ff8d84; }
+.aviso-anuncio.aviso-perigo { background: linear-gradient(90deg, transparent, rgba(46, 8, 8, .92) 16%, rgba(46, 8, 8, .92) 84%, transparent); }
+.aviso.sai { animation: aviso-sai .22s ease-in forwards; }
+@keyframes aviso-entra { from { transform: scale(1.14); opacity: 0; } }
+@keyframes aviso-sai { to { transform: translateY(-10px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .aviso, .aviso.sai { animation-duration: .01s; } }
 
 /* Faixa de alerta (ataque a caminho etc.) */
 .faixa-alerta {

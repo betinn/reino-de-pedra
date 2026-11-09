@@ -155,14 +155,14 @@
     abrirFolhaMapa(montarObjeto(o), o.hex);
   }
   /* o que atacar um local de outro reino pode render: o recurso que ele produz (ou guarda), relíquia e o próprio local.
-     Quanto há guardado, só a espionagem revela. */
+     Quanto há guardado não sai daqui. */
   var PRODUZ_TIPO = { vila: ['comida'], pasto: ['comida'], serraria: ['madeira'], mina: ['ferro', 'pedra'] };
   function ganhosLocal(o) {
     var rec = o.produz ? [o.produz] : PRODUZ_TIPO[o.local] || [];
     var nomes = rec.map(function (k) { return RP.nomeRecurso(k); }).join(' ou ');
     var guarda = o.local === 'castelo' || o.local === 'armazem';
     var saque = guarda ? 'recursos guardados, inclusive os valiosos' : nomes ? nomes + ' que o local produz e guarda (até 10 h de produção)' : 'o que estiver guardado no local';
-    return linhaInfo('Saque', RP.esc(saque) + ' · a quantidade só a espionagem revela') +
+    return linhaInfo('Saque', RP.esc(saque)) +
       (o.local === 'castelo' ? linhaInfo('Cerco', 'relíquias e recursos guardados; se o castelo cai, vira ruína')
         : linhaInfo('Ocupação', 'o local passa a ser seu' + (nomes ? ' e a produzir ' + RP.esc(nomes) + ' para você' : '') + ', no mesmo nível'));
   }
@@ -171,9 +171,8 @@
     var e = M.estado(h), tp = MAPA.tiposObjeto[o.tipo], corpo = notaAntiga(e) + '<div class="info">', acoes = '';
     if (o.tipo === 'local') {
       corpo += linhaInfo('Tipo', RP.esc(RP.TIPOS_LOCAL[o.local] || o.local)) + linhaInfo('Dono', RP.esc(donoTxt(o))) + (o.nivel ? linhaInfo('Nível', o.nivel) : '') + linhaInfo('Terreno', RP.esc(nomeTerreno(h)));
-      if (o.reliquias) corpo += linhaInfo('Relíquia', o.reliquias + (o.reliquias > 1 ? ' guardadas' : ' guardada') + ' · o tipo, só a espionagem revela');
-      if (o.dono !== 'livre' && !o.ruina) corpo += '</div><p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>Estoque, guarnição e o tipo da relíquia, só um batedor de elite revela.</span></p><div>';
-      else corpo += '</div><p class="nota-regra">' + RP.icone('escombros', 'ico-p') + '<span>Ruínas e terra livre podem ser ocupadas ou reconstruídas.</span></p><div>';
+      if (o.reliquias) corpo += linhaInfo('Relíquia', o.reliquias + (o.reliquias > 1 ? ' guardadas' : ' guardada'));
+      if (o.dono === 'livre' || o.ruina) corpo += '</div><p class="nota-regra">' + RP.icone('escombros', 'ico-p') + '<span>Ruínas e terra livre podem ser ocupadas ou reconstruídas.</span></p><div>';
       if (o.dono !== 'meu' && !o.ruina && o.dono !== 'livre') corpo += '</div><div class="secao-titulo">Atacar pode render</div><div class="info">' + ganhosLocal(o) + '</div><div>';
       /* o último reconhecimento deste local, como foi visto na hora: não se atualiza sozinho, vale de qualquer distância */
       var rec = o.dono !== 'meu' && d.reconhecidos && d.reconhecidos[o.id];
@@ -206,8 +205,7 @@
     var ag = RP.agora(), pos = M.posMarcha(o, ag), def = MAPA.tiposMarcha[o.marcha] || {};
     var titulo = def.nome || NOME_MARCHA[o.marcha] || 'Marcha';
     var corpo = '<div class="info">' + linhaInfo('De quem', o.dono === 'aliado' ? 'Aliado · ' + RP.esc(donoTxt({ reino: o.reino })) : RP.esc(donoTxt(o))) + '</div>' +
-      (o.reliquia ? '<p class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>Leva uma relíquia. O tipo não se vê.</span></p>' : '') +
-      '<p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>O tamanho e o destino de uma marcha ninguém vê: só onde ela está agora.</span></p>';
+      (o.reliquia ? '<p class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>Leva uma relíquia.</span></p>' : '');
     return {
       hex: pos.hex, titulo: titulo, subtitulo: '<div class="linha">' + seloObjeto(M.estado(pos.hex)) + coordTxt(pos.hex) + '</div>',
       icone: '<span class="ico-placa folha-ico marcha-ico ' + RP.mapaTatico.classeDono(o.dono) + '">' + RP.icone(RP.mapaTatico.iconeMarcha(o)) + '</span>',
@@ -534,7 +532,7 @@
         '<div class="secao-titulo">Terrenos</div>' + terr +
         '<div class="secao-titulo">Donos</div>' +
         '<div class="legenda-item"><span class="ponto-dono dono-meu"></span><span><b>Seu reino</b></span></div>' +
-        '<div class="legenda-item"><span class="ponto-dono dono-desconhecido"></span><span><b>Outro reino</b><small>Todo local e toda marcha mostram o dono. Tamanho, destino e o que há dentro ficam em segredo.</small></span></div>' +
+        '<div class="legenda-item"><span class="ponto-dono dono-desconhecido"></span><span><b>Outro reino</b><small>Todo local e toda marcha mostram o dono.</small></span></div>' +
         '<div class="legenda-item"><span class="ponto-dono dono-aliado"></span><span><b>Aliado</b><small>Membros da sua aliança.</small></span></div>' +
         '<div class="legenda-item"><span class="ico-placa">' + RP.icone('escombros') + '</span><span><b>Ruína / terra livre</b><small>Sem dono. Podem ser ocupadas e reconstruídas.</small></span></div>' +
         MAPA.legendaExtras.map(function (f) { return f() || ''; }).join('')
@@ -641,8 +639,7 @@
       '<div class="modo-mapa abas" role="group" aria-label="Tipo de visão" data-dica="Trocar a visão <kbd class=\'tecla\'>M</kbd>">' +
       '<button type="button" class="aba" data-modo-btn="cena" aria-pressed="true">' + RP.icone('vista') + 'Vista</button>' +
       '<button type="button" class="aba" data-modo-btn="tatico" aria-pressed="false">' + RP.icone('hexagonos') + 'Mapa</button></div>' +
-      '<div class="minimapa" role="group" aria-label="Minimapa: clique para ir até um ponto"><canvas></canvas><div class="mm-vista"></div></div>' +
-      '<aside class="cronica cronica-jogo" aria-label="Crônica do mundo"><ol data-cronica></ol></aside>';
+      '<div class="minimapa" role="group" aria-label="Minimapa: clique para ir até um ponto"><canvas></canvas><div class="mm-vista"></div></div>';
     mm = RP.$('.minimapa canvas', el); mmCtx = mm.getContext('2d'); mmVista = RP.$('.mm-vista', el);
     cena = new RP.Cena(RP.$('.cena-cv', el), {
       interativa: true, camadas: MAPA.camadas,
@@ -688,7 +685,6 @@
       else if (e.target.closest('[data-camadas]')) abrirCamadas();
       else if (e.target.closest('[data-atalhos]')) RP.ajudaTeclas();
       else if ((b = e.target.closest('[data-modo-btn]'))) { var md = b.getAttribute('data-modo-btn'); if (md !== modo) definirModo(md); }
-      else if ((b = e.target.closest('[data-cronica-hex]'))) centrarHex(+b.getAttribute('data-cronica-hex'), true);
       else if (e.target.closest('[data-cancelar-fundar]')) { alvoFundar = null; atualizarFaixaFundar(); RP.fecharFolha(); }
     });
   }
@@ -703,13 +699,7 @@
     cena.invalidar(); tat.invalidar(); desenharMinimapa(); atualizarFaixas();
   });
   document.addEventListener('rp:reino', function () { if (ativa() && modo === 'tatico') tat.atualizarSvg(); });
-  /* as mensagens globais do servidor: as três mais novas no canto da tela do mundo */
-  document.addEventListener('rp:vivo', function (ev) {
-    if (!ativa()) return;
-    var box = RP.$('[data-cronica]', tela);
-    if (box) box.innerHTML = (ev.detail.mensagens || []).slice(0, 3).map(M.mensagemHTML).join('');
-    atualizarFaixas();
-  });
+  document.addEventListener('rp:vivo', function () { if (ativa()) atualizarFaixas(); });
   document.addEventListener('rp:tique', function () { if (ativa() && M.dados && RP.agora() % 10000 < 1000) atualizarFaixas(); });
 
   /* O mundo é a tela de fundo: montado uma vez, nunca escondido enquanto há reino (os painéis ficam por cima).

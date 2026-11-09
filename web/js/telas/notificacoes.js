@@ -17,7 +17,7 @@
     if (document.hidden && window.Notification && Notification.permission === 'granted') {
       try { var x = new Notification(n.titulo, { body: n.texto || '', tag: 'rp-' + n.id }); x.onclick = function () { window.focus(); if (n.link) RP.ir(n.link); }; } catch (e) { /* ignora */ }
     } else {
-      RP.aviso({ titulo: n.titulo, texto: n.texto || '', icone: 'sino', tipo: n.categoria === 'ataques' ? 'perigo' : 'info', link: n.link, ms: n.link ? 6000 : null });
+      RP.aviso({ titulo: n.titulo, texto: n.texto || '', icone: n.categoria === 'ataques' ? 'alerta' : 'sino', tipo: n.categoria === 'ataques' ? 'perigo' : 'info', link: n.link, anuncio: true });
     }
   });
 
@@ -25,17 +25,26 @@
     nav: true, secao: 'agora',
     montar: function (el) {
       el.addEventListener('change', function (e) {
+        if (e.target.matches('[data-anuncios-mundo]')) { RP.pref('anuncios-mundo', e.target.checked ? '1' : '0'); return; }
         var c = e.target.closest('[data-categoria]');
         if (!c) return;
         var o = {}; o[c.getAttribute('data-categoria')] = c.checked;
         RP.tentar(RP.put('/notificacoes/preferencias', { categorias: o }));
       });
       el.addEventListener('click', function (e) {
+        var h = e.target.closest('[data-cronica-hex]');
+        if (h) { RP.ir('mapa?centro=' + h.getAttribute('data-cronica-hex')); return; }
         if (e.target.closest('[data-permitir]') && window.Notification) Notification.requestPermission().then(function () { desenhar(el); });
       });
     },
     entrar: function (el) { desenhar(el); }
   });
+
+  /* as mensagens globais do servidor, para reler o que já passou pelo centro da tela */
+  function cronica() {
+    var v = RP.mapaModelo && RP.mapaModelo.ultimoVivo, l = v && v.mensagens ? v.mensagens : [];
+    return l.length ? '<ol class="pub-lista">' + l.map(RP.mapaModelo.mensagemHTML).join('') + '</ol>' : '<p class="fraco">Nenhuma batalha no mundo ainda.</p>';
+  }
 
   function desenhar(el) {
     Promise.all([RP.get('/notificacoes'), RP.get('/notificacoes/preferencias')]).then(function (r) {
@@ -46,7 +55,9 @@
           return '<a class="lista-item' + (x.lida ? '' : ' nao-lido') + '" href="#/' + RP.esc(x.link || 'reino') + '"><span class="ico-placa">' + RP.icone('sino') + '</span><div style="flex:1;min-width:0"><b>' + RP.esc(x.titulo) + '</b>' +
             (x.texto ? '<div class="fraco">' + RP.esc(x.texto) + '</div>' : '') + '<small class="fraco">' + RP.fmtHora(x.quando) + '</small></div></a>';
         }).join('') : '<p class="fraco">Nada por aqui.</p>') + '</div>' +
+        '<div class="secao-titulo">Crônica do mundo</div>' + cronica() +
         '<div class="secao-titulo">O que avisar</div><div class="card pilha">' +
+        '<label class="linha-entre"><span>Anunciar no centro da tela o que acontece no mundo</span><input type="checkbox" data-anuncios-mundo' + (RP.pref('anuncios-mundo') === '0' ? '' : ' checked') + '></label>' +
         (perm === 'default' ? '<button type="button" class="btn btn-p" data-permitir>' + RP.icone('sino') + 'Avisar também fora da página</button>' : '') +
         pref.map(function (p) {
           return '<label class="linha-entre"><span>' + RP.esc(p.nome) + '</span><input type="checkbox" data-categoria="' + p.id + '"' + (p.ligada ? ' checked' : '') + '></label>';

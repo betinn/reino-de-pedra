@@ -259,10 +259,10 @@ public class VisibilidadeTestes
         Assert.Contains(J(VisaoMapa.Montar(t.M, b)).GetProperty("objetos").EnumerateArray(), x => x.GetProperty("tipo").GetString() == "marcha" && x.GetProperty("id").GetInt64() == e.Id);
     }
 
-    // ---------------------------------------------------------------- ícone para quem joga (identidade é pública)
+    // ---------------------------------------------------------------- ícone do reino (identidade é pública)
 
     [Fact]
-    public async Task Icone_proprio_e_servido_a_qualquer_jogador()
+    public async Task Icone_proprio_e_publico()
     {
         await using var s = await ServidorTeste.Iniciar();
         using var a = s.NovoCliente(); using var b = s.NovoCliente();
@@ -276,7 +276,11 @@ public class VisibilidadeTestes
         Assert.Equal(System.Net.HttpStatusCode.OK, (await a.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);    // o próprio
         Assert.Equal(System.Net.HttpStatusCode.OK, (await b.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);    // o de outro jogador
         using var anonimo = s.NovoCliente();
-        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, (await anonimo.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);   // sem conta, não: o feed público não leva a imagem
+        Assert.Equal(System.Net.HttpStatusCode.OK, (await anonimo.Http.GetAsync($"reinos/{idA}/icone")).StatusCode);   // sem conta também: o mapa ao vivo mostra a imagem
+        var mundo = JsonDocument.Parse(await anonimo.Http.GetStringAsync("publico/mundo")).RootElement;
+        var reinoA = mundo.GetProperty("reinos").EnumerateArray().Single(r => r.GetProperty("id").GetInt64() == idA);
+        Assert.True(reinoA.GetProperty("iconeProprio").GetBoolean());
+        Assert.False(mundo.GetProperty("reinos").EnumerateArray().Single(r => r.GetProperty("id").GetInt64() == idB).TryGetProperty("iconeProprio", out _));
         Assert.Equal(System.Net.HttpStatusCode.NotFound, (await b.Http.GetAsync($"reinos/{idB}/icone")).StatusCode);   // sem imagem própria
     }
 

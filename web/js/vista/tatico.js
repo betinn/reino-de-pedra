@@ -388,9 +388,9 @@
       '<circle class="ponto" r="' + (castelo ? 9 : 6) + '"/><g class="ent-k"><circle class="alvo-toque" r="24"/>';
     if (ameacado) h += '<circle class="anel-ameaca" r="' + (castelo ? 27 : 21) + '"/>';
     if (castelo) {
-      var r = RP.reino, brasao;
-      if (meu && r && r.iconeProprio) brasao = '<image href="/api/v1/reinos/' + r.id + '/icone?v=' + (r.iconeVersao || 0) + '" x="-10" y="-10" width="20" height="20"/>';
-      else brasao = RP.brasao(meu && r ? r.brasao : o.brasao, { tamanho: 20 });
+      var r = RP.reino, dono = meu && r ? r : o.reino, brasao;
+      if (dono && dono.iconeProprio) brasao = '<image href="/api/v1/reinos/' + dono.id + '/icone?v=' + (dono.iconeVersao || 0) + '" width="20" height="20"/>';
+      else brasao = RP.brasao(dono ? dono.brasao : o.brasao, { tamanho: 20 });
       h += '<circle class="lc-base" r="21"/><circle class="lc-anel" r="16.5"/><use href="#i-castelo" x="-13" y="-14" width="26" height="26"/>' +
         '<g transform="translate(9 -30)">' + brasao + '</g>' + rotuloSvg(meu && r ? r.nome : o.reino ? o.reino.nome : 'Castelo', 38, 'rotulo-castelo');
     } else {

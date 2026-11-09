@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   var RP = window.RP, H = RP.hex, M = RP.mapaModelo, MAPA = RP.mapa;
-  var tela = null, cena = null, tat = null, modo = 'cena', posicionado = false, aba = 'cronica';
+  var tela = null, cena = null, tat = null, modo = 'cena', posicionado = false, aba = 'cronica', painelHtml = null;
 
   function visao() { return modo === 'cena' ? cena : tat; }
   function definirModo(m, s) {
@@ -43,27 +43,29 @@
     var v = M.ultimoVivo, w = M.mundoPublico, box = RP.$('[data-pub-painel]', tela);
     if (!box) return;
     RP.$$('[data-pub-aba]', tela).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-pub-aba') === aba)); });
+    var html = null;
     if (aba === 'cronica') {
       var bat = M.dados ? M.dados.objs.filter(function (o) { return o.tipo === 'batalha'; }) : [];
       var msgs = v ? v.mensagens || [] : [];
-      box.innerHTML = '<ol class="pub-lista">' + bat.map(linhaBatalha).join('') + msgs.map(M.mensagemHTML).join('') + '</ol>' +
+      html = '<ol class="pub-lista">' + bat.map(linhaBatalha).join('') + msgs.map(M.mensagemHTML).join('') + '</ol>' +
         (!bat.length && !msgs.length ? '<p class="fraco">Nenhuma batalha ainda. Quando alguém atacar, aparece aqui.</p>' : '');
     } else if (aba === 'reinos' && w) {
       var rk = {};
       w.ranking.forEach(function (x) { rk[x.reinoId] = x; });
-      box.innerHTML = '<ol class="pub-lista">' + w.reinos.slice().sort(function (a, b) { return ((rk[b.id] || {}).baixas || 0) - ((rk[a.id] || {}).baixas || 0) || a.nome.localeCompare(b.nome); }).map(function (r) {
+      html = '<ol class="pub-lista">' + w.reinos.slice().sort(function (a, b) { return ((rk[b.id] || {}).baixas || 0) - ((rk[a.id] || {}).baixas || 0) || a.nome.localeCompare(b.nome); }).map(function (r) {
         var x = rk[r.id] || {};
-        return '<li class="pub-reino" data-pub-reino="' + r.id + '">' + RP.brasao(r.brasao, { tamanho: 26 }) + '<span><b>' + RP.esc(r.nome) + '</b><small class="fraco">' +
+        return '<li class="pub-reino" data-pub-reino="' + r.id + '">' + RP.iconeReino(r, 26) + '<span><b>' + RP.esc(r.nome) + '</b><small class="fraco">' +
           (x.baixas || 0) + ' baixas causadas · ' + (x.perdas || 0) + ' perdas · ' + (x.familias || 0) + ' famílias</small></span></li>';
       }).join('') + '</ol>';
     } else if (aba === 'aliancas' && w) {
       var nomes = function (ids) { return ids.map(function (i) { return RP.esc(nomeReino(i)); }).join(', '); };
-      box.innerHTML = '<ol class="pub-lista">' + w.aliancas.map(function (a) {
+      html = '<ol class="pub-lista">' + w.aliancas.map(function (a) {
         return '<li class="pub-reino">' + RP.brasao(a.brasao, { tamanho: 26 }) + '<span><b>' + RP.esc(a.nome) + '</b><small class="fraco">' + nomes(a.membros) + '</small></span></li>';
       }).join('') + w.pactos.map(function (p) {
         return '<li class="cronica-item"><span>Pacto: ' + RP.esc(nomeReino(p.a)) + ' e ' + RP.esc(nomeReino(p.b)) + '</span><small class="fraco">termina em ' + RP.fmtResta(p.fim - RP.agora()) + '</small></li>';
       }).join('') + '</ol>' + (!w.aliancas.length && !w.pactos.length ? '<p class="fraco">Nenhuma aliança nem pacto ainda.</p>' : '');
     }
+    if (html !== null && html !== painelHtml) { painelHtml = html; box.innerHTML = html; }
     var cont = RP.$('[data-pub-cont]', tela);
     if (cont && w && v) {
       var marchas = v.marchas.length, batalhas = v.batalhas.length;
@@ -77,19 +79,19 @@
     var o = a.obj, h = a.hex;
     if (!o && h != null) o = M.objetosEm(h).filter(function (x) { return x.tipo === 'local' || x.tipo === 'batalha'; })[0];
     if (!o) return;
-    var dono = o.reino ? RP.esc(o.reino.nome) : 'Sem dono', corpo = '', titulo = 'Mapa';
+    var dono = o.reino ? '<span class="linha">' + RP.iconeReino(o.reino, 20) + RP.esc(o.reino.nome) + '</span>' : 'Sem dono', corpo = '', titulo = 'Mapa';
     if (o.tipo === 'local') {
       titulo = o.ruina ? 'Ruína' : o.dono === 'livre' ? 'Terra livre' : RP.esc(o.nome || 'Local');
       corpo = linha('Dono', dono) + (o.nivel ? linha('Nível', o.nivel) : '') + linha('Tipo', RP.esc(RP.TIPOS_LOCAL[o.local] || o.local)) +
-        (o.reliquias ? linha('Relíquia', o.reliquias + (o.reliquias > 1 ? ' guardadas' : ' guardada') + ' (tipo em segredo)') : '');
+        (o.reliquias ? linha('Relíquia', o.reliquias + (o.reliquias > 1 ? ' guardadas' : ' guardada')) : '');
     } else if (o.tipo === 'marcha') {
       titulo = (MAPA.tiposMarcha[o.marcha] || {}).nome || (RP.NOMES_MARCHA || {})[o.marcha] || 'Marcha';
-      corpo = linha('De quem', dono) + (o.reliquia ? linha('Leva', 'uma relíquia') : '') + '<p class="nota-regra">' + RP.icone('olho', 'ico-p') + '<span>O tamanho e o destino de uma marcha ninguém vê.</span></p>';
+      corpo = linha('De quem', dono) + (o.reliquia ? linha('Leva', 'uma relíquia') : '');
     } else if (o.tipo === 'batalha') {
       titulo = 'Batalha em ' + RP.esc(o.local || 'um local');
       corpo = (o.listaFrentes || []).map(function (x) { return linha(RP.esc(nomeReino(x.atacanteId)) + ' ataca', RP.esc(nomeReino(x.defensorId))); }).join('');
     } else if (o.tipo === 'torre') { titulo = 'Torre de arqueiros'; corpo = linha('Dono', dono) + linha('Nível', o.nivel); }
-    else if (o.tipo === 'ruina-antiga') { titulo = 'Ruína antiga'; corpo = '<p class="suave">O que ela guarda, só quem escava descobre.</p>'; }
+    else if (o.tipo === 'ruina-antiga') { titulo = 'Ruína antiga'; }
     else if (o.tipo === 'bandeira') { titulo = 'Bandeira de ' + (o.autor ? RP.esc(o.autor.nome) : '?'); corpo = '<p class="suave">“' + RP.esc(o.recado) + '”</p>'; }
     else return;
     RP.abrirFolha({ titulo: titulo, corpo: '<div class="info">' + corpo + '</div>', acoes: '' });

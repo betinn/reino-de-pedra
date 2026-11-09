@@ -94,12 +94,12 @@ public sealed class ModuloReino : IModuloApi
             return Results.NoContent();
         });
 
-        // a imagem própria aparece só dentro do jogo: o site mostra o brasão
-        conta.MapGet("/reinos/{id:long}/icone", (long id, HttpContext ctx, Banco banco) =>
+        // a imagem do reino é pública, como o nome: aparece no jogo e no mapa ao vivo. A versão vai na URL, por isso o cache é longo.
+        publico.MapGet("/reinos/{id:long}/icone", (long id, HttpContext ctx, Banco banco) =>
         {
             var l = banco.Consultar("SELECT tipo, dados FROM icones WHERE reino_id=$r", rd => (rd.GetString(0), (byte[])rd[1]), ("$r", id)).FirstOrDefault();
             if (l.Item2 == null) return Results.NotFound();
-            ctx.Response.Headers.CacheControl = "private, max-age=86400";
+            ctx.Response.Headers.CacheControl = "public, max-age=86400";
             ctx.Response.Headers["Content-Security-Policy"] = "default-src 'none'; sandbox";
             return Results.Bytes(l.Item2, l.Item1);
         });

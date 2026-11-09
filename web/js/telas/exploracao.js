@@ -512,7 +512,7 @@
     RP.abrirFolha({
       titulo: p.resgate ? 'Contrapropor o resgate' : 'Oferecer pagamento', veu: true,
       subtitulo: '<span class="fraco">' + RP.esc((p.pessoa ? p.pessoa + ', ' : '') + p.nome.toLowerCase()) + (p.resgate ? ' · pedem ' + RP.esc(resgateTxt(p.resgate)) : '') + '</span>',
-      corpo: '<p class="nota-regra">' + RP.icone('info', 'ico-p') + '<span>A oferta vai a quem tem o explorador, sem revelar quem é. Se aceitar, o pagamento sai na hora dos seus locais mais próximos e pode ser roubado no caminho; quando chega, o explorador é solto.</span></p>' +
+      corpo: '<p class="nota-regra">' + RP.icone('info', 'ico-p') + '<span>A oferta vai a quem tem o explorador. Se aceitar, o pagamento sai na hora dos seus locais mais próximos e pode ser roubado no caminho; quando chega, o explorador é solto.</span></p>' +
         '<div class="pilha">' + recs.map(function (k) {
           return '<label class="linha-entre resgate-campo"><span class="linha">' + RP.icone(k, 'r-' + k) + RP.esc(RP.NOMES_REC[k]) + '</span><input class="campo" type="number" min="0" step="1" inputmode="numeric" value="' + (base[k] || 0) + '" data-oferta-rec="' + k + '" aria-label="' + RP.esc(RP.NOMES_REC[k]) + '"></label>';
         }).join('') + '</div>',

@@ -14,7 +14,7 @@ As regras estão no `CLAUDE.md` (Site público e convites). Aqui fica o porquê 
 
 ## Muitos visitantes, nenhum peso na simulação
 
-`FeedPublico` guarda, por parte (`chao`, `mundo`, `vivo`, `info`), os bytes prontos em JSON, brotli e gzip. A parte é montada no máximo uma vez por intervalo, e só se alguém pediu: sem visitante, nada roda. Quem pede recebe a última foto na hora; no máximo um pedido por intervalo entra na fila do motor, e por trás. As respostas têm `Cache-Control` público e `ETag`, então um proxy também pode absorver. O cliente pede `vivo` a cada 2,5 s e só com a aba visível.
+`FeedPublico` guarda, por parte (`chao`, `mundo`, `vivo`, `info`), os bytes prontos em JSON, brotli e gzip. A parte é montada no máximo uma vez por intervalo, e só se alguém pediu: sem visitante, nada roda. Quem pede recebe a última foto na hora, menos um pedido por intervalo, que entra na fila do motor e espera a foto nova por no máximo 100 ms. Assim o intervalo de atualização não vira atraso dobrado com um visitante só. As respostas têm `Cache-Control` público e `ETag`, então um proxy também pode absorver. Na página pública, o cliente pede `mundo` e `vivo` a cada 3 s e `chao` a cada minuto, só com a aba visível, e só refaz o mapa se reinos, construções ou o chão mudaram.
 
 `GET /mundo` também passou a vir do feed, porque todo visitante o pede ao abrir a página.
 
@@ -43,6 +43,6 @@ O cliente troca as marchas dos outros pelas do feed a cada tique, sem recarregar
 - **Aviso de ataque**: o defensor não é mais avisado de "ataque a caminho" nem da hora de chegada, porque isso dizia o destino. Ele recebe "Exército de X à vista" quando um exército entra na visão dele, vá para onde for, e a notificação de batalha quando ela começa.
 - **Aliados**: não veem mais o caminho nem o tamanho das marchas uns dos outros. O brief pede que nenhum outro reino veja, e a "visão das marchas" perdeu o sentido com todas as marchas públicas.
 - **Cargos da aliança** não vão ao feed: a troca de líder diria quem entrou em regência.
-- **Imagem própria do reino** só aparece dentro do jogo; o site mostra o brasão, sem moderar imagem enviada em página aberta.
+- **Imagem própria do reino** é pública, como o nome: aparece no jogo e no site, em `GET /reinos/{id}/icone` sem login. Não há moderação: a entrada por convite limita quem envia.
 - **Baixas ao vivo** no feed são a projeção da fórmula, sem a força de cada lado. A parte da força vai como proporção, nunca em número.
 - **Dados antigos**: `Banco.Carregar` ignora documentos de classes que não existem mais (eventos de avistamento), para um banco antigo continuar subindo.

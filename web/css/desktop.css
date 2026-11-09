@@ -191,11 +191,6 @@ html.jogo .tela .conteudo-tela { padding-left: var(--esp-4); padding-right: var(
 .modal .acoes .btn-primario, .modal .acoes .btn-perigo { order: 2; }
 
 /* ---------------------------------------------------------------- avisos: canto superior esquerdo, sob a barra (a janela fica à direita) */
-.avisos { left: 14px; right: auto; top: calc(var(--topo-alt) + 10px); width: 320px; align-items: flex-start; padding: 0; }
-.aviso { min-height: 0; padding: 8px 10px; gap: 8px; font-size: var(--fs-2); border-radius: var(--raio-2); background: var(--painel-fundo); backdrop-filter: blur(10px); }
-.aviso .ico { width: 18px; height: 18px; }
-.aviso b { font-size: var(--fs-2); }
-.aviso span { font-size: var(--fs-1); }
 
 /* ---------------------------------------------------------------- dica (tooltip) */
 .dica {

@@ -198,12 +198,13 @@
 
   /* ---------------------------------------------------------------- feed público (sem login; no jogo, para as marchas dos outros)
      Pedidos comuns, sem no-store: o servidor manda os mesmos bytes para todos e o navegador aproveita o cache e o ETag. */
-  function feed(parte) {
+  function feedTexto(parte) {
     return fetch('/api/v1/publico/' + parte, { credentials: 'omit' }).then(function (r) {
       if (!r.ok) throw new Error('feed ' + r.status);
-      return r.json();
+      return r.text();
     });
   }
+  function feed(parte) { return feedTexto(parte).then(JSON.parse); }
   M.publico = false;
   M.mundoPublico = null;
   M.ultimoVivo = null;
@@ -230,30 +231,39 @@
     var bat = v.batalhas.filter(function (b) { return !meusHex[b.hex]; }).map(function (b) { b.listaFrentes = b.frentes; b.frentes = b.frentes.length; b.vivos = []; return b; });
     return fora.concat(bat);
   }
+  /* refaz o mapa só quando o que está nele mudou: chão, reinos ou construções. O ranking e a diplomacia vão só ao painel. */
+  var chaoTxt = '', assinaturaMundo = '';
+  function aplicarPublico(c, w, v) {
+    var ass = JSON.stringify([w.reinos, w.locais, w.torres, w.ruinas, w.bandeiras, w.farolReliquias]);
+    if (M.dados && c === chaoTxt && ass === assinaturaMundo) { M.mundoPublico = w; M.aplicarVivo(v); return M.dados; }
+    chaoTxt = c; assinaturaMundo = ass;
+    RP.sincronizar(v.agora);
+    var d = composto(JSON.parse(c), w, v);
+    preparar(d);
+    M.dados = d; M.versao++; M.mundoPublico = w; M.ultimoVivo = v;
+    document.dispatchEvent(new CustomEvent('rp:mapa-dados', { detail: d }));
+    document.dispatchEvent(new CustomEvent('rp:vivo', { detail: v }));
+    anunciarNovas(v);
+    return d;
+  }
   M.carregarPublico = function () {
     M.publico = true;
-    return Promise.all([feed('chao'), feed('mundo'), feed('vivo')]).then(function (x) {
-      if (!M.publico) return null;
-      RP.sincronizar(x[2].agora);
-      var d = composto(x[0], x[1], x[2]);
-      preparar(d);
-      M.dados = d; M.versao++; M.mundoPublico = x[1]; M.ultimoVivo = x[2];
-      document.dispatchEvent(new CustomEvent('rp:mapa-dados', { detail: d }));
-      document.dispatchEvent(new CustomEvent('rp:vivo', { detail: x[2] }));
-      return d;
+    return Promise.all([feedTexto('chao'), feed('mundo'), feed('vivo')]).then(function (x) {
+      return M.publico ? aplicarPublico(x[0], x[1], x[2]) : null;
     });
   };
-  M.sairDoPublico = function () { M.publico = false; M.dados = null; M.mundoPublico = null; M.versao++; };
+  M.sairDoPublico = function () { M.publico = false; M.dados = null; M.mundoPublico = null; chaoTxt = ''; assinaturaMundo = ''; M.versao++; };
   /* troca as marchas dos outros e as batalhas alheias pelas do feed, sem refazer o chão */
   M.aplicarVivo = function (v) {
     M.ultimoVivo = v;
     var d = M.dados;
     if (!d) return;
     if (Math.abs(RP.agora() - v.agora) > 6000 * (RP.aceleracao || 1)) RP.sincronizar(v.agora);
-    var meuId = RP.reino ? RP.reino.id : null, meusHex = {};
+    /* no mapa público ninguém é "meu": todas as marchas e batalhas vêm do feed, inclusive as de quem está logado */
+    var publico = M.publico, meuId = !publico && RP.reino ? RP.reino.id : null, meusHex = {};
     var fixos = (d.objetos || []).filter(function (o) {
-      if (o.tipo === 'marcha') return o.dono === 'meu';
-      if (o.tipo === 'batalha') { if (o.id) { meusHex[o.hex] = true; return true; } return false; }
+      if (o.tipo === 'marcha') return !publico && o.dono === 'meu';
+      if (o.tipo === 'batalha') { if (!publico && o.id) { meusHex[o.hex] = true; return true; } return false; }
       return true;
     });
     d.objetos = fixos.concat(vivosPara(v, meusHex, d.aliados || [], meuId));
@@ -261,16 +271,50 @@
     var ass = d.marchas.map(function (m) { return m.id; }).join() + '|' + d.objs.filter(function (o) { return o.tipo === 'batalha'; }).map(function (o) { return o.hex; }).join();
     if (ass !== assinaturaMoveis) { assinaturaMoveis = ass; M.versaoMoveis++; }
     document.dispatchEvent(new CustomEvent('rp:vivo', { detail: v }));
+    anunciarNovas(v);
   };
+  /* mensagem global nova vira anúncio no centro da tela. As que já estavam no feed ao abrir não são anunciadas. */
+  var msgsVistas = null;
+  var ICONE_MSG = { batalha: 'espada', 'fim-batalha': 'espada', captura: 'batedor', queda: 'castelo' };
+  /* "Batalha em X: Reino A ataca Reino B." e "Reino A perdeu 3. Reino B perdeu 5.": a primeira parte é o título */
+  function partesMensagem(t) {
+    var i = t.indexOf(': '), j = t.indexOf('. ');
+    if (i > 0) return [t.slice(0, i), t.slice(i + 2)];
+    if (j > 0) return [t.slice(0, j) + '.', t.slice(j + 2)];
+    return [t, ''];
+  }
+  function anunciarNovas(v) {
+    var l = v.mensagens || [], novas;
+    if (!msgsVistas) { msgsVistas = {}; l.forEach(function (x) { msgsVistas[x.id] = true; }); return; }
+    novas = l.filter(function (x) { return !msgsVistas[x.id]; });
+    novas.forEach(function (x) { msgsVistas[x.id] = true; });
+    if (!novas.length || RP.pref('anuncios-mundo') === '0') return;
+    /* quem esteve longe da aba não recebe a fila inteira: só as mais novas, da mais antiga para a mais nova */
+    novas.slice(0, 3).reverse().forEach(function (x) {
+      /* a batalha do próprio reino já chega como notificação */
+      if (x.tipo === 'batalha' && RP.reino && x.texto.indexOf('Reino ' + RP.reino.nome + ' ') >= 0) return;
+      var p = partesMensagem(x.texto);
+      RP.aviso({ titulo: p[0], texto: p[1], icone: ICONE_MSG[x.tipo] || 'info', tipo: x.tipo === 'queda' ? 'alerta' : 'info', anuncio: true, descartavel: true, link: RP.reino && x.hex != null ? 'mapa?centro=' + x.hex : null });
+      if (RP.sons && (x.tipo === 'batalha' || x.tipo === 'queda')) RP.sons.tocar('atacar', { vol: 0.5 });
+    });
+  }
   /* quem está numa tela do mundo vê o feed; sem ninguém olhando, nada é pedido */
   var TIQUE_VIVO_MS = 2500, tiques = 0;
   setInterval(function () {
-    if (document.hidden || !Object.keys(ativos).length || !M.dados) return;
+    if (M.publico || document.hidden || !Object.keys(ativos).length || !M.dados) return;
     feed('vivo').then(M.aplicarVivo).catch(function () { /* offline: mantém o último */ });
     tiques++;
-    if (M.publico) { if (tiques % 8 === 0) M.carregarPublico().catch(function () { /* offline */ }); }
-    else if (tiques % 16 === 0) M.carregar().catch(function () { /* offline */ });   /* construções e bandeiras dos outros */
+    if (tiques % 16 === 0) M.carregar().catch(function () { /* offline */ });   /* construções e bandeiras dos outros */
   }, TIQUE_VIVO_MS);
+  /* mapa ao vivo: marchas, batalhas, construções e painel a cada 3 s. O chão é o pedido pesado e muda pouco: a cada minuto. */
+  var TIQUE_PUBLICO_MS = 3000, TIQUES_CHAO = 20, tiquesPublico = 0;
+  setInterval(function () {
+    if (!M.publico || document.hidden || !Object.keys(ativos).length || !M.dados) return;
+    tiquesPublico++;
+    Promise.all([tiquesPublico % TIQUES_CHAO === 0 ? feedTexto('chao') : chaoTxt, feed('mundo'), feed('vivo')]).then(function (x) {
+      if (M.publico) aplicarPublico(x[0], x[1], x[2]);
+    }).catch(function () { /* offline: mantém o último */ });
+  }, TIQUE_PUBLICO_MS);
   /* uma linha da crônica: o que aconteceu, quando e quem morreu */
   M.mensagemHTML = function (x) {
     var mortos = (x.mortos || []).map(function (n) { return RP.esc(n); }).join(', ') + (x.maisMortos ? ' e mais ' + x.maisMortos : '');

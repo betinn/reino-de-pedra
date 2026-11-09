@@ -84,7 +84,7 @@
       d.reforcos.recebidos.map(function (e) { return '<div class="card linha">' + S.brasao(e.reino, 28) + '<span style="flex:1;min-width:0"><b>' + RP.esc(S.nome(e.reino)) + ' defende ' + RP.esc(e.local) + '</b><br><small class="fraco">' + RP.esc(RP.partesGrupo(e.tropas)) + ' · continuam sendo dele</small></span></div>'; }).join('') +
       d.reforcos.meus.map(function (e) { return '<div class="card linha">' + S.brasao(e.aliado, 28) + '<span style="flex:1;min-width:0"><b>Suas tropas em ' + RP.esc(e.local) + '</b><br><small class="fraco">' + RP.esc(RP.partesGrupo(e.tropas)) + '</small></span><button type="button" class="btn btn-p" data-reforco-volta="' + e.localId + '">' + RP.icone('voltar') + 'Voltar</button></div>'; }).join('') + '</div>';
     h += '<div class="secao-titulo">Seus pedidos</div><div class="pilha">' + (meus.length ? meus.map(meuPedido).join('') : S.vazio('Nenhum pedido feito. Clique em Pedir ao lado de um aliado.')) + '</div>' +
-      '<div class="secao-titulo">Sair</div><div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Qualquer membro sai quando quiser. Ao sair ou ser expulso, vale uma <b>trégua de ' + d.treguaH + ' h</b> entre o reino e a aliança, garantida pelo jogo, e só se entra em outra aliança depois de ' + d.treguaH + ' h. A visão das marchas acaba na hora.</p>' +
+      '<div class="secao-titulo">Sair</div><div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Qualquer membro sai quando quiser. Ao sair ou ser expulso, vale uma <b>trégua de ' + d.treguaH + ' h</b> entre o reino e a aliança, garantida pelo jogo, e só se entra em outra aliança depois de ' + d.treguaH + ' h.</p>' +
       '<button type="button" class="btn btn-p btn-fantasma" data-sair-alianca>' + RP.icone('voltar') + 'Sair da aliança</button></div><div style="height:var(--esp-8)"></div>';
     return h;
   }
@@ -137,7 +137,7 @@
         if (e.target.closest('[data-sair-alianca]')) {
           RP.modal({
             titulo: 'Sair da ' + RP.esc(dados.alianca.nome) + '?',
-            corpo: '<p class="suave">A visão das marchas dos aliados acaba na hora. Por ' + dados.treguaH + ' h, nenhum lado pode atacar o outro, e você só entra em outra aliança depois disso. Seus reforços em locais de aliados voltam para casa.' +
+            corpo: '<p class="suave">Por ' + dados.treguaH + ' h, nenhum lado pode atacar o outro, e você só entra em outra aliança depois disso. Seus reforços em locais de aliados voltam para casa.' +
               (dados.alianca.meuCargo === 'lider' ? ' A liderança passa ao conselheiro mais antigo.' : '') + '</p>',
             acoes: [{ rotulo: 'Sair', classe: 'btn-perigo', acao: function () { acao(RP.post('/alianca/sair'), 'Você saiu da aliança', 'Trégua de ' + dados.treguaH + ' h.', RP.$('[data-tela=alianca]')); } }, { rotulo: 'Ficar' }]
           });

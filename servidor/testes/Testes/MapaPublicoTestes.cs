@@ -21,7 +21,7 @@ public class MapaPublicoTestes
         "tropas", "tamanho", "resumo", "pessoas", "pessoaIds", "destino", "destinoNome", "alvo", "alvoId", "ordem", "plano", "objetivos", "carga", "cargaMax", "cargaUsada",
         "estado", "chegada", "retornando", "paraMim", "estoque", "guarnicao", "civis", "milicia", "soldados", "jazida", "recurso", "restante", "esgotada",
         "escudo", "escudoAte", "regencia", "ultimoAcesso", "ehIA", "ia", "perfil", "email", "contaId", "mensagem", "proposta", "conversa", "convites",
-        "pagamento", "tiposReliquia", "cargo", "iconeProprio", "postura", "bonus", "forca",
+        "pagamento", "tiposReliquia", "cargo", "postura", "bonus", "forca",
     ];
 
     private static void SemCampos(JsonElement e, string[] proibidos, string caminho = "$")

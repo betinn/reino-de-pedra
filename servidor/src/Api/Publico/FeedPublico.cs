@@ -8,12 +8,15 @@ namespace ReinoDePedra.Api.Publico;
 
 /// <summary>
 /// O feed sem login, feito para muitos visitantes não pesarem na simulação: cada parte é montada no máximo uma vez por
-/// intervalo, só se alguém pediu, e os bytes já comprimidos são os mesmos para todos. Quem pede nunca entra na fila do motor,
-/// a não ser o primeiro depois do intervalo, e mesmo esse recebe a última foto na hora.
+/// intervalo, só se alguém pediu, e os bytes já comprimidos são os mesmos para todos. Quem pede não entra na fila do motor,
+/// a não ser o primeiro depois do intervalo, que espera a foto nova por no máximo <see cref="EsperaFotoNova"/>.
 /// </summary>
 public sealed class FeedPublico(Motor motor, Configuracao cfg)
 {
     public sealed record Foto(byte[] Json, byte[] Br, byte[] Gz, string Etag, long Em);
+
+    /// <summary>Quanto o primeiro pedido depois do intervalo espera a foto nova; passou disso, leva a última.</summary>
+    private static readonly TimeSpan EsperaFotoNova = TimeSpan.FromMilliseconds(100);
 
     public sealed class Parte(string nome, TimeSpan validade, int maxAge, Func<Mundo, JsonNode> montar)
     {
@@ -27,9 +30,9 @@ public sealed class FeedPublico(Motor motor, Configuracao cfg)
 
     /// <summary>Terreno, rotas e pontes.</summary>
     public Parte Chao { get; } = new("chao", TimeSpan.FromSeconds(60), 60, Jogo.Publico.RegraPublica.ChaoDoMapa);
-    /// <summary>Reinos, construções, bandeiras, diplomacia e ranking.</summary>
-    public Parte Mundo { get; } = new("mundo", TimeSpan.FromSeconds(10), 10, Jogo.Publico.RegraPublica.Mundo);
-    /// <summary>Marchas, batalhas e mensagens.</summary>
+    /// <summary>Reinos, construções, bandeiras, diplomacia e ranking. O cliente pede a cada 3 s: o intervalo fica abaixo disso.</summary>
+    public Parte Mundo { get; } = new("mundo", TimeSpan.FromSeconds(2), 2, Jogo.Publico.RegraPublica.Mundo);
+    /// <summary>Marchas, batalhas e mensagens. O cliente pede a cada 3 s: o intervalo fica abaixo disso.</summary>
     public Parte Vivo { get; } = new("vivo", TimeSpan.FromSeconds(2), 2, Jogo.Publico.RegraPublica.Vivo);
 
     /// <summary>Temporada e tamanho do mapa (GET /mundo).</summary>
@@ -42,19 +45,20 @@ public sealed class FeedPublico(Motor motor, Configuracao cfg)
         ["aceleracao"] = cfg.Aceleracao,   // > 1 só no teste local (REINO_ACELERACAO): o relógio do cliente anda junto
     });
 
-    /// <summary>A foto da parte. Vencida, sai a última e a nova é montada por trás; sem nenhuma, espera a primeira.</summary>
+    /// <summary>A foto da parte. Vencida, um único pedido dispara a nova e a espera por pouco tempo; os outros levam a última. Sem nenhuma, espera a primeira.</summary>
     public async ValueTask<Foto> Obter(Parte p)
     {
         var f = p.Atual;
         if (f == null || cfg.FeedSemCache) return await Renovar(p);
-        if (Environment.TickCount64 - f.Em >= p.Validade.TotalMilliseconds && p.Vez.Wait(0))
-            _ = Task.Run(async () =>
-            {
-                try { await Montar(p); }
-                catch (Exception) { /* motor parando: a última foto continua valendo */ }
-                finally { p.Vez.Release(); }
-            });
-        return f;
+        if (Environment.TickCount64 - f.Em < p.Validade.TotalMilliseconds || !p.Vez.Wait(0)) return f;
+        var montagem = Task.Run(async () =>
+        {
+            try { await Montar(p); }
+            catch (Exception) { /* motor parando: a última foto continua valendo */ }
+            finally { p.Vez.Release(); }
+        });
+        await Task.WhenAny(montagem, Task.Delay(EsperaFotoNova));
+        return p.Atual ?? f;
     }
 
     /// <summary>Monta a parte agora (primeira foto, testes), um de cada vez.</summary>
