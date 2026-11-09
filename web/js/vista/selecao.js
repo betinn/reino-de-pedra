@@ -65,20 +65,23 @@
     var tropa = soldados(), o = tropa ? origem() : null, ex = o && o.marchaId ? RP.exercito(o.marchaId) : null;
     var onde = o && o.de ? (RP.local(o.de) || {}).nome : ex ? RP.tituloExercito(ex) : '';
     var resumo = k ? (partes || '') + (civis ? (partes ? ', ' : '') + civis + (civis === 1 ? ' civil' : ' civis') : '') + (onde ? ' · ' + onde : '') : (modo ? 'Clique nas pessoas ou arraste um laço' : '');
+    var tempo = ex && ex.estado === 'trabalhando' && ex.trabalho && ex.trabalho.fim ? RP.barraTempo(ex.trabalho.inicio, ex.trabalho.fim, { classe: 'curta', cor: 'sucesso', rotulo: RP.nomeTrabalho(ex.trabalho) }) : '';
     var dica = tropa ? '<span class="sel-dica"><span><kbd class="tecla">Botão direito</kbd> no mapa: mover, reforçar ou atacar</span><span><kbd class="tecla">Shift</kbd> + direito: todas as ordens</span>' + (grupoAtivo ? '<span>grupo <kbd class="tecla">' + grupoAtivo + '</kbd></span>' : '') + '</span>' : '';
     var comandos = '';
     if (tropa && o && !o.erro) {
       var pode = !ex || (!ex.bloqueio && ex.podeOrdem !== false);
-      comandos += cmd('data-selecao-missao', 'alvo', 'Ordem…', 'Enter', 'btn-primario');
+      var aqui = ex && pode && ex.estado === 'parado' && RP.envio.trabalhoAqui(ex.hex);   /* parada na ruína ou na jazida: trabalhar é a ordem à mão */
+      if (aqui) comandos += cmd('data-tropa-trabalhar="' + ex.id + '" data-hex="' + ex.hex + '"', aqui.icone, RP.esc(aqui.verbo), '', 'btn-primario');
+      comandos += cmd('data-selecao-missao', 'alvo', 'Ordem…', 'Enter', aqui ? '' : 'btn-primario');
       if (pode) comandos += cmd('data-selecao-patrulha', 'rota', 'Patrulhar', 'Q');
       if (ex && pode && ex.estado !== 'retornando') comandos += cmd('data-exercito-voltar="' + ex.id + '"', 'voltar', 'Voltar', 'V');
       if (ex && pode && ex.estado !== 'parado') comandos += cmd('data-exercito-parar="' + ex.id + '" data-hex="' + ex.hex + '"', 'alvo', 'Parar aqui', 'H');
-      if (ex && pode && RP.somaGrupo(ex.tropas || {}) > 1) comandos += cmd('data-tropa-separar="' + ex.id + '"', 'tropas', 'Separar', 'K');
+      if (ex && pode && ex.estado !== 'trabalhando' && RP.somaGrupo(ex.tropas || {}) > 1) comandos += cmd('data-tropa-separar="' + ex.id + '"', 'tropas', 'Separar', 'K');
       if (ex) comandos += cmd('data-exercito="' + ex.id + '"', 'info', 'Detalhes', 'I');
       else if (o.de) comandos += cmd('data-local="' + o.de + '"', 'info', 'O local', 'I');
       if (ex) comandos += '<a class="btn btn-p" href="#/posturas?marcha=' + ex.id + '">' + RP.icone('escudo') + 'Comportamento<kbd class="tecla">C</kbd></a>';
     }
-    b.innerHTML = '<span class="ordem-ico">' + RP.icone(tropa ? 'tropas' : 'populacao') + '</span><span class="ordem-txt"><b>' + (k ? k + (k === 1 ? ' selecionado' : ' selecionados') : 'Modo seleção') + '</b><small>' + RP.esc(resumo) + '</small>' + dica + '</span>' +
+    b.innerHTML = '<span class="ordem-ico">' + RP.icone(tropa ? 'tropas' : 'populacao') + '</span><span class="ordem-txt"><b>' + (k ? k + (k === 1 ? ' selecionado' : ' selecionados') : 'Modo seleção') + '</b><small>' + RP.esc(resumo) + '</small>' + tempo + dica + '</span>' +
       '<span class="selecao-comandos">' + comandos + cmd('data-selecao-limpar', 'fechar', 'Limpar', 'Esc', 'btn-fantasma') + '</span>';
     if (tropa && !RP.tropas && o && o.marchaId) RP.carregarTropas().catch(function () { /* offline */ });
   }
@@ -218,4 +221,6 @@
   });
   document.addEventListener('rp:folha-fechou', function () { barra(); });
   document.addEventListener('rp:tropas', function () { if (n()) barra(); });
+  /* a tropa selecionada chegou, começou ou terminou um trabalho: o painel acompanha */
+  RP.ouvir('marchas', function () { if (soldados()) RP.recarregarTropas(); });
 })();

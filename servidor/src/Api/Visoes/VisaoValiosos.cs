@@ -208,7 +208,7 @@ public static class VisaoValiosos
             };
         }
         var ru = Escavacoes.NoHex(m, hex);
-        if (ru == null || !Nevoas.Explorado(m, r.Id, hex)) throw new RegraException("Não há jazida nem ruína antiga conhecida neste hexágono.");
+        if (ru == null) throw new RegraException("Não há jazida conhecida nem ruína antiga neste hexágono.");
         var destinos = m.LocaisDe(r.Id).Where(x => !x.Ruina).Select(x =>
         {
             var rr = Caminhos.Calcular(m, hex, x.Hex, vel, new OpcoesCaminho { Forca = forca, ReinoId = r.Id });
@@ -216,7 +216,7 @@ public static class VisaoValiosos
         }).OrderBy(x => x.min ?? double.MaxValue).ToList();
         return new
         {
-            tipo = "escavacao", ru.Esgotada, posto, horas = Escavacoes.Horas(m, g, posto),
+            tipo = "escavacao", esgotada = ru.Esgotada && Nevoas.Explorado(m, r.Id, hex), posto, horas = Escavacoes.Horas(m, g, posto),   // só indo ver se sabe se a ruína ainda guarda a relíquia
             cenarios = new[]
             {
                 new { nome = nomeUm + ", sem preparo", v = Escavacoes.Horas(m, um, false), atual = false },

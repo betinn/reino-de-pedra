@@ -15,7 +15,8 @@ namespace ReinoDePedra.Jogo.Valiosos;
 /// Duração: <c>escavarHoras1 / (n^expTropas × posto)</c>, com n = tropas (até <c>P.extracao.maxTropas</c>), nunca menos que
 /// <c>escavarMin</c>. Escavar depende de mãos, não de carga: qualquer unidade conta igual. Mais tropas mandadas depois à mesma
 /// ruína se juntam ao grupo que já escava (uma marcha só) e o fim é recalculado com o progresso que já existe: mais gente,
-/// menos tempo, nunca recomeça.
+/// menos tempo, nunca recomeça. A intenção é a própria ordem da marcha: o grupo escava ao chegar, com o dono online ou não, mesmo
+/// se a ruína não estava explorada no envio (ela é pública e a marcha revela a névoa no caminho). Se não der mais, o relatório diz por quê.
 /// </summary>
 public static class Escavacoes
 {
@@ -37,14 +38,12 @@ public static class Escavacoes
         var ru = NoHex(m, ex.Destino);
         if (ru == null || ru.Esgotada)
         {
-            Exercitos.Avisar(m, ex, "Ruína já escavada", "Não há mais relíquia aqui. As tropas voltam.");
-            ex.Retornar(m);
+            Desistir(m, ex, "Ruína já escavada", "Não há mais relíquia aqui. As tropas voltam.");
             return;
         }
         if (Extracoes.OcupadoPorOutro(m, ex.ReinoId, ru.Hex))
         {
-            Exercitos.Avisar(m, ex, "Ruína ocupada", "Há um posto de outro reino na ruína. As tropas voltam.");
-            ex.Retornar(m);
+            Desistir(m, ex, "Ruína ocupada", "Há um posto de outro reino na ruína. As tropas voltam.");
             return;
         }
         ex.Parar(m);
@@ -70,6 +69,18 @@ public static class Escavacoes
         Registros.Notificar(m, ex.ReinoId, "reliquias", "Escavação começou",
             "Relíquia em " + Duracao(h) + " · " + GT.Partes(m, ex.Tropas) + " na ruína antiga.", "reliquias");
         m.Avisar(ex.ReinoId, "marchas");
+    }
+
+    /// <summary>A escavação não dá mais ao chegar: o relatório diz por quê e as tropas voltam.</summary>
+    private static void Desistir(Mundo m, Exercito ex, string titulo, string motivo)
+    {
+        Registros.Relatar(m, ex.ReinoId, "reliquia", titulo, new JsonObject
+        {
+            ["resumo"] = motivo,
+            ["linhas"] = new JsonArray { new JsonObject { ["rotulo"] = "Tropas", ["valor"] = GT.Partes(m, ex.Tropas) } },
+            ["hex"] = ex.Destino,
+        }, "reliquias", titulo);
+        ex.Retornar(m);
     }
 
     /// <summary>As pessoas, as tropas e a carga de <paramref name="de"/> passam para <paramref name="para"/>, e <paramref name="de"/> sai do mapa.</summary>
@@ -178,7 +189,10 @@ public sealed class FimEscavacaoEvento : Evento
     }
 }
 
-/// <summary>Vai a uma ruína antiga conhecida e escava. <c>Dados.destinoLocalId</c>: local que recebe a relíquia (padrão: castelo).</summary>
+/// <summary>
+/// Vai a uma ruína antiga e escava ao chegar. A ruína é pública, mas se ainda guarda a relíquia só se sabe indo ver: fora da área
+/// explorada a ordem não é recusada por isso (a recusa revelaria o segredo). <c>Dados.destinoLocalId</c>: local que recebe a relíquia (padrão: castelo).
+/// </summary>
 public sealed class OrdemEscavarRuina : IOrdemExercito
 {
     public string Ordem => Escavacoes.OrdemEscavar;
@@ -187,9 +201,8 @@ public sealed class OrdemEscavarRuina : IOrdemExercito
     public Rota Trajeto(Mundo m, Exercito ex, int destino, int de) => Exercitos.Rota(m, ex, de, destino);
     public void Validar(Mundo m, Reino r, Exercito ex, int destino)
     {
-        var ru = Escavacoes.NoHex(m, destino);
-        if (ru == null || !Nevoas.Explorado(m, r.Id, destino)) throw new RegraException("Não há ruína antiga conhecida neste hexágono.");
-        if (ru.Esgotada) throw new RegraException("A ruína já foi escavada.");
+        var ru = Escavacoes.NoHex(m, destino) ?? throw new RegraException("Não há ruína antiga neste hexágono.");
+        if (ru.Esgotada && Nevoas.Explorado(m, r.Id, destino)) throw new RegraException("A ruína já foi escavada.");
         if (Extracoes.OcupadoPorOutro(m, r.Id, destino)) throw new RegraException("Há um posto de outro reino nesta ruína.");
         var did = ex.Dados["destinoLocalId"]?.GetValue<long>() ?? r.CasteloId;
         if (!Exercitos.LocalProprio(m.Locais.Obter(did), r.Id)) throw new RegraException("Escolha um local seu para guardar a relíquia.");
