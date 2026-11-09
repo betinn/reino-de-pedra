@@ -234,6 +234,10 @@ html.jogo .tela .conteudo-tela { padding-left: var(--esp-4); padding-right: var(
 .menu-ctx-item kbd.tecla { margin-left: auto; }
 .menu-ctx-sep { height: 1px; margin: 4px 6px; background: var(--painel-borda); }
 .menu-ctx-vazio { padding: 8px 10px; color: var(--cor-texto-3); font-size: 13px; }
+.menu-ctx-item .menu-ctx-seta { width: 14px; height: 14px; margin-left: auto; }
+.menu-ctx-item kbd.tecla + .menu-ctx-seta { margin-left: 2px; }
+.menu-ctx-sub { position: absolute; z-index: 1; min-width: 190px; max-width: 280px; max-height: calc(100vh - 8px); overflow-y: auto; animation: none; }
+.menu-ctx-nota { padding: 6px 10px; color: var(--cor-alerta, var(--cor-texto-2)); font-size: 12px; line-height: 1.35; }
 
 /* ---------------------------------------------------------------- atalhos (ajuda) */
 .atalhos-fundo { position: fixed; inset: 0; z-index: var(--z-modal); display: grid; place-items: center; background: rgba(5, 6, 8, .5); }

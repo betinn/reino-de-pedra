@@ -109,11 +109,13 @@ public static class VisaoMapa
     /// <summary>
     /// Marcha do próprio reino no mapa: sempre vai, esteja onde estiver (névoa, parada, caçando, extraindo), com estado, ordem,
     /// carga (o que leva, quanto usa e quanto cabe), tropas e alvo. Parada: <c>parado = true</c> e <c>chegada = null</c>
-    /// (os <c>tempos</c> de uma marcha parada são só o instante em que parou; não é uma chegada). Nada disto vai para marchas alheias.
+    /// (os <c>tempos</c> de uma marcha parada são só o instante em que parou; não é uma chegada). <c>trabalho</c>: o que o exército faz
+    /// parado (<see cref="VisaoTropas.Trabalho"/>), com início e fim para a barra de tempo. Nada disto vai para marchas alheias.
     /// </summary>
     public static object MarchaPropria(Mundo m, Reino r, Marcha x, long agora)
     {
         var parado = x.EventoId == null && x.Caminho.Count <= 1;
+        var trabalho = x is Exercito exTrabalho ? VisaoTropas.Trabalho(m, r, exTrabalho) : null;
         var cargaMax = x switch
         {
             Exercito e => e.CargaMax(m), Caravana c => c.CargaMax(m), Carregadores c => c.Pessoas * m.P.Carregador.Carga,
@@ -129,7 +131,7 @@ public static class VisaoMapa
         {
             tipo = "marcha", id = x.Id, marcha = x.Tipo, reinoId = r.Id, dono = "meu", hex = x.HexEm(agora), caminho = x.Caminho, tempos = x.Tempos,
             parado, chegada = parado ? (long?)null : x.Chegada, x.Retornando,
-            estado = VisaoTropas.Estado(m, x),
+            estado = VisaoTropas.Estado(m, x, trabalho), trabalho,
             ordem = x switch { Exercito e => e.Ordem, Explorador ex => ex.Ordem, Caravana c => c.Fase, _ => null },
             carga = x.Carga.Arredondado(), cargaMax, cargaUsada = Math.Floor(x.Carga.Total),
             tropas = x.Tropas, resumo = GT.Partes(m, x.Tropas), pessoas = x is Carregadores cg ? cg.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento dp ? dp.PessoaIds.Count : (int?)null,

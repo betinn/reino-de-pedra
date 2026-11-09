@@ -10,7 +10,7 @@
   'use strict';
   var RP = window.RP, H = RP.hex, A = RP.arte, M = RP.mapaModelo;
   var K = A.K, P = A.P, PA = A.PA;
-  var SMIN = 0.85, SMAX = 3.2, QUADRO_MS = 33;
+  var SMIN = 0.85, SMAX = 3.2, QUADRO_MS = 33, ZOOM_MARCADOR = 1.3;
 
   /* uma única escuta de visibilidade para todas as cenas (sem vazamento por instância) */
   /* imagens enviadas pelos reinos: pedidas uma vez e desenhadas quando terminam de carregar */
@@ -613,10 +613,16 @@
     }
     /* desenhos extras de sistemas no chão (mesma assinatura do Mapa: ctx no espaço do mundo) */
     (MAPA.desenhosExtrasCena || []).forEach(function (f) { try { chao(c, V); f(c, d, { x: self.cam.x, y: self.cam.y, z: s }, ag); } catch (e) { console.error(e); } });
+    /* rastros de quem anda, no chão, sob as figuras */
+    if (camadas.marchas !== false) {
+      RP.marchasMapa.amostrar(agora);
+      chao(c, V);
+      RP.marchasMapa.desenhar(c, vis, t, Math.max(1, 1.3 / s));
+    }
 
     var itens = [], rotulos = [];
     function alvo(x, y, w, h, ent, o) { return { x: x, y: y, w: w, h: h, ent: ent, obj: o }; }
-    function rot(x, y, dy, txt, cls, cor, link, o, reino) { rotulos.push({ x: x, y: y, dy: dy, txt: txt, cls: cls, cor: cor, link: link, obj: o, reino: reino }); }
+    function rot(x, y, dy, txt, cls, cor, link, o, reino, pct) { rotulos.push({ x: x, y: y, dy: dy, txt: txt, cls: cls, cor: cor, link: link, obj: o, reino: reino, pct: pct }); }
 
     /* ameaças: marchas alheias a caminho de um local seu */
     var meusHex = {}, ameacados = {};
@@ -796,6 +802,19 @@
       try { tipo.sobreNevoa(c, o, { t: t, A: A, estado: M.estado(o.hex) }); } catch (er) { console.error(er); }
     });
 
+    /* com o zoom afastado, as figuras da marcha ficam pequenas: o marcador de gente andando vai sobre a cabeça delas */
+    if (camadas.marchas !== false && s < ZOOM_MARCADOR) {
+      var agoraReal = performance.now();
+      d.marchas.forEach(function (m) {
+        var pm = M.posMarcha(m, ag);
+        if (!naTela(pm.x, pm.y)) return;
+        var pt = self.tela(pm.x, pm.y), angTela = Math.atan2(Math.sin(pm.ang + AZ) * K, Math.cos(pm.ang + AZ));
+        c.setTransform(dpr * 0.82, 0, 0, dpr * 0.82, pt.x * dpr, (pt.y - 30 * s - 13) * dpr);
+        RP.marchasMapa.desenharFigura(c, m, A.corDono(m.dono, m), t, RP.marchasMapa.andando(m, ag, agoraReal), angTela);
+      });
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
     /* rótulos (espaço de tela) */
     if (camadas.rotulos !== false) {
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -812,6 +831,12 @@
         }
         postas.push(q);
         A.pilula(c, q.x, q.y, q.rt.txt, q.rt.cls, q.rt.cor);
+        /* barra de progresso de quem trabalha: na base da pílula */
+        if (q.rt.pct != null) {
+          var bw = c.measureText(q.rt.txt).width + 4;
+          c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(q.x - bw / 2, q.y + 6, bw, 3);
+          c.fillStyle = '#6fbf73'; c.fillRect(q.x - bw / 2, q.y + 6, bw * q.rt.pct, 3);
+        }
         /* a imagem que o reino enviou, ao lado do nome do castelo */
         var imagem = imagemReino(q.rt.reino);
         if (imagem) {
@@ -938,9 +963,13 @@
       }
     }
     if (m.reliquia) { var pb = pt(12, 0); add({ x: pb.x, y: pb.y + 1 }, function () { A.bauReliquia(c, t, P, m.reliquia.tipo || 'desconhecido'); }); prefixo = 'Relíquia · '; }
-    var tempo = !cheg ? '' : cheg > ag ? RP.fmtResta(cheg - ag) : (propria ? 'parada' : '');
+    /* trabalhando, o rótulo diz o quê e quanto falta, com a barra; "parada" é só para quem está parada de verdade */
+    var tb = trab && m.trabalho, pct = tb && tb.inicio && tb.fim ? Math.max(0, Math.min(1, (ag - tb.inicio) / Math.max(1, tb.fim - tb.inicio))) : null;
+    var tempo = tb ? (tb.fim ? RP.fmtResta(tb.fim - ag) : '') : !cheg ? '' : cheg > ag ? RP.fmtResta(cheg - ag) : (propria ? 'parada' : '');
+    if (trab && !tempo) prefixo = prefixo.replace(/ · $/, '');
     if (m.dono !== 'meu' && m.reino) prefixo = m.reino.nome;
-    rot(pos.x, pos.y, -40, prefixo + tempo, 'marcha', cor);
+    /* no zoom afastado o rótulo sobe, para dar lugar ao marcador sobre a cabeça */
+    rot(pos.x, pos.y, this.cam.s < ZOOM_MARCADOR ? -96 : -40, prefixo + tempo, 'marcha', cor, null, null, null, pct);
   };
 
   function alvoTela(cena, x, y, w, h, ent, o) {

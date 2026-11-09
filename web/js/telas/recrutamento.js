@@ -27,8 +27,8 @@
   function maxRecrutavel(u) {
     var us = usado(u.id), livres = 10 - filaRecrut().length - Object.keys(pedido).filter(function (id) { return pedido[id] && id !== u.id; }).length;
     if (livres <= 0) return 0;
-    var m = Math.floor(((RP.reino ? RP.reino.pop : 0) - us.pop) / u.pop);
-    Object.keys(u.custo).forEach(function (k) { m = Math.min(m, Math.floor((RP.totalRecurso(k) - (us.custo[k] || 0)) / u.custo[k])); });
+    /* falta de recurso não limita: o item aguarda na fila; a gente, sim (os que aguardam já contam com a deles) */
+    var m = Math.floor(((RP.reino ? RP.reino.pop - (RP.reino.popAguardando || 0) : 0) - us.pop) / u.pop);
     return Math.max(0, m);
   }
   function maxDe(lista, campo) { return Math.max.apply(null, lista.map(function (u) { return u[campo]; })) || 1; }
@@ -76,7 +76,7 @@
     var f = filaRecrut();
     return '<div class="card pilha fila-card"><div class="card-titulo" style="margin:0">' + RP.icone('tropas') + '<h3>Fila de recrutamento</h3><span class="selo">' + f.length + ' de 10</span></div>' +
       (f.length ? f.map(function (i) { i.fila = 'recrutamento'; return RP.itemFilaServidor(i); }).join('') : '<p class="fraco">Nada sendo recrutado.</p>') +
-      '<p class="fraco" style="font-size:var(--fs-2)">Um item por vez; cada unidade escolhida vira um item. O treino começa quando o material chega ao local, e cada tropa entra no local assim que fica pronta.</p></div>';
+      '<p class="fraco" style="font-size:var(--fs-2)">Um item por vez; cada unidade escolhida vira um item. Na vez de cada item, o reino separa o material e as pessoas (sem recurso, ele aguarda e começa sozinho quando houver). O treino começa quando o material chega ao local, e cada tropa entra no local assim que fica pronta.</p></div>';
   }
 
   function desenhar(el) {
@@ -94,20 +94,18 @@
           '<span class="escolha-txt"><b>' + RP.esc(x.nome) + '</b><small class="fraco">' + (x.tipo === 'castelo' ? 'Milícia, lanceiro e arqueiro' : 'Todas as unidades') + '</small></span></button>';
       }).join('') + '</div>' : '') +
       '<div class="card pop-mini">' + (RP.popSomaHTML ? RP.popSomaHTML(r) : '') +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:6px">Recrutar transforma população em tropas na hora. Tropas mortas não voltam.</p></div>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:6px">Recrutar transforma população em tropas quando chega a vez do item. Tropas mortas não voltam.</p></div>' +
       (filaRecrut().length ? filaHTML() : '') + '<div class="secao-titulo">Unidades</div><div class="pilha">' + unidades.map(function (u) { return cartaoUnidade(u, l, maxes); }).join('') + '</div>';
-    var rs = resumo(), falta = RP.faltas(rs.custo, 1, '*');
+    var rs = resumo();
     RP.$('.rodape-resumo', el).innerHTML = rs.pop
       ? '<div class="resumo-linha"><b>' + RP.esc(rs.txt) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(rs.tempo) + '</span></div>' + RP.custoHTML(rs.custo, 1, '*')
       : '<div class="resumo-linha fraco">Escolha a quantidade de cada unidade.</div>';
-    RP.$('[data-recrutar]', el).classList.toggle('btn-inativo', !rs.pop || falta.length > 0);
+    RP.$('[data-recrutar]', el).classList.toggle('btn-inativo', !rs.pop);
   }
 
   function recrutar(el) {
     var rs = resumo(), l = localAtual();
     if (!rs.pop) { RP.aviso({ titulo: 'Nada escolhido', texto: 'Use + e − em cada unidade.', icone: 'info', tipo: 'alerta' }); return; }
-    var falta = RP.faltas(rs.custo, 1, '*');
-    if (falta.length) { RP.aviso({ titulo: 'Recursos insuficientes', texto: 'Faltam ' + falta.join(', ') + ' no reino todo.', icone: 'alerta', tipo: 'perigo' }); return; }
     var ids = Object.keys(pedido).filter(function (id) { return pedido[id]; }), itens = [];
     var botao = RP.$('[data-recrutar]', el); botao.disabled = true;
     ids.reduce(function (p, id) {
@@ -116,7 +114,8 @@
       });
     }, Promise.resolve()).then(function () {
       var chega = itens.reduce(function (m, it) { return Math.max(m, it.materialChegaEm || 0); }, 0);
-      RP.aviso({ titulo: 'Recrutamento na fila', texto: rs.txt + '. População −' + RP.num(rs.pop) + '.' + (chega ? ' O material chega em ' + RP.fmtResta(chega - RP.agora()) + '.' : ''), icone: chega ? 'carroca' : 'tropas', tipo: 'sucesso', ms: 4200 });
+      var espera = itens.some(function (it) { return it.aguardando; });
+      RP.aviso({ titulo: 'Recrutamento na fila', texto: rs.txt + '.' + (espera ? ' Aguarda a vez e os recursos: começa sozinho quando houver.' : ' População −' + RP.num(rs.pop) + '.') + (chega ? ' O material chega em ' + RP.fmtResta(chega - RP.agora()) + '.' : ''), icone: chega ? 'carroca' : 'tropas', tipo: 'sucesso', ms: 4200 });
       if (RP.painel && window.matchMedia('(max-width: 899px)').matches) RP.ir('tropas');
     }, function (e) {
       RP.aviso({ titulo: e.message, texto: itens.length ? 'Parte do pedido entrou na fila.' : '', icone: 'alerta', tipo: 'perigo' });

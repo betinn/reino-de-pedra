@@ -255,6 +255,7 @@ public class TemporadaTestes
     public void Reino_de_IA_pode_ter_brasao_de_veterano_como_qualquer_jogador()
     {
         var t = new MundoTeste();
+        t.M.Sorte = new Rng(1);   // o brasão de veterano é sorteado (chance P.TemporadaServ.IaExtras); com o relógio como semente, ~0,5% das rodadas não tinham nenhum
         var extras = 0;
         for (var i = 0; i < 20; i++)
         {

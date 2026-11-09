@@ -60,12 +60,14 @@ public class ValiososTestes
         var t = new MundoTeste();
         var r = t.NovoReino();
         t.DarRecursos(r);
-        var ex = Assert.Throws<RegraException>(() => Veiculos.Construir(t.M, r, "carrocao", 1));
-        Assert.Contains("cavalos de raça", ex.Message);
-        Assert.Empty(r.Fila(Obras.Fila).Itens);
-        t.DarRecursos(r, 2, "cavalo");
         var item = Veiculos.Construir(t.M, r, "carrocao", 1);
+        Assert.True(item.Aguardando);          // sem cavalos, espera na fila sem gastar nada
         Assert.Equal(t.M.P.Veiculo.Tempo["carrocao"], item.DuracaoSeg);
+        t.AvancarMin(5);
+        Assert.False(item.Iniciado);
+        t.DarRecursos(r, 2, "cavalo");
+        Filas.Avaliar(t.M, r);
+        Assert.False(item.Aguardando);
         Assert.Equal(0, Castelo(t, r).Estoque.Qtd("cavalo"), 6);
         t.Avancar(TimeSpan.FromSeconds(item.DuracaoSeg + 1));
         Assert.Equal(1, r.Veiculos["carrocao"]);
@@ -214,11 +216,13 @@ public class ValiososTestes
         var vila = LocalDe(t, r, TipoLocal.Vila);
         var antes = Economia.Capacidade(t.M, vila, "comida");
         Assert.Equal(t.M.F.Producao(vila.Nivel) * t.M.P.EstoqueHoras, antes, 6);
-        Assert.Contains("sal", Assert.Throws<RegraException>(() => Salgadeiras.Construir(t.M, r, vila.Id)).Message);
         Assert.Throws<RegraException>(() => Salgadeiras.Construir(t.M, r, LocalDe(t, r, TipoLocal.Serraria).Id));
-        t.DarRecursos(r, 1000, "sal", "madeira");
         var item = Salgadeiras.Construir(t.M, r, vila.Id);
+        Assert.True(item.Aguardando);          // sem sal, espera na fila sem gastar nada
         Assert.Throws<RegraException>(() => Salgadeiras.Construir(t.M, r, vila.Id));
+        t.DarRecursos(r, 1000, "sal", "madeira");
+        Filas.Avaliar(t.M, r);
+        Assert.False(item.Aguardando);
         Assert.Equal(t.M.P.Salgadeira.Tempo, item.DuracaoSeg);
         t.AvancarHoras(3);   // o material vai a pé até a vila e a obra leva 1 h
         Assert.True(vila.Salgadeira);
@@ -270,6 +274,32 @@ public class ValiososTestes
         Assert.Equal(prata0 + cheia, c.Estoque.Qtd("prata"), 3);
         Assert.Equal(6, c.Guarnicao["lanceiro"]);
         Assert.Contains(t.M.Relatorios, x => x.ReinoId == r.Id && x.Tipo == "extracao");
+    }
+
+    [Fact]
+    public void Tropa_parada_na_jazida_extrai_sem_sair_do_lugar()
+    {
+        var (t, r, j, c) = CenarioExtracao();
+        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, j.Hex, OrdemMover.Id);
+        AvancarAte(t, ex.Chegada);
+        Exercitos.DarOrdem(t.M, r, ex.Id, Extracoes.OrdemExtrair, j.Hex);
+        t.Avancar(TimeSpan.FromSeconds(1));
+        Assert.Equal(j.Id, ex.ExtraiJazidaId);
+    }
+
+    [Fact]
+    public void Tropa_parada_na_ruina_escava_sem_sair_do_lugar()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var ru = NovaRuina(t, r, "ataque");
+        var c = Castelo(t, r);
+        Guarnecer(t, r, c, "lanceiro", 2);
+        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, ru.Hex, OrdemMover.Id);
+        AvancarAte(t, ex.Chegada);
+        Exercitos.DarOrdem(t.M, r, ex.Id, Escavacoes.OrdemEscavar, ru.Hex);
+        t.Avancar(TimeSpan.FromSeconds(1));
+        Assert.Equal(ru.Id, ex.EscavaRuinaId);
     }
 
     [Fact]

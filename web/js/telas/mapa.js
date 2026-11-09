@@ -135,7 +135,7 @@
     var acoes = '';
     var livre = !objs.length && !M.rio(h) && !e.nunca;
     /* escolhendo destino, as ações são as ordens da tropa */
-    if (livre && !emEnvio) acoes += '<a class="btn btn-p btn-primario" href="#/construcao?aba=novos" data-tecla="B">' + RP.icone('castelo') + 'Fundar local</a>';
+    if (livre && !emEnvio) acoes += '<a class="btn btn-p btn-primario" href="#/construcao?aba=novos" data-tecla="B" data-submenu="fundar">' + RP.icone('castelo') + 'Fundar local</a>';
     var meu = objs.filter(function (o) { return o.tipo === 'local' && o.dono === 'meu'; })[0];
     if (meu && !emEnvio) acoes += '<button type="button" class="btn btn-p btn-primario" data-local="' + meu.id + '" data-tecla="I">' + RP.icone('info') + 'Detalhes</button>';
     if (!emEnvio) objs.forEach(function (o) { var tp = MAPA.tiposObjeto[o.tipo]; if (tp && tp.acoes) acoes += tp.acoes(o, d) || ''; });
@@ -227,16 +227,16 @@
     var ag = RP.agora(), pos = M.posMarcha(o, ag), cheg = M.chegada(o), def = MAPA.tiposMarcha[o.marcha] || {};
     var ex = o.marcha === 'exercito' ? RP.exercito(o.id) : null, d = ex || o;
     var nome = def.nome || NOME_MARCHA[o.marcha] || 'Sua marcha';
-    var estado = d.estado || (cheg && cheg > ag ? 'marchando' : 'parado');
+    var estado = o.estado || d.estado || (cheg && cheg > ag ? 'marchando' : 'parado'), trab = o.estado ? o.trabalho : d.trabalho;   /* o mapa é o mais recente */
     var destino = d.alvo || (o.caminho && o.caminho.length ? nomeDestino(o.caminho[o.caminho.length - 1]) : null);
     var tropas = d.tropas && RP.somaGrupo(d.tropas) ? RP.selosGrupo(d.tropas) : (o.pessoas ? o.pessoas + ' pessoas' : (d.resumo ? RP.esc(d.resumo) : ''));
     var corpo = '<div class="info">' +
       (tropas ? linhaInfo('Quem', tropas) : '') +
-      linhaInfo('Estado', (ESTADO_MARCHA[estado] || estado) + (d.ordem && d.ordem !== 'mover' && d.ordem !== 'retornar' && RP.ORDENS_NOMES && RP.ORDENS_NOMES[d.ordem] ? ' · ' + RP.esc(RP.ORDENS_NOMES[d.ordem].toLowerCase()) : '')) +
+      linhaInfo('Estado', estado === 'trabalhando' && trab ? RP.nomeTrabalho(trab) : (ESTADO_MARCHA[estado] || estado) + (d.ordem && d.ordem !== 'mover' && d.ordem !== 'retornar' && RP.ORDENS_NOMES && RP.ORDENS_NOMES[d.ordem] ? ' · ' + RP.esc(RP.ORDENS_NOMES[d.ordem].toLowerCase()) : '')) +
       (destino ? linhaInfo(estado === 'retornando' ? 'Volta para' : 'Destino', RP.esc(destino)) : '') +
       (cheg && cheg > ag ? linhaInfo(estado === 'retornando' ? 'Chega em casa' : 'Chegada', RP.barraTempo(o.tempos && o.tempos[0], cheg, { rotulo: estado === 'retornando' ? 'Volta para casa' : 'Marcha até o destino' })) : '') +
-      (d.trabalho ? linhaInfo(d.trabalho.tipo === 'caca' ? 'Caçando' : d.trabalho.tipo === 'escavacao' ? 'Escavando' : 'Extraindo', (d.trabalho.coletado && RP.cargaUsada(d.trabalho.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(d.trabalho.coletado)) : 'começando') + (d.trabalho.destino ? ' · leva para ' + RP.esc(d.trabalho.destino) : '')) +
-        (d.trabalho.fim ? linhaInfo(d.trabalho.tipo === 'extracao' ? 'Carga cheia' : 'Termina', RP.barraTempo(d.trabalho.inicio, d.trabalho.fim, { cor: 'sucesso', rotulo: 'Trabalho' })) : '') : '') +
+      (trab ? (trab.tipo === 'escavacao' ? linhaInfo('A relíquia vai para', RP.esc(trab.destino || 'o castelo')) : linhaInfo('Trabalho', (trab.coletado && RP.cargaUsada(trab.coletado) ? 'já juntou ' + RP.esc(RP.cargaTexto(trab.coletado)) : 'começando') + (trab.destino ? ' · leva para ' + RP.esc(trab.destino) : ''))) +
+        (trab.fim ? linhaInfo(trab.tipo === 'extracao' ? 'Carga cheia' : 'Termina', RP.barraTempo(trab.inicio, trab.fim, { cor: 'sucesso', rotulo: 'Trabalho' })) : '') : '') +
       '</div>' +
       (d.cargaMax != null || (d.carga && RP.cargaUsada(d.carga)) ? '<div style="margin-top:var(--esp-3)">' + RP.cargaHTML(d.carga, d.cargaMax) + '</div>' : '') +
       (d.bloqueio ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p') + RP.esc(d.bloqueio) + '</p>' : '');
@@ -246,7 +246,9 @@
         (estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-marcha-voltar-exp="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '');
     } else if (o.marcha === 'exercito' || ex) {
       var pode = !d.bloqueio && d.podeOrdem !== false, divide = pode && estado !== 'trabalhando' && RP.somaGrupo(d.tropas || {}) > 1;
-      acoes = (pode ? '<button type="button" class="btn btn-p btn-primario" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
+      var aqui = pode && estado === 'parado' && RP.envio.trabalhoAqui(pos.hex);   /* parada na ruína ou na jazida: trabalhar é a ordem à mão */
+      acoes = (aqui ? '<button type="button" class="btn btn-p btn-primario" data-tropa-trabalhar="' + o.id + '" data-hex="' + pos.hex + '">' + RP.icone(aqui.icone) + RP.esc(aqui.verbo) + '</button>' : '') +
+        (pode ? '<button type="button" class="btn btn-p' + (aqui ? '' : ' btn-primario') + '" data-exercito-mover="' + o.id + '">' + RP.icone('seta') + 'Novo destino</button>' : '') +
         (pode ? '<button type="button" class="btn btn-p" data-tropa-patrulhar="' + o.id + '" data-tecla="Q">' + RP.icone('rota') + 'Patrulhar</button>' : '') +
         (pode && estado !== 'retornando' ? '<button type="button" class="btn btn-p" data-exercito-voltar="' + o.id + '" data-tecla="V">' + RP.icone('voltar') + 'Voltar ao castelo</button>' : '') +
         (pode && estado !== 'parado' ? '<button type="button" class="btn btn-p" data-exercito-parar="' + o.id + '" data-hex="' + pos.hex + '" data-tecla="H">' + RP.icone('alvo') + 'Parar aqui</button>' : '') +
@@ -314,15 +316,81 @@
       if (bt) bt.classList.add('btn-inativo');
     }).catch(function () { /* sem rede: o servidor confirma ao fundar */ });
   }
+  /* põe a fundação na fila; o erro do servidor (fila cheia, lugar tomado...) vira aviso */
+  function fundarJa(tipo, h) {
+    return RP.tentar(RP.post('/obras', { acao: 'fundar', tipo: tipo, hex: h })).then(function (it) {
+      RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoFilaItem(it), icone: 'castelo', tipo: 'sucesso' });
+      RP.recarregarReino(); M.carregar().catch(function () { /* aviso já mostrado */ });
+      return it;
+    });
+  }
+  /* submenu de "Fundar local": o que cabe neste hexágono; clicar já põe na fila. Falta de recurso não tira ninguém da lista. */
+  function submenuFundar(h) {
+    var r = RP.reino, f = (r && r.fundaveis) || {}, pode = M.regraFundar();
+    return {
+      titulo: 'Fundar aqui',
+      vazio: 'Nada cabe aqui: o terreno não serve ou o espaço em volta não está explorado, livre e sem rio.',
+      itens: Object.keys(f).filter(function (k) { return pode(h, k); }).map(function (k) {
+        return {
+          rotulo: (RP.NOMES_FUNDAR || {})[k] || k, iconeHTML: RP.icone(RP.iconeLocal({ tipo: f[k].tipo, produz: f[k].produz })), dica: RP.dicaFundar(k),
+          acao: function () { fundarJa(k, h).catch(function () { /* aviso já mostrado */ }); }
+        };
+      })
+    };
+  }
+  /* submenu de tropas de uma ordem (ou de "Enviar tropas para cá", sem ordem): Metade e Todas, da origem que o painel usaria. Os
+     números se refazem com as tropas de agora ao abrir, e de novo na hora do clique. */
+  var ROTULO_QUAL = { ultimo: 'Último ataque', metade: 'Metade', todas: 'Todas' };
+  function submenuTropas(h, ordem, extras) {
+    var nota = '', E = RP.envio, def = ordem ? (RP.ordensEnvio || []).filter(function (x) { return x.ordem === ordem; })[0] : null;
+    return function (fresco) {
+      var op = E.opcoesDiretas(h, ordem), mais = extras ? extras() : [];
+      var s = {
+        titulo: mais.length ? 'Quem vai' : op ? (op.origem.marchaId ? '' : 'De ') + RP.esc(op.origem.nome) : ordem ? RP.esc(def ? def.rotulo : '') : 'Enviar tropas',
+        nota: nota, vazio: !RP.tropas ? 'Carregando…' : 'Nenhuma tropa disponível: estão em marcha, trabalhando ou ainda não há soldados.',
+        itens: mais.concat(op ? op.opcoes.map(function (q) {
+          return {
+            rotulo: ROTULO_QUAL[q.qual] + ' (' + q.n + ')', icone: 'tropas', dica: RP.esc((op.origem.marchaId ? '' : 'De ' + op.origem.nome + ': ') + RP.partesGrupo(q.grupo)),
+            acao: function () { E.enviarJa(h, ordem, q.qual, op.origem); }
+          };
+        }) : [])
+      };
+      if (!fresco) s.depois = E.aquecerDireto(ordem).then(function () {
+        var o2 = def && def.avisoDireto && E.opcoesDiretas(h, ordem);
+        return o2 && o2.opcoes.length ? def.avisoDireto(h, o2).then(function (t) { nota = t; }) : null;
+      });
+      return s;
+    };
+  }
+  /* quem coleta: civis sem trabalho primeiro, depois as tropas */
+  function civisColeta(h) {
+    return function () {
+      var c = RP.coletaCivis && RP.coletaCivis.opcao(h);
+      return c && c.n > 0 ? [{ rotulo: 'Civis sem trabalho (' + c.n + ')', icone: 'populacao', dica: 'De ' + RP.esc(c.local.nome), acao: function () { RP.coletaCivis.enviar(h, c.local.id); } }] : [];
+    };
+  }
+  function submenusDe(h) {
+    return {
+      fundar: function () { return submenuFundar(h); },
+      enviar: submenuTropas(h, null),
+      extrair: submenuTropas(h, 'extrair'), escavar: submenuTropas(h, 'escavar'), cacar: submenuTropas(h, 'cacar'),
+      coletar: submenuTropas(h, 'coletar', civisColeta(h)), atacar: submenuTropas(h, 'atacar'), ocupar: submenuTropas(h, 'ocupar'),
+      explorar: function () { return RP.exploracao.submenu(h, 'explorar'); },
+      espionar: function () { return RP.exploracao.submenu(h, 'espionar'); }
+    };
+  }
+  /* as ordens do hexágono que têm submenu, para o menu de um objeto (jazida, animais, local de outro reino...) */
+  function ordensRapidasHex(h) {
+    var t = document.createElement('div');
+    t.innerHTML = MAPA.acoesFolhaHex.map(function (f) { return f(h, M.dados) || ''; }).join('');
+    return RP.$$('[data-submenu]', t).map(function (b) { return b.outerHTML; }).join('');
+  }
   document.addEventListener('click', function (e) {
     var b;
     if ((b = e.target.closest('[data-fundar-aqui]'))) {
       if (b.classList.contains('btn-inativo')) { var n = RP.$('[data-motivo]'); RP.aviso({ titulo: n ? n.textContent : 'Não dá para fundar aqui.', icone: 'alerta', tipo: 'alerta' }); return; }
-      var h = +b.getAttribute('data-fundar-aqui'), tipo = alvoFundar;
-      RP.tentar(RP.post('/obras', { acao: 'fundar', tipo: tipo, hex: h })).then(function (it) {
+      fundarJa(alvoFundar, +b.getAttribute('data-fundar-aqui')).then(function () {
         RP.fecharFolha(); alvoFundar = null; atualizarFaixaFundar();
-        RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: 'Os carregadores levam o material até lá.', icone: 'castelo', tipo: 'sucesso' });
-        RP.recarregarReino(); M.carregar().catch(function () { /* aviso já mostrado */ });
       }).catch(function () { /* aviso já mostrado */ });
     } else if (e.target.closest('[data-fechar-fundar]')) RP.fecharFolha();
     else if ((b = e.target.closest('[data-abrir-obj]')) && ativa() && M.dados) {
@@ -401,7 +469,10 @@
   }
   /* primeiro item do menu: o envio rápido de tropas para este hexágono */
   function itemEnviar(h) {
-    return RP.envio && RP.envio.podePara(h) ? [{ rotulo: 'Enviar tropas para cá', icone: 'tropas', classe: 'primario', acao: function () { RP.envio.paraCa(h); } }] : [];
+    if (!RP.envio) return [];
+    /* com ordem que parte na hora, o submenu tem Metade e Todas (ou diz que não há tropa); destino que pede escolha só abre o painel */
+    var direto = RP.envio.temDireto(h);
+    return direto || RP.envio.podePara(h) ? [{ rotulo: 'Enviar tropas para cá', icone: 'tropas', classe: 'primario', sub: direto ? 'enviar' : null, acao: function () { RP.envio.paraCa(h); } }] : [];
   }
   /* menu de contexto do que está sob o mouse: os mesmos botões da folha, sem abrir a folha */
   function menuDoAlvo(alvo) {
@@ -425,17 +496,17 @@
     }
     if (o && o.tipo === 'local' && o.dono === 'meu' && RP.local(o.id)) {
       var l = RP.local(o.id);
-      RP.menuContexto({ x: x, y: y, titulo: RP.esc(l.nome), itens: itemEnviar(l.hex), acoes: RP.acoesLocal(l) + '<button type="button" class="btn btn-fantasma" data-local="' + l.id + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      RP.menuContexto({ x: x, y: y, titulo: RP.esc(l.nome), itens: itemEnviar(l.hex), acoes: RP.acoesLocal(l) + '<button type="button" class="btn btn-fantasma" data-local="' + l.id + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>', submenus: submenusDe(l.hex) });
       return;
     }
     if (o) {
       var mo = montarObjeto(o);
-      RP.menuContexto({ x: x, y: y, titulo: mo.titulo, itens: o.hex != null ? itemEnviar(o.hex) : [], acoes: mo.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-obj="' + o._k + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      RP.menuContexto({ x: x, y: y, titulo: mo.titulo, itens: o.hex != null ? itemEnviar(o.hex) : [], acoes: (o.hex != null ? ordensRapidasHex(o.hex) : '') + mo.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-obj="' + o._k + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>', submenus: o.hex != null ? submenusDe(o.hex) : null });
       return;
     }
     if (hh != null && hh >= 0 && M.dados) {
       var mh = montarHex(hh);
-      RP.menuContexto({ x: x, y: y, titulo: mh.titulo, itens: itemEnviar(hh), acoes: mh.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-hex="' + hh + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      RP.menuContexto({ x: x, y: y, titulo: mh.titulo, itens: itemEnviar(hh), acoes: mh.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-hex="' + hh + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>', submenus: submenusDe(hh) });
     }
   }
 

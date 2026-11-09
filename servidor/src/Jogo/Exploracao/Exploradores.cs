@@ -84,6 +84,11 @@ namespace ReinoDePedra.Jogo.Exploracao
         public void Concluir(Mundo m, Reino r, ItemFila item) =>
             Registros.Notificar(m, r.Id, "exploracao", item.Qtd > 1 ? "Exploradores prontos" : "Explorador pronto", item.Rotulo, "exploradores");
         public void Cancelado(Mundo m, Reino r, ItemFila item) => PS.TreinoCancelado(m, r, item);
+        public void AoReservar(Mundo m, Reino r, ItemFila item)
+        {
+            if (item.Param != null && item.LocalId is long id && m.Locais.Obter(id) is { } l)
+                PS.ParaTreino(m, r, item.PopReserva, Pessoas.Oficios.DeExplorador(item.Param), item, l);
+        }
     }
 
     [Sistema]
@@ -100,7 +105,7 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         /// <summary>Exploradores livres no castelo e em treino (ocupam o teto; os em campo contam pela marcha).</summary>
         public static int Ocupantes(Mundo m, Reino r) =>
-            r.ExploradoresLivres.Values.Sum() + EmTreino(r).Sum(i => i.Restantes);
+            r.ExploradoresLivres.Values.Sum() + EmTreino(r).Where(i => !i.Aguardando).Sum(i => i.Restantes);
 
         public static IEnumerable<ItemFila> EmTreino(Reino r) =>
             r.Filas.TryGetValue(Recrutamento.Fila, out var f) ? f.Itens.Where(i => i.Tipo == ItemExplorador.Id) : [];
@@ -118,7 +123,7 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         // ---------------------------------------------------------------- treino
 
-        /// <summary>Treina exploradores no castelo (fila de recrutamento). A população sai na hora; volta se cancelar.</summary>
+        /// <summary>Treina exploradores no castelo (fila de recrutamento). A população sai ao chegar a vez do item; volta se cancelar.</summary>
         public static ItemFila Treinar(Mundo m, Reino r, string tipo, int qtd)
         {
             var x = Tipo(m, tipo);
@@ -126,17 +131,14 @@ namespace ReinoDePedra.Jogo.Exploracao
             var c = m.Locais.Obter(r.CasteloId);
             if (c == null || c.ReinoId != r.Id || c.Ruina) throw new RegraException("Exploradores são treinados no castelo.");
             Economia.Atualizar(m, r);
-            var livre = PS.LivresParaTreino(m, r);
-            if (livre < qtd) throw new RegraException($"Falta população civil livre: precisa de {qtd}, há {livre}.");
+            var livre = PS.LivresParaTreino(m, r) - Filas.PopAguardando(r);
+            if (livre < qtd) throw new RegraException($"Falta população civil livre: precisa de {qtd}, há {Math.Max(0, livre)}.");
             var custo = new Recursos(); custo.Somar(x.Custo, qtd);
-            var item = Filas.Enfileirar(m, r, Recrutamento.Fila, new ItemFila
+            return Filas.Enfileirar(m, r, Recrutamento.Fila, new ItemFila
             {
                 Tipo = ItemExplorador.Id, LocalId = c.Id, Hex = c.Hex, Param = tipo, Qtd = qtd,
-                Rotulo = qtd + " × " + NomeTipo(m, tipo).ToLowerInvariant(), Custo = custo, DuracaoSeg = x.Tempo * qtd,
+                Rotulo = qtd + " × " + NomeTipo(m, tipo).ToLowerInvariant(), Custo = custo, DuracaoSeg = x.Tempo * qtd, PopReserva = qtd,
             });
-            PS.ParaTreino(m, r, qtd, Pessoas.Oficios.DeExplorador(tipo), item, c);
-            m.Sujar(r);
-            return item;
         }
 
         // ---------------------------------------------------------------- caminho
@@ -184,7 +186,7 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         /// <summary>Manda um explorador livre do castelo com uma ordem. Escolta opcional, tirada da guarnição do castelo. Rota segura por padrão (desvia do perigo conhecido).</summary>
         public static Explorador Enviar(Mundo m, Reino r, string tipo, string ordem, int? destino, IReadOnlyList<int>? pontos = null,
-            bool seguro = true, IReadOnlyDictionary<string, int>? escolta = null, bool circuito = false)
+            bool seguro = true, IReadOnlyDictionary<string, int>? escolta = null, bool circuito = false, long? pessoaId = null)
         {
             Tipo(m, tipo);
             var casa = m.Locais.Obter(r.CasteloId);
@@ -202,7 +204,10 @@ namespace ReinoDePedra.Jogo.Exploracao
             var primeiro = Preparar(m, r, e, ordem, destino, pontos, casa.Hex);
             var rota = Rota(m, e, casa.Hex, primeiro);
             Economia.Atualizar(m, r);
-            var pessoa = PS.Livre(m, r, Pessoas.Oficios.DeExplorador(tipo)) ?? throw new RegraException("Nenhum " + NomeTipo(m, tipo).ToLowerInvariant() + " livre. Treine um no castelo.");
+            var oficio = Pessoas.Oficios.DeExplorador(tipo);
+            var pessoa = pessoaId is long pid
+                ? (m.Pessoas.Obter(pid) is { } q && q.ReinoId == r.Id && q.Oficio == oficio && q.Estado == Pessoas.Estados.Guarnecida ? q : throw new RegraException("Este explorador não está mais livre."))
+                : PS.Livre(m, r, oficio) ?? throw new RegraException("Nenhum " + NomeTipo(m, tipo).ToLowerInvariant() + " livre. Treine um no castelo.");
             m.Marchas.Adicionar(e);
             e.PessoaId = pessoa.Id;
             PS.Embarcar(m, e, [pessoa]);

@@ -45,7 +45,7 @@
       el.addEventListener('click', function (e) {
         if (!e.target.closest('[data-treinar-mensageiro]')) return;
         RP.tentar(RP.post('/mensageiros/treinar', { qtd: 1 })).then(function (it) {
-          RP.aviso({ titulo: 'Mensageiro em treino', texto: 'Pronto em ' + RP.fmtDuracao(it.duracao) + '. Ocupa ' + dados.pop + ' de população.', icone: 'mensagem', tipo: 'sucesso' });
+          RP.aviso({ titulo: it.aguardando ? 'Mensageiro na fila' : 'Mensageiro em treino', texto: it.aguardando ? RP.textoFilaItem(it) : 'Pronto em ' + RP.fmtDuracao(it.duracao) + '. Ocupa ' + dados.pop + ' de população.', icone: 'mensagem', tipo: 'sucesso' });
           RP.recarregarReino(); desenhar(el);
         }).catch(function () { /* aviso já mostrado */ });
       });

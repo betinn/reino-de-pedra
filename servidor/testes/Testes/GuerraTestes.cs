@@ -69,7 +69,10 @@ public class GuerraTestes
     {
         var (s, ex, _) = Vitoria();
         var n = Feridos.Total(s.Atk);
-        Assert.Throws<RegraException>(() => Feridos.Curar(s.M, s.Atk));   // sem ervas
+        var semErvas = Feridos.Curar(s.M, s.Atk);                            // sem ervas: espera na fila, sem tirar ninguém dos lotes
+        Assert.True(semErvas.Aguardando);
+        Assert.Equal(n, Feridos.Total(s.Atk));
+        Filas.Cancelar(s.M, s.Atk, Feridos.Fila, semErvas.Id);
         s.AvancarAte(ex.Chegada);                                            // as tropas voltam para casa
         s.T.DarRecursos(s.Atk, s.M.P.Feridos.Ervas * (n - 1), "ervas");      // ervas para todos menos um
         Assert.Equal(n - 1, Feridos.Podem(s.M, s.Atk));

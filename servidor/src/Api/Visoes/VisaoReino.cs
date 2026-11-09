@@ -13,6 +13,7 @@ public static class VisaoReino
     public static object Montar(Mundo m, Reino r)
     {
         Economia.Atualizar(m, r);
+        Filas.Avaliar(m, r);   // quem olha vê o item começar na hora em que o recurso chegou
         var ef = Economia.Eficiencia(m, r);
         var agora = m.Agora;
         var castelo = m.Locais.Obter(r.CasteloId);
@@ -27,6 +28,7 @@ public static class VisaoReino
             ["agora"] = agora, ["escudoAte"] = r.EscudoAte > agora ? r.EscudoAte : null,
             ["casteloId"] = r.CasteloId, ["nivelCastelo"] = castelo?.Nivel ?? 0,
             ["pop"] = Math.Floor(r.Pop), ["teto"] = Economia.Teto(m, r), ["tropas"] = Economia.Tropas(m, r),
+            ["popAguardando"] = Filas.PopAguardando(r),
             // ritmo da população (barra do topo): pessoas por hora agora, quando nasce a próxima e se a comida dá o bônus
             ["popHora"] = Math.Round(ritmo.porHora, 2), ["popProxima"] = ritmo.proxima,
             ["popComidaSobra"] = ritmo.sobra, ["popBonusComida"] = m.P.BonusComida,
@@ -126,8 +128,10 @@ public static class VisaoReino
 
     /// <summary>
     /// Item de fila. <c>inicio</c> e <c>fim</c> só existem depois que o item começa; antes disso <c>estado</c> diz por quê:
-    /// "andamento" (começou), "material" (espera o material chegar) ou "fila" (espera o item anterior). <c>posicao</c>: 1 = primeiro da fila.
-    /// <c>prontos</c>/<c>proximoFim</c>: num item de várias unidades, quantas já ficaram prontas e quando fica a próxima.
+    /// "andamento" (começou), "recursos" (é a vez dele e o reino não tem o bastante), "material" (espera o material chegar) ou "fila"
+    /// (espera o item anterior). <c>posicao</c>: 1 = primeiro da fila. <c>aguardando</c>: ainda não gastou nada; <c>faltam</c> e
+    /// <c>impedimento</c>: o que segura o item da vez. <c>prontos</c>/<c>proximoFim</c>: num item de várias unidades, quantas já
+    /// ficaram prontas e quando fica a próxima.
     /// </summary>
     public static object Item(Mundo m, Reino r, ItemFila i)
     {
@@ -135,6 +139,7 @@ public static class VisaoReino
         var leva = m.Marchas.OfType<Carregadores>().Where(c => c.ItemId == i.Id).OrderByDescending(c => c.Chegada).FirstOrDefault();
         var chegada = leva?.Chegada ?? 0;
         var pos = r.Filas.Values.Select(f => f.Itens.IndexOf(i)).FirstOrDefault(p => p >= 0, -1);
+        var situacao = i.Aguardando && pos == 0 ? Filas.Situacoes(m, r).GetValueOrDefault(i.Id) : null;
         return new
         {
             i.Id, i.Tipo, i.Rotulo, i.LocalId, i.Hex, i.NivelAlvo, i.Param, i.Qtd,
@@ -142,7 +147,10 @@ public static class VisaoReino
             duracao = i.DuracaoSeg, i.Inicio, i.Fim, materialCompleto = i.MaterialCompleto,
             materialChegaEm = i.MaterialCompleto ? (long?)null : chegada > 0 ? chegada : null,
             materialPartida = i.MaterialCompleto || leva == null || chegada <= 0 ? (long?)null : leva.Partida,
-            estado = i.Iniciado ? "andamento" : !i.MaterialCompleto ? "material" : "fila",
+            estado = i.Iniciado ? "andamento" : i.Aguardando ? (pos == 0 ? "recursos" : "fila") : !i.MaterialCompleto ? "material" : "fila",
+            aguardando = i.Aguardando,
+            faltam = situacao?.Faltam.ToDictionary(kv => kv.Key, kv => Math.Ceiling(kv.Value)),
+            impedimento = situacao?.Impedimento,
             posicao = pos >= 0 ? pos + 1 : (int?)null,
             // por unidade (tropas, exploradores...): quantas já ficaram prontas e quando fica a próxima
             prontos = i.Prontos, proximoFim = i.Restantes > 0 ? i.FimDaUnidade(i.Prontos + 1) : null,

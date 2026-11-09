@@ -48,7 +48,12 @@ public class GuerraApiTestes
         Assert.Equal(1, f2.GetProperty("total").GetInt32());
         Assert.Equal(3, f2.GetProperty("emCura").GetInt32());
         Assert.Single(f2.GetProperty("cura").EnumerateArray());
-        Assert.Equal(HttpStatusCode.BadRequest, (await a.Post("feridos/curar", new { })).status);   // sem ervas para o último
+        // sem ervas para o último: entra na fila e aguarda; o próximo pedido já não tem quem pôr
+        var (scUltimo, ultimo) = await a.Post("feridos/curar", new { });
+        Assert.Equal(HttpStatusCode.Created, scUltimo);
+        Assert.True(ultimo.GetProperty("aguardando").GetBoolean());
+        Assert.Equal(1, ultimo.GetProperty("qtd").GetInt32());
+        Assert.Equal(HttpStatusCode.BadRequest, (await a.Post("feridos/curar", new { })).status);
     }
 
     [Fact]

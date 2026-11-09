@@ -81,14 +81,15 @@ namespace ReinoDePedra.Jogo.Temporada
                     "A névoa em volta do reino esconde caça, jazidas e ruínas.", "#/exploradores", "Explorar"));
 
             // ---------------- no seu reino
+            L.AddRange(FilasParadas(m, r));
             var obras = r.Fila(Obras.Fila).Itens;
             if (obras.Count == 0) L.Add(new(NoReino, "martelo", "Nenhuma obra na fila", "O reino pode crescer enquanto você está fora.", "#/construcao", "Construir"));
-            else if (!obras.Any(i => i.Iniciado))
+            else if (!obras.Any(i => i.Iniciado) && !obras[0].Aguardando)
                 L.Add(new(NoReino, "carroca", obras.Count == 1 ? "Obra esperando material" : obras.Count + " obras esperando material",
                     "A fila só anda quando o material chega.", "#/construcao", "Ver"));
             var rec = r.Fila(Recrutamento.Fila).Itens;
             if (rec.Count == 0) L.Add(new(NoReino, "tropas", "Nada sendo recrutado", "A fila aceita até " + Fila.Maximo + " itens.", "#/recrutamento", "Recrutar"));
-            else if (!rec.Any(i => i.Iniciado))
+            else if (!rec.Any(i => i.Iniciado) && !rec[0].Aguardando)
                 L.Add(new(NoReino, "carroca", "Recrutamento esperando material", "A fila só anda quando o material chega.", "#/recrutamento", "Ver"));
             var teto = Economia.Teto(m, r);
             if (teto > 0 && r.Pop + Economia.Tropas(m, r) >= teto * A.PopTeto)
@@ -107,6 +108,31 @@ namespace ReinoDePedra.Jogo.Temporada
                 L.Add(new(NoReino, "tropas", paradas + (paradas == 1 ? " tropa nas guarnições" : " tropas nas guarnições"), "Defendem os locais; podem caçar, escoltar ou extrair.", "#/tropas", "Ordens"));
             foreach (var f in Extras) L.AddRange(f(m, r));
             return L;
+        }
+
+        /// <summary>
+        /// Filas paradas: o item da vez que aguarda recursos (ou gente), com o que falta. Ele tem direito a esses recursos antes dos
+        /// itens mais novos, então um item que nunca vai poder pagar segura todos até ser cancelado: o jogador precisa ver.
+        /// </summary>
+        private static IEnumerable<ItemAgora> FilasParadas(Mundo m, Reino r)
+        {
+            var situacoes = Filas.Situacoes(m, r);
+            foreach (var (nome, fila) in r.Filas)
+            {
+                if (fila.Itens.Count == 0 || !fila.Itens[0].Aguardando || !situacoes.TryGetValue(fila.Itens[0].Id, out var s)) continue;
+                var it = fila.Itens[0];
+                var faltam = string.Join(", ", s.Faltam.Select(kv => Math.Ceiling(kv.Value) + " " + NomeRecurso(kv.Key)));
+                var texto = (faltam.Length > 0 ? "Faltam " + faltam + ". " : "") + (s.Impedimento != null ? s.Impedimento + " " : "") +
+                    "Começa sozinho quando houver e segura esses recursos para os itens mais novos; cancele se não quiser esperar.";
+                var (href, icone) = nome switch
+                {
+                    Obras.Fila => ("#/construcao", "martelo"),
+                    Recrutamento.Fila => ("#/recrutamento", "tropas"),
+                    Feridos.Fila => ("#/tropas", "ferido"),
+                    _ => ("#/ferraria", "ferraria"),
+                };
+                yield return new(NoReino, icone, "Fila parada: " + it.Rotulo, texto, href, "Ver");
+            }
         }
 
         /// <summary>Os mais urgentes primeiro (urgente, oportunidade, reino; dentro do grupo, o que vence antes).</summary>

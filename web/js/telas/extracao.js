@@ -1,55 +1,22 @@
-/* Reino de Pedra — Extração de recursos descobertos e escavação de ruínas antigas (#/extracao?hex=<hex>).
-   Porte de prototipo/js/militar.js (Extração) com dados reais: GET /extracao, POST /extracao/previa, POST /extracao,
-   POST /postos. Também as ordens "Extrair" e "Escavar" no envio pelo mapa. */
+/* Reino de Pedra — Extração de recursos descobertos e escavação de ruínas antigas.
+   A ordem sai pelo painel da base (RP.envio.paraOrdem): de onde saem, quem vai e Enter envia, como o "Enviar tropas para cá".
+   Este arquivo declara as ordens "Extrair" e "Escavar", as opções delas no painel (repetir, posto, para onde vai a relíquia)
+   e a lista #/extracao (jazidas, ruínas e grupos em andamento). Dados: GET /extracao, POST /extracao/previa, POST /postos. */
 (function () {
   'use strict';
   var RP = window.RP, V = RP.valiosos;
 
-  var ext = { hex: null, de: null, grupo: {}, repetir: false, posto: false, destino: null, seguro: false, previa: null, dados: null };
+  var ext = { dados: null };
   var tela = null;
 
-  function alvos() {
-    var d = ext.dados; if (!d) return [];
-    return d.jazidas.filter(function (j) { return j.restante > 0; }).map(function (j) { return { hex: j.hex, tipo: 'jazida', j: j }; })
-      .concat(d.ruinas.filter(function (r) { return !r.esgotada; }).map(function (r) { return { hex: r.hex, tipo: 'ruina', r: r }; }));
-  }
-  function alvo() { return alvos().filter(function (a) { return a.hex === ext.hex; })[0]; }
-  function idadeTxt(min) { return !min ? 'visível' : 'visto ' + RP.fmtHa(min / 60); }
-  function grupoAtual() { var g = {}; Object.keys(ext.grupo).forEach(function (k) { if (ext.grupo[k] > 0) g[k] = ext.grupo[k]; }); return g; }
-
   function carregar() {
-    return Promise.all([RP.get('/extracao'), RP.carregarTropas()]).then(function (x) {
-      ext.dados = x[0]; RP.sincronizar(x[0].agora);
-      var a = alvos();
-      if (!a.some(function (y) { return y.hex === ext.hex; })) ext.hex = a.length ? a[0].hex : null;
-      var bases = V.locaisComTropas();
-      var posto = bases.filter(function (l) { return l.hex === ext.hex; })[0];
-      if (posto) ext.de = posto.id;
-      if (!ext.de || !bases.some(function (l) { return l.id === ext.de; })) ext.de = bases.length ? (bases.filter(function (l) { return l.tipo === 'castelo'; })[0] || bases[0]).id : null;
-      ajustarGrupo();
-    });
+    return RP.get('/extracao').then(function (d) { ext.dados = d; RP.sincronizar(d.agora); return d; });
   }
-  function ajustarGrupo() {
-    var disp = V.guarnicao(ext.de);
-    Object.keys(ext.grupo).forEach(function (k) { ext.grupo[k] = Math.min(ext.grupo[k] || 0, disp[k] || 0); });
-    if (!RP.somaGrupo(ext.grupo)) {
-      var k0 = Object.keys(disp).filter(function (k) { return disp[k] > 0 && (RP.unidade(k) || {}).carga > 0; })[0] || Object.keys(disp).filter(function (k) { return disp[k] > 0; })[0];
-      if (k0) { ext.grupo = {}; ext.grupo[k0] = 1; }
-    }
-  }
+  function idadeTxt(min) { return !min ? 'visível' : 'visto ' + RP.fmtHa(min / 60); }
+  function jazidaDados(h) { return ((ext.dados && ext.dados.jazidas) || []).filter(function (j) { return j.hex === h; })[0]; }
+  function ruinaDados(h) { return ((ext.dados && ext.dados.ruinas) || []).filter(function (r) { return r.hex === h; })[0]; }
 
-  var pedirPrevia = V.debounce(function () {
-    var g = grupoAtual();
-    if (!ext.de || ext.hex == null || !RP.somaGrupo(g)) { ext.previa = null; desenhar(); return; }
-    var chave = ext.de + '|' + ext.hex + '|' + JSON.stringify(g);
-    RP.post('/extracao/previa', { deLocalId: ext.de, tropas: g, hex: ext.hex }).then(function (p) {
-      if (chave !== ext.de + '|' + ext.hex + '|' + JSON.stringify(grupoAtual())) return;
-      ext.previa = p;
-      if (p.tipo === 'escavacao' && (!ext.destino || !p.destinos.some(function (x) { return x.id === ext.destino; }))) ext.destino = RP.reino.casteloId;
-      desenhar();
-    }, function (e) { ext.previa = { erro: e.message }; desenhar(); });
-  }, 200);
-
+  /* ---------------------------------------------------------------- lista: o que se conhece e quem está trabalhando */
   function grupoCard(g) {
     var dados = ext.dados, j = g.jazidaId && dados.jazidas.filter(function (x) { return x.id === g.jazidaId; })[0];
     var titulo = g.estado === 'extraindo' ? 'Extraindo ' + RP.nomeRecurso(j ? j.recurso : '') : g.estado === 'escavando' ? 'Escavando a ruína' : g.estado === 'entregando' ? 'Levando a carga a ' + (g.deposito || 'um depósito') : g.ordem === 'escavar' ? 'A caminho da ruína' : 'A caminho da jazida';
@@ -64,154 +31,161 @@
       '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + g.hex + '">' + RP.icone('mapa') + 'Ver</a></span></span>' +
       '<span class="emcampo-tempo">' + tempo + '</span></div>';
   }
-
   function desenhar() {
     var el = tela; if (!el || el.hidden) return;
     var d = ext.dados, cont = RP.$('.ext-conteudo', el);
     if (!d) { cont.innerHTML = '<p class="fraco">Carregando…</p>'; return; }
-    var a = alvo(), escav = a && a.tipo === 'ruina', p = ext.previa, g = grupoAtual(), n = RP.somaGrupo(g);
-    RP.$('.topo h1', el).textContent = escav ? 'Escavação de ruína' : 'Extração de recurso';
-    var lista = alvos();
-    var h = '<div class="nota-regra">' + RP.icone(escav ? 'lendario' : 'info', 'ico-p') + (escav
-      ? '<span><b>Escavação.</b> Ruínas antigas guardam <b>1 relíquia</b>. Escavar é lento e esgota a ruína; o tipo da relíquia só se conhece ao achar. Uma única unidade já escava.</span></div>' +
-        '<div class="secao-titulo">Escavar pode render</div><div class="card">' + RP.ganhosRuina(d.reliquiaTipos) + '</div>'
-      : '<span><b>Nada é obrigatório.</b> Uma única unidade sem preparo já extrai. Mais tropas, unidades com mais carga, posto e rota só aumentam o rendimento.</span></div>');
-    h += '<div class="secao-titulo">Jazidas e ruínas</div>' + (lista.length ? '<div class="escolhas escolhas-lista">' + lista.map(function (x) {
-      var ativo = x.hex === ext.hex, sel = ' data-ext-hex="' + x.hex + '" aria-pressed="' + ativo + '"';
-      if (x.tipo === 'ruina') return '<button type="button" class="escolha escolha-linha"' + sel + '><span class="ico-placa">' + RP.icone('ruina', 'r-lendario') + '</span>' +
-        '<span class="escolha-txt"><b>Ruína antiga</b><small class="fraco">Escavação · ' + RP.esc(RP.ganhosRuina(d.reliquiaTipos, true)) + ' · ' + idadeTxt(x.r.idadeMin) + (x.r.posto === 'meu' ? ' · com posto' : '') + '</small></span></button>';
-      var j = x.j;
-      return '<button type="button" class="escolha escolha-linha"' + sel + '><span class="ico-placa">' + RP.icone(j.recurso, 'r-' + j.recurso) + '</span>' +
-        '<span class="escolha-txt"><b>' + RP.esc(j.nome) + '</b><small class="fraco">' + (j.lendaria ? 'Lendário · ' : '') + RP.num(j.restante) + ' restantes · vale ' + j.valor + ' · ' + idadeTxt(j.idadeMin) +
-        (j.posto === 'meu' ? ' · com posto' : j.posto === 'outro' ? ' · posto de outro reino' : '') + '</small></span>' +
-        (j.tropas ? '<span class="selo selo-visivel">' + j.tropas + ' extraindo</span>' : '') + '</button>';
-    }).join('') + '</div>' : '<p class="fraco">Nenhuma jazida descoberta nem ruína antiga conhecida. Prospectores revelam jazidas valiosas; ruínas aparecem ao explorar.</p>');
-    var meus = d.grupos;
-    if (meus.length) h += '<div class="secao-titulo">Em andamento</div><div class="pilha">' + meus.map(grupoCard).join('') + '</div>';
-    if (a) {
-      var bases = V.locaisComTropas(), disp = V.guarnicao(ext.de), postoEstado = a.tipo === 'jazida' ? a.j.posto : a.r.posto;
-      h += '<div class="secao-titulo">Grupo</div><div class="card pilha">' +
-        (bases.length > 1 ? '<div class="abas abas-rolagem" role="group" aria-label="De onde saem">' + bases.map(function (l) {
-          return '<button type="button" class="aba" data-ext-de="' + l.id + '" aria-pressed="' + (l.id === ext.de) + '">' + RP.esc(l.nome) + '</button>';
-        }).join('') + '</div>' : '') +
-        (bases.length ? '<div data-ext-grupo>' + RP.grupoTropas.linhas(ext.grupo, disp) + '</div>' : '<p class="fraco">Nenhuma tropa nos locais. Recrute no castelo ou no quartel.</p>') +
-        (!escav ? '<button type="button" class="alternar" data-ext-repetir aria-pressed="' + ext.repetir + '" style="width:100%">' + RP.icone('relogio') + '<span>Repetir <small class="fraco">(volta à jazida depois de entregar)</small></span><i aria-hidden="true"></i></button>' : '') +
-        (!postoEstado ? '<button type="button" class="alternar" data-ext-posto aria-pressed="' + ext.posto + '" style="width:100%">' + RP.icone('picareta') + '<span>Construir posto de ' + (escav ? 'escavação' : 'extração') + ' <small class="fraco">(' + RP.fmtDuracao(d.posto.seg) + ')</small></span><i aria-hidden="true"></i></button>' +
-          (ext.posto ? '<div class="linha" style="flex-wrap:wrap">' + RP.custoHTML(d.posto.custo) + '<small class="fraco">entra na fila de obras; o material vai até a jazida a pé</small></div>' : '')
-          : postoEstado === 'fila' ? '<p class="fraco">' + RP.icone('martelo', 'ico-p') + 'Posto na fila de obras.</p>'
-          : postoEstado === 'meu' ? '<p class="fraco">' + RP.icone('check', 'ico-p') + 'Com posto: rende mais.</p>' : '') + '</div>';
-      if (p && p.erro) h += '<p class="nota-antiga">' + RP.icone('alerta', 'ico-p') + '<span>' + RP.esc(p.erro) + '</span></p>';
-      else if (p && p.tipo === 'escavacao' && escav) {
-        h += '<div class="secao-titulo">Ao achar, levar para</div><div class="escolhas escolhas-lista">' + p.destinos.slice(0, 5).map(function (x) {
-          var l = RP.local(x.id) || x;
-          return '<button type="button" class="escolha escolha-linha" data-ext-destino="' + x.id + '" aria-pressed="' + (x.id === ext.destino) + '"><span class="ico-placa dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span>' +
-            '<span class="escolha-txt"><b>' + RP.esc(x.nome) + '</b><small class="fraco">volta em ' + V.fmtMin(x.min) + (x.n ? ' · já tem ' + x.n + ' relíquia' + (x.n > 1 ? 's' : '') : '') + '</small></span></button>';
-        }).join('') + '</div><p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">A relíquia não vai sozinha: o próprio grupo a carrega até lá e, no caminho, ela pode ser roubada.' + (p.poucoProtegida ? ' Grupo pequeno, escolta fraca.' : '') + '</p>' +
-          '<div class="secao-titulo">Quanto cada escolha encurta a escavação</div><div class="card">' + V.grafico(p.cenarios.map(function (c) { return { nome: c.nome, v: c.v, atual: c.atual && !ext.posto || (ext.posto && /posto/.test(c.nome)) }; }), function (v) { return '≈ ' + V.fmtHoras(v); }, 'Horas até achar a relíquia') +
-          '<div class="ext-numeros"><div><span class="fraco">Escavação</span><b class="num">≈ ' + V.fmtHoras(ext.posto ? p.cenarios[2].v : p.horas) + '</b></div><div><span class="fraco">Viagem</span><b class="num">' + V.fmtMin(V.min(V.escolhida(p.viagem, ext.seguro))) + '</b></div><div><span class="fraco">Rende</span><b class="num">1 relíquia</b></div></div>' +
-          '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Mais tropas e posto encurtam, mas escavar com cuidado leva no mínimo ' + V.fmtHoras(p.minimo) + '. Depois da relíquia, a ruína se esgota.</p></div>';
-      } else if (p && p.tipo === 'extracao' && !escav) {
-        var rit = ext.posto ? p.cenarios[2].v : p.ritmo, dur = rit ? p.restante / rit : null;
-        h += '<div class="secao-titulo">Como cada escolha muda o rendimento</div><div class="card">' + V.grafico(p.cenarios.map(function (c) { return { nome: c.nome, v: c.v, atual: ext.posto ? /posto/.test(c.nome) : c.atual }; }), function (v) { return V.fmtRitmo(v) + '/h'; }, 'Comparação de rendimento por hora') +
-          '<div class="ext-numeros"><div><span class="fraco">Ritmo</span><b class="num">' + V.fmtRitmo(rit) + '/h</b></div><div><span class="fraco">Em valor</span><b class="num">' + V.fmtRitmo(rit * p.valor) + '/h</b></div>' +
-          '<div><span class="fraco">Jazida dura</span><b class="num">' + (dur ? '≈ ' + V.fmtHoras(dur) : '—') + '</b></div></div>' +
-          '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">' + (p.rota ? 'O caminho até o depósito usa rota pública: +20% de rendimento.' : 'Sem rota pública no caminho até o depósito. Uma rota aumenta o rendimento.') +
-          ' A carga enche em ≈ ' + V.fmtHoras(rit ? p.cargaMax / rit : null) + ' e vai para ' + RP.esc(p.deposito || 'o castelo') + '. O ritmo é medido em valor: ' + RP.esc(RP.nomeRecurso(p.recurso)) + ' vale ' + p.valor + (p.valor > 1 ? ' básicos, então sai mais devagar' : '') + '. Até ' + p.maxTropas + ' tropas por jazida' + (p.jaNaJazida ? ' (' + p.jaNaJazida + ' suas já estão lá)' : '') + '.</p></div>';
-      }
-      h += '<div class="secao-titulo">Caminho</div>' + (p && p.viagem ? V.caminhos(p.viagem, ext.seguro) : '<p class="fraco">Escolha ao menos uma unidade.</p>');
-    }
-    h += '<div style="height:var(--esp-6)"></div>';
-    cont.innerHTML = h;
-    var esc = p && p.viagem ? V.escolhida(p.viagem, ext.seguro) : null, ok = a && n && esc && esc.ok && !(p && p.erro);
-    RP.$('.rodape-resumo', el).innerHTML = ok
-      ? '<div class="resumo-linha"><b>' + RP.esc(RP.partesGrupo(g)) + ' → ' + (escav ? 'ruína antiga' : RP.esc(a.j.nome)) + '</b><span class="tempo">' + RP.icone('relogio', 'ico-p') + V.fmtMin(esc.min) + '</span></div>' +
-        (escav && p.horas ? '<div class="resumo-linha fraco">depois ≈ ' + V.fmtHoras(ext.posto ? p.cenarios[2].v : p.horas) + ' escavando</div>' : '')
-      : '<div class="resumo-linha fraco">' + (!a ? 'Escolha uma jazida ou ruína.' : !n ? 'Escolha ao menos uma unidade.' : p && p.erro ? RP.esc(p.erro) : 'Calculando…') + '</div>';
-    var bt = RP.$('[data-extrair]', el);
-    bt.innerHTML = RP.icone('picareta') + (escav ? 'Enviar para escavar' : 'Enviar para extrair');
-    bt.classList.toggle('btn-inativo', !ok);
-  }
-
-  function enviar() {
-    var a = alvo(), g = grupoAtual(), p = ext.previa;
-    if (!a || !RP.somaGrupo(g) || !p || p.erro) { RP.aviso({ titulo: 'Escolha o grupo', texto: 'Uma unidade já basta.', icone: 'info', tipo: 'alerta' }); return; }
-    var escav = a.tipo === 'ruina';
-    var corpo = { deLocalId: ext.de, tropas: g, hex: a.hex, repetir: !escav && ext.repetir, seguro: !!ext.seguro, destinoLocalId: escav ? ext.destino : null };
-    var antes = ext.posto ? RP.post('/postos', { hex: a.hex }).then(function () { return true; }, function (e) {
-      RP.aviso({ titulo: 'Posto não construído', texto: e.message, icone: 'alerta', tipo: 'alerta' }); return false;
-    }) : Promise.resolve(false);
-    antes.then(function (comPosto) {
-      return V.tentar(RP.post('/extracao', corpo)).then(function (gr) {
-        var viagem = V.escolhida(p.viagem, ext.seguro);
-        RP.aviso({ titulo: 'Grupo a caminho', texto: (gr.chegada ? 'Chega em ' + V.fmtMin(viagem && viagem.min) : 'Começou agora') + (escav ? ' e escava por ≈ ' + V.fmtHoras(p.horas) + '.' : ' e começa a extrair.') + (comPosto ? ' Posto na fila de obras.' : ''), icone: 'picareta', tipo: 'sucesso' });
-        ext.grupo = {}; ext.posto = false; ext.previa = null;
-        RP.recarregarReino(); RP.carregarTropas().catch(function () { /* offline */ });
-        carregar().then(function () { desenhar(); pedirPrevia(); });
-      });
-    });
+    var jz = d.jazidas.filter(function (j) { return j.restante > 0; }), rs = d.ruinas.filter(function (r) { return !r.esgotada; });
+    var h = '<div class="secao-titulo">Jazidas e ruínas</div>' + (jz.length || rs.length ? '<div class="escolhas escolhas-lista">' +
+      rs.map(function (r) {
+        return '<a class="escolha escolha-linha" href="#/mapa?centro=' + r.hex + '&ordem=escavar"><span class="ico-placa">' + RP.icone('ruina', 'r-lendario') + '</span>' +
+          '<span class="escolha-txt"><b>Ruína antiga</b><small class="fraco">Escavação · ' + RP.esc(RP.ganhosRuina(d.reliquiaTipos, true)) + ' · ' + idadeTxt(r.idadeMin) + (r.posto === 'meu' ? ' · com posto' : '') + '</small></span></a>';
+      }).join('') +
+      jz.map(function (j) {
+        return '<a class="escolha escolha-linha" href="#/mapa?centro=' + j.hex + '&ordem=extrair"><span class="ico-placa">' + RP.icone(j.recurso, 'r-' + j.recurso) + '</span>' +
+          '<span class="escolha-txt"><b>' + RP.esc(j.nome) + '</b><small class="fraco">' + (j.lendaria ? 'Lendário · ' : '') + RP.num(j.restante) + ' restantes · vale ' + j.valor + ' · ' + idadeTxt(j.idadeMin) +
+          (j.posto === 'meu' ? ' · com posto' : j.posto === 'outro' ? ' · posto de outro reino' : '') + '</small></span>' +
+          (j.tropas ? '<span class="selo selo-visivel">' + j.tropas + ' extraindo</span>' : '') + '</a>';
+      }).join('') + '</div>' : '<p class="fraco">Nenhuma jazida descoberta nem ruína antiga conhecida. Prospectores revelam jazidas valiosas; ruínas aparecem ao explorar.</p>');
+    if (d.grupos.length) h += '<div class="secao-titulo">Em andamento</div><div class="pilha">' + d.grupos.map(grupoCard).join('') + '</div>';
+    cont.innerHTML = h + '<div style="height:var(--esp-6)"></div>';
   }
 
   RP.registrarTela('extracao', {
     secao: 'tropas',
     montar: function (el) {
       tela = el;
-      el.innerHTML = RP.topoVoltar('Extração de recurso', 'tropas') + '<div class="conteudo-tela ext-conteudo"></div>' +
-        '<div class="rodape-acao rodape-com-resumo"><div class="rodape-resumo"></div><button type="button" class="btn btn-primario btn-bloco btn-grande" data-extrair>' + RP.icone('picareta') + 'Enviar para extrair</button></div>';
+      el.innerHTML = RP.topoVoltar('Extração', 'tropas') + '<div class="conteudo-tela ext-conteudo"></div>';
       var atualizar = V.debounce(function () { if (!el.hidden) carregar().then(desenhar, function () { /* offline */ }); }, 500);
       RP.ouvir('marchas', atualizar);
       el.addEventListener('click', function (e) {
-        var b;
-        if ((b = e.target.closest('[data-ext-hex]'))) { ext.hex = +b.getAttribute('data-ext-hex'); ext.posto = false; ext.previa = null; desenhar(); pedirPrevia(); return; }
-        if ((b = e.target.closest('[data-ext-de]'))) { ext.de = +b.getAttribute('data-ext-de'); ext.grupo = {}; ajustarGrupo(); ext.previa = null; desenhar(); pedirPrevia(); return; }
-        if ((b = e.target.closest('[data-ext-destino]'))) { ext.destino = +b.getAttribute('data-ext-destino'); desenhar(); return; }
-        if (e.target.closest('[data-ext-repetir]')) { ext.repetir = !ext.repetir; desenhar(); return; }
-        if (e.target.closest('[data-ext-posto]')) { ext.posto = !ext.posto; desenhar(); return; }
-        if ((b = e.target.closest('[data-caminho]'))) { ext.seguro = b.getAttribute('data-caminho') === 'segura'; desenhar(); return; }
-        if (e.target.closest('[data-ext-grupo]') && RP.grupoTropas.clique(e, ext.grupo, V.guarnicao(ext.de))) { desenhar(); pedirPrevia(); return; }
-        if ((b = e.target.closest('[data-ext-voltar]'))) {
-          V.tentar(RP.post('/tropas/' + b.getAttribute('data-ext-voltar') + '/ordem', { ordem: 'retornar' })).then(function () {
-            RP.aviso({ titulo: 'Tropas voltando', texto: 'Levam o que já tiraram.', icone: 'voltar', tipo: 'sucesso' });
-            carregar().then(desenhar);
-          });
-          return;
-        }
-        if (e.target.closest('[data-extrair]')) enviar();
+        var b = e.target.closest('[data-ext-voltar]');
+        if (!b) return;
+        V.tentar(RP.post('/tropas/' + b.getAttribute('data-ext-voltar') + '/ordem', { ordem: 'retornar' })).then(function () {
+          RP.aviso({ titulo: 'Tropas voltando', texto: 'Levam o que já tiraram.', icone: 'voltar', tipo: 'sucesso' });
+          carregar().then(desenhar);
+        });
       });
     },
-    entrar: function (el, params) {
-      if (params.get('hex')) { ext.hex = +params.get('hex'); ext.previa = null; ext.posto = false; }
+    entrar: function () {
       desenhar();
-      carregar().then(function () { desenhar(); pedirPrevia(); }, function () { /* aviso já mostrado */ });
+      carregar().then(desenhar, function () { /* aviso já mostrado */ });
     }
   });
 
-  /* ---------------------------------------------------------------- mapa: ordens de envio e atalhos na folha do hexágono */
+  /* ---------------------------------------------------------------- painel da ordem: opções e o que muda com elas */
+  function subtituloHex(h, e) { return 'hexágono ' + RP.hex.c(h) + ', ' + RP.hex.l(h) + (e.semOrigem ? '' : ' · de onde saem e quem vai'); }
+  /* o posto entra na fila de obras antes da partida; se falhar, o grupo vai assim mesmo e o aviso diz por quê */
+  function botaoPosto(e, estado, nome) {
+    var pc = ext.dados && ext.dados.posto;
+    if (estado === 'fila') return '<p class="fraco">' + RP.icone('martelo', 'ico-p') + 'Posto na fila de obras.</p>';
+    if (estado || !pc) return '';
+    return '<button type="button" class="alternar" data-painel-posto aria-pressed="' + !!e.opcoes.posto + '" data-dica="' + RP.esc('<b>Posto de ' + nome + '</b><small>Rende mais e serve de base. Entra na fila de obras; o material vai a pé.</small>' + RP.custoHTML(pc.custo) + '<small>' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(pc.seg) + ' de obra</small>') + '">' +
+      RP.icone('picareta') + '<span>Construir posto de ' + nome + '</span><i aria-hidden="true"></i></button>';
+  }
+  function antesPosto(e) {
+    if (!e.opcoes.posto) return Promise.resolve('');
+    return RP.post('/postos', { hex: e.hex }).then(function () { return ' Posto na fila de obras.'; }, function (er) {
+      RP.aviso({ titulo: 'Posto não construído', texto: er.message, icone: 'alerta', tipo: 'alerta' }); return '';
+    });
+  }
+  /* ruína é pública: fora da área explorada as tropas vão revelando o caminho e escavam ao chegar (a ordem fica no servidor) */
+  function ruinaFechada(h) { return !!RP.mapaModelo.estado(h).nunca; }
+  function previaGrupo(e, g) { return RP.post('/extracao/previa', { deLocalId: e.de, tropas: g, hex: e.hex }); }
+
+  var PAINEL_EXTRAIR = {
+    titulo: function (h) { var j = jazidaDados(h); return j ? RP.esc(j.nome) : 'Extrair aqui'; },
+    subtitulo: subtituloHex,
+    preparar: function (e) { e.opcoes = { repetir: false, posto: false }; return carregar().catch(function () { /* o painel abre mesmo assim */ }); },
+    /* só vai quem carrega, até o limite da jazida; sem ninguém assim, uma unidade que carregue */
+    grupo: function (g, l, e) {
+      var j = jazidaDados(e.hex), d = ext.dados, cabe = d ? Math.max(1, d.maxTropas - ((j && j.tropas) || 0)) : 6, r = {}, n = 0;
+      Object.keys(g).forEach(function (k) {
+        var u = RP.unidade(k), q = u && u.carga > 0 ? Math.min(g[k], cabe - n) : 0;
+        if (q > 0) { r[k] = q; n += q; }
+      });
+      if (n) return r;
+      var k0 = Object.keys(l.guarnicao || {}).filter(function (k) { return l.guarnicao[k] > 0 && (RP.unidade(k) || {}).carga > 0; })[0];
+      if (k0) r[k0] = 1;
+      return r;
+    },
+    opcoes: function (e) {
+      var j = jazidaDados(e.hex);
+      return '<div class="envio-opcoes"><button type="button" class="alternar" data-painel-repetir aria-pressed="' + !!e.opcoes.repetir + '">' + RP.icone('relogio') + '<span>Repetir <small class="fraco">(volta à jazida depois de entregar)</small></span><i aria-hidden="true"></i></button>' +
+        botaoPosto(e, j && j.posto, 'extração') + '</div>';
+    },
+    resumo: function (e, g) {
+      if (e.marchaId) return Promise.resolve('');
+      return previaGrupo(e, g).then(function (p) {
+        var rit = e.opcoes.posto ? p.cenarios[2].v : p.ritmo, dur = rit ? p.restante / rit : null;
+        var excede = p.total + (p.jaNaJazida || 0) > p.maxTropas;
+        return '<p class="fraco">' + (rit ? 'Rendem <b>' + V.fmtRitmo(rit) + '/h</b> de ' + RP.esc(RP.nomeRecurso(p.recurso)) + ': a carga enche em ≈ ' + V.fmtHoras(p.cargaMax / rit) + ' e vai para ' + RP.esc(p.deposito || 'o castelo') + '. A jazida dura ≈ ' + V.fmtHoras(dur) + '.' : 'Essas tropas não carregam nada.') + '</p>' +
+          (excede ? '<p class="txt-alerta">Até ' + p.maxTropas + ' tropas por jazida' + (p.jaNaJazida ? ' (' + p.jaNaJazida + ' suas já estão lá)' : '') + '.</p>' : '');
+      });
+    },
+    antes: antesPosto
+  };
+  var PAINEL_ESCAVAR = {
+    titulo: function () { return 'Escavar a ruína'; },
+    subtitulo: subtituloHex,
+    preparar: function (e) { e.opcoes = { posto: false, destino: RP.reino.casteloId }; return carregar().catch(function () { /* o painel abre mesmo assim */ }); },
+    opcoes: function (e) {
+      var r = ruinaDados(e.hex), locais = ((RP.reino && RP.reino.locais) || []).filter(function (l) { return !l.ruina; })
+        .sort(function (a, b) { return (a.id === e.opcoes.destino ? -1 : b.id === e.opcoes.destino ? 1 : 0) || RP.hex.dist(a.hex, e.hex) - RP.hex.dist(b.hex, e.hex); }).slice(0, 5);
+      return '<div class="envio-opcoes">' + (locais.length > 1 ? '<span class="envio-opcoes-rotulo">Ao achar, a relíquia vai para</span><div class="abas abas-rolagem" role="group" aria-label="Para onde vai a relíquia">' + locais.map(function (l) {
+        return '<button type="button" class="aba" data-painel-destino="' + l.id + '" aria-pressed="' + (l.id === e.opcoes.destino) + '">' + RP.esc(l.nome) + '</button>';
+      }).join('') + '</div>' : '') + (ruinaFechada(e.hex)
+        ? '<p class="nota-regra envio-antes">' + RP.icone('nevoa', 'ico-p') + '<span>Esta ruína fica fora da área explorada. As tropas revelam o caminho e escavam ao chegar; se não houver mais relíquia, voltam e o relatório diz por quê.</span></p>'
+        : botaoPosto(e, r && r.posto, 'escavação')) + '</div>';
+    },
+    resumo: function (e, g) {
+      if (e.marchaId) return Promise.resolve('<p class="fraco">Escavam até achar a relíquia; mais tropas e posto encurtam.</p>');
+      return previaGrupo(e, g).then(function (p) {
+        var horas = e.opcoes.posto ? p.cenarios[2].v : p.horas;
+        return '<p class="fraco">Escavam por <b>≈ ' + V.fmtHoras(horas) + '</b> (no mínimo ' + V.fmtHoras(p.minimo) + ') e rendem 1 relíquia, que o grupo carrega e pode ser roubada no caminho.' + (p.poucoProtegida ? ' Grupo pequeno, escolta fraca.' : '') + '</p>';
+      });
+    },
+    antes: antesPosto
+  };
+  document.addEventListener('click', function (e) {
+    var E = RP.envio, st = E && E.painel() ? E.estado() : null, b;
+    if (!st || !st.opcoes) return;
+    if (e.target.closest('[data-painel-repetir]')) { st.opcoes.repetir = !st.opcoes.repetir; E.repintarPainel(); return; }
+    if (e.target.closest('[data-painel-posto]')) { st.opcoes.posto = !st.opcoes.posto; E.repintarPainel(); return; }
+    if ((b = e.target.closest('[data-painel-destino]'))) { st.opcoes.destino = +b.getAttribute('data-painel-destino'); E.repintarPainel(); }
+  });
+
+  /* ---------------------------------------------------------------- mapa: ordens de envio e botão na folha do hexágono */
   function objs(h, d) { return (d && d.porHex && d.porHex[h]) || []; }
   function jazidaEm(h, d) { return objs(h, d).filter(function (o) { return o.tipo === 'jazida' && o.restante > 0; })[0]; }
   function ruinaEm(h, d) { return objs(h, d).filter(function (o) { return o.tipo === 'ruina-antiga' && !o.esgotada; })[0]; }
   RP.ordensEnvio.push({
-    ordem: 'extrair', rotulo: 'Extrair aqui', verbo: 'Extrair', icone: 'picareta', titulo: 'Extrair',
+    ordem: 'extrair', rotulo: 'Extrair aqui', verbo: 'Extrair', icone: 'picareta', titulo: 'Extrair', painel: PAINEL_EXTRAIR,
     descricao: function () { return '<div class="info-linha"><span class="fraco">Ordem</span><span>Extraem até a carga encher e levam ao armazém ou castelo</span></div>'; },
-    dados: function () { return { repetir: false }; },
+    dados: function (h, d, e) { return { repetir: !!(e && e.opcoes && e.opcoes.repetir) }; },
     quando: function (h, d) { return !!jazidaEm(h, d); }
   });
   RP.ordensEnvio.push({
-    ordem: 'escavar', rotulo: 'Escavar a ruína', verbo: 'Escavar', icone: 'picareta', titulo: 'Escavar',
+    ordem: 'escavar', rotulo: 'Escavar a ruína', verbo: 'Escavar', icone: 'picareta', titulo: 'Escavar', painel: PAINEL_ESCAVAR,
     descricao: function () { return '<div class="info-linha"><span class="fraco">Ordem</span><span>Escavam até achar a relíquia e a levam ao castelo</span></div>'; },
-    dados: function () { return { destinoLocalId: RP.reino.casteloId }; },
+    dados: function (h, d, e) { return { destinoLocalId: (e && e.opcoes && e.opcoes.destino) || RP.reino.casteloId }; },
     quando: function (h, d) { return !!ruinaEm(h, d); }
   });
-  /* na folha da jazida ou da ruína (tocada no mapa) */
-  function acaoObjeto(tipo, rotulo, ok) {
+  /* na folha da jazida ou da ruína (tocada no mapa): abre o painel com as tropas */
+  function acaoObjeto(tipo, rotulo, ordem, ok) {
     var tp = RP.mapa.tiposObjeto[tipo] = RP.mapa.tiposObjeto[tipo] || {}, antes = tp.acoes;
     tp.acoes = function (o, d) {
-      return (antes ? antes(o, d) || '' : '') + (ok(o) && !(RP.envio && RP.envio.ativo()) ? '<a class="btn btn-p btn-primario" href="#/extracao?hex=' + o.hex + '">' + RP.icone('picareta') + rotulo + '</a>' : '');
+      return (antes ? antes(o, d) || '' : '') + (ok(o) && !(RP.envio && RP.envio.ativo()) ? '<button type="button" class="btn btn-p btn-primario" data-envio-painel="' + ordem + '" data-envio-hex="' + o.hex + '" data-submenu="' + ordem + '">' + RP.icone('picareta') + rotulo + '</button>' : '');
     };
   }
-  acaoObjeto('jazida', 'Extrair', function (o) { return o.restante > 0; });
-  acaoObjeto('ruina-antiga', 'Escavar', function (o) { return !o.esgotada; });
+  acaoObjeto('jazida', 'Extrair', 'extrair', function (o) { return o.restante > 0; });
+  acaoObjeto('ruina-antiga', 'Escavar', 'escavar', function (o) { return !o.esgotada; });
 
+  RP.ORDENS_NOMES = RP.ORDENS_NOMES || {};
+  RP.ORDENS_NOMES.escavar = 'Escavar';
+  RP.ORDENS_NOMES.extrair = 'Extrair';
+  RP.ORDENS_NOMES.entregar = 'Levar a carga';
   RP.acoesTropas.push({ href: '#/extracao', icone: 'picareta', titulo: 'Extração', texto: 'Jazidas descobertas e ruínas antigas' });
-  RP.itensMais.push({ icone: 'picareta', titulo: 'Extração', texto: 'Jazidas descobertas, postos e escavação de ruínas', href: '#/extracao' });
+  RP.itensMais.push({ icone: 'picareta', titulo: 'Extração', texto: 'Jazidas descobertas e ruínas antigas, com quem está trabalhando nelas', href: '#/extracao' });
   RP.FILTROS_RELATORIO.push(['extracao', 'Extração']);
 })();

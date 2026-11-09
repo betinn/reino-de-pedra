@@ -35,16 +35,6 @@
       (mesma ? '<p class="fraco" style="font-size:var(--fs-2)">A rota curta já é a mais segura que se conhece.</p>' : '');
   };
   V.escolhida = function (v, seguro) { return v ? (seguro && v.segura && v.segura.ok ? v.segura : v.curta) : null; };
-  /* gráfico de barras horizontais (comparação de cenários) */
-  V.grafico = function (cen, fmt, rotulo) {
-    var max = Math.max.apply(null, cen.map(function (c) { return isFinite(c.v) ? c.v : 0; })) || 1;
-    return '<div class="grafico-barras" role="img" aria-label="' + RP.esc(rotulo) + '">' + cen.map(function (c) {
-      var val = fmt(c.v);
-      return '<div class="gb-linha' + (c.atual ? ' atual' : '') + '" tabindex="0" data-dica="' + RP.esc(c.nome + ': ' + val) + '">' +
-        '<span class="gb-rotulo">' + RP.esc(c.nome) + '</span><span class="gb-trilho"><i style="width:' + Math.max(2, (80 * (isFinite(c.v) ? c.v : 0)) / max).toFixed(1) + '%"></i></span>' +
-        '<span class="gb-valor num">' + val + '</span></div>';
-    }).join('') + '</div>';
-  };
   V.escolhaLocal = function (l, attr, ativo, extra) {
     return '<button type="button" class="escolha escolha-linha" ' + attr + '="' + l.id + '" aria-pressed="' + ativo + '"><span class="ico-placa dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span>' +
       '<span class="escolha-txt"><b>' + RP.esc(l.nome) + '</b><small class="fraco">' + (extra || '') + '</small></span></button>';
@@ -281,11 +271,11 @@
     var b;
     if ((b = e.target.closest('[data-fazer-veiculo]'))) {
       V.tentar(RP.post('/veiculos', { tipo: b.getAttribute('data-fazer-veiculo'), qtd: 1 })).then(function (it) {
-        RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: it.materialCompleto ? '' : 'O material está a caminho.', icone: 'carroca', tipo: 'sucesso' }); RP.recarregarReino();
+        RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoMaterial(it, 'O material está a caminho.'), icone: 'carroca', tipo: 'sucesso' }); RP.recarregarReino();
       });
     } else if ((b = e.target.closest('[data-salgadeira]'))) {
       V.tentar(RP.post('/salgadeira', { localId: +b.getAttribute('data-salgadeira') })).then(function (it) {
-        RP.fecharFolha(); RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: it.materialCompleto ? '' : 'O material está a caminho.', icone: 'sal', tipo: 'sucesso' }); RP.recarregarReino();
+        RP.fecharFolha(); RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoMaterial(it, 'O material está a caminho.'), icone: 'sal', tipo: 'sucesso' }); RP.recarregarReino();
       });
     }
   });
@@ -298,7 +288,7 @@
     var h = '';
     if (l.podeSalgadeira) h += '<div class="info-linha"><span class="fraco">Salgadeira</span><span>' + (l.salgadeira ? 'guarda ' + RP.reino.valiosos.salgadeira.horas + ' h de comida' : 'não tem') + '</span></div>';
     var it = obraEsperando(l);
-    if (it) h += '<div class="info-linha"><span class="fraco">Obra</span><span>' + RP.esc(it.rotulo) + ' · ' + (it.materialChegaEm ? 'material chega ' + RP.barraTempo(it.materialPartida, it.materialChegaEm, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho' }) : 'aguardando material') + '</span></div>';
+    if (it) h += '<div class="info-linha"><span class="fraco">Obra</span><span>' + RP.esc(it.rotulo) + ' · ' + (it.materialChegaEm ? 'material chega ' + RP.barraTempo(it.materialPartida, it.materialChegaEm, { classe: 'curta', cor: 'info', rotulo: 'Material a caminho' }) : it.aguardando ? 'aguardando recursos' : 'aguardando material') + '</span></div>';
     return h;
   });
   /* o que falta no local para a próxima obra (a próxima melhoria), para a caravana já vir preenchida */

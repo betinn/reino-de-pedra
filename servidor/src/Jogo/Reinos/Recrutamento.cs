@@ -6,9 +6,9 @@ using PS = ReinoDePedra.Jogo.Pessoas.Pessoas;
 namespace ReinoDePedra.Jogo.Reinos;
 
 /// <summary>
-/// Recrutamento: fila "recrutamento" do reino (até 10 itens, um por vez). O material vem pela requisição
-/// automática até o local; a população civil sai na hora de enfileirar (volta se cancelar) e as tropas
-/// em treino ocupam o teto. Cada unidade fica pronta ao fim do seu próprio tempo e entra na guarnição na hora
+/// Recrutamento: fila "recrutamento" do reino (até 10 itens, um por vez). Ao chegar a vez do item, o material vem pela
+/// requisição automática até o local e a população civil sai (volta se cancelar): até lá as pessoas seguem trabalhando. As
+/// tropas em treino ocupam o teto. Cada unidade fica pronta ao fim do seu próprio tempo e entra na guarnição na hora
 /// (<see cref="ITipoItemPorUnidade"/>). O castelo recruta as unidades de <c>P.recrutaCastelo</c>; o quartel, todas.
 /// </summary>
 [Sistema]
@@ -32,10 +32,10 @@ public static class Recrutamento
         Economia.OcupantesExtras.Add(EmTreino);
     });
 
-    /// <summary>Pessoas em treino (já saíram da população civil e ocupam o teto).</summary>
+    /// <summary>Pessoas em treino (já saíram da população civil e ocupam o teto); o item que aguarda ainda não tirou ninguém.</summary>
     public static int EmTreino(Mundo m, Reino r) =>
         r.Filas.TryGetValue(Fila, out var f)
-            ? f.Itens.Where(i => i.Tipo == ItemRecrutar.Id && i.Param != null && m.B.U.ContainsKey(i.Param)).Sum(i => m.B.U[i.Param!].Pop * i.Restantes)
+            ? f.Itens.Where(i => !i.Aguardando && i.Tipo == ItemRecrutar.Id && i.Param != null && m.B.U.ContainsKey(i.Param)).Sum(i => m.B.U[i.Param!].Pop * i.Restantes)
             : 0;
 
     /// <summary>Itens de recrutamento na fila (sem criar a fila se não existir).</summary>
@@ -78,19 +78,16 @@ public static class Recrutamento
         var u = m.B.U[unidade];
         Economia.Atualizar(m, r);
         var pop = u.Pop * (long)qtd;
-        var livre = PS.LivresParaTreino(m, r);
-        if (livre < pop) throw new RegraException($"Falta população civil livre: precisa de {pop}, há {livre}.");
+        var livre = PS.LivresParaTreino(m, r) - Filas.PopAguardando(r);   // os itens que aguardam já contam com os deles
+        if (livre < pop) throw new RegraException($"Falta população civil livre: precisa de {pop}, há {Math.Max(0, livre)}.");
         var custo = new Recursos();
         custo.Somar(u.Custo, qtd);
-        var item = Filas.Enfileirar(m, r, Fila, new ItemFila
+        return Filas.Enfileirar(m, r, Fila, new ItemFila
         {
             Tipo = ItemRecrutar.Id, LocalId = l.Id, Hex = l.Hex, Param = u.Id, Qtd = qtd,
             Rotulo = $"{qtd} {Tropas.Nome(u, qtd)} · {l.Nome}",
-            Custo = custo, DuracaoSeg = u.Tempo * qtd,
+            Custo = custo, DuracaoSeg = u.Tempo * qtd, PopReserva = (int)pop,
         });
-        PS.ParaTreino(m, r, (int)pop, u.Id, item, l);   // ociosos primeiro; cancelar devolve ao ofício anterior
-        m.Sujar(r);
-        return item;
     }
 }
 
@@ -117,4 +114,11 @@ public sealed class ItemRecrutar : ITipoItemPorUnidade
         Registros.Notificar(m, r.Id, "tropas", "Recrutamento concluído", item.Rotulo, "tropas");
 
     public void Cancelado(Mundo m, Reino r, ItemFila item) => PS.TreinoCancelado(m, r, item);
+
+    /// <summary>Chegou a vez: ociosos primeiro vão para o treino; cancelar devolve ao ofício anterior.</summary>
+    public void AoReservar(Mundo m, Reino r, ItemFila item)
+    {
+        if (item.Param != null && item.LocalId is long id && m.Locais.Obter(id) is { } l)
+            PS.ParaTreino(m, r, item.PopReserva, item.Param, item, l);
+    }
 }

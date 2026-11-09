@@ -46,7 +46,8 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | Onde | Para quê |
 |---|---|
 | `[Sistema]` + `public static void AoIniciar(Mundo m)` | Rodar na subida do servidor (e em `Sistemas.IniciarTodos` nos testes). Ganchos em listas estáticas: dentro de `Sistemas.UmaVez("chave", () => ...)`. |
-| `ITipoItemFila` | Novo tipo de item de fila (obra, recrutamento, forja...). Classe com construtor vazio; achada por reflexão. |
+| `ITipoItemFila` | Novo tipo de item de fila (obra, recrutamento, forja...). Classe com construtor vazio; achada por reflexão. `Revisar` desiste do item que aguarda e deixou de fazer sentido; `AoReservar` toma o que ele usa além do material. |
+| `Filas.Avaliar`, `Filas.Acordar`, `Filas.Situacoes`, `ItemFila.Estado` | Passagem única de Aguardando para Reservado, por ordem de entrada entre as filas (ver decisão 0037); pedir uma avaliação depois do comando em curso; o que falta a cada item da vez, só para ler. |
 | `Marcha` (subclasse) | Novo tipo de marcha; implemente `Tipo`, `Chegou`, e se preciso `PopOcupada`, `RaioVisao`. |
 | `IModuloApi` (Api) | Novo grupo de rotas em `/api/v1`. Classe com construtor vazio; achada por reflexão. |
 | `Economia.ModificadoresProducao`, `HorasDeEstoque`, `OcupantesExtras`, `TetoExtra` | Relíquias, salgadeira, feridos... |

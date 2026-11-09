@@ -1,9 +1,12 @@
 /* Reino de Pedra — Enviar tropas pelo mapa. Com a tropa selecionada, clicar num hexágono oferece "Enviar tropa", que parte na
    hora, sem prévia; "Ver o caminho" abre a rota curta ou segura, e as outras ordens (atacar, caçar...) têm a confirmação delas.
    Sem seleção, o botão direito oferece "Enviar tropas para cá": um painel rápido com de onde saem e quantas vão.
+   O mesmo painel serve a uma ordem já escolhida (escavar, extrair): a ordem declara painel: { titulo, subtitulo, preparar,
+   grupo, opcoes, resumo, antes } e RP.envio.paraOrdem(hex, ordem) abre.
    Também dá nova ordem a um exército em campo, desenha no mapa a linha exata de uma patrulha e junta e separa tropas.
    Ponto de extensão: RP.ordensEnvio.push({ ordem, rotulo, icone, verbo, descricao(hex, dados, envio), quando(hex, dados, envio) })
-   — o combate acrescenta "atacar". Porte da ordem rápida de prototipo/js/mapa.js e militar.js. */
+   — o combate acrescenta "atacar". escolha: true marca a ordem cujo alvo pede escolha (caçar o bando): o botão direito
+   ali abre a folha com as ordens, em vez de mover. Porte da ordem rápida de prototipo/js/mapa.js e militar.js. */
 (function () {
   'use strict';
   var RP = window.RP, H = RP.hex;
@@ -12,9 +15,10 @@
   RP.NOMES_MARCHA.exercito = 'Exército';
   RP.NOMES_MARCHA.carregadores = 'Carregadores';
 
-  /* estado do envio: { de: localId | marchaId, pessoas, grupo, seguro, hex, ordem, previa, implicito, linha, circuito, painel }.
+  /* estado do envio: { de: localId | marchaId, pessoas, grupo, seguro, hex, ordem, previa, implicito, linha, circuito, painel, fixa, semOrigem }.
      implicito: começou no clique num hexágono com a tropa selecionada; fechar a folha desfaz. linha: hexágonos desenhados.
-     painel: é o envio rápido do botão direito, que vive na folha, sem a barra do topo. */
+     painel: é o envio rápido do botão direito, que vive na folha, sem a barra do topo. fixa: a ordem do painel já foi
+     escolhida (escavar, extrair). semOrigem: o painel abriu sem nenhuma tropa disponível e diz isso. */
   var est = null, tracos = [], tracando = false, sep = null, juntando = null;
   RP.envio = {
     ativo: function () { return !!est; },
@@ -90,10 +94,22 @@
     }, function () { /* aviso já mostrado */ });
   }
   function cancelar() { est = null; tracos = []; tracando = false; barra(); if (RP.selecao) RP.selecao.barra(); if (RP.mapa.redesenhar) RP.mapa.redesenhar(); }
-  /* a ordem que parte na hora para um hexágono: reforçar um local seu, ou mover para um hexágono sem local */
+  /* a ordem de trabalho do hexágono: escavar a ruína ou extrair da jazida (as ordens que têm painel) */
+  RP.envio.trabalhoAqui = function (h) {
+    return RP.ordensEnvio.filter(function (o) { return o.painel && o.quando(h, RP.mapa.dados()); })[0] || null;
+  };
+  /* a ordem cujo alvo pede escolha neste hexágono: caçar os animais conhecidos (o mapa só traz o bando à vista e o perigo já visto) */
+  function ordemEscolha(h, dados) {
+    return RP.ordensEnvio.filter(function (o) { try { return o.escolha && o.quando(h, dados, est); } catch (e) { return false; } })[0] || null;
+  }
+  /* a ordem que parte na hora para um hexágono: reforçar um local seu, ou mover para um hexágono sem local.
+     Ruína e jazida pedem escolha, salvo para quem já está parado nelas: aí a ordem é trabalhar. Animais pedem escolha. */
   function ordemDireta(h) {
     var local = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
-    return local && local.dono === 'meu' && !local.ruina ? (local.id !== est.de ? 'reforcar' : null) : !local ? 'mover' : null;
+    if (local) return local.dono === 'meu' && !local.ruina && local.id !== est.de ? 'reforcar' : null;
+    if (ordemEscolha(h, RP.mapa.dados())) return null;
+    var trab = RP.envio.trabalhoAqui(h), e = exercitoDe();
+    return !trab ? 'mover' : e && e.hex === h && e.estado === 'parado' ? trab.ordem : null;
   }
   /* botão direito no destino: a ordem direta parte na hora; destino que pede escolha (atacar, caçar, extrair...) abre a folha dele */
   function ordemRapida(h) {
@@ -105,6 +121,11 @@
   }
   RP.envio.rapido = function (h, completa) {
     if (!est) return;
+    if (est.painel && est.fixa) {   /* outro destino que serve à mesma ordem continua nela; senão, vira o envio comum */
+      var df = defOrdem(est.fixa);
+      if (df.quando(h, RP.mapa.dados(), est)) RP.envio.paraOrdem(h, est.fixa); else RP.envio.paraCa(h);
+      return;
+    }
     if (est.painel) { est.hex = h; est.ordem = ordemDireta(h); est.previa = null; abrirPainel(); return; }   /* outro destino, mesmas tropas */
     if (completa) { est.implicito = true; RP.mapa.folhaHex(h); return; }
     ordemRapida(h);
@@ -119,67 +140,94 @@
     Object.keys((u && u.grupo) || {}).forEach(function (k) { var n = Math.min(u.grupo[k], (l.guarnicao || {})[k] || 0); if (n > 0) g[k] = n; });
     return RP.somaGrupo(g) ? g : null;
   }
-  /* de onde podem sair: locais com guarnição e tropas em campo livres, do mais perto ao mais longe */
-  function origensPara(h) {
+  function painelDaOrdem() { var d = est && est.fixa && defOrdem(est.fixa); return (d && d.painel) || null; }
+  /* as tropas que o painel já traz; a ordem pode ajustar (carga, limite por jazida) */
+  function ajustarAoPainel(g, l) { var pd = painelDaOrdem(); return pd && pd.grupo ? pd.grupo(g, l, est) : g; }
+  /* de onde podem sair: locais com guarnição e tropas em campo livres, do mais perto ao mais longe.
+     Com ordem fixa, vale também quem já está no hexágono (a guarnição do posto, a tropa parada na ruína). */
+  function origensPara(h, fixa) {
     var t = RP.tropas; if (!t) return [];
-    var alvo = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
+    var alvo = fixa ? null : objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
     return t.locais.filter(function (l) { return RP.somaGrupo(l.guarnicao) > 0 && !(alvo && alvo.id === l.id); })
       .map(function (l) { return { id: l.id, nome: l.nome, d: H.dist(l.hex, h) }; })
-      .concat(t.exercitos.filter(function (e) { return !e.bloqueio && e.podeOrdem !== false && e.estado !== 'trabalhando' && e.hex !== h; })
+      .concat(t.exercitos.filter(function (e) { return !e.bloqueio && e.podeOrdem !== false && e.estado !== 'trabalhando' && (fixa || e.hex !== h); })
         .map(function (e) { return { marchaId: e.id, nome: 'Em campo · ' + e.resumo, d: H.dist(e.hex, h) }; }))
       .sort(function (a, b) { return a.d - b.d; }).slice(0, 8);
   }
   function origemPainel(o) {
     est.de = o.id; est.marchaId = o.marchaId; est.previa = null;
     if (o.marchaId) est.grupo = null;
-    else { var l = localDe(); est.grupo = l ? grupoLembrado(l) || grupoPadrao(l) : {}; }
-    est.ordem = ordemDireta(est.hex);
+    else { var l = localDe(); est.grupo = l ? ajustarAoPainel(grupoLembrado(l) || grupoPadrao(l), l) : {}; }
+    est.ordem = est.fixa || ordemDireta(est.hex);
   }
   function corpoPainel() {
-    var ors = origensPara(est.hex);
+    if (est.semOrigem) return '<div class="envio-resumo" data-envio-resumo></div>';
+    var ors = origensPara(est.hex, !!est.fixa), pd = painelDaOrdem();
     return (ors.length > 1 ? '<div class="abas abas-rolagem envio-origens" role="group" aria-label="De onde saem">' + ors.map(function (x) {
       return '<button type="button" class="aba" ' + (x.marchaId ? 'data-envio-ex="' + x.marchaId + '" aria-pressed="' + (x.marchaId === est.marchaId) : 'data-envio-de="' + x.id + '" aria-pressed="' + (x.id === est.de)) + '">' + RP.esc(x.nome) + '</button>';
     }).join('') + '</div>' : '') +
       (est.marchaId ? '<div class="card">' + RP.selosGrupo(grupoAtual()) + '</div>' :
         '<div class="envio-atalhos"><button type="button" class="btn btn-p btn-fantasma" data-envio-atalho="ultimas">Últimas</button><button type="button" class="btn btn-p btn-fantasma" data-envio-atalho="metade">Metade</button><button type="button" class="btn btn-p btn-fantasma" data-envio-atalho="todas">Todas</button></div>' +
         '<div class="card pilha" data-envio-grupo>' + RP.grupoTropas.linhas(est.grupo, disponiveis()) + '</div>') +
+      (pd && pd.opcoes ? pd.opcoes(est) : '') +
       '<div class="envio-resumo" data-envio-resumo></div>';
   }
   function acoesPainel() {
-    return '<button type="button" class="btn btn-p btn-primario" data-envio-rapido>' + RP.icone('seta') + (est.ordem ? 'Enviar' : 'Escolher a ordem') + '</button>' +
-      (est.ordem ? '<button type="button" class="btn btn-p btn-fantasma" data-envio-mais data-tecla="Q">' + RP.icone('alvo') + 'Mais ordens</button>' : '');
+    /* sem tropa: a saída é recrutar ou ver quem está fora */
+    if (est.semOrigem) return '<a class="btn btn-p btn-primario" href="#/recrutamento" data-tecla="Enter">' + RP.icone('tropas') + 'Recrutar</a><a class="btn btn-p" href="#/tropas">' + RP.icone('seta') + 'Ver as tropas</a>';
+    var d = est.fixa ? defOrdem(est.fixa) : null;
+    return '<button type="button" class="btn btn-p btn-primario" data-envio-rapido data-tecla="Enter">' + RP.icone(d ? d.icone : 'seta') + (d ? RP.esc(d.verbo) : est.ordem ? 'Enviar' : 'Escolher a ordem') + '</button>' +
+      (est.ordem && !est.fixa ? '<button type="button" class="btn btn-p btn-fantasma" data-envio-mais data-tecla="Q">' + RP.icone('alvo') + 'Mais ordens</button>' : '');
   }
   function abrirPainel() {
-    var h = est.hex, local = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
+    var h = est.hex, local = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0], pd = painelDaOrdem(), df = est.fixa ? defOrdem(est.fixa) : null;
     RP.abrirFolha({
-      titulo: 'Enviar tropas para cá',
-      subtitulo: '<span class="fraco">' + (local ? RP.esc(local.nome || RP.TIPOS_LOCAL[local.local] || 'Local') + ' · ' : '') + 'hexágono ' + H.c(h) + ', ' + H.l(h) + ' · ' + (est.ordem === 'reforcar' ? 'entram na defesa do local' : est.ordem === 'mover' ? 'vão até lá e ficam no lugar' : 'escolha a ordem depois') + '</span>',
-      icone: '<span class="ico-placa folha-ico">' + RP.icone('tropas') + '</span>',
+      titulo: pd ? pd.titulo(h) : 'Enviar tropas para cá',
+      subtitulo: '<span class="fraco">' + (pd ? pd.subtitulo(h, est) : (local ? RP.esc(local.nome || RP.TIPOS_LOCAL[local.local] || 'Local') + ' · ' : '') + 'hexágono ' + H.c(h) + ', ' + H.l(h) + ' · ' + (est.ordem === 'reforcar' ? 'entram na defesa do local' : est.ordem === 'mover' ? 'vão até lá e ficam no lugar' : 'escolha a ordem depois')) + '</span>',
+      icone: '<span class="ico-placa folha-ico">' + RP.icone(df ? df.icone : 'tropas') + '</span>',
       corpo: corpoPainel(), acoes: acoesPainel(),
       aoFechar: function (troca) { if (!troca && est && est.painel) cancelar(); }
     });
     previaPainel();
   }
   function pintarPainel() { RP.atualizarFolha(corpoPainel(), acoesPainel()); previaPainel(); }
+  RP.envio.repintarPainel = function () { if (est && est.painel && RP.folhaAberta()) pintarPainel(); };
   var pedidoPainel = 0;
   function previaPainel() {
-    var g = grupoAtual(), n = RP.somaGrupo(g), box = RP.$('[data-envio-resumo]'), ok = RP.$('[data-envio-rapido]'), meu = ++pedidoPainel;
+    var g = grupoAtual(), n = RP.somaGrupo(g), box = RP.$('[data-envio-resumo]'), ok = RP.$('[data-envio-rapido]'), meu = ++pedidoPainel, pd = painelDaOrdem();
     est.previa = null;
     if (RP.mapa.redesenhar) RP.mapa.redesenhar();
     if (ok) ok.classList.toggle('btn-inativo', !n);
     if (!box) return;
+    if (est.semOrigem) { box.innerHTML = '<p class="nota-antiga nota-perigo">' + RP.icone('alerta', 'ico-p') + '<span><b>Nenhuma tropa disponível.</b> Todas estão em marcha ou trabalhando, ou ainda não há soldados. Recrute no castelo ou mande voltar quem está fora.</span></p>'; return; }
     if (!n) { box.innerHTML = '<p class="fraco">Escolha quem vai.</p>'; return; }
     box.innerHTML = '<p class="fraco">' + RP.esc(RP.partesGrupo(g)) + ' · calculando o caminho…</p>';
     var corpo = est.marchaId ? { marchaId: est.marchaId, destinoHex: est.hex } : { deLocalId: est.de, tropas: est.grupo, destinoHex: est.hex };
-    RP.post('/tropas/previa', corpo).then(function (p) {
+    var extra = pd && pd.resumo ? pd.resumo(est, g).catch(function (er) { return '<p class="txt-alerta">' + RP.esc(er.message) + '</p>'; }) : Promise.resolve('');
+    Promise.all([RP.post('/tropas/previa', corpo), extra]).then(function (x) {
+      var p = x[0];
       if (meu !== pedidoPainel || !est || !est.painel) return;
       est.previa = p;
       var b = RP.$('[data-envio-resumo]'), bt = RP.$('[data-envio-rapido]'); if (!b) return;
       if (bt) bt.classList.toggle('btn-inativo', !p.curta.ok);
-      b.innerHTML = (p.curta.ok ? '<p><b>' + RP.esc(RP.partesGrupo(g)) + '</b> · chegam em <b>' + RP.fmtDuracao(p.curta.min * 60) + '</b></p>' : '<p class="txt-alerta">Não há caminho até o destino.</p>') + RP.faunaVereditoHTML(p, est.hex, g);
+      b.innerHTML = (p.curta.ok ? '<p><b>' + RP.esc(RP.partesGrupo(g)) + '</b> · ' + (p.curta.min > 0 ? 'chegam em <b>' + RP.fmtDuracao(p.curta.min * 60) + '</b>' : 'já estão lá') + '</p>' : '<p class="txt-alerta">Não há caminho até o destino.</p>') + x[1] + RP.faunaVereditoHTML(p, est.hex, g);
       if (RP.mapa.redesenhar) RP.mapa.redesenhar();
     }, function (e) { var b = RP.$('[data-envio-resumo]'); if (meu === pedidoPainel && b) b.innerHTML = '<p class="txt-alerta">' + RP.esc(e.message) + '</p>'; });
   }
+  /* o painel de uma ordem já escolhida: abre sempre, mesmo sem tropa disponível (aí diz isso e oferece a saída) */
+  RP.envio.paraOrdem = function (h, ordem) {
+    var def = defOrdem(ordem); if (!def) return;
+    RP.carregarTropas().then(function () {
+      var novo = { hex: h, seguro: false, implicito: true, painel: true, fixa: ordem, ordem: ordem, grupo: {} };
+      return (def.painel && def.painel.preparar ? def.painel.preparar(novo) : Promise.resolve()).then(function () {
+        var ors = origensPara(h, true), u = ultimoRapido();
+        est = novo; est.semOrigem = !ors.length;
+        /* quem já está parado no hexágono vem primeiro: trabalha sem sair do lugar */
+        if (ors.length) origemPainel(ors.filter(function (x) { return x.marchaId && !x.d; })[0] || (u && ors.filter(function (x) { return x.id === u.de; })[0]) || ors[0]);
+        barra(); abrirPainel();
+      });
+    }).catch(function () { /* aviso já mostrado */ });
+  };
   RP.envio.podePara = function (h) { return !RP.tropas || origensPara(h).length > 0; };
   RP.envio.paraCa = function (h) {
     RP.carregarTropas().then(function () {
@@ -189,6 +237,59 @@
       origemPainel((u && ors.filter(function (x) { return x.id === u.de; })[0]) || ors[0]);
       barra(); abrirPainel();
     }, function () { /* aviso já mostrado */ });
+  };
+
+  /* ---------------------------------------------------------------- envio direto: o submenu do botão direito
+     Mesma origem e mesmas contas do painel (Metade e Todas), sem abrir o painel. A ordem pode ajustar as tropas com
+     grupo(g, local, { hex }) (na ordem ou no painel dela) e carregar o que precisa com preparar(est). Com ultimo: true, oferece também
+     as tropas do último ataque. As contas valem para a hora do clique: enviarJa recarrega tudo antes de mandar. */
+  function destinoDireto(h) {
+    var local = objetos(h, RP.mapa.dados()).filter(function (o) { return o.tipo === 'local'; })[0];
+    return local && local.dono === 'meu' && !local.ruina ? 'reforcar' : !local ? 'mover' : null;
+  }
+  function quemVaiDireto(h, ordem, qual, o) {
+    if (o.marchaId) {
+      var ex = RP.exercito(o.marchaId), ps = (ex && ex.pessoas) || [], por = {}, ids = [];
+      if (qual === 'todas') return { grupo: (ex && ex.tropas) || {}, pessoas: null };
+      ps.forEach(function (p) { (por[p.oficio] = por[p.oficio] || []).push(p); });
+      Object.keys(por).forEach(function (k) { por[k].slice(0, Math.ceil(por[k].length / 2)).forEach(function (p) { ids.push(p.id); }); });
+      var ge = {}; ps.filter(function (p) { return ids.indexOf(p.id) >= 0; }).forEach(function (p) { ge[p.oficio] = (ge[p.oficio] || 0) + 1; });
+      return { grupo: ge, pessoas: ids };
+    }
+    var l = RP.tropas.locais.filter(function (x) { return x.id === o.id; })[0], disp = (l && l.guarnicao) || {}, g = {}, def = ordem ? defOrdem(ordem) : null;
+    if (qual === 'ultimo') g = (RP.grupoPadraoEnvio && l && RP.grupoPadraoEnvio(l)) || {};
+    else Object.keys(disp).forEach(function (k) { if (disp[k] > 0) g[k] = qual === 'todas' ? disp[k] : Math.ceil(disp[k] / 2); });
+    var ajusta = def && ((def.painel && def.painel.grupo) || def.grupo);
+    return { grupo: ajusta && l ? ajusta(g, l, { hex: h }) : g };
+  }
+  /* a origem que o painel usaria e as opções dela: { origem, opcoes: [{ qual, grupo, n }] } ou null, sem ninguém */
+  RP.envio.opcoesDiretas = function (h, ordem) {
+    if (!RP.tropas) return null;
+    var def = ordem ? defOrdem(ordem) : null, u = ultimoRapido();
+    var ors = origensPara(h, !!ordem).filter(function (o) { return RP.somaGrupo(quemVaiDireto(h, ordem, 'todas', o).grupo) > 0; });
+    var o = (u && ors.filter(function (x) { return x.id === u.de; })[0]) || ors[0];
+    if (!o) return null;
+    var lista = (def && def.ultimo && !o.marchaId ? ['ultimo'] : []).concat(['metade', 'todas']).map(function (q) {
+      var g = quemVaiDireto(h, ordem, q, o).grupo;
+      return { qual: q, grupo: g, n: RP.somaGrupo(g) };
+    }).filter(function (x) { return x.n > 0; });
+    /* duas opções com as mesmas tropas viram uma: fica a última (Todas) */
+    lista = lista.filter(function (x, i) { return !lista.slice(i + 1).some(function (y) { return JSON.stringify(y.grupo) === JSON.stringify(x.grupo); }); });
+    return { origem: o, opcoes: lista };
+  };
+  RP.envio.temDireto = function (h) { return !!destinoDireto(h); };
+  /* traz tropas e o que a ordem precisa (a jazida, por exemplo); serve também ao estado do envio */
+  RP.envio.aquecerDireto = function (ordem, novo) {
+    var def = ordem ? defOrdem(ordem) : null, prep = def && ((def.painel && def.painel.preparar) || def.preparar);
+    return Promise.all([RP.carregarTropas(), prep ? prep(novo || {}) : null]);
+  };
+  RP.envio.enviarJa = function (h, ordem, qual, origemVista) {
+    var novo = { hex: h, seguro: false, implicito: true, painel: true, direto: true, fixa: ordem || null, ordem: ordem || destinoDireto(h) };
+    return RP.tentar(RP.envio.aquecerDireto(ordem, novo)).then(function () {
+      var op = RP.envio.opcoesDiretas(h, ordem), o = (op && op.origem) || origemVista, q = quemVaiDireto(h, ordem, qual, o);
+      novo.de = o.id; novo.marchaId = o.marchaId; novo.grupo = q.grupo; novo.pessoas = q.pessoas || null;
+      est = novo; enviar();
+    }).catch(function () { /* aviso já mostrado */ });
   };
 
   /* ---------------------------------------------------------------- linha da patrulha, desenhada no mapa */
@@ -288,14 +389,15 @@
       });
       return html;
     }
-    /* "Enviar tropa" parte na hora: um local seu (entra na guarnição) ou um hexágono sem local (fica lá) */
+    /* "Enviar tropa" parte na hora: um local seu (entra na guarnição) ou um hexágono sem local (fica lá). Na ruína ou na jazida, o trabalho vem em destaque; no bando, a caça. */
     var local = obj.filter(function (o) { return o.tipo === 'local'; })[0], botoes = [];
     var direta = local && local.dono === 'meu' && !local.ruina ? (local.id !== est.de ? 'reforcar' : null) : !local ? 'mover' : null;
+    var trab = RP.envio.trabalhoAqui(h) || ordemEscolha(h, dados);
     RP.ordensEnvio.forEach(function (o) { try { if (o.quando(h, dados, est)) botoes.push(o.ordem); } catch (e) { console.error(e); } });
-    return (direta ? '<button type="button" class="btn btn-p btn-primario" data-envio-ja="' + direta + '" data-envio-hex="' + h + '">' + RP.icone('seta') + (direta === 'reforcar' ? 'Reforçar' : 'Mover para cá') + '</button>' : '') +
+    return (direta ? '<button type="button" class="btn btn-p' + (trab ? '' : ' btn-primario') + '" data-envio-ja="' + direta + '" data-envio-hex="' + h + '">' + RP.icone('seta') + (direta === 'reforcar' ? 'Reforçar' : 'Mover para cá') + '</button>' : '') +
       botoes.map(function (id, i) {
         var d = defOrdem(id);
-        return '<button type="button" class="btn btn-p' + (i || direta ? '' : ' btn-primario') + '" data-envio-ordem="' + RP.esc(id) + '" data-envio-hex="' + h + '"' + (d.tecla ? ' data-tecla="' + d.tecla + '"' : '') + '>' + RP.icone(d.icone || 'seta') + RP.esc(d.rotulo) + '</button>';
+        return '<button type="button" class="btn btn-p' + ((trab ? d !== trab : i || direta) ? '' : ' btn-primario') + '" data-envio-ordem="' + RP.esc(id) + '" data-envio-hex="' + h + '"' + (d.tecla ? ' data-tecla="' + d.tecla + '"' : '') + '>' + RP.icone(d.icone || 'seta') + RP.esc(d.rotulo) + '</button>';
       }).join('') +
       '<button type="button" class="btn btn-p" data-envio-linha="' + h + '" data-tecla="Q">' + RP.icone('alvo') + 'Patrulhar daqui</button>' +
       (direta ? '<button type="button" class="btn btn-p btn-fantasma" data-envio-ordem="' + direta + '" data-envio-hex="' + h + '" data-tecla="V">' + RP.icone('rota') + 'Ver o caminho</button>' : '');
@@ -303,7 +405,7 @@
   RP.mapa.extrasFolhaHex.push(function (h) {
     if (!RP.tropas) return '';
     return RP.tropas.exercitos.filter(function (e) { return e.hex === h; }).map(function (e) {
-      return linha('Exército', RP.esc(e.resumo) + ' · ' + (e.estado === 'parado' ? 'parado' : e.estado === 'retornando' ? 'voltando' : 'em marcha'));
+      return linha('Exército', RP.esc(e.resumo) + ' · ' + (e.estado === 'parado' ? 'parado' : e.estado === 'retornando' ? 'voltando' : e.estado === 'trabalhando' ? RP.nomeTrabalho(e.trabalho).toLowerCase() : 'em marcha'));
     }).join('');
   });
 
@@ -376,20 +478,26 @@
     });
   }
   function enviar() {
-    var e = est, d = defOrdem(e.ordem);
+    var e = est, d = defOrdem(e.ordem), nota = '';
+    if (e.enviando) return;   /* Enter segurado não manda duas vezes */
+    e.enviando = true;
     var extra = d.dados ? d.dados(e.hex, RP.mapa.dados(), e) : undefined;
-    var p = e.marchaId
-      ? RP.post('/tropas/' + e.marchaId + '/ordem', { ordem: e.ordem, destinoHex: e.hex, seguro: !!e.seguro, dados: extra, pessoas: e.pessoas || undefined })
-      : RP.post('/tropas/enviar', e.pessoas ? { deLocalId: e.de, pessoas: e.pessoas, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra } : { deLocalId: e.de, tropas: e.grupo, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra });
-    RP.tentar(p).then(function (ex) {
+    /* o que a ordem faz antes de partir (pôr o posto na fila); devolve uma nota para o aviso */
+    var antes = e.painel && d.painel && d.painel.antes ? d.painel.antes(e) : Promise.resolve('');
+    RP.tentar(antes.then(function (n) {
+      nota = n || '';
+      return e.marchaId
+        ? RP.post('/tropas/' + e.marchaId + '/ordem', { ordem: e.ordem, destinoHex: e.hex, seguro: !!e.seguro, dados: extra, pessoas: e.pessoas || undefined })
+        : RP.post('/tropas/enviar', e.pessoas ? { deLocalId: e.de, pessoas: e.pessoas, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra } : { deLocalId: e.de, tropas: e.grupo, destinoHex: e.hex, ordem: e.ordem, seguro: !!e.seguro, dados: extra });
+    })).then(function (ex) {
       if (e.painel && e.de) RP.pref('envio-rapido', JSON.stringify({ de: e.de, grupo: e.grupo }));
       RP.fecharFolha(); cancelar();
       /* a tropa continua selecionada (são as mesmas pessoas): dá para mandar de novo sem clicar nela */
       if (RP.selecao) RP.selecao.barra();
-      RP.aviso({ titulo: e.linha ? (e.ordem === 'patrulhar' ? 'Patrulha a caminho' : 'Percurso a caminho') : e.marchaId ? 'Nova ordem dada' : 'Tropas a caminho', texto: ex && ex.chegada && !e.linha ? (RP.partesGrupo(ex.tropas) + ' · chegam ' + RP.fmtEm(ex.chegada) + '.') : '', icone: d.icone || 'seta', tipo: 'sucesso' });
+      RP.aviso({ titulo: e.linha ? (e.ordem === 'patrulhar' ? 'Patrulha a caminho' : 'Percurso a caminho') : e.marchaId ? 'Nova ordem dada' : 'Tropas a caminho', texto: (ex && ex.chegada && !e.linha ? (RP.partesGrupo(ex.tropas) + (ex.hex === e.hex || (e.previa && e.previa.curta && !(e.previa.curta.min > 0)) ? ' · já estão lá.' : ' · chegam ' + RP.fmtEm(ex.chegada) + '.')) : '') + nota, icone: d.icone || 'seta', tipo: 'sucesso' });
       if (RP.mapa.recarregar) RP.mapa.recarregar();
       RP.recarregarReino(); RP.carregarTropas().catch(function () { /* offline */ });
-    });
+    }).catch(function () { e.enviando = false; if (e.direto && est === e) cancelar(); /* aviso já mostrado: o painel segue aberto */ });
   }
 
   /* ---------------------------------------------------------------- juntar e separar tropas */
@@ -523,6 +631,12 @@
   document.addEventListener('click', function (e) {
     var b;
     if ((b = e.target.closest('[data-envio-iniciar]'))) { RP.fecharFolha(); iniciar({ de: +b.getAttribute('data-envio-iniciar') }); return; }
+    if ((b = e.target.closest('[data-tropa-trabalhar]'))) {
+      var idTrab = +b.getAttribute('data-tropa-trabalhar'), oTrab = RP.selecao && RP.selecao.n() ? RP.selecao.origem() : null;
+      RP.fecharFolha(); iniciar({ marchaId: idTrab, pessoas: oTrab && oTrab.marchaId === idTrab ? oTrab.parte : null, hex: +b.getAttribute('data-hex'), rapido: true });
+      return;
+    }
+    if ((b = e.target.closest('[data-envio-painel]'))) { RP.envio.paraOrdem(+b.getAttribute('data-envio-hex'), b.getAttribute('data-envio-painel')); return; }
     if (e.target.closest('[data-tropa-juntar]')) { juntar(); return; }
     if (e.target.closest('[data-tropa-trocar]') && juntando) { var jt = juntando.t; juntando = null; RP.fecharFolha(); RP.selecao.definir(jt.ids); return; }
     if ((b = e.target.closest('[data-tropa-separar]'))) { folhaSeparar(+b.getAttribute('data-tropa-separar')); return; }
@@ -549,7 +663,7 @@
       var la = localDe(), qual = b.getAttribute('data-envio-atalho'), disp = disponiveis(), ga = {};
       if (qual === 'ultimas') ga = (la && (grupoLembrado(la) || grupoPadrao(la))) || {};
       else Object.keys(disp).forEach(function (k) { if (disp[k] > 0) ga[k] = qual === 'todas' ? disp[k] : Math.ceil(disp[k] / 2); });
-      est.grupo = ga; pintarPainel();
+      est.grupo = la ? ajustarAoPainel(ga, la) : ga; pintarPainel();
       return;
     }
     if ((b = e.target.closest('[data-envio-ja]'))) {
@@ -588,7 +702,7 @@
     if (e.target.closest('[data-envio-confirmar]')) { if (est.previa && est.previa.curta.ok) enviar(); }
   });
 
-  /* entrar no mapa com #/mapa?enviar=<local> ou #/mapa?mover=<exército> começa o envio */
+  /* entrar no mapa com #/mapa?enviar=<local> ou #/mapa?mover=<exército> começa o envio; ?centro=<hex>&ordem=<ordem> abre o painel da ordem */
   document.addEventListener('rp:tela', function (ev) {
     if (ev.detail !== 'mapa') return;   /* uma janela aberta não cancela o envio: o mapa continua embaixo */
     var q = new URLSearchParams((location.hash.split('?')[1]) || '');
@@ -596,6 +710,7 @@
     var limpar = function () { try { history.replaceState(null, '', '#/mapa'); } catch (e) { /* ignora */ } };
     if (q.get('enviar')) { limpar(); iniciar({ de: +q.get('enviar') }); }
     else if (q.get('mover')) { limpar(); iniciar({ marchaId: +q.get('mover') }); }
+    else if (q.get('ordem') && q.get('centro')) { limpar(); RP.envio.paraOrdem(+q.get('centro'), q.get('ordem')); }   /* centra (o mapa cuida) e abre o painel da ordem */
     else barra();
   });
 

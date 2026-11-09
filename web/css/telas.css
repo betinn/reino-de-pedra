@@ -204,15 +204,38 @@ html.tela-fixa, html.tela-fixa body { overflow: hidden; height: 100%; overscroll
   .marcha-rota { animation: marchar 1.2s linear infinite; }
 }
 @keyframes marchar { to { stroke-dashoffset: -22; } }
-.mc-base { fill: var(--dono); stroke: var(--ent-borda); stroke-width: 2.5; }
-.hostil .mc-base { fill: var(--cor-perigo); }
-.marcha use { color: var(--ent-fundo); --ico-d-stroke: var(--dono); }
-.mc-selo circle { fill: var(--ent-fundo); stroke: var(--cor-perigo); stroke-width: 2; }
-.mc-selo text { fill: var(--cor-perigo); font: 700 13px var(--fonte-texto); text-anchor: middle; }
-.mc-estandarte use { color: var(--cor-destaque); --ico-d-stroke: var(--ent-borda); }
+/* marcha: gente em pé (figuras de vista/marchas.js). Dois passos alternados; parada, fica no segundo, sem rumo nem giro. */
+.mc-chao { fill: rgba(0, 0, 0, .38); }
+.mc-sonar { fill: var(--dono); fill-opacity: .14; stroke: var(--dono); stroke-width: 2.4; stroke-dasharray: 5 6; stroke-linecap: round; }
+.parada .mc-sonar { fill-opacity: .06; stroke-opacity: .55; }
+.mc-rumo-f, .mc-rumo-c { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.mc-rumo-f { stroke: #17130e; stroke-width: 5.4; }
+.mc-rumo-c { stroke: var(--dono); stroke-width: 2.8; }
+.parada .mc-rumo { display: none; }
+.mc-passo-b { visibility: hidden; }
+.parada .mc-passo-a { visibility: hidden; }
+.parada .mc-passo-b { visibility: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  .marcha:not(.parada) .mc-passo-a { animation: mc-passo-a .5s steps(1) infinite; animation-delay: var(--mc-fase, 0s); }
+  .marcha:not(.parada) .mc-passo-b { animation: mc-passo-b .5s steps(1) infinite; animation-delay: var(--mc-fase, 0s); }
+  .marcha:not(.parada) .mc-sonar { animation: mc-sonar 1.6s linear infinite; }
+  .marcha:not(.parada) .mc-rumo-c { animation: mc-rumo 1s ease-in-out infinite; }
+}
+@keyframes mc-passo-a { 0% { visibility: visible; } 50% { visibility: hidden; } }
+@keyframes mc-passo-b { 0% { visibility: hidden; } 50% { visibility: visible; } }
+@keyframes mc-sonar { to { stroke-dashoffset: -22; } }
+@keyframes mc-rumo { 50% { stroke-opacity: .45; } }
+/* de longe, os locais viram pontos: a marcha cresce para continuar parecendo gente */
+.mc-esc { transform: scale(1.15); }
+[data-zoom="zoom-longe"] .mc-esc { transform: scale(1.4); }
+[data-zoom="zoom-mundo"] .mc-esc { transform: scale(1.6); }
+.marcha > .ent-k > .relq-badge use { color: var(--ent-fundo); --ico-d-stroke: var(--dono); }
 .mc-eta rect { fill: var(--ent-fundo); stroke: var(--dono); stroke-width: 1.5; }
 .hostil .mc-eta rect { stroke: var(--cor-perigo); }
 .mc-eta text { fill: var(--ent-texto); font: 700 12px var(--fonte-texto); text-anchor: middle; font-variant-numeric: tabular-nums; }
+.mc-eta .mc-barra rect { stroke: none; }
+.mc-eta .mc-barra-fundo { fill: rgba(255, 255, 255, .25); }
+.mc-eta .mc-barra-i { fill: #6fbf73; }
 
 /* níveis de zoom */
 [data-zoom="zoom-perto"] .ent-rotulo { display: block; }
@@ -606,15 +629,6 @@ a.guia-item { color: inherit; text-decoration: none; }
   background: color-mix(in srgb, var(--cor-info) 10%, transparent); font-size: var(--fs-2);
 }
 .nota-regra > .ico { color: var(--cor-info); flex: none; margin-top: 1px; }
-.grafico-barras { display: flex; flex-direction: column; gap: var(--esp-2); }
-.gb-linha { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 4px; border-radius: var(--raio-1); outline-offset: 2px; }
-.gb-linha:hover, .gb-linha:focus-visible { background: var(--cor-superficie-2); }
-.gb-rotulo { font-size: var(--fs-2); color: var(--cor-texto-2); }
-.gb-linha.atual .gb-rotulo { color: var(--cor-texto); font-weight: 700; }
-.gb-trilho { position: relative; height: 16px; }
-.gb-trilho i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--grafico-meu); border-radius: 0 4px 4px 0; opacity: .55; }
-.gb-linha.atual .gb-trilho i { opacity: 1; }
-.gb-valor { justify-self: end; font-weight: 700; font-size: var(--fs-2); margin-top: -22px; }
 .ext-numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--esp-2); margin-top: var(--esp-3); }
 .ext-numeros > div { display: flex; flex-direction: column; align-items: center; padding: var(--esp-2) 4px; border-radius: var(--raio-2); background: var(--cor-superficie-2); border: 1px solid var(--cor-borda); text-align: center; }
 .ext-numeros span { font-size: var(--fs-1); }
@@ -949,6 +963,12 @@ a.guia-item { color: inherit; text-decoration: none; }
 .em-desenho .cena-cv, .em-desenho .mapa-vp, .em-rota .cena-cv, .em-rota .mapa-vp { cursor: crosshair; }
 .envio-atalhos { display: flex; gap: 6px; margin-bottom: var(--esp-2); }
 .envio-resumo { margin-top: var(--esp-2); }
+a.escolha, a.escolha:hover { text-decoration: none; color: inherit; }
+.envio-opcoes { display: grid; gap: 6px; margin-top: var(--esp-2); }
+.envio-opcoes .abas { margin: 0; }
+.envio-opcoes-rotulo { font-size: var(--fs-2); color: var(--cor-texto-3); }
+.envio-resumo .nota-antiga { margin: 0; }
+.envio-antes { margin: var(--esp-2) 0 0; }
 .envio-resumo p { margin: 0; }
 /* envio rápido: painel mais largo e linhas de uma altura só, para ver todas as tropas sem rolar */
 .folha:has(.envio-resumo) { width: 760px; max-width: calc(100vw - 32px); max-height: min(62vh, 480px); }

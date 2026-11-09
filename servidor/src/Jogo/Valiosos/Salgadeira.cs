@@ -55,6 +55,8 @@ namespace ReinoDePedra.Jogo.Valiosos
     {
         public const string Id = "salgadeira";
         public string Tipo => Id;
+        public string? Revisar(Mundo m, Reino r, ItemFila item) =>
+            item.LocalId is long id && m.Locais.Obter(id) is { } l && Salgadeiras.Serve(l) ? null : "o local não serve mais para a salgadeira.";
         public void Concluir(Mundo m, Reino r, ItemFila item)
         {
             var l = item.LocalId is long id ? m.Locais.Obter(id) : null;

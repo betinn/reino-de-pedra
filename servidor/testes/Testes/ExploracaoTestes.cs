@@ -112,6 +112,31 @@ public class ExploracaoTestes
     }
 
     [Fact]
+    public void Enviar_explorador_escolhido_manda_aquela_pessoa()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var c = Castelo(t, r);
+        t.DarRecursos(r, 1e6, "comida", "ferro", "couro");
+        Exploradores.Treinar(t.M, r, "pe", 2);
+        t.Avancar(TimeSpan.FromSeconds(2 * t.B.P.Exploradores["pe"].Tempo + 1));
+        var livres = t.M.PessoasDe(r.Id).Where(p => p.Oficio == "explorador-pe" && p.Estado == Estados.Guarnecida).OrderBy(p => p.Id).ToList();
+        Assert.True(livres.Count >= 2);
+        var escolhida = livres[^1];
+        var destino = HexA(t, c.Hex, 16);
+
+        var e = Exploradores.Enviar(t.M, r, "pe", Exploradores.Explorar, destino, pessoaId: escolhida.Id);
+
+        Assert.Equal(escolhida.Id, e.PessoaId);
+        // quem já saiu não vai de novo; o servidor diz isso
+        var erro = Assert.Throws<RegraException>(() => Exploradores.Enviar(t.M, r, "pe", Exploradores.Explorar, destino, pessoaId: escolhida.Id));
+        Assert.Equal("Este explorador não está mais livre.", erro.Message);
+        // pessoa de outro ofício também não
+        var outra = t.M.PessoasDe(r.Id).First(p => p.Oficio != "explorador-pe");
+        Assert.Throws<RegraException>(() => Exploradores.Enviar(t.M, r, "pe", Exploradores.Explorar, destino, pessoaId: outra.Id));
+    }
+
+    [Fact]
     public void Penalidade_de_terreno_dos_exploradores()
     {
         var t = new MundoTeste();

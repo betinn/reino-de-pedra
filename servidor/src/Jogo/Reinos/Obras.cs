@@ -152,6 +152,15 @@ public sealed class ObraNivel : ITipoItemFila
 {
     public const string Id = "nivel";
     public string Tipo => Id;
+
+    /// <summary>O castelo caiu abaixo do nível que esta melhoria daria (sabotagem): desiste antes de gastar.</summary>
+    public string? Revisar(Mundo m, Reino r, ItemFila item)
+    {
+        if (item.LocalId is not long id || m.Locais.Obter(id) is not { } l || l.Tipo == TipoLocal.Castelo) return null;
+        var castelo = m.Locais.Obter(r.CasteloId);
+        return castelo != null && Math.Min(item.NivelAlvo, l.Nivel + 1) > castelo.Nivel ? "nenhum local passa do nível do castelo." : null;
+    }
+
     /// <summary>
     /// Sobe um nível (no máximo até o alvo): um item na fila não devolve os níveis tirados por uma sabotagem. Nenhum local
     /// passa do castelo: se o castelo caiu abaixo do novo nível (sabotagem), o local não sobe e o material fica nele.
@@ -198,6 +207,9 @@ public sealed class ObraFundar : ITipoItemFila
 {
     public const string Id = "fundar";
     public string Tipo => Id;
+    public string? Revisar(Mundo m, Reino r, ItemFila item) =>
+        item.Param != null && Obras.Fundaveis.TryGetValue(item.Param, out var f) && !Obras.PegadaLivreParaObra(m, r, f.tipo, item.Hex)
+            ? "alguém ocupou o lugar." : null;
     public void Concluir(Mundo m, Reino r, ItemFila item)
     {
         var (tipo, produz, _) = Obras.Fundaveis[item.Param!];

@@ -47,7 +47,7 @@
       (ru.esgotada ? 'Já escavada' : 'Pode render ' + RP.esc(RP.ganhosRuina(dados && dados.tipos, true)) + ' · tipo só se conhece ao achar') + ' · ' + (ru.idadeMin ? 'visto ' + RP.fmtHa(ru.idadeMin / 60) : 'visível') + (ru.posto === 'meu' ? ' · com posto' : '') + '</small></span></div>' +
       (g ? '<p class="nota-antiga">' + RP.icone('picareta', 'ico-p') + '<span>' + (g.fim ? 'Escavação em andamento · relíquia encontrada ' + RP.barraTempo(g.inicio, g.fim, { classe: 'curta', cor: 'sucesso', rotulo: 'Escavação' })
         : 'Grupo a caminho · chega ' + RP.barraTempo(g.partida, g.chegada, { classe: 'curta', rotulo: 'Marcha até a ruína' })) + ' · ' + RP.esc(g.tropas) + (g.destino ? '. A relíquia vai para ' + RP.esc(g.destino) : '') + '.</span></p>'
-        : ru.esgotada ? '' : '<div class="linha relq-acoes"><a class="btn btn-p btn-primario" href="#/extracao?hex=' + ru.hex + '">' + RP.icone('picareta') + 'Escavar</a><a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + ru.hex + '">' + RP.icone('mapa') + 'Ver</a></div>') + '</div>';
+        : ru.esgotada ? '' : '<div class="linha relq-acoes"><a class="btn btn-p btn-primario" href="#/mapa?centro=' + ru.hex + '&ordem=escavar">' + RP.icone('picareta') + 'Escavar</a><a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + ru.hex + '">' + RP.icone('mapa') + 'Ver</a></div>') + '</div>';
   }
 
   function desenhar() {

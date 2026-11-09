@@ -4,6 +4,6 @@
 .lc-relq .selo-relq { font-size: var(--fs-1); }
 .relq-resumo { text-decoration: none; color: inherit; margin-bottom: var(--esp-3); }
 .relq-resumo .relq-ico { flex: none; }
-.cv-conteudo .abas, .ext-conteudo .abas, .tr-conteudo .abas { margin-bottom: var(--esp-2); }
+.cv-conteudo .abas, .tr-conteudo .abas { margin-bottom: var(--esp-2); }
 .ext-conteudo .emcampo, .relq-conteudo .emcampo { align-items: flex-start; }
-.ext-conteudo .alternar small, .cv-conteudo .alternar small { font-weight: 400; }
+.envio-opcoes .alternar small, .cv-conteudo .alternar small { font-weight: 400; }

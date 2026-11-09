@@ -79,13 +79,28 @@
       if (est.marchaId) return '#/envio?alvo=' + h + '&marcha=' + est.marchaId + (est.pessoas ? '&pessoas=' + est.pessoas.join(',') + '&grupo=' + grupoParam(est.grupo) : '');
       return '#/envio?alvo=' + h + '&de=' + est.de + '&grupo=' + grupoParam(est.grupo);
     },
-    dados: function () { return { tipo: 'saque', tatica: 'media', objetivos: [] }; }
+    dados: function () { return { tipo: 'saque', tatica: 'media', objetivos: [] }; },
+    /* no submenu: o padrão do ataque rápido, com as tropas do último ataque; quem só defende não vai */
+    ultimo: true, grupo: soQuemAtaca,
+    /* o que o atacante precisa saber antes de mandar: saque repetido, pacto, trégua */
+    avisoDireto: function (h, op) {
+      var o = op.origem, g = op.opcoes[0].grupo;
+      return RP.post('/ataques/previa', { deLocalId: o.marchaId ? null : o.id, marchaId: o.marchaId || null, tropas: g, destinoHex: h, tipo: 'saque', tatica: 'media', objetivos: [] }).then(function (p) {
+        return [p.bloqueio].concat((p.avisos || []).filter(function (x) { return x.tipo === 'alerta'; }).map(function (x) { return x.texto; })).filter(Boolean).join(' ');
+      }, function () { return ''; });
+    }
   });
+  function soQuemAtaca(g) {
+    var r = {};
+    Object.keys(g).forEach(function (k) { var u = RP.unidade(k); if (g[k] > 0 && (!u || u.so !== 'defesa')) r[k] = g[k]; });
+    return r;
+  }
   RP.ordensEnvio.push({
     ordem: 'ocupar', rotulo: 'Ocupar', verbo: 'Ocupar', icone: 'bandeira', titulo: 'Ocupar',
     quando: function (h, dados) { return semDono(localAlheio(h, dados)); },
     descricao: function () { return linha('Objetivo', 'Tomar o local: fica seu, com as tropas como guarnição'); },
-    dados: function () { return { tipo: 'ocupacao' }; }
+    dados: function () { return { tipo: 'ocupacao' }; },
+    grupo: soQuemAtaca
   });
   RP.NOMES_MARCHA = RP.NOMES_MARCHA || {};
   if (RP.ORDENS_NOMES) RP.ORDENS_NOMES.reconhecer = 'Reconhecer';
@@ -160,7 +175,7 @@
     if (modoTorre) return '<button type="button" class="btn btn-p btn-primario" data-torre-aqui="' + h + '">' + RP.icone('torre') + 'Erguer torre aqui</button>';
     if (RP.envio && RP.envio.ativo()) return '';
     var l = localAlheio(h, dados), html = '';
-    if (l) html += '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + h + '">' + RP.icone(semDono(l) ? 'bandeira' : 'espada') + (semDono(l) ? 'Ocupar este local' : 'Atacar este local') + '</a>';
+    if (l) html += '<a class="btn btn-p btn-primario" href="#/envio?alvo=' + h + '" data-submenu="' + (semDono(l) ? 'ocupar' : 'atacar') + '">' + RP.icone(semDono(l) ? 'bandeira' : 'espada') + (semDono(l) ? 'Ocupar este local' : 'Atacar este local') + '</a>';
     return html;
   });
   function folhaTorre(o) {
@@ -986,7 +1001,7 @@
     else if ((b = e.target.closest('[data-def-torre]'))) p = RP.post('/defesas/torres/' + b.getAttribute('data-def-torre') + '/nivel');
     if (!p) return;
     RP.tentar(p).then(function (it) {
-      RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: it.materialCompleto ? '' : 'O material está a caminho.', icone: 'martelo', tipo: 'sucesso' });
+      RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoMaterial(it, 'O material está a caminho.'), icone: 'martelo', tipo: 'sucesso' });
       RP.recarregarReino(); buscarDefesas();
     });
   });

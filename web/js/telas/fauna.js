@@ -142,7 +142,7 @@
     if ((RP.envio && RP.envio.ativo())) return '';
     var obj = objetosHex(h, dados), html = '';
     var f = obj.filter(function (o) { return o.tipo === 'fauna'; })[0] || obj.filter(function (o) { return o.tipo === 'perigo'; })[0];
-    if (f) html += '<a class="btn btn-p btn-primario" href="#/caca?fauna=' + f.id + '">' + RP.icone('lobo') + 'Caçar</a>';
+    if (f) html += '<a class="btn btn-p btn-primario" href="#/caca?fauna=' + f.id + '" data-submenu="cacar">' + RP.icone('lobo') + 'Caçar</a>';
     var t = dados && dados.terreno ? dados.terreno[h] : null, explorado = dados && dados.idade && dados.idade[h] >= 0;
     if (t && explorado && !(dados.rotas && dados.rotas.indexOf(h) >= 0)) {
       var rio = t !== t.toLowerCase();
@@ -173,7 +173,7 @@
       if (b.classList.contains('btn-inativo')) return;
       RP.tentar(RP.post('/rotas', { hex: +b.getAttribute('data-rota-confirmar') })).then(function (it) {
         RP.fecharFolha();
-        RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: it.materialCompleto ? '' : 'Os carregadores levam o material até lá.', icone: 'rota', tipo: 'sucesso' });
+        RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoMaterial(it, 'Os carregadores levam o material até lá.'), icone: 'rota', tipo: 'sucesso' });
         RP.recarregarReino(); if (RP.mapa.recarregar) RP.mapa.recarregar();
       });
     }
@@ -315,7 +315,7 @@
   /* missão de um grupo selecionado no mapa: caçar o bando conhecido no hexágono tocado (mesmo envio da tela de caça) */
   RP.ordensEnvio = RP.ordensEnvio || [];
   RP.ordensEnvio.push({
-    ordem: 'cacar', rotulo: 'Caçar aqui', verbo: 'Caçar', icone: 'lobo', titulo: 'Caçar em',
+    ordem: 'cacar', rotulo: 'Caçar aqui', verbo: 'Caçar', icone: 'lobo', titulo: 'Caçar em', escolha: true,   /* botão direito no bando abre as ordens */
     quando: function (h, dados) { return !!((dados && dados.porHex && dados.porHex[h]) || []).some(function (o) { return o.tipo === 'fauna' || o.tipo === 'perigo'; }); },
     descricao: function () { return '<div class="info-linha"><span class="fraco">Ordem</span><span>Lutam com o bando; se sobra alguém, trazem comida, couro e peles</span></div>'; }
   });

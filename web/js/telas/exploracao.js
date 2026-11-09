@@ -542,13 +542,57 @@
     var obj = objetosHex(h, dados), html = '';
     var meu = obj.filter(function (o) { return o.tipo === 'local' && o.dono === 'meu'; })[0];
     var alheio = obj.filter(function (o) { return o.tipo === 'local' && o.dono === 'outro' && !o.ruina; })[0];
-    if (!meu) html += '<a class="btn btn-p" href="#/exploradores?alvo=' + h + '&ordem=explorar">' + RP.icone('explorador') + 'Explorar área</a>';
-    if (alheio && RP.sistema('espionagem')) html += '<a class="btn btn-p" href="#/exploradores?alvo=' + h + '&tipo=batedor&ordem=espionar">' + RP.icone('batedor') + 'Espionar</a>';
+    if (!meu) html += '<a class="btn btn-p" href="#/exploradores?alvo=' + h + '&ordem=explorar" data-submenu="explorar">' + RP.icone('explorador') + 'Explorar área</a>';
+    if (alheio && RP.sistema('espionagem')) html += '<a class="btn btn-p" href="#/exploradores?alvo=' + h + '&tipo=batedor&ordem=espionar" data-submenu="espionar">' + RP.icone('batedor') + 'Espionar</a>';
     RP.mapa.marchasEm(h, dados).filter(function (o) { return o.tipo === 'marcha' && o.dono === 'meu' && o.marcha === 'explorador'; }).forEach(function (o) {
       html += '<a class="btn btn-p" href="#/exploradores?ativo=' + o.id + '">' + RP.icone('explorador') + 'Ordens ao explorador</a>';
     });
     return html;
   });
+  /* submenu do botão direito: quem pode ir agora (livres no castelo e quem espera ordens em campo), com nome e tipo. Clicar manda
+     aquela pessoa, na hora, pela rota segura. O batedor só aparece depois que a espionagem se abriu (como no formulário). */
+  var OFICIO_TIPO = { 'explorador-pe': 'pe', 'explorador-cavalo': 'cavalo', prospector: 'prospector', batedor: 'batedor' };
+  var NOME_TIPO_CURTO = { pe: 'a pé', cavalo: 'a cavalo', prospector: 'prospector', batedor: 'batedor de elite' };
+  function exploradoresProntos(h, soBatedor) {
+    var d = RP.mapa.dados(), lista = [];
+    if (!d) return lista;
+    function vale(tipo) { return tipo && (soBatedor ? tipo === 'batedor' : tipo !== 'batedor' || RP.sistema('espionagem')); }
+    (d.pessoas || []).forEach(function (p) {
+      var tipo = OFICIO_TIPO[p.oficio];
+      if (vale(tipo) && p.estado === 'guarnecida') lista.push({ pessoa: p, tipo: tipo, hex: p.hex, dist: p.hex != null ? RP.hex.dist(p.hex, h) : 1e9 });
+    });
+    (d.marchas || []).forEach(function (m) {
+      if (m.dono !== 'meu' || m.marcha !== 'explorador' || m.ordem !== 'aguardar' || m.hex === h) return;
+      var p = (m.pessoaIds || []).map(function (id) { return d.pessoaPorId && d.pessoaPorId[id]; }).filter(function (q) { return q && OFICIO_TIPO[q.oficio]; })[0];
+      if (p && vale(OFICIO_TIPO[p.oficio])) lista.push({ pessoa: p, tipo: OFICIO_TIPO[p.oficio], marchaId: m.id, hex: m.hex, dist: RP.hex.dist(m.hex, h) });
+    });
+    return lista.sort(function (a, b) { return a.dist - b.dist; });
+  }
+  function explorarJa(x, h, ordem) {
+    var corpo = { ordem: ordem, destinoHex: h, seguro: true };
+    var req = x.marchaId ? RP.post('/exploradores/' + x.marchaId + '/ordem', corpo)
+      : RP.post('/exploradores/enviar', Object.assign({ tipo: x.tipo, pessoaId: x.pessoa.id }, corpo));
+    RP.tentar(req).then(function (e) {
+      var quem = x.pessoa.nome, chega = e && e.chegada ? ' Chega ' + RP.fmtEm(e.chegada) + '.' : '';
+      RP.aviso({ titulo: ordem === 'espionar' ? quem + ' vai espionar' : quem + ' a caminho', texto: 'Pela rota segura.' + chega, icone: RP.ICONE_EXPLORADOR[x.tipo] || 'explorador', tipo: 'sucesso' });
+      if (RP.mapa.recarregar) RP.mapa.recarregar();
+      RP.exploracao.carregar().catch(function () { /* offline */ }); RP.recarregarReino();
+    }).catch(function () { /* aviso já mostrado */ });
+  }
+  RP.exploracao.submenu = function (h, ordem) {
+    var espionar = ordem === 'espionar';
+    return {
+      titulo: espionar ? 'Quem espiona' : 'Quem explora',
+      vazio: espionar ? 'Nenhum batedor de elite livre. Treine um no castelo.' : 'Nenhum explorador disponível: estão andando ou ainda não há nenhum. Treine um no castelo.',
+      itens: exploradoresProntos(h, espionar).map(function (x) {
+        return {
+          rotulo: x.pessoa.nome + ' · ' + NOME_TIPO_CURTO[x.tipo] + (x.marchaId ? ', em campo' : ''),
+          iconeHTML: RP.icone(RP.ICONE_EXPLORADOR[x.tipo] || 'explorador'),
+          acao: function () { explorarJa(x, h, ordem); }
+        };
+      })
+    };
+  };
   RP.mapa.extrasFolhaHex.push(function (h, dados) {
     var obj = objetosHex(h, dados), html = '';
     obj.forEach(function (o) {

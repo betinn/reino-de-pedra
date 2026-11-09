@@ -136,13 +136,13 @@ namespace ReinoDePedra.Jogo.Valiosos
             var j = Conhecida(m, ex.ReinoId, ex.Destino);
             if (j == null || j.Restante <= Eps)
             {
-                Exercitos.Avisar(m, ex, "Jazida esgotada", "Não há mais o que extrair. As tropas voltam.");
+                Desistir(m, ex, "Jazida esgotada", "Não há mais o que extrair. As tropas voltam.");
                 if (ex.Carga.Total > Eps) Entregar(m, ex); else ex.Retornar(m);
                 return;
             }
             if (OcupadoPorOutro(m, ex.ReinoId, j.Hex))
             {
-                Exercitos.Avisar(m, ex, "Jazida ocupada", "Há um posto de outro reino na jazida. As tropas voltam.");
+                Desistir(m, ex, "Jazida ocupada", "Há um posto de outro reino na jazida. As tropas voltam.");
                 ex.Retornar(m);
                 return;
             }
@@ -157,6 +157,15 @@ namespace ReinoDePedra.Jogo.Valiosos
             Reagendar(m, j);
             m.Avisar(ex.ReinoId, "marchas");
         }
+
+        /// <summary>A extração não dá mais ao chegar: o relatório diz por quê.</summary>
+        private static void Desistir(Mundo m, Exercito ex, string titulo, string motivo) =>
+            Registros.Relatar(m, ex.ReinoId, "extracao", titulo, new JsonObject
+            {
+                ["resumo"] = motivo,
+                ["linhas"] = new JsonArray { new JsonObject { ["rotulo"] = "Tropas", ["valor"] = GT.Partes(m, ex.Tropas) } },
+                ["hex"] = ex.Destino,
+            }, "recursos", titulo);
 
         /// <summary>Tira o exército da extração (pondo a jazida em dia antes, se <paramref name="liquidar"/>).</summary>
         public static void Sair(Mundo m, Exercito ex, Jazida j, bool liquidar)
@@ -254,6 +263,9 @@ namespace ReinoDePedra.Jogo.Valiosos
     public sealed class OrdemExtrairJazida : IOrdemExercito
     {
         public string Ordem => Extracoes.OrdemExtrair;
+        /// <summary>Quem já está parado na jazida (ou guarnece o posto dela) extrai sem sair do lugar.</summary>
+        public bool NoMesmoHex => true;
+        public Rota Trajeto(Mundo m, Exercito ex, int destino, int de) => Exercitos.Rota(m, ex, de, destino);
         public void Validar(Mundo m, Reino r, Exercito ex, int destino)
         {
             var j = Extracoes.Conhecida(m, r.Id, destino) ?? throw new RegraException("Não há jazida conhecida neste hexágono.");

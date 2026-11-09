@@ -113,7 +113,7 @@
         var mdx = e.clientX - meio.x, mdy = e.clientY - meio.y;
         if (!meio.modo && Math.max(Math.abs(e.clientX - meio.x0), Math.abs(e.clientY - meio.y0)) > 6) { meio.modo = Math.abs(mdx) > Math.abs(mdy) && h.girar ? 'girar' : 'inclinar'; meio.movido = true; }
         if (meio.modo === 'inclinar' && h.inclinar) { h.inclinar(mdy); meio.x = e.clientX; meio.y = e.clientY; }
-        else if (meio.modo === 'girar' && h.girar) { h.girar(mdx * 0.006); meio.x = e.clientX; meio.y = e.clientY; }
+        else if (meio.modo === 'girar' && h.girar) { h.girar(-mdx * 0.006); meio.x = e.clientX; meio.y = e.clientY; }
         return;
       }
       /* mouse passando, sem botão: quem desenha troca o cursor sobre o que é clicável */
@@ -403,6 +403,11 @@
     var r = el.getBoundingClientRect(), w = dicaEl.offsetWidth, h = dicaEl.offsetHeight;
     var x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
     var y = r.bottom + 8; if (y + h > window.innerHeight - 8) y = r.top - h - 8;
+    /* num submenu, a dica fica ao lado, para não cobrir os itens de baixo */
+    if (el.closest('.menu-ctx-sub')) {
+      x = r.right + 8; if (x + w > window.innerWidth - 8) x = Math.max(8, r.left - w - 8);
+      y = Math.max(8, Math.min(window.innerHeight - h - 8, r.top));
+    }
     dicaEl.style.left = x + 'px'; dicaEl.style.top = y + 'px';
     dicaEl.classList.add('on');
     dicaAlvo = el;
@@ -424,16 +429,21 @@
   /* ---------------------------------------------------------------- menu de contexto (botão direito)
      RP.menuContexto({ x, y, titulo, acoes, itens }). `acoes` é o mesmo HTML de botões das folhas: cada .btn vira um item
      do menu e, clicado, faz exatamente o que o botão faria (links navegam; botões disparam o clique que os sistemas já
-     tratam por delegação). `itens` são objetos { rotulo, icone, tecla, classe, acao, href }. */
-  var menuEl = null;
-  RP.fecharMenu = function () { if (menuEl) { menuEl.remove(); menuEl = null; } };
+     tratam por delegação). `itens` são objetos { rotulo, icone, tecla, classe, acao, href, sub }.
+     Submenu: um item com `sub` (ou um botão com data-submenu) abre, ao passar o mouse, o que `submenus[sub]()` devolver:
+     { titulo, itens, vazio, nota, depois }. O item continua sendo um botão: clicar nele faz o que ele faz. `nota` é uma linha de
+     texto acima dos itens; `depois` é uma promessa: quando ela termina, o gerador roda de novo (com fresco = true) e o submenu
+     aberto se atualiza, para os números serem os de agora. */
+  var menuEl = null, subEl = null, subDe = null, subItens = [], subTimer = 0;
+  function fecharSub() { clearTimeout(subTimer); subTimer = 0; if (subEl) subEl.remove(); subEl = null; subDe = null; subItens = []; }
+  RP.fecharMenu = function () { fecharSub(); if (menuEl) { menuEl.remove(); menuEl = null; } };
   RP.menuAberto = function () { return !!menuEl; };
   function itensDeHTML(html) {
     var t = document.createElement('div'); t.innerHTML = html || '';
     return RP.$$('.btn', t).filter(function (b) { return !b.hasAttribute('data-folha-mais'); }).map(function (b) {
       var ico = b.querySelector('svg.ico'), k = b.querySelector('kbd'); if (k) k.remove();
       return {
-        rotulo: b.textContent.trim(), iconeHTML: ico ? ico.outerHTML : '', tecla: b.getAttribute('data-tecla'), dica: b.getAttribute('data-dica'),
+        rotulo: b.textContent.trim(), iconeHTML: ico ? ico.outerHTML : '', tecla: b.getAttribute('data-tecla'), dica: b.getAttribute('data-dica'), sub: b.getAttribute('data-submenu'),
         classe: b.classList.contains('btn-primario') ? 'primario' : b.classList.contains('btn-perigo') ? 'perigo' : b.classList.contains('btn-inativo') ? 'inativo' : '',
         href: b.tagName === 'A' ? b.getAttribute('href') : null,
         acao: b.tagName === 'A' ? null : function () {
@@ -443,30 +453,87 @@
       };
     });
   }
+  function itemMenuHTML(it, i, chave) {
+    var tag = it.href ? 'a' : 'button';
+    return '<' + tag + (it.href ? ' href="' + it.href + '"' : ' type="button"') + ' class="menu-ctx-item ' + (it.classe || '') + '" role="menuitem" ' + chave + '="' + i + '"' + (it.sub ? ' aria-haspopup="menu" data-tem-sub' : '') + (it.dica ? ' data-dica="' + RP.esc(it.dica) + '"' : '') + '>' +
+      (it.iconeHTML || (it.icone ? RP.icone(it.icone) : '')) + '<span>' + RP.esc(it.rotulo) + '</span>' + (it.tecla ? '<kbd class="tecla">' + RP.esc(RP.teclas.rotulo(it.tecla)) + '</kbd>' : '') + (it.sub ? RP.icone('avancar', 'menu-ctx-seta') : '') + '</' + tag + '>';
+  }
+  /* o submenu fica dentro do menu (o clique nele não conta como clique fora), ao lado do item, sem sair da tela */
+  function abrirSubmenu(b, gerar) {
+    if (subDe === b) return;
+    fecharSub();
+    pintarSubmenu(b, gerar, false);
+  }
+  function pintarSubmenu(b, gerar, fresco) {
+    var s = gerar(fresco) || {};
+    if (subEl) subEl.remove();
+    subDe = b; subItens = s.itens || [];
+    subEl = document.createElement('div');
+    subEl.className = 'menu-ctx menu-ctx-sub'; subEl.setAttribute('role', 'menu');
+    subEl.innerHTML = (s.titulo ? '<div class="menu-ctx-titulo">' + s.titulo + '</div>' : '') +
+      (s.nota ? '<div class="menu-ctx-nota">' + RP.esc(s.nota) + '</div>' : '') +
+      (subItens.length ? subItens.map(function (it, i) { return itemMenuHTML(it, i, 'data-si'); }).join('') : '<div class="menu-ctx-vazio">' + RP.esc(s.vazio || 'Nada a fazer aqui.') + '</div>');
+    menuEl.appendChild(subEl);
+    var r = b.getBoundingClientRect(), m = menuEl.getBoundingClientRect(), w = subEl.offsetWidth, h = subEl.offsetHeight;
+    /* à direita do menu; sem espaço, à esquerda; nunca fora da tela */
+    var esq = m.right + w > window.innerWidth - 4 ? -w + 2 : m.width - 4;
+    subEl.style.left = Math.max(4 - m.left, esq) + 'px';
+    subEl.style.top = Math.max(4, Math.min(window.innerHeight - h - 4, r.top - 7)) - m.top + 'px';
+    if (s.depois) s.depois.then(function () { if (subDe === b && menuEl) pintarSubmenu(b, gerar, true); }, function () { /* fica o que já estava */ });
+  }
+  /* o mouse está indo do item ao submenu, na diagonal? O ponto de agora cai no triângulo entre onde o mouse estava há
+     pouco e a borda do submenu. Enquanto for assim, passar por outros itens não troca o submenu. */
+  var rastroMouse = [];
+  function indoAoSubmenu() {
+    if (!subEl || rastroMouse.length < 2) return false;
+    var p0 = rastroMouse[0], p = rastroMouse[rastroMouse.length - 1], s = subEl.getBoundingClientRect();
+    var borda = s.left >= p0[0] ? s.left : s.right, t = borda === p0[0] ? 0 : (p[0] - p0[0]) / (borda - p0[0]);
+    if (t <= 0 || t > 1) return false;
+    return p[1] >= p0[1] + (s.top - p0[1]) * t - 2 && p[1] <= p0[1] + (s.bottom - p0[1]) * t + 2;
+  }
   RP.menuContexto = function (o) {
     RP.fecharMenu(); RP.esconderDica();
     var itens = (o.itens || []).concat(o.acoes ? itensDeHTML(o.acoes) : []);
+    /* só vira submenu o item cujo gerador veio junto; sem ele, é um botão comum */
+    itens.forEach(function (it) { if (it.sub && !(o.submenus && o.submenus[it.sub])) it.sub = null; });
     menuEl = document.createElement('div');
     menuEl.className = 'menu-ctx' + (o.classe ? ' ' + o.classe : ''); menuEl.setAttribute('role', 'menu');
     menuEl.innerHTML = (o.titulo ? '<div class="menu-ctx-titulo">' + o.titulo + '</div>' : '') +
       (itens.length ? itens.map(function (it, i) {
         if (it.sep) return '<div class="menu-ctx-sep"></div>';
-        var tag = it.href ? 'a' : 'button';
-        return '<' + tag + (it.href ? ' href="' + it.href + '"' : ' type="button"') + ' class="menu-ctx-item ' + (it.classe || '') + '" role="menuitem" data-mi="' + i + '"' + (it.dica ? ' data-dica="' + RP.esc(it.dica) + '"' : '') + '>' +
-          (it.iconeHTML || (it.icone ? RP.icone(it.icone) : '')) + '<span>' + RP.esc(it.rotulo) + '</span>' + (it.tecla ? '<kbd class="tecla">' + RP.esc(RP.teclas.rotulo(it.tecla)) + '</kbd>' : '') + '</' + tag + '>';
+        return itemMenuHTML(it, i, 'data-mi');
       }).join('') : '<div class="menu-ctx-vazio">' + RP.esc(o.vazio || 'Nada a fazer aqui.') + '</div>');
     document.body.appendChild(menuEl);
     var w = menuEl.offsetWidth, h = menuEl.offsetHeight;
     menuEl.style.left = Math.max(4, Math.min(window.innerWidth - w - 4, o.x)) + 'px';
     menuEl.style.top = Math.max(4, Math.min(window.innerHeight - h - 4, o.y)) + 'px';
     menuEl.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-mi]'); if (!b) return;
-      var it = itens[+b.getAttribute('data-mi')];
+      var si = e.target.closest('[data-si]'), b = si || e.target.closest('[data-mi]'); if (!b) return;
+      var it = si ? subItens[+si.getAttribute('data-si')] : itens[+b.getAttribute('data-mi')];
       RP.fecharMenu();
       if (it && it.acao) it.acao();
     });
     menuEl.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     var primeiro = RP.$('.menu-ctx-item', menuEl); if (primeiro) primeiro.focus();
+    /* passar o mouse (ou o foco) no item abre o submenu; ir a outro item fecha, com folga para o mouse atravessar */
+    function passou(e) {
+      if (subEl && subEl.contains(e.target)) { clearTimeout(subTimer); return; }
+      var b = e.target.closest('[data-mi]'); if (!b) return;
+      clearTimeout(subTimer);
+      /* a caminho do submenu aberto: só troca se o mouse parar neste item */
+      if (subEl && b !== subDe && e.type === 'mouseover' && indoAoSubmenu()) {
+        subTimer = setTimeout(function () { rastroMouse = []; if (b.matches(':hover')) passou({ target: b, type: 'parou' }); }, 300);
+        return;
+      }
+      var it = itens[+b.getAttribute('data-mi')];
+      if (it && it.sub) abrirSubmenu(b, o.submenus[it.sub]);
+      else if (subEl) subTimer = setTimeout(fecharSub, 250);
+    }
+    rastroMouse = [];
+    menuEl.addEventListener('mousemove', function (e) { rastroMouse.push([e.clientX, e.clientY]); if (rastroMouse.length > 5) rastroMouse.shift(); });
+    menuEl.addEventListener('mouseover', passou);
+    menuEl.addEventListener('focusin', passou);
+    menuEl.addEventListener('mouseleave', function () { clearTimeout(subTimer); if (subEl) subTimer = setTimeout(fecharSub, 400); });
     return menuEl;
   };
   document.addEventListener('pointerdown', function (e) { if (menuEl && !menuEl.contains(e.target)) RP.fecharMenu(); }, true);
