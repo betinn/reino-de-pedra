@@ -175,7 +175,7 @@
   function acaoObjeto(tipo, rotulo, ordem, ok) {
     var tp = RP.mapa.tiposObjeto[tipo] = RP.mapa.tiposObjeto[tipo] || {}, antes = tp.acoes;
     tp.acoes = function (o, d) {
-      return (antes ? antes(o, d) || '' : '') + (ok(o) && !(RP.envio && RP.envio.ativo()) ? '<button type="button" class="btn btn-p btn-primario" data-envio-painel="' + ordem + '" data-envio-hex="' + o.hex + '">' + RP.icone('picareta') + rotulo + '</button>' : '');
+      return (antes ? antes(o, d) || '' : '') + (ok(o) && !(RP.envio && RP.envio.ativo()) ? '<button type="button" class="btn btn-p btn-primario" data-envio-painel="' + ordem + '" data-envio-hex="' + o.hex + '" data-submenu="' + ordem + '">' + RP.icone('picareta') + rotulo + '</button>' : '');
     };
   }
   acaoObjeto('jazida', 'Extrair', 'extrair', function (o) { return o.restante > 0; });
