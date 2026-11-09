@@ -42,16 +42,6 @@ namespace ReinoDePedra.Jogo.Temporada
                 var nome = l == null ? "um local" : l.ReinoId == r.Id ? l.Nome : "local atacado";
                 L.Add(new(Urgente, "espada", "Batalha em " + nome, "Termina em", "#/batalha?id=" + b.Id, "Acompanhar", b.Fim));
             }
-            var vis = Nevoas.VisiveisAgora(m, r.Id);
-            foreach (var ex in m.Marchas.OfType<Exercito>())
-            {
-                if (ex.ReinoId == r.Id || ex.Retornando || !Batalhas.EhAtaque(ex) || ex.AlvoLocalId is not long alvo || !ids.Contains(alvo)) continue;
-                if (ex.Chegada <= agora || !vis.Contains(ex.HexEm(agora))) continue;   // só o que o reino vê agora
-                var l = m.Locais.Obter(alvo)!;
-                var quem = ex.Estandarte && m.Reinos.Obter(ex.ReinoId) is { } atk ? "Reino de " + atk.Nome : "Forças desconhecidas";
-                L.Add(new(Urgente, "alerta", "Ataque a caminho: " + l.Nome, quem + " · " + Combate.Avistamentos.Aproximado(m, GT.Total(ex.Tropas)) + " tropas · chegam em",
-                    "#/mapa?foco=" + l.Hex, "Ver", ex.Chegada));
-            }
             if (r.Feridos.Count > 0)
             {
                 var n = Feridos.Total(r);

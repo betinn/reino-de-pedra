@@ -237,7 +237,9 @@
     var cc, ll, h, p, t, conhecidos = [], desconhecidos = [], e;
     for (ll = l0; ll <= l1; ll++) for (cc = c0; cc <= c1; cc++) {
       h = H.idx(cc, ll); e = M.estado(h);
-      (e.v === 'desconhecido' ? desconhecidos : conhecidos).push({ h: h, c: cc, l: ll, p: H.centro(cc, ll), e: e });
+      var it = { h: h, c: cc, l: ll, p: H.centro(cc, ll), e: e };
+      conhecidos.push(it);
+      if (e.nunca) desconhecidos.push(it);
     }
     /* terreno */
     conhecidos.forEach(function (x) {
@@ -284,29 +286,24 @@
       hexPath(c, x.p.x, x.p.y, H.R + 0.6);
       c.fillStyle = tk.veu; c.fill(); c.fillStyle = hp; c.fill();
     });
-    /* névoa: nada vaza; a fronteira ganha filete dourado */
+    /* névoa: o chão aparece embaçado (é a riqueza dele que ela cobre); a fronteira ganha filete dourado */
+    c.globalAlpha = 0.4;
     desconhecidos.forEach(function (x) {
       c.fillStyle = tk.nevoa[Math.floor(A.hash(x.c, x.l, 17) * 3) % 3];
       hexPath(c, x.p.x, x.p.y, H.R + 1); c.fill();
     });
+    c.globalAlpha = 1;
     c.strokeStyle = tk.bordaNevoa; c.lineWidth = 1.5; c.lineCap = 'round';
     c.beginPath();
     conhecidos.forEach(function (x) {
+      if (x.e.nunca) return;
       vizinhosComDirecao(x.h).forEach(function (v) {
-        if (v.h >= 0 && M.estado(v.h).v !== 'desconhecido') return;
-        if (v.h < 0) return;
+        if (v.h < 0 || !M.estado(v.h).nunca) return;
         var ar = ARESTA[v.i], p1 = cantoXY(x.p.x, x.p.y, ar[0]), p2 = cantoXY(x.p.x, x.p.y, ar[1]);
         c.moveTo(p1[0], p1[1]); c.lineTo(p2[0], p2[1]);
       });
     });
     c.stroke();
-    /* "Terra incógnita" em pontos esparsos da névoa */
-    c.fillStyle = tk.rotuloNevoa; c.font = 'italic 22px ' + tk.fonteTitulo; c.textAlign = 'center'; c.textBaseline = 'middle';
-    desconhecidos.forEach(function (x) {
-      if (x.c % 11 !== 5 || x.l % 9 !== 4) return;
-      if (H.vizinhos(x.h).some(function (v) { return M.estado(v).v !== 'desconhecido'; })) return;
-      c.fillText('Terra incógnita', x.p.x, x.p.y);
-    });
   }
   function anguloRota(h) {
     var ce = H.centroH(h), vs = H.vizinhos(h).filter(function (v) { return M.rota(v); });
@@ -379,7 +376,7 @@
     for (var i = pos.i + 1; i < cm.length; i++) pts.push(H.centroH(cm[i]));
     return curvaPts(pts);
   }
-  function revelada(o) { return o.dono === 'meu' || o.dono === 'aliado' || !!(o.estandarte && (o.cor || o.brasao)); }
+  function revelada() { return true; }   /* toda marcha tem dono à vista */
 
   function svgLocal(o, ameacado) {
     var p = H.centroH(o.hex), castelo = o.local === 'castelo', meu = o.dono === 'meu';
@@ -391,11 +388,11 @@
       '<circle class="ponto" r="' + (castelo ? 9 : 6) + '"/><g class="ent-k"><circle class="alvo-toque" r="24"/>';
     if (ameacado) h += '<circle class="anel-ameaca" r="' + (castelo ? 27 : 21) + '"/>';
     if (castelo) {
-      var r = RP.reino, brasao;
-      if (meu && r && r.iconeProprio) brasao = '<image href="/api/v1/reinos/' + r.id + '/icone?v=' + (r.iconeVersao || 0) + '" x="-10" y="-10" width="20" height="20"/>';
-      else brasao = RP.brasao(meu && r ? r.brasao : null, { tamanho: 20, desconhecido: !meu });
+      var r = RP.reino, dono = meu && r ? r : o.reino, brasao;
+      if (dono && dono.iconeProprio) brasao = '<image href="/api/v1/reinos/' + dono.id + '/icone?v=' + (dono.iconeVersao || 0) + '" width="20" height="20"/>';
+      else brasao = RP.brasao(dono ? dono.brasao : o.brasao, { tamanho: 20 });
       h += '<circle class="lc-base" r="21"/><circle class="lc-anel" r="16.5"/><use href="#i-castelo" x="-13" y="-14" width="26" height="26"/>' +
-        '<g transform="translate(9 -30)">' + brasao + '</g>' + rotuloSvg(meu && r ? r.nome : 'Castelo', 38, 'rotulo-castelo');
+        '<g transform="translate(9 -30)">' + brasao + '</g>' + rotuloSvg(meu && r ? r.nome : o.reino ? o.reino.nome : 'Castelo', 38, 'rotulo-castelo');
     } else {
       h += '<circle class="lc-base" r="15"/><use href="#i-' + RP.iconeLocal({ tipo: o.local }) + '" x="-10" y="-10.5" width="20" height="20"/>' + rotuloSvg(o.nome || '', 30);
       if (o.nivel) h += '<g class="lc-nivel" transform="translate(12 -12)"><circle r="7.5"/><text y="3.5">' + o.nivel + '</text></g>';
@@ -433,7 +430,6 @@
       '<g class="ent-k"><circle class="alvo-toque" r="24"/>' + (rev ? '' : '<circle class="anel-ameaca" r="' + (r + 6) + '"/>') +
       '<circle class="mc-base" r="' + r + '"/><use href="#i-' + ic + '" x="' + (-r * 0.66) + '" y="' + (-r * 0.66) + '" width="' + (r * 1.32) + '" height="' + (r * 1.32) + '"/>' +
       (rev ? '' : '<g class="mc-selo" transform="translate(12 -12)"><circle r="8"/><text y="4.5">?</text></g>') +
-      (o.estandarte && o.dono !== 'meu' ? '<g class="mc-estandarte" transform="translate(13 -15)"><use href="#i-estandarte" x="-8" y="-8" width="16" height="16"/></g>' : '') +
       (o.reliquia ? '<g class="relq-badge tipo-' + (o.reliquia.tipo || 'desconhecido') + '" transform="translate(-14 13)"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>' : '') +
       (cheg && cheg > agora ? '<g class="mc-eta" transform="translate(0 ' + (r + 13) + ')"><rect x="-26" y="-10" width="52" height="20" rx="10"/><text y="4.5" data-fim="' + cheg + '">' + RP.fmtResta(cheg - agora) + '</text></g>' : '') +
       '</g></g>';
@@ -446,10 +442,6 @@
     var fundo = '', rotas = '', ruinas = '', jazidas = '', locais = '', outros = '', marchas = '';
     var meusHex = {}, ameacados = {};
     d.objs.forEach(function (o) { if (o.tipo === 'local' && o.dono === 'meu') meusHex[o.hex] = true; });
-    d.marchas.forEach(function (m) {
-      var destino = m.caminho && m.caminho[m.caminho.length - 1];
-      if (!revelada(m) && meusHex[destino] && M.chegada(m) > agora) ameacados[destino] = true;
-    });
     d.objs.forEach(function (o) {
       var e = M.estado(o.hex), tipo = MAPA.tiposObjeto[o.tipo];
       if (e.v === 'desconhecido' && !(tipo && tipo.atravessaNevoa)) return;
@@ -473,7 +465,7 @@
       if (M.sumiu(m, agora)) return;
       if (!M.marchaVisivel(m, pos)) return;
       var cls = classeDono(m.dono) + (revelada(m) ? '' : ' hostil'), fim = m.caminho && m.caminho.length ? H.centroH(m.caminho[m.caminho.length - 1]) : pos;
-      rotas += '<path class="marcha-rota ' + cls + '" data-rota="' + m._k + '" d="' + restoCaminho(m, pos) + '"/><circle class="marcha-destino ' + cls + '" cx="' + n1(fim.x) + '" cy="' + n1(fim.y) + '" r="7"/>';
+      if (m.dono === 'meu') rotas += '<path class="marcha-rota ' + cls + '" data-rota="' + m._k + '" d="' + restoCaminho(m, pos) + '"/><circle class="marcha-destino ' + cls + '" cx="' + n1(fim.x) + '" cy="' + n1(fim.y) + '" r="7"/>';
       marchas += svgMarcha(m, pos, agora);
     });
     var fundar = this.fundar ? this.svgFundar() : '';
@@ -493,9 +485,9 @@
     var n = H.COLS * H.LINS, emFila = {};
     ((r.filas && r.filas.obras) || []).forEach(function (it) { if (it.tipo === 'fundar') H.pegada(it.hex, 3).forEach(function (x) { emFila[x] = true; }); });
     /* a construção ocupa a pegada inteira (P.ocupa: 7, 3 ou 1 hexágonos): todos precisam ser conhecidos, sem rio e livres */
-    function livre(x) { return d.ter[x] && !d.rio[x] && !(d.porHex[x] && d.porHex[x].length) && !emFila[x]; }
+    function livre(x) { return d.idade[x] >= 0 && !d.rio[x] && !(d.porHex[x] && d.porHex[x].length) && !emFila[x]; }
     for (var h = 0; h < n; h++) {
-      if (!d.ter[h] || f.terrenos.indexOf(d.ter[h]) < 0) continue;
+      if (d.idade[h] < 0 || f.terrenos.indexOf(d.ter[h]) < 0) continue;
       var pg = H.pegada(h, f.ocupa || 1);
       if (pg.length < (f.ocupa || 1) || !pg.every(livre)) continue;
       var p = H.centroH(h);
@@ -516,7 +508,7 @@
   /* marchas e objetos móveis andam a cada segundo; quem sai da área vista some */
   TP.atualizarMoveis = function () {
     var d = M.dados; if (!d || !this.ativo) return;
-    if (this.versaoSvg !== M.versao) { this.atualizarSvg(); return; }
+    if (this.versaoSvg !== M.versao || this.versaoMoveis !== M.versaoMoveis) { this.versaoMoveis = M.versaoMoveis; this.atualizarSvg(); return; }
     var agora = RP.agora(), g = this.g, MAPA = RP.mapa;
     d.marchas.forEach(function (m) {
       var el = g.querySelector('[data-marcha="' + m._k + '"]');

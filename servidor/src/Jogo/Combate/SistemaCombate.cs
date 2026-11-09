@@ -30,11 +30,7 @@ public static class SistemaCombate
         Marcha.AoPartir.Add(Avistamentos.AoPartir);
         Marcha.AoPartir.Add(Batalhas.AoPartir);
         Obras.HexOcupado.Add((mm, hex) => Defesas.NoHex(mm, hex) != null);
-        Obras.HexOcupadoPara.Add((mm, r, hex) => Defesas.NoHex(mm, hex) is { } t && t.ReinoId == r.Id);
-        // torres de outros reinos ficam na foto da névoa como foram vistas (nível e alcance daquele momento)
-        Fotos.Fotografos.Add((mm, reinoId, hex) => Defesas.NoHex(mm, hex) is { } t && t.ReinoId != reinoId
-            ? [new JsonObject { ["tipo"] = "torre", ["id"] = t.Id, ["nivel"] = t.Nivel, ["alcance"] = Defesas.Alcance(mm, t), ["dono"] = "desconhecido", ["aoVivo"] = false }]
-            : []);
+        Obras.HexOcupadoPara.Add((mm, r, hex) => Defesas.NoHex(mm, hex) != null);   // torres são públicas
         // os arqueiros no alto enxergam o alcance da torre
         Nevoas.FontesDeVisao.Add((mm, reinoId) => Defesas.DoReino(mm, reinoId).SelectMany(t => mm.G.Area(t.Hex, Defesas.Alcance(mm, t))).ToList());
         // resgate à força: vencer no local onde estão presos liberta os exploradores do atacante; local perdido solta os presos
@@ -44,29 +40,49 @@ public static class SistemaCombate
 }
 
 /// <summary>
-/// Avistamento: na partida de um ataque, se o caminho passa pela visão do defensor, um evento no instante em que as
-/// tropas entram na visão notifica o defensor (categoria "ataques"). Sem estandarte, "Forças desconhecidas".
+/// Avistamento: na partida de um exército, para cada reino cuja visão o caminho cruza (e que ainda não o via), um evento no
+/// instante em que ele entra na visão notifica o reino (categoria "ataques"). O aviso diz de quem é e onde está. Nunca o
+/// tamanho, e nunca para onde vai: quem vê a marcha não sabe se é com ele.
 /// </summary>
 public static class Avistamentos
 {
+    /// <summary>Hexágonos que o reino vê, sem marcar a névoa (para prever o caminho de outra marcha).</summary>
+    public static HashSet<int> Visao(Mundo m, long reinoId)
+    {
+        var vis = new HashSet<int>();
+        foreach (var l in m.LocaisDe(reinoId))
+            if (!l.Ruina) foreach (var h in m.G.Area(l.Hex, Nevoas.RaioLocal(m, l))) vis.Add(h);
+        var agora = m.Agora;
+        foreach (var mc in m.Marchas)
+            if (mc.ReinoId == reinoId) foreach (var h in m.G.Area(mc.HexEm(agora), mc.RaioVisao(m))) vis.Add(h);
+        foreach (var f in Nevoas.FontesDeVisao) foreach (var h in f(m, reinoId)) vis.Add(h);
+        return vis;
+    }
+
     internal static void AoPartir(Mundo m, Marcha mc)
     {
-        if (mc is not Exercito ex) return;
-        m.Cancelar(ex.AvistamentoId); ex.AvistamentoId = null;
-        if (ex.Retornando || !Batalhas.EhAtaque(ex) || ex.Caminho.Count < 2) return;
-        var l = ex.AlvoLocalId is long id ? m.Locais.Obter(id) : null;
-        if (l == null || Ataques.SemDono(m, l) || l.ReinoId == ex.ReinoId) return;
-        var vis = Nevoas.VisiveisAgora(m, l.ReinoId);
-        var i = ex.Caminho.FindIndex(vis.Contains);
-        if (i < 0) i = ex.Caminho.Count - 1;
-        ex.AvistamentoId = m.Agendar(new AvistamentoAtaqueEvento
+        if (mc is not Exercito ex || ex.Retornando || ex.Caminho.Count < 2) return;
+        foreach (var w in m.Reinos)
         {
-            MarchaId = ex.Id, LocalId = l.Id, DefensorId = l.ReinoId, Partida = ex.Partida, Quando = ex.Tempos[i],
-        }).Id;
-        m.Sujar(ex);
+            if (!w.Ativo || w.Id == ex.ReinoId || Aliancas.SaoAliados(m, w.Id, ex.ReinoId) || Comercio.PactoAtivo(m, w.Id, ex.ReinoId)) continue;
+            var vis = Visao(m, w.Id);
+            if (vis.Contains(ex.Caminho[0])) continue;
+            var i = ex.Caminho.FindIndex(vis.Contains);
+            if (i < 0) continue;
+            m.Agendar(new AvistamentoAtaqueEvento { MarchaId = ex.Id, DefensorId = w.Id, Partida = ex.Partida, Hex = ex.Caminho[i], Quando = ex.Tempos[i] });
+        }
     }
 
     /// <summary>Tamanho aproximado de uma força (P.aproximado): "nenhuma", "poucas" ou "≈ n" arredondado ao passo.</summary>
+    public static int Arredondado(Mundo m, int n)
+    {
+        var p = m.P.Aproximado;
+        if (n <= 0) return 0;
+        if (n < p.Poucas) return Math.Max(1, p.Poucas - 1);
+        var passo = Math.Max(1, p.Passo);
+        return Math.Max(passo, (int)Math.Round(n / (double)passo) * passo);
+    }
+
     public static string Aproximado(Mundo m, int n)
     {
         var p = m.P.Aproximado;
@@ -80,20 +96,16 @@ public static class Avistamentos
 public sealed class AvistamentoAtaqueEvento : Evento
 {
     public long MarchaId { get; set; }
-    public long LocalId { get; set; }
     public long DefensorId { get; set; }
     public long Partida { get; set; }
+    public int Hex { get; set; }
 
     public override void Executar(Mundo m)
     {
-        if (m.Marchas.Obter(MarchaId) is not Exercito ex || ex.Partida != Partida || ex.AlvoLocalId != LocalId || ex.AvistamentoId != Id) return;
-        ex.AvistamentoId = null; m.Sujar(ex);
-        var l = m.Locais.Obter(LocalId);
-        if (l == null || l.ReinoId != DefensorId) return;
-        var quem = RelatoriosCombate.NomeAtacante(m, ex.ReinoId, ex.Estandarte);
-        var n = GT.Total(ex.Tropas);
-        Registros.Notificar(m, DefensorId, "ataques", quem + " a caminho de " + l.Nome,
-            Avistamentos.Aproximado(m, n) + " tropas vindas do " + m.G.Direcao(l.Hex, ex.Origem) + ".", "mapa?foco=" + l.Hex);
-        m.Avisar(DefensorId, "mapa");
+        if (m.Marchas.Obter(MarchaId) is not Exercito ex || ex.Partida != Partida) return;
+        if (m.Reinos.Obter(DefensorId) is not { Ativo: true } w || m.Reinos.Obter(ex.ReinoId) is not { } dono) return;
+        var perto = m.LocaisDe(w.Id).Where(l => !l.Ruina).OrderBy(l => m.G.Distancia(l.Hex, Hex)).ThenBy(l => l.Id).FirstOrDefault();
+        Registros.Notificar(m, w.Id, "ataques", "Exército de " + dono.Nome + " à vista", perto != null ? "Perto de " + perto.Nome + "." : "", "mapa?foco=" + Hex);
+        m.Avisar(w.Id, "mapa");
     }
 }

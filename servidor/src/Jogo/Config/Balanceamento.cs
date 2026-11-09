@@ -94,9 +94,7 @@ public sealed class ParametrosP
     /// <summary>Tamanho aproximado de uma força vista: "poucas" abaixo de Poucas; depois arredondado ao Passo.</summary>
     public AproximadoP Aproximado { get; init; } = new();
     /// <summary>Região de cada reino, marcada desde o início (decisão 0035).</summary>
-    public RegiaoReinoP RegiaoReino { get; init; } = new();
     /// <summary>Poeira das marchas grandes fora da vista (decisão 0035).</summary>
-    public RastroP Rastro { get; init; } = new();
     public double CustoNovoLocal { get; init; }
     public double NovoLocalCresc { get; init; }
     public double TempoNovoLocal { get; init; }
@@ -326,7 +324,7 @@ public sealed class ExilioP
     /// <summary>Fração dos pontos livres mais distantes de quem derrubou o reino entre os quais o exílio é sorteado.</summary>
     public double Longe { get; init; }
 }
-public sealed class InterceptacaoP { public double FolgaSeg { get; init; } }
+public sealed class InterceptacaoP { public double FolgaSeg { get; init; } public int TrechoHexes { get; init; } }
 public sealed class PosturaP { public int Alcance { get; init; } public double RevidaH { get; init; } }
 
 public sealed class CombateP
@@ -375,7 +373,7 @@ public sealed class FaunaServP
     public Dictionary<string, double> CustoSeguro { get; init; } = new();
 }
 
-public sealed class ReliquiaVisP { public int Brilho { get; init; } public int Farol { get; init; } }
+public sealed class ReliquiaVisP { public int Farol { get; init; } }
 
 public sealed class VeiculoP { public Dictionary<string, double> Tempo { get; init; } = new(); }
 public sealed class CaravanaP { public double EscoltaMin { get; init; } }
@@ -385,8 +383,6 @@ public sealed class CarregadorP { public double Carga { get; init; } public stri
 public sealed class RioP { public double Vau { get; init; } }
 public sealed class VagasP { public double PorNivel { get; init; } public int Minimo { get; init; } }
 public sealed class AproximadoP { public int Poucas { get; init; } public int Passo { get; init; } }
-public sealed class RegiaoReinoP { public int Raio { get; init; } public int Desvio { get; init; } }
-public sealed class RastroP { public int Tropas { get; init; } public int Alcance { get; init; } public int Grade { get; init; } public int Adiante { get; init; } }
 public sealed class VisaoP { public int Castelo { get; init; } public int Local { get; init; } public int Tropa { get; init; } }
 public sealed class MapaP { public int Cols { get; init; } public int Lins { get; init; } }
 public sealed class PatrulhaP { public int MaxHexes { get; init; } = 200; }
@@ -579,6 +575,7 @@ public sealed class AtaqueIAP
     public double EspionagemH { get; init; }
     public int Alcance { get; init; }
     public double Porte { get; init; }
+    public int VigiaAlcance { get; init; }
     public double Forca { get; init; }
     public double FracTropas { get; init; }
     public int Reserva { get; init; }
@@ -586,7 +583,7 @@ public sealed class AtaqueIAP
 }
 public sealed class EspionagemIAP { public int Castelo { get; init; } public int Alcance { get; init; } public double RefazerH { get; init; } }
 public sealed class OcupacaoIAP { public int Alcance { get; init; } public int Tropas { get; init; } }
-public sealed class ExploracaoIAP { public int[] Distancia { get; init; } = [1, 1]; public int Tentativas { get; init; } public int RegiaoAlcance { get; init; } }
+public sealed class ExploracaoIAP { public int[] Distancia { get; init; } = [1, 1]; public int Tentativas { get; init; } }
 public sealed class CacaIAP { public double CouroMin { get; init; } public int Alcance { get; init; } public int Tropas { get; init; } }
 public sealed class ExtracaoIAP { public int Castelo { get; init; } public int Alcance { get; init; } public int Tropas { get; init; } }
 public sealed class MoradiaIAP { public double Trabalhadores { get; init; } public double Teto { get; init; } }

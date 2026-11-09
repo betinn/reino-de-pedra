@@ -1011,15 +1011,6 @@ a.guia-item { color: inherit; text-decoration: none; }
 .ruina-ganhos li > .ico { flex: none; margin-top: 2px; color: var(--rec-lendario); }
 
 /* rumores (decisão 0035): região de um reino e poeira de marcha grande, por cima da névoa */
-.regiao-reino-area path { fill: rgba(232, 196, 120, .05); stroke: #e8c478; stroke-width: 2.5; stroke-dasharray: 10 8; opacity: .6; }
-.obj-regiao-reino .rg-base { fill: var(--cor-superficie, #2a2520); stroke: #e8c478; stroke-width: 2; }
-.obj-regiao-reino use { color: #e8c478; }
-.obj-regiao-reino .rg-selo circle { fill: #e8c478; }
-.obj-regiao-reino .rg-selo text { fill: #1e1b18; font-size: 10px; font-weight: 700; text-anchor: middle; }
-.obj-rastro .rt-nuvem { fill: rgba(201, 178, 138, .55); }
-.obj-rastro .rt-seta { stroke: var(--cor-alerta, #e0a24a); stroke-width: 3; stroke-linecap: round; }
-.obj-rastro .rt-ponta { fill: var(--cor-alerta, #e0a24a); }
-.regiao-reino-area path { vector-effect: non-scaling-stroke; }
 /* afastado (visão do mundo) é quando mais servem: o marcador continua, o ponto não */
 [data-zoom="zoom-mundo"] .camada-objetos .obj-regiao-reino .ent-k, [data-zoom="zoom-mundo"] .camada-objetos .obj-rastro .ent-k { display: block; }
 [data-zoom="zoom-mundo"] .camada-objetos .obj-regiao-reino .ponto, [data-zoom="zoom-mundo"] .camada-objetos .obj-rastro .ponto { display: none; }

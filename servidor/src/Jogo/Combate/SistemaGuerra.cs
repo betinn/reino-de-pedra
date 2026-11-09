@@ -16,7 +16,6 @@ public static class SistemaGuerra
         Veterania.Registrar();
         Quedas.Registrar();
         Marcha.AoPartir.Add(Vigias.AoPartir);
-        Marcha.AoPartir.Add(ForcasVistas.AoPartir);
         Marcha.AoPartir.Add(ModelosAtaque.AoPartir);
     });
 

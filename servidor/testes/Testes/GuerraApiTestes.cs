@@ -102,7 +102,7 @@ public class GuerraApiTestes
     }
 
     [Fact]
-    public async Task Interceptacao_previa_e_envio_pela_api_sem_revelar_o_dono()
+    public async Task Interceptacao_previa_e_envio_pela_api_sem_revelar_tamanho_nem_destino()
     {
         var (s, a, d, casteloA) = await Dois();
         await using var _s = s; using var _a = a; using var _d = d;
@@ -113,15 +113,18 @@ public class GuerraApiTestes
             c.Guarnicao["cavalaria"] = 30; m.Sujar(c);
             var h = m.G.Area(c.Hex, 4).First(x => m.G.Distancia(x, c.Hex) == 4 && Obras.HexLivre(m, x) && !m.Mapa.Rio[x]);
             var mina = m.AdicionarLocal(new Local { ReinoId = def.Id, Tipo = TipoLocal.Mina, Produz = "ferro", Hex = h, Nome = "Mina Rubra", Guarnicao = new() { ["lanceiro"] = 10 } });
-            var destino = m.G.Area(h, 20).First(x => m.G.Distancia(x, h) == 20 && Obras.HexLivre(m, x) && !m.Mapa.Rio[x] && Caminhos.Calcular(m, h, x, "Lenta").Hexes[^1] == x);
+            var destino = CombateCenario.DestinoInterceptavel(m, h, c.Hex, 20);
             return Exercitos.Enviar(m, def, mina.Id, new Dictionary<string, int> { ["lanceiro"] = 10 }, destino, OrdemMover.Id).Id;
         });
         var (sp, p) = await a.Post("interceptacao/previa", new { marchaId, deLocalId = casteloA, tropas = new { cavalaria = 30 } });
         Assert.True(sp == HttpStatusCode.OK, p.ToString());
         Assert.Equal(JsonValueKind.Object, p.GetProperty("encontro").ValueKind);
         Assert.True(p.GetProperty("encontro").GetProperty("folga").GetInt64() >= 60_000);
-        Assert.Equal("exercito", p.GetProperty("alvo").GetProperty("marcha").GetString());
-        Assert.DoesNotContain("Valdren", p.ToString());
+        var alvoP = p.GetProperty("alvo");
+        Assert.Equal("exercito", alvoP.GetProperty("marcha").GetString());
+        Assert.Equal("Valdren", alvoP.GetProperty("reino").GetProperty("nome").GetString());
+        Assert.Equal(JsonValueKind.String, alvoP.GetProperty("rumo").ValueKind);
+        foreach (var segredo in new[] { "tamanho", "some", "chegada", "destino", "tropas", "caminho", "paraMim" }) Assert.False(alvoP.TryGetProperty(segredo, out _), segredo);
         var (se, ex) = await a.Post("interceptacao", new { marchaId, deLocalId = casteloA, tropas = new { cavalaria = 30 } });
         Assert.True(se == HttpStatusCode.Created, ex.ToString());
         Assert.Equal("interceptar", ex.GetProperty("ordem").GetString());
@@ -143,28 +146,22 @@ public class GuerraApiTestes
             var c = m.Locais[casteloA];
             var vencedor = (Exercito)m.Marchas.Adicionar(new Exercito { ReinoId = atk.Id, Tropas = new() { ["arqueiro"] = 10 }, Caminho = [c.Hex], Tempos = [m.Agora], OrigemLocalId = c.Id });
             Quedas.CairCastelo(m, def, vencedor, m.Locais[def.CasteloId]);
-            // um avistamento de forças desconhecidas para Pedralva
-            var outra = (Exercito)m.Marchas.Adicionar(new Exercito { ReinoId = def.Id, Tropas = new() { ["lanceiro"] = 12 }, Caminho = [c.Hex + 1], Tempos = [m.Agora] });
-            ForcasVistas.Registrar(m, atk.Id, outra, c.Hex + 2, "norte");
-            outra.Encerrar(m);
+            // um espião visto por Pedralva
+            ReinoDePedra.Jogo.Exploracao.Avistamentos.Registrar(m, atk.Id, c.Hex + 2, "espiao", "Espião visto");
         });
         var (_, rd) = await d.Get("reino");
         Assert.True(rd.GetProperty("queda").GetProperty("exilio").GetBoolean());
         var (_, x) = await d.Get("exilio");
         Assert.True(x.GetProperty("exilio").GetBoolean());
-        Assert.Equal("Forças desconhecidas", x.GetProperty("atacante").GetString());
-        Assert.DoesNotContain("Pedralva", x.ToString());
+        Assert.Equal("Pedralva", x.GetProperty("atacanteReino").GetProperty("nome").GetString());
         Assert.Equal(2, x.GetProperty("kitTropas").GetProperty("milicia").GetInt32());
         Assert.Equal(HttpStatusCode.NoContent, (await d.Post("exilio/visto")).status);
         var (_, rd2) = await d.Get("reino");
         Assert.False(rd2.TryGetProperty("queda", out var q2) && q2.ValueKind != JsonValueKind.Null);
 
-        var (_, ra) = await a.Get("reino");
-        Assert.Equal(1, ra.GetProperty("avistamentos").GetProperty("n").GetInt32());
         var (_, mapa) = await a.Get("mapa");
         var av = mapa.GetProperty("objetos").EnumerateArray().Single(o => o.GetProperty("tipo").GetString() == "avistamento");
-        Assert.Equal("tropas", av.GetProperty("avistado").GetString());
-        Assert.Equal("≈ 10", av.GetProperty("tamanho").GetString());
-        Assert.DoesNotContain("Valdren", av.ToString());
+        Assert.Equal("espiao", av.GetProperty("avistado").GetString());
+        Assert.False(av.TryGetProperty("tamanho", out _));
     }
 }

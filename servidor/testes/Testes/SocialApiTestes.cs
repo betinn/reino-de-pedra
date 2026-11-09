@@ -11,7 +11,7 @@ public class SocialApiTestes
     private static IEnumerable<JsonElement> Objetos(JsonElement mapa, string tipo) =>
         mapa.GetProperty("objetos").EnumerateArray().Where(o => o.GetProperty("tipo").GetString() == tipo);
 
-    /// <summary>Duas contas com reino; os reinos se conhecem (como depois de uma espionagem).</summary>
+    /// <summary>Duas contas com reino, sem escudo.</summary>
     private static async Task<(Cliente a, Cliente b, long idA, long idB)> DoisReinos(ServidorTeste s)
     {
         var a = s.NovoCliente(); var b = s.NovoCliente();
@@ -21,7 +21,6 @@ public class SocialApiTestes
         await s.Motor.Executar(m =>
         {
             var x = m.Reinos[idA]; var y = m.Reinos[idB];
-            Conhecimento.Conhecer(m, x, y, "teste"); Conhecimento.Conhecer(m, y, x, "teste");
             x.EscudoAte = 0; y.EscudoAte = 0;
         });
         return (a, b, idA, idB);
@@ -34,7 +33,7 @@ public class SocialApiTestes
         var (a, b, idA, idB) = await DoisReinos(s);
         using var _a = a; using var _b = b;
         var (_, ra) = await a.Get("reino");
-        Assert.True(ra.GetProperty("sistemas").GetProperty("alianca").GetBoolean());   // conhecer o primeiro reino apresentou
+        Assert.False(ra.GetProperty("sistemas").TryGetProperty("alianca", out _));   // aberta desde o início: não há o que revelar
         Assert.Equal(HttpStatusCode.BadRequest, (await a.Post("alianca", new { nome = "x" })).status);
         var (sc, al) = await a.Post("alianca", new { nome = "Liga do Vale" });
         Assert.Equal(HttpStatusCode.Created, sc);
@@ -47,16 +46,12 @@ public class SocialApiTestes
         (_, gb) = await b.Get("alianca");
         Assert.Equal(2, gb.GetProperty("alianca").GetProperty("membros").GetArrayLength());
 
-        // no mapa, o aliado aparece com nome e brasão
+        // no mapa, o aliado aparece como aliado; nome e brasão vêm da lista de reinos
         var (_, mapa) = await a.Get("mapa");
-        await s.Motor.Executar(m =>
-        {
-            var l = m.Locais[m.Reinos[idB].CasteloId];
-            Nevoas.RevelarArea(m, idA, l.Hex, 0);
-        });
-        (_, mapa) = await a.Get("mapa");
         var castB = Objetos(mapa, "local").Single(o => o.GetProperty("dono").GetString() == "aliado" && o.GetProperty("local").GetString() == "castelo");
-        Assert.Equal("Valdren", castB.GetProperty("reino").GetProperty("nome").GetString());
+        Assert.Equal(idB, castB.GetProperty("reinoId").GetInt64());
+        Assert.Equal("Valdren", mapa.GetProperty("reinos").GetProperty(idB.ToString()).GetProperty("nome").GetString());
+        Assert.Contains(mapa.GetProperty("aliados").EnumerateArray(), x => x.GetInt64() == idB);
 
         // conversa: o único chat do jogo
         Assert.Equal(HttpStatusCode.Created, (await b.Post("alianca/conversa", new { texto = "Bom dia, aliados!" })).status);

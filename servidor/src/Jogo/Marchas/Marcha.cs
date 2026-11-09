@@ -27,8 +27,6 @@ public abstract partial class Marcha : Documento
     public string Vel { get; set; } = "Lenta";
     public long? EventoId { get; set; }
     public bool Retornando { get; set; }
-    /// <summary>Leva o estandarte (identidade revelada a quem vê).</summary>
-    public bool Estandarte { get; set; }
 
     public long Partida => Tempos.Count > 0 ? Tempos[0] : 0;
     public long Chegada => Tempos.Count > 0 ? Tempos[^1] : 0;

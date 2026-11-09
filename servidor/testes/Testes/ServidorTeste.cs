@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using ReinoDePedra.Api;
+using ReinoDePedra.Api.Contas;
 using ReinoDePedra.Jogo;
 using ReinoDePedra.Jogo.Config;
 using ReinoDePedra.Jogo.Nucleo;
@@ -20,15 +21,17 @@ public sealed class ServidorTeste : IAsyncDisposable
     public string Base { get; }
     private readonly string _dir;
     public Motor Motor => App.Services.GetRequiredService<Motor>();
+    /// <summary>Credencial fictícia das rotas do administrador nos testes.</summary>
+    public const string AdminToken = "token-de-teste-do-administrador-0123456789";
 
     private ServidorTeste(WebApplication app, string dir, string b, RelogioFalso r) { App = app; _dir = dir; Base = b; Relogio = r; }
 
     /// <summary>Sobe o servidor. Sem fauna por padrão (ataques de fauna são sorteios); reinos novos sem os primeiros passos, salvo <paramref name="inicioPronto"/>.</summary>
-    public static async Task<ServidorTeste> Iniciar(bool fauna = false, int conexoesPorIp = 0, bool inicioPronto = false)
+    public static async Task<ServidorTeste> Iniciar(bool fauna = false, int conexoesPorIp = 0, bool inicioPronto = false, int convitesPorHora = 1000, string adminToken = AdminToken)
     {
         var dir = Path.Combine(Path.GetTempPath(), "rp-srv-" + Guid.NewGuid().ToString("N"));
         var relogio = new RelogioFalso(MundoTeste.Inicio);
-        var cfg = new Configuracao { Dados = dir, Urls = "http://127.0.0.1:0", CookieSeguro = false, Semente = 7, IA = false, ConexoesPorIp = conexoesPorIp };
+        var cfg = new Configuracao { Dados = dir, Urls = "http://127.0.0.1:0", CookieSeguro = false, Semente = 7, IA = false, ConexoesPorIp = conexoesPorIp, AdminToken = adminToken, ConvitesPorHora = convitesPorHora, FeedSemCache = true };
         var app = Servidor.Construir([], cfg, relogio);
         await app.StartAsync();
         if (!fauna) await app.Services.GetRequiredService<Motor>().Executar(m => ReinoDePedra.Jogo.Exploracao.Fauna.Limpar(m));
@@ -48,7 +51,15 @@ public sealed class ServidorTeste : IAsyncDisposable
         });
     }
 
-    public Cliente NovoCliente() => new(Base);
+    public Cliente NovoCliente() => new(Base, App.Services.GetRequiredService<ServicoContas>());
+
+    /// <summary>Cliente HTTP com a credencial do administrador.</summary>
+    public Cliente NovoAdmin()
+    {
+        var c = NovoCliente();
+        c.Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AdminToken);
+        return c;
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -63,8 +74,10 @@ public sealed class Cliente : IDisposable
 {
     public HttpClient Http { get; }
     public static readonly JsonSerializerOptions J = new(JsonSerializerDefaults.Web);
-    public Cliente(string b)
+    private readonly ServicoContas? _contas;
+    public Cliente(string b, ServicoContas? contas = null)
     {
+        _contas = contas;
         Http = new HttpClient(new HttpClientHandler { CookieContainer = new CookieContainer(), UseCookies = true }) { BaseAddress = new Uri(b + "/api/v1/") };
         Http.DefaultRequestHeaders.Add("X-Reino", "1");
     }
@@ -88,11 +101,19 @@ public sealed class Cliente : IDisposable
         var s = await r.Content.ReadAsStringAsync();
         return string.IsNullOrWhiteSpace(s) ? default : JsonDocument.Parse(s).RootElement.Clone();
     }
-    /// <summary>Cadastra uma conta e funda um reino. Devolve o estado do reino.</summary>
+    /// <summary>Cria a conta direto no serviço (o caminho do convite tem testes próprios) e entra com ela.</summary>
+    public async Task<(HttpStatusCode status, JsonElement corpo)> CriarConta(string email, string senha = "senha muito boa 123")
+    {
+        var (c, erro) = await _contas!.Registrar(email, senha);
+        if (c == null) throw new Exception("conta falhou: " + erro);
+        return await Post("conta/entrar", new { email, senha });
+    }
+
+    /// <summary>Cria uma conta e funda um reino. Devolve o estado do reino.</summary>
     public async Task<JsonElement> ContaComReino(string email, string nome)
     {
-        var (s1, _) = await Post("conta/registrar", new { email, senha = "senha muito boa 123" });
-        if (s1 != HttpStatusCode.Created) throw new Exception("registro falhou: " + s1);
+        var (s1, _) = await CriarConta(email);
+        if (s1 != HttpStatusCode.OK) throw new Exception("entrada falhou: " + s1);
         var (s2, reino) = await Post("reino", new { nome, brasao = new { forma = "portugues", divisao = "cortado", cor1 = "azul", cor2 = "vermelho", simbolo = "torre", corSimbolo = "ouro" } });
         if (s2 != HttpStatusCode.Created) throw new Exception("reino falhou: " + s2 + " " + reino);
         return reino;

@@ -72,7 +72,8 @@ namespace ReinoDePedra.Api
             foreach (var f in AoIniciarMundo) f(mundo);
             ReinoDePedra.Jogo.IA.Ocupacao.Completar(mundo);   // meta de ocupação, depois de todos os sistemas prontos
             var log = LoggerFactory.Create(l => l.AddSimpleConsole(o => o.SingleLine = true)).CreateLogger("ReinoDePedra");
-            Mundo.ErroEvento += (ev, ex) => log.LogError(ex, "erro no evento {Tipo}#{Id}", ev.GetType().Name, ev.Id);
+            Action<Evento, Exception> aoErroEvento = (ev, ex) => log.LogError(ex, "erro no evento {Tipo}#{Id}", ev.GetType().Name, ev.Id);
+            Mundo.ErroEvento += aoErroEvento;
             var motor = new Motor(mundo, banco) { Log = s => log.LogWarning("{Msg}", s) };
 
             builder.Services.AddSingleton(cfg);
@@ -81,6 +82,8 @@ namespace ReinoDePedra.Api
             builder.Services.AddSingleton(motor);
             builder.Services.AddSingleton(canal);
             builder.Services.AddSingleton(new ServicoContas(banco));
+            builder.Services.AddSingleton(new ServicoConvites(banco));
+            builder.Services.AddSingleton(new ReinoDePedra.Api.Publico.FeedPublico(motor, cfg));
             builder.Services.ConfigureHttpJsonOptions(o =>
             {
                 o.SerializerOptions.PropertyNameCaseInsensitive = true;
@@ -97,7 +100,7 @@ namespace ReinoDePedra.Api
             builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
             builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
             // só a API conta (arquivos estáticos ficam de fora): por IP, por sessão e rotas pesadas; login à parte (Limites)
-            builder.Services.AddRateLimiter(Limites.Configurar);
+            builder.Services.AddRateLimiter(o => Limites.Configurar(o, cfg));
             if (cfg.AtrasDeProxy)
                 builder.Services.Configure<ForwardedHeadersOptions>(o =>
                 {
@@ -153,6 +156,7 @@ namespace ReinoDePedra.Api
             var conta = app.MapGroup("/api/v1").ExigirConta();
             foreach (var t in typeof(Servidor).Assembly.GetTypes().Where(t => !t.IsAbstract && typeof(IModuloApi).IsAssignableFrom(t)))
                 ((IModuloApi)Activator.CreateInstance(t)!).Mapear(api, conta);
+            ModuloAdmin.Mapear(api, cfg);
             api.MapGet("/saude", (Motor m, CanalSse c) => Results.Json(new
             {
                 ok = true, eventos = m.Mundo.Agenda.Count, conexoes = c.Conexoes,
@@ -163,6 +167,8 @@ namespace ReinoDePedra.Api
             app.Lifetime.ApplicationStopping.Register(() => motor.DisposeAsync().AsTask().GetAwaiter().GetResult());
             app.Lifetime.ApplicationStopping.Register(canal.FecharTodas);   // roda antes da gravação (ordem inversa do registro)
             app.Lifetime.ApplicationStopped.Register(banco.Dispose);
+            // o evento é estático: sem isto, cada servidor encerrado no mesmo processo (testes) continuaria segurando o mundo inteiro
+            app.Lifetime.ApplicationStopped.Register(() => Mundo.ErroEvento -= aoErroEvento);
             return app;
         }
     }

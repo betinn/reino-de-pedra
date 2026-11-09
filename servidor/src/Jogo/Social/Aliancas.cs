@@ -136,7 +136,6 @@ namespace ReinoDePedra.Jogo.Social
             });
             r.AliancaId = a.Id; m.Sujar(r);
             TirarPendencias(m, r, a.Id);
-            Sistemas.Revelar(m, r, "alianca");
             m.Avisar(r.Id, "alianca"); m.Avisar(r.Id, "reino");
             return a;
         }
@@ -150,33 +149,29 @@ namespace ReinoDePedra.Jogo.Social
             if (eu.Cargo == Membro) throw new RegraException("Só o líder e os conselheiros convidam.");
             var alvo = m.Reinos.Obter(alvoId);
             if (alvo == null || !alvo.Ativo || alvo.Id == r.Id) throw new RegraException("Reino não encontrado.", 404);
-            if (!Conhecimento.Conhece(r, alvoId)) throw new RegraException("Você só pode convidar reinos que conhece.");
             if (a.Membro(alvoId) != null) throw new RegraException("Esse reino já é da aliança.");
             if (a.Membros.Count >= m.P.Alianca) throw new RegraException($"A aliança já tem {m.P.Alianca} reinos, o máximo.");
             if (a.Convites.Any(c => c.ReinoId == alvoId)) throw new RegraException("Esse reino já foi convidado.");
             var c = new ConviteAlianca { ReinoId = alvoId, PorId = r.Id, Quando = m.Agora, Ate = m.Agora + T.DeHoras(m.P.Social.PropostaH) };
             a.Convites.Add(c); m.Sujar(a);
-            Conhecimento.Conhecer(m, alvo, r, "alianca");   // o convite revela quem convida
             Registros.Notificar(m, alvo.Id, "alianca", "Convite para a aliança " + a.Nome, r.Nome + " convidou seu reino.", "alianca");
             m.Avisar(alvo.Id, "alianca");
             AvisarMembros(m, a);
             return c;
         }
 
-        /// <summary>Um reino pede para entrar numa aliança em que conhece algum membro.</summary>
+        /// <summary>Um reino pede para entrar numa aliança.</summary>
         public static ConviteAlianca PedirEntrada(Mundo m, Reino r, long aliancaId)
         {
             PodeEntrar(m, r);
             var a = m.Aliancas.Obter(aliancaId) ?? throw new RegraException("Aliança não encontrada.", 404);
             Podar(m, a);
-            if (!a.Membros.Any(x => Conhecimento.Conhece(r, x.ReinoId))) throw new RegraException("Você não conhece nenhum membro desta aliança.");
             if (a.Membros.Count >= m.P.Alianca) throw new RegraException($"A aliança já tem {m.P.Alianca} reinos, o máximo.");
             if (a.Pedidos.Any(c => c.ReinoId == r.Id)) throw new RegraException("Você já pediu para entrar.");
             var c = new ConviteAlianca { ReinoId = r.Id, PorId = r.Id, Quando = m.Agora, Ate = m.Agora + T.DeHoras(m.P.Social.PropostaH) };
             a.Pedidos.Add(c); m.Sujar(a);
             foreach (var x in a.Membros.Where(x => x.Cargo != Membro))
             {
-                if (m.Reinos.Obter(x.ReinoId) is { } q) Conhecimento.Conhecer(m, q, r, "alianca");
                 Registros.Notificar(m, x.ReinoId, "alianca", r.Nome + " pede para entrar", "Aceite ou recuse em Aliança.", "alianca");
             }
             AvisarMembros(m, a);
@@ -257,15 +252,8 @@ namespace ReinoDePedra.Jogo.Social
             a.Membros.Add(new MembroAlianca { ReinoId = r.Id, Cargo = Membro, Desde = m.Agora });
             r.AliancaId = a.Id; m.Sujar(r); m.Sujar(a);
             TirarPendencias(m, r, a.Id);
-            foreach (var outro in Membros(m, a))   // aliados se reconhecem
-            {
-                if (outro.Id == r.Id) continue;
-                Conhecimento.Conhecer(m, r, outro, "alianca");
-                Conhecimento.Conhecer(m, outro, r, "alianca");
-            }
-            Sistemas.Revelar(m, r, "alianca");
             NotificarMembros(m, a, r.Nome + " entrou na aliança", a.Membros.Count + " de " + m.P.Alianca + " reinos.", r.Id);
-            Registros.Notificar(m, r.Id, "alianca", "Você entrou na aliança " + a.Nome, "Aliados se reconhecem no mapa e veem as marchas uns dos outros.", "alianca");
+            Registros.Notificar(m, r.Id, "alianca", "Você entrou na aliança " + a.Nome, "Aliados pedem recursos, reforçam uns aos outros e conversam.", "alianca");
             foreach (var x in a.Membros) { m.Avisar(x.ReinoId, "alianca"); m.Avisar(x.ReinoId, "mapa"); m.Avisar(x.ReinoId, "reino"); }
         }
 

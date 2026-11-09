@@ -243,16 +243,6 @@ public static class Lendarios
     }
 
     /// <summary>Espionagem de um local: o equipamento na guarnição aparece no relatório (nome e tipo, sem a origem).</summary>
-    internal static void NoRelatorio(Mundo m, Reino dono, Local l, JsonObject dados)
-    {
-        var eqs = NoLocal(m, l).Where(e => e.DonoId == dono.Id).ToList();
-        if (eqs.Count == 0) return;
-        var arr = new JsonArray();
-        foreach (var e in eqs) arr.Add(new JsonObject { ["id"] = e.Id, ["nome"] = e.Nome, ["tipo"] = e.Tipo });
-        dados["lendario"] = arr;
-        if (dados["linhas"] is JsonArray linhas)
-            linhas.Add(Fauna.Linha("Equipamento lendário", string.Join(", ", eqs.Select(e => e.Nome + " (+" + Math.Round(m.P.Lendario.Bonus * 100) + "% de " + e.Tipo + ")"))));
-    }
 }
 
 /// <summary>Registra os ganchos da ferraria, das eras e do equipamento lendário na subida do servidor.</summary>
@@ -276,7 +266,6 @@ public static class SistemaFerraria
         Marcha.AoPerderNoCaminho.Add(Lendarios.AoPerderNoCaminho);
         Exercitos.AoEntrarNoLocal += Lendarios.AoEntrarNoLocal;
         Combates.AoTerminar.Add(Lendarios.AoTerminar);
-        Espionagem.ExtrasRelatorio.Add(Lendarios.NoRelatorio);
         CheckpointReinoEvento.AoCheckpoint.Add((mm, r) => Lendarios.Conferir(mm));
         // a ferraria aparece quando o reino tem a primeira
         ObraFundar.AoFundar += (mm, r, l) => { if (l.Tipo == TipoLocal.Ferraria) Revelar(mm, r); };

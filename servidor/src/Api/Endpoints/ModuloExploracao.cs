@@ -113,9 +113,8 @@ public sealed class ModuloExploracao : IModuloApi
                 var r = Sessao.ReinoDa(m, id);
                 if (!m.G.Valido(hex)) throw new RegraException("Hexágono fora do mapa.");
                 var motivo = Rotas.Motivo(m, r, hex);
-                var conhecido = Nevoas.Explorado(m, r.Id, hex);
-                var (custo, seg, ponte) = conhecido ? Rotas.Custo(m, hex) : (new Recursos(), 0, false);
-                return new { hex, motivo, ponte, custo, seg, terreno = conhecido ? Jogo.Mapa.TerrenoExt.Chave(m.Mapa.Terrenos[hex]) : null, rio = conhecido && m.Mapa.Rio[hex] };
+                var (custo, seg, ponte) = Rotas.Custo(m, hex);   // o terreno é público
+                return new { hex, motivo, ponte, custo, seg, terreno = Jogo.Mapa.TerrenoExt.Chave(m.Mapa.Terrenos[hex]), rio = m.Mapa.Rio[hex] };
             }), Json.Web);
         });
 
@@ -151,7 +150,6 @@ public static class ExtrasExploracao
                 emTreino = Exploradores.EmTreino(r).Sum(i => i.Restantes),
                 presos = Capturas.PresosPor(mm, r.Id).Count(),
                 capturados = Capturas.PresosDe(mm, r.Id).Count(),
-                conhecidos = r.ReinosConhecidos.Count,
             };
         });
     });

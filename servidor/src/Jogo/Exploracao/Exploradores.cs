@@ -235,7 +235,6 @@ namespace ReinoDePedra.Jogo.Exploracao
             {
                 if (e.TipoExp != Batedor) throw new RegraException("Só o batedor de elite espiona.");
                 if (GT.Total(e.Tropas) > 0) throw new RegraException("O batedor espiona sozinho, sem escolta.");
-                if (!Nevoas.Explorado(m, r.Id, d)) throw new RegraException("Explore a área antes de espionar.");
                 var l = m.LocalNoHex(d);
                 if (l != null && l.ReinoId == r.Id) throw new RegraException("Esse local é seu.");
             }

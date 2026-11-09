@@ -489,22 +489,22 @@ public class ValiososTestes
     }
 
     [Fact]
-    public void Visibilidade_uma_so_espionagem_duas_brilho_tres_farol()
+    public void Visibilidade_uma_ou_duas_brilho_tres_farol_para_todos()
     {
         var t = new MundoTeste();
         var dono = t.NovoReino();
         var outro = t.NovoReino();
         var longe = t.NovoReino();
         var mina = LocalDe(t, dono, TipoLocal.Mina, "ferro");
-        Nevoas.RevelarArea(t.M, outro.Id, mina.Hex, 2);   // "outro" já explorou a área; "longe", não
-        var vazio = new HashSet<int>();
-        List<ReliquiaNoMapa> Ve(Reino r) => ReliquiasLendarias.NoMapa(t.M, r.Id, vazio).Where(x => x.LocalId == mina.Id).ToList();
-        DarReliquia(t, dono, mina, "ataque");
+        Nevoas.RevelarArea(t.M, outro.Id, mina.Hex, 2);   // "outro" já explorou a área; "longe", não: dá no mesmo
+        List<ReliquiaNoMapa> Ve(Reino r) => ReliquiasLendarias.NoMapa(t.M, r.Id).Where(x => x.LocalId == mina.Id).ToList();
         Assert.Empty(Ve(outro));
+        DarReliquia(t, dono, mina, "ataque");
+        Assert.Equal("brilho", Assert.Single(Ve(outro)).Tipo);
+        Assert.Equal("brilho", Assert.Single(Ve(longe)).Tipo);
         Assert.Equal("local", Assert.Single(Ve(dono)).Tipo);
         DarReliquia(t, dono, mina, "producao");
         Assert.Equal("brilho", Assert.Single(Ve(outro)).Tipo);
-        Assert.Empty(Ve(longe));
         Assert.Empty(Assert.Single(Ve(outro)).Tipos);   // tipos não revelados
         DarReliquia(t, dono, mina, "resistencia");
         Assert.Equal("farol", Assert.Single(Ve(outro)).Tipo);
@@ -517,7 +517,7 @@ public class ValiososTestes
     }
 
     [Fact]
-    public void Marcha_com_reliquia_aparece_com_bau_para_quem_a_ve()
+    public void Marcha_com_reliquia_aparece_com_bau_para_todos_sem_o_tipo()
     {
         var t = new MundoTeste();
         var r = t.NovoReino();
@@ -526,10 +526,8 @@ public class ValiososTestes
         var rel = DarReliquia(t, r, c, "ataque");
         Guarnecer(t, r, c, "lanceiro", 5);
         var ex = ReliquiasLendarias.Mover(t.M, r, rel.Id, c.Id, new Dictionary<string, int> { ["lanceiro"] = 5 }, LocalDe(t, r, TipoLocal.Vila).Id, false);
-        var h = ex.HexEm(t.M.Agora);
-        Assert.Contains(ReliquiasLendarias.NoMapa(t.M, r.Id, new HashSet<int>()), x => x.Tipo == "marcha" && x.MarchaId == ex.Id && x.Tipos.Single() == "ataque");
-        Assert.DoesNotContain(ReliquiasLendarias.NoMapa(t.M, outro.Id, new HashSet<int>()), x => x.MarchaId == ex.Id);
-        var vista = Assert.Single(ReliquiasLendarias.NoMapa(t.M, outro.Id, new HashSet<int> { h }), x => x.MarchaId == ex.Id);
+        Assert.Contains(ReliquiasLendarias.NoMapa(t.M, r.Id), x => x.Tipo == "marcha" && x.MarchaId == ex.Id && x.Tipos.Single() == "ataque");
+        var vista = Assert.Single(ReliquiasLendarias.NoMapa(t.M, outro.Id), x => x.MarchaId == ex.Id);
         Assert.Empty(vista.Tipos);
     }
 

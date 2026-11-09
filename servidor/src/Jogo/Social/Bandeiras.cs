@@ -11,7 +11,7 @@ namespace ReinoDePedra.Jogo.Social
     /// <summary>
     /// Bandeira num hexágono: sinal social (reivindicação, ameaça, aliança, aviso), sem efeito no jogo. Sempre mostra quem a colocou.
     /// Até <c>P.social.bandeiras.ativas</c> por reino, recado de até <c>P.social.bandeiras.caracteres</c>. Outros reinos a derrubam
-    /// com tropas no local (ordem "derrubar-bandeira"); o dono é avisado sem saber quem foi, a não ser que as tropas levassem estandarte.
+    /// com tropas no local (ordem "derrubar-bandeira"); o dono é avisado de quem foi.
     /// </summary>
     public sealed class Bandeira : Documento
     {
@@ -75,7 +75,7 @@ namespace ReinoDePedra.Jogo.Social
             m.Avisar(r.Id, "mapa");
         }
 
-        /// <summary>Tropas no local derrubam a bandeira; o dono é avisado sem saber quem foi (salvo estandarte).</summary>
+        /// <summary>Tropas no local derrubam a bandeira; o dono é avisado de quem foi (as marchas têm dono).</summary>
         public static void Derrubar(Mundo m, Exercito ex, Bandeira b)
         {
             var quem = m.Reinos.Obter(ex.ReinoId);
@@ -83,43 +83,13 @@ namespace ReinoDePedra.Jogo.Social
             var onde = "hexágono " + m.G.C(b.Hex) + ", " + m.G.L(b.Hex);
             if (m.Reinos.Obter(b.ReinoId) is { } dono)
             {
-                var por = ex.Estandarte && quem != null ? "Derrubada por " + quem.Nome + " (levavam o estandarte)." : "Não se sabe quem derrubou.";
+                var por = quem != null ? "Derrubada por " + quem.Nome + "." : "";
                 Registros.Notificar(m, dono.Id, "reino", "Bandeira derrubada", "“" + b.Recado + "” no " + onde + ". " + por, "bandeiras");
-                if (ex.Estandarte && quem != null) Conhecimento.Conhecer(m, dono, quem, "estandarte");
                 m.Avisar(dono.Id, "mapa");
             }
             m.Avisar(ex.ReinoId, "mapa");
         }
 
-        /// <summary>Objeto da bandeira para o mapa (e para a foto da névoa), visto pelo reino <paramref name="vendo"/>.</summary>
-        public static JsonObject Objeto(Mundo m, long vendo, Bandeira b)
-        {
-            var autor = m.Reinos.Obter(b.ReinoId);
-            return new JsonObject
-            {
-                ["tipo"] = "bandeira", ["id"] = b.Id, ["tipoBandeira"] = b.Tipo, ["recado"] = b.Recado, ["quando"] = b.Quando,
-                ["dono"] = b.ReinoId == vendo ? "meu" : Aliancas.SaoAliados(m, vendo, b.ReinoId) ? "aliado" : "outro",
-                ["autor"] = autor != null ? Espionagem.Identidade(autor) : null,
-            };
-        }
-
-        /// <summary>Quem vê uma bandeira de outro reino passa a conhecê-lo (bandeiras mostram quem as colocou).</summary>
-        public static void Vista(Mundo m, long vendo, Bandeira b)
-        {
-            if (b.ReinoId == vendo || m.Reinos.Obter(vendo) is not { } r || m.Reinos.Obter(b.ReinoId) is not { } autor) return;
-            Conhecimento.Conhecer(m, r, autor, "bandeira");
-        }
-
-        /// <summary>Fotógrafo da névoa: bandeiras de outros reinos no hexágono (as próprias aparecem sempre ao vivo).</summary>
-        public static IEnumerable<JsonObject> Foto(Mundo m, long reinoId, int hex)
-        {
-            foreach (var b in NoHex(m, hex))
-            {
-                if (b.ReinoId == reinoId) continue;
-                Vista(m, reinoId, b);
-                yield return Objeto(m, reinoId, b);
-            }
-        }
     }
 
     /// <summary>Ordem "derrubar-bandeira": vai até o hexágono, derruba a bandeira de outro reino (Dados.bandeira, ou todas as alheias) e volta.</summary>
@@ -138,7 +108,6 @@ namespace ReinoDePedra.Jogo.Social
             var id = Alvo(ex);
             var alheias = Bandeiras.NoHex(m, destino).Where(b => b.ReinoId != r.Id && (id == null || b.Id == id)).ToList();
             if (alheias.Count == 0) throw new RegraException("Não há bandeira de outro reino neste hexágono.");
-            try { ex.Estandarte = ex.Dados["estandarte"]?.GetValue<bool>() ?? false; } catch { ex.Estandarte = false; }
         }
 
         public void Chegou(Mundo m, Exercito ex)

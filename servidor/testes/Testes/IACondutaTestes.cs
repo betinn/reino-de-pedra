@@ -113,7 +113,6 @@ public class IACondutaTestes
         var plano = PlanoAtaque.Ler(ex.Dados);
         Assert.Equal(Ataques.Saque, plano.Tipo);
         Assert.Equal(t.M.P.IA.Ataque.Tatica, plano.Tatica);
-        Assert.False(ex.Estandarte);
         Assert.True(GT.Livres(t.M, castelo, "lanceiro") >= t.M.P.IA.Ataque.Reserva);
         // um ataque por vez
         Governo.Atacar(t.M, ia, castelo);
@@ -139,7 +138,6 @@ public class IACondutaTestes
         var t = MundoIA.Novo(criar: false);
         var j = MundoIA.Jogador(t, 0); var k = MundoIA.Jogador(t, 1);
         var a = Aliancas.Criar(t.M, j, "Liga do Norte");
-        Conhecimento.Conhecer(t.M, j, k, "teste"); Conhecimento.Conhecer(t.M, k, j, "teste");
         Aliancas.Convidar(t.M, j, k.Id); Aliancas.AceitarConvite(t.M, k, a.Id);
         k.UltimoAcesso = t.M.Agora + T.DeHoras(30);   // k entra mais tarde: o evento confere de novo e reagenda
         t.AvancarHoras(t.M.P.RegenciaH - 1);
@@ -189,7 +187,6 @@ public class IACondutaTestes
         var t = MundoIA.Novo(criar: false);
         var j = MundoIA.Jogador(t, 0);
         var ia = MundoIA.Criar(t, perfil);
-        Conhecimento.Conhecer(t.M, j, ia, "teste"); Conhecimento.Conhecer(t.M, ia, j, "teste");
         j.EscudoAte = 0; ia.EscudoAte = 0;   // sem o limite do novato: o que se testa aqui é a margem da IA
         t.DarRecursos(j, 2000, "prata", "comida");
         return (t, ia, j);

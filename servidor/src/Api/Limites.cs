@@ -24,6 +24,7 @@ public static class Limites
     public const int PesadaIpRajada = 40, PesadaIpPorSegundo = 10;
     // login, cadastro e troca de senha (cada um custa um hash PBKDF2): por IP a cada 15 min
     public const int AuthPorJanela = 20;
+    public const int AdminPorJanela = 200;
     /// <summary>Conexões SSE abertas por reino; a mais antiga fecha quando abre outra.</summary>
     public const int SsePorReino = 3;
 
@@ -46,12 +47,17 @@ public static class Limites
     private static TokenBucketRateLimiterOptions Balde(int rajada, int porSegundo) => new()
     { TokenLimit = rajada, TokensPerPeriod = porSegundo, ReplenishmentPeriod = TimeSpan.FromSeconds(1), QueueLimit = 0, AutoReplenishment = true };
 
-    public static void Configurar(RateLimiterOptions o)
+    public static void Configurar(RateLimiterOptions o, Configuracao cfg)
     {
         o.RejectionStatusCode = 429;
         o.OnRejected = (c, _) => { c.HttpContext.Response.Headers.RetryAfter = "1"; return ValueTask.CompletedTask; };
         o.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(Ip(ctx.Connection.RemoteIpAddress), _ => new FixedWindowRateLimiterOptions
         { PermitLimit = AuthPorJanela, Window = TimeSpan.FromMinutes(15), QueueLimit = 0 }));
+        // pedido de convite: pouco por IP (cada um é uma linha no banco); as rotas do administrador contam à parte
+        o.AddPolicy("convite", ctx => RateLimitPartition.GetFixedWindowLimiter(Ip(ctx.Connection.RemoteIpAddress), _ => new FixedWindowRateLimiterOptions
+        { PermitLimit = cfg.ConvitesPorHora, Window = TimeSpan.FromHours(1), QueueLimit = 0 }));
+        o.AddPolicy("admin", ctx => RateLimitPartition.GetFixedWindowLimiter(Ip(ctx.Connection.RemoteIpAddress), _ => new FixedWindowRateLimiterOptions
+        { PermitLimit = AdminPorJanela, Window = TimeSpan.FromMinutes(15), QueueLimit = 0 }));
         var porIp = PartitionedRateLimiter.Create<HttpContext, string>(ctx => !Api(ctx) ? RateLimitPartition.GetNoLimiter("") :
             RateLimitPartition.GetTokenBucketLimiter(Ip(ctx.Connection.RemoteIpAddress), _ => Balde(IpRajada, IpPorSegundo)));
         var porSessao = PartitionedRateLimiter.Create<HttpContext, string>(ctx => !Api(ctx) || Sessao.Token(ctx) is not { } t ? RateLimitPartition.GetNoLimiter("") :

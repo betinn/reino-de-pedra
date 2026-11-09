@@ -9,8 +9,7 @@ using ReinoDePedra.Jogo.Social;
 namespace ReinoDePedra.Api.Visoes;
 
 /// <summary>
-/// Aliança, comércio, mensagens e bandeiras para o cliente. Só o que o reino pode saber: identidades só de quem ele conhece,
-/// o destinatário de uma mensagem a local desconhecido só se ele respondeu, bandeiras de outros só onde ele viu.
+/// Aliança, comércio, mensagens e bandeiras para o cliente. Identidades e bandeiras são públicas; escudo só de aliado.
 /// </summary>
 public static class VisaoSocial
 {
@@ -66,11 +65,11 @@ public static class VisaoSocial
                 conversa = a.Conversa.TakeLast(50).Select(f => new { f.Id, reino = Id(m, f.ReinoId), f.Texto, f.Quando, minha = f.ReinoId == r.Id }).ToList(),
             };
         }
-        var conhecidas = m.Aliancas.Where(x => x.Id != a?.Id && x.Membros.Any(y => Conhecimento.Conhece(r, y.ReinoId)))
+        var outras = m.Aliancas.Where(x => x.Id != a?.Id)
             .Select(x => new
             {
                 x.Id, x.Nome, x.Brasao, membros = x.Membros.Count, cheia = x.Membros.Count >= m.P.Alianca,
-                conhecidos = x.Membros.Where(y => Conhecimento.Conhece(r, y.ReinoId)).Select(y => m.Reinos.Obter(y.ReinoId)?.Nome).ToList(),
+                nomes = x.Membros.Select(y => m.Reinos.Obter(y.ReinoId)?.Nome).ToList(),
                 pedido = x.Pedidos.Any(c => c.ReinoId == r.Id && c.Ate > agora),
             }).ToList();
         var pedidos = m.Propostas.Where(p => p.Tipo == Comercio.Pedido && (p.DeId == r.Id || p.ParaId == r.Id)).OrderByDescending(p => p.Id).Select(p => Proposta(m, r, p)).ToList();
@@ -92,8 +91,8 @@ public static class VisaoSocial
             {
                 alianca = new { x.a.Id, x.a.Nome, x.a.Brasao, membros = x.a.Membros.Count }, por = Id(m, x.c.PorId), x.c.Ate,
             }).ToList(),
-            aliancasConhecidas = conhecidas,
-            conhecidos = r.ReinosConhecidos.Where(id => a?.Membro(id) == null).Select(id => m.Reinos.Obter(id)).OfType<Reino>().Where(q => q.Ativo)
+            aliancas = outras,
+            reinos = m.Reinos.Where(q => q.Ativo && q.Id != r.Id && a?.Membro(q.Id) == null)
                 .OrderBy(q => q.Nome).Select(q => new { reino = Espionagem.Identidade(q), naAlianca = q.AliancaId != null }).ToList(),
             pedidosRecursos = pedidos,
             reforcos = new { meus = meusReforcos, recebidos },
@@ -105,7 +104,7 @@ public static class VisaoSocial
     public static object Comercio_(Mundo m, Reino r)
     {
         var agora = m.Agora;
-        var conhecidos = r.ReinosConhecidos.Select(id => m.Reinos.Obter(id)).OfType<Reino>().Where(q => q.Ativo).OrderBy(q => q.Nome).Select(q =>
+        var reinos = m.Reinos.Where(q => q.Ativo && q.Id != r.Id).OrderBy(q => q.Nome).Select(q =>
         {
             var pc = Comercio.PactoEntre(m, r.Id, q.Id);
             // o escudo de quem não é aliado só é descoberto ao chegar: nem o campo vai (null some no JSON)
@@ -123,7 +122,7 @@ public static class VisaoSocial
         {
             agora, valor = m.P.Valor, novatoDia = m.P.Comercio.NovatoDia, pacto = m.P.Pacto, recadoMax = m.P.Mensageiro.RecadoProposta,
             eu = new { escudo = r.SobEscudo(agora), novatoRestante = r.SobEscudo(agora) ? Math.Floor(Comercio.NovatoRestante(m, r)) : (double?)null },
-            conhecidos,
+            reinos,
             paraMim = propostas.Where(p => p.ParaId == r.Id).Select(p => Proposta(m, r, p)).ToList(),
             minhas = propostas.Where(p => p.DeId == r.Id).Select(p => Proposta(m, r, p)).ToList(),
             pactos = Comercio.PactosDe(m, r.Id).OrderBy(p => p.Id).Select(p => new
@@ -147,17 +146,6 @@ public static class VisaoSocial
     public static object Mensagens(Mundo m, Reino r)
     {
         Economia.Atualizar(m, r);
-        var castelo = m.Locais.Obter(r.CasteloId);
-        var foto = Fotos.De(m, r.Id);
-        var locais = new List<(Local l, int d)>();
-        foreach (var (h, objs) in foto.Objetos)
-            foreach (var o in objs)
-            {
-                if (o["tipo"]?.GetValue<string>() != "local" || o["dono"]?.GetValue<string>() != "desconhecido") continue;
-                if (m.Locais.Obter(o["id"]!.GetValue<long>()) is not { } l || l.Hex != h || l.ReinoId == r.Id || l.ReinoId == 0 || l.Ruina) continue;
-                if (VisaoMapa.Aliado(m, r, l.ReinoId)) continue;
-                locais.Add((l, castelo != null ? m.G.Distancia(castelo.Hex, h) : 0));
-            }
         return new
         {
             agora = m.Agora, livres = r.MensageirosLivres, emTreino = Mensageiros.EmTreino(r).Sum(i => i.Restantes),
@@ -171,17 +159,16 @@ public static class VisaoSocial
                 return new
                 {
                     x.Id, x.Texto, x.Enviada, x.Entregue, x.Estado, x.RespondeA,
-                    para = Mensageiros.DestinatarioConhecido(m, x) ? Id(m, x.ParaId) : null,
-                    local = x.PorReino || l == null ? null : new { l.Id, tipo = l.Tipo.Chave(), nome = l.Tipo.NomeGenerico(), hex = l.Hex },
+                    para = Id(m, x.ParaId),
+                    local = l == null ? null : new { l.Id, tipo = l.Tipo.Chave(), nome = l.Nome, hex = l.Hex },
                     chegada = mc != null && !mc.Retornando ? mc.Chegada : (long?)null, marcha = mc?.Id,
                     partida = mc != null && !mc.Retornando ? mc.Partida : (long?)null,
                 };
             }).ToList(),
             destinos = new
             {
-                reinos = r.ReinosConhecidos.Select(id => m.Reinos.Obter(id)).OfType<Reino>().Where(q => q.Ativo).OrderBy(q => q.Nome)
+                reinos = m.Reinos.Where(q => q.Ativo && q.Id != r.Id).OrderBy(q => q.Nome)
                     .Select(q => new { reino = Espionagem.Identidade(q), aliado = Aliancas.SaoAliados(m, r.Id, q.Id) }).ToList(),
-                locais = locais.OrderBy(x => x.d).Take(8).Select(x => new { x.l.Id, tipo = x.l.Tipo.Chave(), nome = x.l.Tipo.NomeGenerico(), hex = x.l.Hex, c = m.G.C(x.l.Hex), l = m.G.L(x.l.Hex) }).ToList(),
             },
         };
     }
@@ -190,26 +177,10 @@ public static class VisaoSocial
 
     public static object Bandeiras_(Mundo m, Reino r)
     {
-        var vis = Nevoas.VisiveisAgora(m, r.Id);
-        var nevoa = Nevoas.De(m, r.Id);
         var vistas = new List<object>();
         foreach (var b in m.Bandeiras)
-            if (b.ReinoId != r.Id && vis.Contains(b.Hex))
-            {
-                Bandeiras.Vista(m, r.Id, b);
-                vistas.Add(new { b.Id, b.Hex, c = m.G.C(b.Hex), l = m.G.L(b.Hex), b.Tipo, b.Recado, b.Quando, autor = Id(m, b.ReinoId), aliado = Aliancas.SaoAliados(m, r.Id, b.ReinoId), foto = false, visto = m.Agora });
-            }
-        foreach (var (h, objs) in Fotos.De(m, r.Id).Objetos)
-        {
-            if (vis.Contains(h)) continue;
-            foreach (var o in objs.Where(o => o["tipo"]?.GetValue<string>() == "bandeira"))
-                vistas.Add(new
-                {
-                    Id = o["id"]!.GetValue<long>(), Hex = h, c = m.G.C(h), l = m.G.L(h), Tipo = o["tipoBandeira"]?.GetValue<string>(), Recado = o["recado"]?.GetValue<string>(),
-                    Quando = o["quando"]?.GetValue<long>() ?? 0, autor = o["autor"]?.DeepClone(), aliado = o["dono"]?.GetValue<string>() == "aliado", foto = true,
-                    visto = Nevoas.Instante(m, nevoa.MinutoVisto(h)),
-                });
-        }
+            if (b.ReinoId != r.Id)
+                vistas.Add(new { b.Id, b.Hex, c = m.G.C(b.Hex), l = m.G.L(b.Hex), b.Tipo, b.Recado, b.Quando, autor = Id(m, b.ReinoId), aliado = Aliancas.SaoAliados(m, r.Id, b.ReinoId) });
         var p = m.P.Social.Bandeiras;
         return new
         {
@@ -219,16 +190,15 @@ public static class VisaoSocial
         };
     }
 
-    /// <summary>Bandeiras no mapa: as suas sempre, as de outros onde o reino vê agora (fora da visão, vêm da foto da névoa).</summary>
+    /// <summary>Bandeiras no mapa: públicas, de todos, com quem as colocou.</summary>
     public static IEnumerable<object> Mapa(Mundo m, Reino r, HashSet<int> vis)
     {
         var l = new List<object>();
         foreach (var b in m.Bandeiras)
         {
-            if (b.ReinoId != r.Id && !vis.Contains(b.Hex)) continue;
-            Jogo.Social.Bandeiras.Vista(m, r.Id, b);
-            var o = Jogo.Social.Bandeiras.Objeto(m, r.Id, b);
-            o["hex"] = b.Hex;
+            var o = Jogo.Publico.RegraPublica.Bandeira(b);
+            o["dono"] = VisaoMapa.Dono(m, r, b.ReinoId);
+            o["autor"] = Id(m, b.ReinoId);
             l.Add(o);
         }
         return l;

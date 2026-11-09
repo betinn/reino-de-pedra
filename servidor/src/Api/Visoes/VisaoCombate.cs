@@ -10,31 +10,27 @@ using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 namespace ReinoDePedra.Api.Visoes;
 
 /// <summary>
-/// Combate como o reino o vê: prévia do ataque, batalhas (anônimas para o defensor sem estandarte) e defesas próprias.
-/// Nada aqui revela o dono de um local alheio nem a identidade de quem ataca sem estandarte.
+/// Combate como o reino o vê: prévia do ataque, batalhas e defesas próprias. Quem ataca é sempre conhecido; a defesa exata de
+/// um local alheio, só pela espionagem.
 /// </summary>
 public static class VisaoCombate
 {
     public sealed record PedidoObjetivo(string K, string? R, double? Q);
     public sealed record PedidoAtaque(long? DeLocalId, long? MarchaId, Dictionary<string, int>? Tropas, int? DestinoHex, int? C, int? L,
-        string? Tipo, List<PedidoObjetivo>? Objetivos, string? Tatica, bool? Completar, bool? Estandarte, bool? Seguro, List<long>? Pessoas = null, string? Divisao = null, bool? RecuarVazio = null);
+        string? Tipo, List<PedidoObjetivo>? Objetivos, string? Tatica, bool? Completar, bool? Seguro, List<long>? Pessoas = null, string? Divisao = null, bool? RecuarVazio = null);
 
     public static JsonObject Dados(PedidoAtaque p)
     {
         var arr = new JsonArray();
         foreach (var o in p.Objetivos ?? []) { var j = new JsonObject { ["k"] = o.K }; if (o.R != null) j["r"] = o.R; if (o.Q != null) j["q"] = o.Q; arr.Add(j); }
-        return new JsonObject { ["tipo"] = p.Tipo, ["objetivos"] = arr, ["tatica"] = p.Tatica, ["completar"] = p.Completar == true, ["estandarte"] = p.Estandarte == true, ["divisao"] = p.Divisao, ["recuarVazio"] = p.RecuarVazio };
+        return new JsonObject { ["tipo"] = p.Tipo, ["objetivos"] = arr, ["tatica"] = p.Tatica, ["completar"] = p.Completar == true, ["divisao"] = p.Divisao, ["recuarVazio"] = p.RecuarVazio };
     }
-
-    public static List<TorreConhecida> TorresConhecidas(Mundo m, Reino r, Local l, HashSet<int>? vis = null) => Reconhecimentos.TorresConhecidas(m, r, l, vis);
 
     /// <summary>Prévia do envio: chegada, carga, objetivos normalizados, saque decrescente e avisos, sem enviar nada.</summary>
     public static object Previa(Mundo m, Reino r, PedidoAtaque p, int para)
     {
         var vis = Nevoas.VisiveisAgora(m, r.Id);
-        var alvo = Ataques.Alvo(m, r, para, vis);
-        // fora da vista, o alvo aparece como a foto da névoa o guarda (último estado conhecido)
-        var foto = vis.Contains(para) ? null : Ataques.FotoDoLocal(m, r, para);
+        var alvo = Ataques.Alvo(m, r, para);
         int de; Dictionary<string, int> grupo; double bonusA;
         if (p.MarchaId is long mid)
         {
@@ -72,7 +68,7 @@ public static class VisaoCombate
         var nRecursos = plano.Objetivos.Count(o => o.K == "recurso");
         // o estoque do alvo não é conhecido aqui: a prévia diz só até quanto a carga comporta para cada recurso
         double? Ate(Objetivo o) => o.K != "recurso" || !levaCarga ? null : plano.Divisao == Ataques.DivisaoIgual ? Math.Floor(carga / Math.Max(1, nRecursos)) : carga;
-        var torres = TorresConhecidas(m, r, alvo, vis);
+        var torres = Reconhecimentos.TorresConhecidas(m, alvo);
         var avisos = new List<object>();
         if (levaCarga && recentes > 0)
             avisos.Add(new { tipo = "alerta", texto = "Você saqueou este alvo " + recentes + (recentes > 1 ? " vezes" : " vez") + " nas últimas " + m.P.Combate.SaqueJanelaH + " h: rendimento " + Math.Round(rendimento * 100) + "%. Saques repetidos rendem cada vez menos." });
@@ -89,17 +85,17 @@ public static class VisaoCombate
         {
             alvo = new
             {
-                hex = alvo.Hex, c = m.G.C(alvo.Hex), l = m.G.L(alvo.Hex), aoVivo = foto == null,
-                nome = foto != null ? (string?)foto["nome"] : Ataques.NomeAlvo(alvo),
-                local = foto != null ? (string?)foto["local"] : alvo.Tipo.Chave(), produz = foto != null ? null : alvo.Produz,
-                dono = foto != null ? (string?)foto["dono"] : Ataques.SemDono(m, alvo) ? "livre" : "desconhecido",
-                castelo = foto != null ? (string?)foto["local"] == TipoLocal.Castelo.Chave() && foto["ruina"]?.GetValue<bool>() != true : alvo.Tipo == TipoLocal.Castelo && !alvo.Ruina,
+                hex = alvo.Hex, c = m.G.C(alvo.Hex), l = m.G.L(alvo.Hex), aoVivo = vis.Contains(alvo.Hex),
+                nome = Ataques.NomeAlvo(alvo), local = alvo.Tipo.Chave(), produz = alvo.Produz, nivel = alvo.Ruina ? (int?)null : alvo.Nivel,
+                dono = Ataques.SemDono(m, alvo) ? "livre" : "outro",
+                reino = !Ataques.SemDono(m, alvo) && m.Reinos.Obter(alvo.ReinoId) is { } rd ? Espionagem.Identidade(rd) : null,
+                castelo = alvo.Tipo == TipoLocal.Castelo && !alvo.Ruina,
                 torres = torres.Select(t => new { t.Hex, t.Nivel, t.Alcance }),
             },
             tipos = Ataques.TiposPara(m, alvo), bloqueio,
             plano = new
             {
-                plano.Tipo, tipoNome = Ataques.NomesTipo[plano.Tipo], plano.Tatica, limite = Ataques.Limite(m, plano.Tatica), plano.Completar, plano.Estandarte,
+                plano.Tipo, tipoNome = Ataques.NomesTipo[plano.Tipo], plano.Tatica, limite = Ataques.Limite(m, plano.Tatica), plano.Completar,
                 plano.Divisao, plano.RecuarVazio,
                 objetivos = plano.Objetivos.Select(o => new { k = o.K, r = o.R, q = o.Q, ate = Ate(o), texto = Ataques.TextoObjetivo(m, o, alvo) }),
             },
@@ -111,7 +107,6 @@ public static class VisaoCombate
             forcaInimiga = Reconhecimentos.Estimar(m, r, alvo, grupo, bonusA, plano.Tatica, vis),
             saque = levaCarga ? new { recentes, rendimento } : null,
             avisos, quandoParam = Ataques.QuandoParam(m, plano, carga),
-            defensorVera = plano.Estandarte ? new { nome = "Reino de " + r.Nome, brasao = r.Brasao, identificado = true } : new { nome = "Forças desconhecidas", brasao = (Brasao?)null, identificado = false },
         };
     }
 
@@ -147,8 +142,8 @@ public static class VisaoCombate
     }
 
     /// <summary>
-    /// As frentes do local como este reino as vê: o defensor vê cada ataque (anônimo sem estandarte) e abre cada um; o atacante
-    /// vê a própria frente e as outras forças no local, sem identidade nem acesso.
+    /// As frentes do local como este reino as vê: o defensor vê cada ataque e abre cada um; o atacante vê a própria frente e as
+    /// outras forças no local, sem acesso a elas.
     /// </summary>
     public static List<object> Frentes(Mundo m, Reino r, Batalha b)
     {
@@ -162,7 +157,7 @@ public static class VisaoCombate
             return (object)new
             {
                 id = propria || defendo ? x.Id : (long?)null, atual = x.Id == b.Id, propria,
-                nome = propria ? "Suas tropas" : RelatoriosCombate.NomeAtacante(m, x.AtacanteId, x.Estandarte),
+                nome = propria ? "Suas tropas" : RelatoriosCombate.NomeAtacante(m, x.AtacanteId),
                 tipoNome = propria || defendo ? Ataques.NomesTipo.GetValueOrDefault(PlanoAtaque.Ler(x.Plano).Tipo, "") : null,
                 fim = x.FimPrevisto, parte = Math.Round((x.Marcos.LastOrDefault()?.Parte ?? 1) * 100),
                 vivo = Vivo(Batalhas.PlacarDe(m, x, agora), defendo ? "defesa" : "ataque"),
@@ -225,8 +220,8 @@ public static class VisaoCombate
             },
             eles = new
             {
-                nome = papel == "defesa" ? RelatoriosCombate.NomeAtacante(m, b.AtacanteId, b.Estandarte) : "Defesa do local",
-                atacante = papel == "defesa" ? RelatoriosCombate.Atacante(m, b.AtacanteId, b.Estandarte) : null,
+                nome = papel == "defesa" ? RelatoriosCombate.NomeAtacante(m, b.AtacanteId) : "Defesa do local",
+                atacante = papel == "defesa" ? RelatoriosCombate.Atacante(m, b.AtacanteId) : null,
                 tropas = delesTropa,
                 milicia = papel == "ataque" ? Math.Round(c.Extra.Pop * m.P.MiliciaPorPop) : 0,
                 arqueirosNoAlto = papel == "ataque" ? c.Extra.ArqTorre : 0, portoes = papel == "ataque" ? c.Extra.Portoes : 0,

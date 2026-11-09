@@ -172,21 +172,67 @@
     }, { passive: false });
   };
 
-  /* ---------------------------------------------------------------- avisos (toasts)
-     Pequenos, num canto, no máximo 3 de cada vez e somem sozinhos: o centro do jogo fica livre. */
-  RP.aviso = function (o) {
-    var box = RP.$('#avisos');
-    while (box.children.length >= 3) box.firstChild.remove();
+  /* ---------------------------------------------------------------- avisos: anúncio no centro da tela, um pouco acima do meio
+     RP.aviso({ titulo, texto, icone, tipo, link, ms, anuncio, descartavel })
+     anuncio: o que aconteceu (ataque, batalha, notificação): grande, um por vez, numa fila, sem um cobrir o outro. Com o
+     tipo 'perigo', vem na frente dos outros. descartavel: pode sair da fila se ela encher (mensagens do mundo).
+     Sem anuncio: resposta a um gesto (confirmação, erro, dica): menor, logo abaixo, na hora; o novo troca o anterior.
+     Nada aqui pega o clique do mapa, a não ser o aviso com link. */
+  var FILA_ANUNCIOS = 5, MS_ANUNCIO = 5200, MS_ANUNCIO_COM_FILA = 3400;
+  var filaAnuncios = [], anuncioAtual = null, vagaGesto = null;
+  function caixaAvisos(cls) {
+    var box = RP.$('#avisos .' + cls);
+    if (box) return box;
+    box = document.createElement('div'); box.className = cls;
+    RP.$('#avisos').appendChild(box);
+    return box;
+  }
+  function montarAviso(o) {
     var el = document.createElement('div');
-    el.className = 'aviso aviso-' + (o.tipo || 'info');
+    el.className = 'aviso aviso-' + (o.tipo || 'info') + (o.anuncio ? ' aviso-anuncio' : '') + (o.link ? ' aviso-link' : '');
     el.setAttribute('role', o.tipo === 'perigo' ? 'alert' : 'status');
-    el.innerHTML = RP.icone(o.icone || 'info', '', '') + '<div><b>' + RP.esc(o.titulo) + '</b>' + (o.texto ? '<span>' + RP.esc(o.texto) + '</span>' : '') +
+    el.innerHTML = '<span class="aviso-ico">' + RP.icone(o.icone || 'info', '', '') + '</span><div class="aviso-txt"><b>' + RP.esc(o.titulo) + '</b>' + (o.texto ? '<span>' + RP.esc(o.texto) + '</span>' : '') +
       (o.link ? '<small class="aviso-abrir">Clique para abrir</small>' : '') + '</div>';
-    if (o.link) el.classList.add('aviso-link');
-    box.appendChild(el);
-    var sair = function () { el.classList.add('sai'); setTimeout(function () { el.remove(); }, 240); };
-    el.addEventListener('click', function () { if (o.link) RP.ir(o.link); sair(); });
-    setTimeout(sair, o.ms || (o.texto ? 3600 : 2400));
+    return el;
+  }
+  function tirarAviso(el, depois) {
+    el.classList.add('sai');
+    setTimeout(function () { el.remove(); if (depois) depois(); }, 240);
+  }
+  function proximoAnuncio() {
+    var o = filaAnuncios.shift();
+    anuncioAtual = o || null;
+    if (!o) return;
+    var el = montarAviso(o), feito = false;
+    var sair = function () { if (feito) return; feito = true; tirarAviso(el, proximoAnuncio); };
+    if (o.link) el.addEventListener('click', function () { RP.ir(o.link); sair(); });
+    caixaAvisos('avisos-anuncio').appendChild(el);
+    o._el = el;
+    setTimeout(sair, o.ms || (filaAnuncios.length ? MS_ANUNCIO_COM_FILA : MS_ANUNCIO));
+  }
+  RP.aviso = function (o) {
+    if (o.anuncio) {
+      var igual = function (x) { return x && x.titulo === o.titulo && x.texto === o.texto; };
+      if (igual(anuncioAtual) || filaAnuncios.some(igual)) return;
+      if (o.tipo === 'perigo') {
+        var i = 0;
+        while (i < filaAnuncios.length && filaAnuncios[i].tipo === 'perigo') i++;
+        filaAnuncios.splice(i, 0, o);
+      } else filaAnuncios.push(o);
+      while (filaAnuncios.length > FILA_ANUNCIOS) {
+        var k = filaAnuncios.findIndex(function (x) { return x.descartavel; });
+        filaAnuncios.splice(k >= 0 ? k : 0, 1);
+      }
+      if (!anuncioAtual) proximoAnuncio();
+      return;
+    }
+    if (vagaGesto) { clearTimeout(vagaGesto.t); tirarAviso(vagaGesto.el); }
+    var el = montarAviso(o), vaga = { el: el };
+    var sair = function () { if (vagaGesto === vaga) vagaGesto = null; tirarAviso(el); };
+    if (o.link) el.addEventListener('click', function () { clearTimeout(vaga.t); RP.ir(o.link); sair(); });
+    caixaAvisos('avisos-gesto').appendChild(el);
+    vagaGesto = vaga;
+    vaga.t = setTimeout(sair, o.ms || (o.texto ? 3600 : 2400));
   };
 
   /* ---------------------------------------------------------------- folha (painel de seleção na base da tela)
@@ -826,11 +872,13 @@
   function rotear() {
     var h = location.hash.replace(/^#\/?/, '') || 'inicio';
     var partes = h.split('?');
+    /* link de convite: #/convite/<token> (o token fica no fragmento: nem o servidor nem os logs o veem na URL) */
+    if (partes[0].indexOf('convite/') === 0) { RP.abrirConvite(partes[0].slice(8)); return; }
     var nome = RP.telas[partes[0]] ? partes[0] : (RP.reino ? 'reino' : 'inicio');
     var params = new URLSearchParams(partes[1] || '');
     var def = RP.telas[nome];
     /* telas do jogo exigem conta e reino; sem eles, vai para a entrada ou a criação */
-    if (!def.publica && !RP.conta) { nome = 'inicio'; def = RP.telas[nome]; }
+    if (!def.publica && !RP.conta && !(nome === 'criar' && RP.criarOpcoes)) { nome = 'inicio'; def = RP.telas[nome]; }
     else if (!def.publica && !def.semReino && !RP.reino) { nome = RP.conta && !RP.conta.reino ? 'criar' : 'inicio'; def = RP.telas[nome]; }
     var cheia = !!def.publica || !!def.semReino || !RP.reino;
     if (atual && atual !== nome && !RP.telas[atual].fundo) {

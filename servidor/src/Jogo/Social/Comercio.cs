@@ -73,8 +73,8 @@ namespace ReinoDePedra.Jogo.Social
         private static Reino Outro(Mundo m, long id) =>
             m.Reinos.Obter(id) is { Ativo: true } r ? r : throw new RegraException("Reino não encontrado.", 404);
 
-        /// <summary>Troca e propostas só com reinos conhecidos (aliados também se conhecem).</summary>
-        public static bool PodeNegociar(Reino r, Reino outro) => outro.Id != r.Id && Conhecimento.Conhece(r, outro.Id);
+        /// <summary>Troca e propostas com qualquer outro reino.</summary>
+        public static bool PodeNegociar(Reino r, Reino outro) => outro.Id != r.Id;
 
         private static string Recado(Mundo m, string? recado)
         {
@@ -178,14 +178,13 @@ namespace ReinoDePedra.Jogo.Social
         public static Proposta ProporTroca(Mundo m, Reino r, long paraId, IReadOnlyDictionary<string, double>? da, IReadOnlyDictionary<string, double>? quer, string? recado)
         {
             var para = Outro(m, paraId);
-            if (!PodeNegociar(r, para)) throw new RegraException("Troca só com reinos que você conhece.");
+            if (!PodeNegociar(r, para)) throw new RegraException("Troca só com outro reino.");
             var d = Remessas.Ler(m, da); var q = Remessas.Ler(m, quer);
             if (d.Keys.Any(q.ContainsKey)) throw new RegraException("Escolha recursos diferentes para dar e receber.");
             var txt = Recado(m, recado);
             Remessas.Conferir(m, r, d);
             ConferirNovato(m, r, para, d, q);   // o limite do outro (se não for aliado) fica para o aceite
             var p = Nova(m, new Proposta { Tipo = Troca, DeId = r.Id, ParaId = para.Id, Da = d, Quer = q, Recado = txt });
-            Conhecimento.Conhecer(m, para, r, "proposta");
             Registros.Notificar(m, para.Id, "comercio", "Proposta de troca de " + r.Nome, "Oferece " + Remessas.Texto(d) + " por " + Remessas.Texto(q) + ".", "comercio");
             return p;
         }
@@ -280,7 +279,6 @@ namespace ReinoDePedra.Jogo.Social
                 Tipo = PactoT, DeId = r.Id, ParaId = para.Id, Dias = dias, Recado = txt,
                 Da = paga == r ? carga : new Recursos(), Quer = paga == para ? carga : new Recursos(),
             });
-            Conhecimento.Conhecer(m, para, r, "proposta");
             Registros.Notificar(m, para.Id, "comercio", r.Nome + " propõe um pacto", dias + (dias > 1 ? " dias" : " dia") + " sem ataques · " +
                 (paga == r ? "paga " + Remessas.Texto(carga) : paga == para ? "cobra " + Remessas.Texto(carga) : "sem pagamento") + ".", "comercio");
             return p;
@@ -402,12 +400,11 @@ namespace ReinoDePedra.Jogo.Social
             try { Remessas.Conferir(m, dono, p.Oferta); }
             catch (RegraException) { throw new RegraException("O dono não tem mais o que ofereceu."); }
             if (ConferirNovato(m, captor, dono, new Recursos(), p.Oferta) != null) throw new RegraException("Esta oferta não vale mais.");
-            var antes = (p.Resgate, p.Estado, p.Oferta, p.OfertaEm, p.CaptorRevelado);
-            p.Resgate = p.Oferta; p.Estado = Capturas.ResgatePedido; p.Oferta = new(); p.OfertaEm = null; p.CaptorRevelado = true;
+            var antes = (p.Resgate, p.Estado, p.Oferta, p.OfertaEm);
+            p.Resgate = p.Oferta; p.Estado = Capturas.ResgatePedido; p.Oferta = new(); p.OfertaEm = null;
             try { EnviarResgate(m, dono, captor, p); }
-            catch { (p.Resgate, p.Estado, p.Oferta, p.OfertaEm, p.CaptorRevelado) = antes; throw; }
+            catch { (p.Resgate, p.Estado, p.Oferta, p.OfertaEm) = antes; throw; }
             m.Sujar(p);
-            Conhecimento.Conhecer(m, dono, captor, "resgate");
             Registros.Notificar(m, dono.Id, "exploracao", captor.Nome + " aceitou sua oferta", "O pagamento (" + Remessas.Texto(p.Resgate) + ") saiu: quando chegar, " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " é solto.", "exploradores");
         }
 

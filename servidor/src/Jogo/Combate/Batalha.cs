@@ -64,7 +64,6 @@ namespace ReinoDePedra.Jogo.Combate
         public Dictionary<string, int> TropasAtaque { get; set; } = new();
         /// <summary>Hexágono de onde veio o primeiro ataque (para a direção de origem).</summary>
         public int OrigemHex { get; set; }
-        public bool Estandarte { get; set; }
         public bool Encerrada { get; set; }
         /// <summary>Por que as tropas voltaram sem ordem do jogador nem limite da tática (sem o que levar, o local caiu).</summary>
         public string? MotivoRecuo { get; set; }
@@ -179,7 +178,7 @@ namespace ReinoDePedra.Jogo.Combate
             var b = new Batalha
             {
                 LocalId = l.Id, Hex = l.Hex, AtacanteId = ex.ReinoId, DefensorId = def.Id, Plano = plano.ParaJson(),
-                Inicio = agora, OrigemHex = origem, Estandarte = ex.Estandarte,
+                Inicio = agora, OrigemHex = origem,
                 TropasAtaque = new(ex.Tropas),
             };
             b.Exercitos.Add(ex.Id);
@@ -191,10 +190,13 @@ namespace ReinoDePedra.Jogo.Combate
             Recalcular(m, b, outras.Count > 0 ? "A batalha começou. A defesa já luta em outra frente." : "A batalha começou.", null);
             foreach (var o in outras) Recalcular(m, o, "Outra força atacou o local: a defesa se divide.", "defesa");
             var atk = m.Reinos.Obter(ex.ReinoId)!;
-            var quem = ex.Estandarte ? "O exército de " + atk.Nome : "Forças desconhecidas";
-            Registros.Notificar(m, def.Id, "ataques", "Batalha em " + l.Nome, quem + " atacam (" + Ataques.NomesTipo[plano.Tipo].ToLowerInvariant() + "). Envie reforços ou recue.", "batalha?id=" + b.Id);
+            Registros.Notificar(m, def.Id, "ataques", "Batalha em " + l.Nome, "O exército de " + atk.Nome + " ataca (" + Ataques.NomesTipo[plano.Tipo].ToLowerInvariant() + "). Envie reforços ou recue.", "batalha?id=" + b.Id);
             Registros.Notificar(m, atk.Id, "batalhas", "Batalha começou", "Suas tropas atacam: " + Ataques.NomeAlvo(l) + ".", "batalha?id=" + b.Id);
+            AoComecar?.Invoke(m, b, l);
         }
+
+        /// <summary>Uma frente nova começou neste local (o feed público anuncia).</summary>
+        public static event Action<Mundo, Batalha, Local>? AoComecar;
 
         private static void Juntar(Mundo m, Batalha b, Exercito ex)
         {

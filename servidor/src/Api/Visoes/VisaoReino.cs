@@ -154,7 +154,7 @@ public static class VisaoMarcha
 {
     public static object Propria(Mundo m, Marcha x) => new
     {
-        x.Id, x.Tipo, x.Caminho, x.Tempos, x.Tropas, carga = x.Carga.Arredondado(), x.Vel, x.Retornando, x.Estandarte,
+        x.Id, x.Tipo, x.Caminho, x.Tempos, x.Tropas, carga = x.Carga.Arredondado(), x.Vel, x.Retornando,
         pessoas = x is Carregadores c ? c.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento d ? d.PessoaIds.Count : (int?)null,
         detalhe = Detalhes(m, x),
     };

@@ -62,11 +62,11 @@ public static class VisaoValiosos
         Apresentacao.Conferir(m, r);
         var vis = Nevoas.VisiveisAgora(m, r.Id);
         var nevoa = Nevoas.De(m, r.Id);
-        var noMapa = ReliquiasLendarias.NoMapa(m, r.Id, vis);
+        var noMapa = ReliquiasLendarias.NoMapa(m, r.Id);
         var aVista = noMapa.Where(x => x.Tipo is "farol" or "brilho" && m.Locais.Obter(x.LocalId ?? 0)?.ReinoId != r.Id).Select(x =>
         {
             var l = m.Locais.Obter(x.LocalId!.Value)!;
-            return new { localId = l.Id, x.Hex, c = m.G.C(x.Hex), l = m.G.L(x.Hex), x.N, x.Nivel, nome = l.Ruina ? "Ruína" : l.Tipo.NomeGenerico() };
+            return new { localId = l.Id, x.Hex, c = m.G.C(x.Hex), l = m.G.L(x.Hex), x.N, x.Nivel, nome = Jogo.Combate.Ataques.NomeAlvo(l) };
         }).ToList();
         var minhasMarchas = noMapa.Where(x => x.Tipo == "marcha" && x.MarchaId is long id && m.Marchas.Obter(id)?.ReinoId != r.Id)
             .Select(x => new { marchaId = x.MarchaId, x.Hex, x.N }).ToList();
@@ -94,7 +94,7 @@ public static class VisaoValiosos
             aVista, marchasAVista = minhasMarchas,
             conhecidas = ReliquiasConhecidas.SelectMany(f => f(m, r)).ToList(),
             ruinas, tipos = Tipos(m), noMundo = m.P.Reinos,
-            brilho = m.P.ReliquiaVis.Brilho, farol = m.P.ReliquiaVis.Farol, escoltaMin = m.P.Caravana.EscoltaMin,
+            farol = m.P.ReliquiaVis.Farol, escoltaMin = m.P.Caravana.EscoltaMin,
         };
     }
 

@@ -11,7 +11,7 @@ namespace ReinoDePedra.Jogo.Marchas;
 /// <summary>
 /// Juntar e separar tropas em campo. Juntar: duas tropas viram uma; no mesmo hexágono, na hora; em hexágonos diferentes, a primeira
 /// vai até a outra (ordem <see cref="OrdemJuntar"/>) e se junta ao chegar. Quem fica é a segunda, com a ordem, a postura e o
-/// estandarte dela; carga, relíquias e equipamento lendário passam para ela. Separar: as pessoas escolhidas saem e formam uma
+/// postura dela; carga, relíquias e equipamento lendário passam para ela. Separar: as pessoas escolhidas saem e formam uma
 /// tropa nova, parada onde estão, com a parte da carga que cabe a elas; relíquias e equipamento ficam com quem fica. Em
 /// batalha, ou caçando, extraindo, escavando, coletando ou atacando, a tropa recusa os dois.
 /// </summary>

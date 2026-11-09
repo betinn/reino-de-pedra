@@ -31,6 +31,13 @@ public sealed class Configuracao
     /// </summary>
     public int ConexoesPorIp { get; init; } = int.TryParse(Env("REINO_CONEXOES_IP"), out var ci) && ci >= 0 ? ci : Env("REINO_PROXY") == "1" ? 0 : 100;
 
+    /// <summary>Credencial das rotas do administrador (Authorization: Bearer). Vazia ou curta: as rotas não existem (404).</summary>
+    public string? AdminToken { get; init; } = Env("REINO_ADMIN_TOKEN");
+    /// <summary>Pedidos de convite por IP por hora.</summary>
+    public int ConvitesPorHora { get; init; } = int.TryParse(Env("REINO_CONVITES_HORA"), out var ch) && ch > 0 ? ch : 5;
+    /// <summary>Só testes: o feed público é montado a cada pedido.</summary>
+    public bool FeedSemCache { get; init; }
+
     private static string? Env(string n) { var v = Environment.GetEnvironmentVariable(n); return string.IsNullOrWhiteSpace(v) ? null : v; }
 
     public string LocalizarWeb()

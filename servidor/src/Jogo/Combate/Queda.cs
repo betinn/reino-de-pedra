@@ -20,7 +20,7 @@ namespace ReinoDePedra.Jogo.Combate
         public string NovoCastelo { get; set; } = "";
         public int NivelNovo { get; set; }
         public int HexNovo { get; set; }
-        /// <summary>Atacante identificado pelo estandarte (0 = forças desconhecidas).</summary>
+        /// <summary>Reino que derrubou o castelo.</summary>
         public long AtacanteVisivel { get; set; }
         public string Atacante { get; set; } = "";
         public Dictionary<string, double> RecursosPerdidos { get; set; } = new();
@@ -66,8 +66,8 @@ namespace ReinoDePedra.Jogo.Combate
             var q = new RegistroQueda
             {
                 Quando = agora, CasteloAntigo = castelo.Nome, NivelAntigo = castelo.Nivel, HexAntigo = castelo.Hex,
-                AtacanteVisivel = vencedor.Estandarte && atk != null ? atk.Id : 0,
-                Atacante = RelatoriosCombate.NomeAtacante(m, vencedor.ReinoId, vencedor.Estandarte),
+                AtacanteVisivel = atk?.Id ?? 0,
+                Atacante = RelatoriosCombate.NomeAtacante(m, vencedor.ReinoId),
             };
             // relíquias do castelo vão com o atacante (as que o plano não levou)
             foreach (var rel in Reliquias.NoLocal(m, castelo.Id).ToList())

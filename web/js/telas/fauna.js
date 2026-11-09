@@ -1,5 +1,5 @@
 /* Reino de Pedra — Fauna, caça e rotas: tela Caça (alvo, rendimento, grupo com força × perigo, caminho), fauna e
-   camada Perigo no mapa (com a idade da informação), foto envelhecida dos locais, avistamentos, folha do bando e
+   camada Perigo no mapa (com a idade da informação), espiões vistos, folha do bando e
    obra de rota/ponte num hexágono. Porte de prototipo/js/acoes.js (Caça) e mapa.js (fauna, perigo).
    Tipos de objeto do mapa: fauna, perigo, avistamento, espionado, camada-perigo (RP.mapa.tiposObjeto). */
 (function () {
@@ -70,28 +70,11 @@
       ctx.fillText(String(o.qtd), p.x + 11, p.y - 10.5); ctx.textBaseline = 'alphabetic';
     }
   }
-  function desenharPlaca(ctx, o, p, cam) {
-    ctx.globalAlpha = o.foto ? 0.78 : 1;
-    ctx.beginPath(); ctx.moveTo(p.x, p.y - 13); ctx.lineTo(p.x + 13, p.y + 10); ctx.lineTo(p.x - 13, p.y + 10); ctx.closePath();
-    ctx.fillStyle = corNivel(o.nivel); ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#1b0e04'; ctx.stroke();
-    var im = imagem('pata', false); if (im) ctx.drawImage(im, p.x - 7, p.y - 5, 14, 14);
-    if (o.foto && cam.z > 0.7) {
-      ctx.fillStyle = cssVar('--cor-texto-2', '#bfb6a8'); ctx.font = '11px "Barlow Semi Condensed", sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(haTxt(o.visto), p.x, p.y + 24);
-    }
-    ctx.globalAlpha = 1;
-  }
   function desenharAvistamento(ctx, o, p, cam) {
     ctx.setLineDash([4, 4]); ctx.lineWidth = 2; ctx.strokeStyle = cssVar('--cor-alerta', '#e8b947');
     ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, 7); ctx.stroke(); ctx.setLineDash([]);
-    var im = imagem(o.avistado === 'espiao' ? 'batedor' : 'tropas', true); if (im) { ctx.globalAlpha = 0.7; ctx.drawImage(im, p.x - 9, p.y - 9, 18, 18); ctx.globalAlpha = 1; }
+    var im = imagem('batedor', true); if (im) { ctx.globalAlpha = 0.7; ctx.drawImage(im, p.x - 9, p.y - 9, 18, 18); ctx.globalAlpha = 1; }
     if (cam.z > 0.6) { ctx.fillStyle = cssVar('--cor-alerta', '#e8b947'); ctx.font = '11px "Barlow Semi Condensed", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(haTxt(o.quando), p.x, p.y + 26); }
-  }
-  /* locais vistos há tempo: véu e anel tracejado por cima do marcador (informação antiga, parada) */
-  function desenharFoto(ctx, o, p, cam) {
-    ctx.fillStyle = 'rgba(13,15,18,.45)'; ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, 7); ctx.fill();
-    ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5; ctx.strokeStyle = cssVar('--cor-alerta', '#e8b947'); ctx.beginPath(); ctx.arc(p.x, p.y, 13, 0, 7); ctx.stroke(); ctx.setLineDash([]);
-    var im = imagem('relogio', true); if (im && cam.z > 0.55) ctx.drawImage(im, p.x + 6, p.y - 16, 11, 11);
   }
   function desenharExplorador(ctx, o, p) {
     ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, 7);
@@ -117,13 +100,12 @@
   tipo('fauna', { nome: 'Fauna', icone: 'pata', desenharTatico: emP(desenharFauna) });
   RP.mapa.tiposObjeto.fauna.folha = folhaFauna;
   RP.mapa.tiposObjeto.perigo = Object.assign({}, RP.mapa.tiposObjeto.fauna, { nome: 'Área de perigo', folha: folhaFauna });
-  void desenharPlaca;
   tipo('avistamento', { nome: 'Avistamento', icone: 'olho', desenharTatico: emP(desenharAvistamento) });
   tipo('espionado', { nome: 'Espionado', icone: 'batedor', desenharTatico: function () { /* só na folha */ }, svgTatico: function () { return ''; }, folha: function () { return ''; } });
   tipo('camada-perigo', { nome: 'Perigo', icone: 'pata', desenharTatico: function () { /* camada: RP.mapa.perigoHex */ }, svgTatico: function () { return ''; }, folha: function () { return ''; } });
   RP.mapa.tiposMarcha = RP.mapa.tiposMarcha || {};
   RP.mapa.tiposMarcha.explorador = RP.mapa.tiposMarcha.explorador || { nome: 'Explorador', icone: 'explorador' };
-  void posMarcha; void desenharExplorador; void desenharFoto; void desenharCamada;
+  void posMarcha; void desenharExplorador; void desenharCamada;
 
   /* ---------------------------------------------------------------- folha do hexágono: fauna, perigo e rota */
   function folhaFauna(o) {
@@ -161,8 +143,8 @@
     var obj = objetosHex(h, dados), html = '';
     var f = obj.filter(function (o) { return o.tipo === 'fauna'; })[0] || obj.filter(function (o) { return o.tipo === 'perigo'; })[0];
     if (f) html += '<a class="btn btn-p btn-primario" href="#/caca?fauna=' + f.id + '">' + RP.icone('lobo') + 'Caçar</a>';
-    var t = dados && dados.terreno ? dados.terreno[h] : '?';
-    if (t && t !== '?' && !(dados.rotas && dados.rotas.indexOf(h) >= 0)) {
+    var t = dados && dados.terreno ? dados.terreno[h] : null, explorado = dados && dados.idade && dados.idade[h] >= 0;
+    if (t && explorado && !(dados.rotas && dados.rotas.indexOf(h) >= 0)) {
       var rio = t !== t.toLowerCase();
       html += '<button type="button" class="btn btn-p" data-rota-aqui="' + h + '">' + RP.icone(rio ? 'ponte' : 'rota') + (rio ? 'Construir ponte aqui' : 'Construir rota aqui') + '</button>';
     }

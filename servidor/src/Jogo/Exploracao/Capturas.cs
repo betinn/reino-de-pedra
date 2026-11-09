@@ -12,8 +12,8 @@ namespace ReinoDePedra.Jogo.Exploracao
     /// <summary>
     /// Explorador capturado por outro reino. Fica preso num local de quem capturou (<see cref="LocalId"/>). Quem captura vê o
     /// reino de origem e tem <c>P.resgateH</c> para pedir resgate, libertar ou executar; sem decisão, o explorador é libertado e
-    /// volta para casa. O dono pode oferecer um pagamento (ou contrapropor o resgate pedido) e pode resgatá-lo à força: vencer
-    /// uma batalha no local onde ele está preso o liberta. Preso, não ocupa o teto de ninguém.
+    /// volta para casa. O dono sabe quem capturou e onde ele está preso; pode oferecer um pagamento (ou contrapropor o resgate
+    /// pedido) e pode resgatá-lo à força: vencer uma batalha naquele local o liberta. Preso, não ocupa o teto de ninguém.
     /// </summary>
     public sealed class Prisioneiro : Documento
     {
@@ -27,10 +27,6 @@ namespace ReinoDePedra.Jogo.Exploracao
         public int Hex { get; set; }
         /// <summary>Local de quem capturou onde o explorador fica preso (0: o castelo do captor).</summary>
         public long LocalId { get; set; }
-        /// <summary>O dono sabe em que local ele está preso (foi pego espionando o próprio local, ou um batedor o viu lá).</summary>
-        public bool LocalConhecido { get; set; }
-        /// <summary>O dono sabe quem capturou (pedido de resgate, oferta aceita ou espionagem do local).</summary>
-        public bool CaptorRevelado { get; set; }
         public long Quando { get; set; }
         /// <summary>Fim do prazo de decisão (libertação automática).</summary>
         public long Ate { get; set; }
@@ -49,6 +45,9 @@ namespace ReinoDePedra.Jogo.Exploracao
 
         /// <summary>Reinos que não capturam exploradores um do outro (aliança, pacto): (captor, dono) → true para ignorar.</summary>
         public static List<Func<Mundo, Reino, Reino, bool>> Ignorar { get; } = new();
+
+        /// <summary>Alguém foi capturado (o feed público anuncia: o captor é público).</summary>
+        public static event Action<Mundo, Prisioneiro>? AoCapturar;
 
         /// <summary>Resgate pedido: o comércio leva o pedido ao dono e, pago, chama <see cref="PagarResgate"/>.</summary>
         public static event Action<Mundo, Prisioneiro>? AoPedirResgate;
@@ -87,12 +86,9 @@ namespace ReinoDePedra.Jogo.Exploracao
             {
                 CaptorId = captor.Id, DonoId = e.ReinoId, TipoExp = e.TipoExp, Hex = hex, Quando = m.Agora,
                 PessoaId = pessoa?.Id ?? 0, Nome = pessoa?.Nome ?? "", LocalId = cela?.Id ?? 0,
-                // pego espionando o próprio local: o dono sabe onde ele está (sem saber, por isso, de quem é o local)
-                LocalConhecido = cela != null && m.LocalNoHex(hex)?.Id == cela.Id,
                 Ate = m.Agora + T.DeHoras(m.P.ResgateH),
             });
             p.EventoId = m.Agendar(new PrazoPrisioneiroEvento { PrisioneiroId = p.Id, Quando = p.Ate }).Id;
-            if (dono != null) Conhecimento.Conhecer(m, captor, dono, "captura");
             var onde = "hexágono " + m.G.C(hex) + ", " + m.G.L(hex);
             Registros.Relatar(m, captor.Id, "captura", nome + " capturado", new JsonObject
             {
@@ -109,17 +105,16 @@ namespace ReinoDePedra.Jogo.Exploracao
             }, "exploracao", "Explorador capturado · " + (dono?.Nome ?? ""));
             if (dono != null)
             {
-                var levado = cela == null || p.LocalConhecido ? null : m.G.Direcao(hex, cela.Hex);
                 Registros.Relatar(m, dono.Id, "captura", nome + " capturado", new JsonObject
                 {
-                    ["resumo"] = "Perdemos " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " perto do " + onde + ". " +
-                                 (p.LocalConhecido ? "Está preso no local que espionava. " : levado is { } d && d != "aqui" ? "Foi levado para o " + d + ". " : "Está preso ali perto. ") +
-                                 "Quem o pegou tem " + m.P.ResgateH + " h para decidir; sem decisão, volta. Você pode oferecer um pagamento ou resgatá-lo à força: vencer uma batalha no local onde ele está o liberta.",
-                    ["hex"] = hex, ["nome"] = p.Nome, ["prisioneiro"] = p.Id, ["ate"] = p.Ate, ["dono"] = true,
-                    ["linhas"] = new JsonArray { Fauna.Linha("Onde", onde), Fauna.Linha("Levado para", p.LocalConhecido ? "o local espionado" : levado ?? "—") },
+                    ["resumo"] = "Perdemos " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " perto do " + onde + ": " + captor.Nome + " o capturou" + (cela != null ? " e o prende em " + cela.Nome : "") + ". " +
+                                 captor.Nome + " tem " + m.P.ResgateH + " h para decidir; sem decisão, volta. Você pode oferecer um pagamento ou resgatá-lo à força: vencer uma batalha no local onde ele está o liberta.",
+                    ["hex"] = hex, ["nome"] = p.Nome, ["prisioneiro"] = p.Id, ["ate"] = p.Ate, ["dono"] = true, ["origem"] = Espionagem.Identidade(captor),
+                    ["linhas"] = new JsonArray { Fauna.Linha("Onde", onde), Fauna.Linha("Capturado por", captor.Nome), Fauna.Linha("Preso em", cela?.Nome ?? "—") },
                 }, "exploracao");
             }
             m.Avisar(captor.Id, "reino");
+            AoCapturar?.Invoke(m, p);
             return p;
         }
 
@@ -159,12 +154,11 @@ namespace ReinoDePedra.Jogo.Exploracao
             }
             if (valor.Count == 0) throw new RegraException("Diga quanto pede de resgate.");
             var contra = p.Oferta.Count > 0;
-            p.Estado = ResgatePedido; p.Resgate = valor; p.Oferta = new(); p.OfertaEm = null; p.CaptorRevelado = true;
+            p.Estado = ResgatePedido; p.Resgate = valor; p.Oferta = new(); p.OfertaEm = null;
             m.Sujar(p);
             var captor = m.Reinos.Obter(p.CaptorId); var dono = m.Reinos.Obter(p.DonoId);
             if (captor != null && dono != null)
             {
-                Conhecimento.Conhecer(m, dono, captor, "resgate");   // o pedido revela quem pede
                 if (dono.ResgatesRecusados.Remove(p.Id)) m.Sujar(dono);
                 Registros.Relatar(m, dono.Id, "captura", (contra ? "Contraproposta de " : "Resgate pedido por ") + captor.Nome, new JsonObject
                 {
@@ -177,12 +171,12 @@ namespace ReinoDePedra.Jogo.Exploracao
             AoPedirResgate?.Invoke(m, p);
         }
 
-        /// <summary>Quem capturou não aceita a oferta do dono. A recusa não revela quem capturou.</summary>
+        /// <summary>Quem capturou não aceita a oferta do dono.</summary>
         private static void RecusarOferta(Mundo m, Prisioneiro p)
         {
             if (p.Oferta.Count == 0) throw new RegraException("Não há oferta por este prisioneiro.");
             p.Oferta = new(); p.OfertaEm = null; m.Sujar(p);
-            var quem = p.CaptorRevelado && m.Reinos.Obter(p.CaptorId) is { } c ? c.Nome : "Quem o capturou";
+            var quem = m.Reinos.Obter(p.CaptorId) is { } c ? c.Nome : "Quem o capturou";
             Registros.Notificar(m, p.DonoId, "exploracao", "Oferta recusada", quem + " não aceitou o pagamento por " + (p.Nome.Length > 0 ? p.Nome : "seu explorador") + ". Ofereça outro valor ou resgate-o à força.", "exploradores");
             m.Avisar(p.DonoId, "reino"); m.Avisar(p.CaptorId, "reino");
         }
@@ -253,29 +247,6 @@ namespace ReinoDePedra.Jogo.Exploracao
                 Registros.Notificar(m, p.CaptorId, "exploracao", "Prisioneiro solto", "O local onde " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " estava preso não é mais seu.", "exploradores");
                 Libertar(m, p, "solto");
             }
-        }
-
-        /// <summary>
-        /// Espionagem de um local: o batedor vê quem está preso ali. Os presos do reino que espiona passam a ter local e captor
-        /// conhecidos; os de outros reinos aparecem só contados.
-        /// </summary>
-        public static void NoRelatorio(Mundo m, Reino espiao, Local l, JsonObject dados)
-        {
-            var presos = NoLocal(m, l.Id).ToList();
-            if (presos.Count == 0) return;
-            var meus = presos.Where(p => p.DonoId == espiao.Id).ToList();
-            var arr = new JsonArray();
-            foreach (var p in meus)
-            {
-                p.LocalConhecido = true; p.CaptorRevelado = true; m.Sujar(p);
-                arr.Add(new JsonObject { ["id"] = p.Id, ["nome"] = p.Nome, ["tipo"] = p.TipoExp, ["ate"] = p.Ate });
-            }
-            dados["presos"] = arr;
-            var outros = presos.Count - meus.Count;
-            var txt = string.Join(", ", meus.Select(p => (p.Nome.Length > 0 ? p.Nome + ", " : "") + Exploradores.NomeTipo(m, p.TipoExp).ToLowerInvariant()));
-            if (outros > 0) txt += (txt.Length > 0 ? "; " : "") + outros + (outros > 1 ? " de outros reinos" : " de outro reino");
-            if (dados["linhas"] is JsonArray linhas) linhas.Add(Fauna.Linha("Presos", txt));
-            if (meus.Count > 0) dados["resumo"] = (dados["resumo"]?.GetValue<string>() ?? "") + " Exploradores seus estão presos aqui: vencer uma batalha neste local os liberta.";
         }
 
         private static void Remover(Mundo m, Prisioneiro p)

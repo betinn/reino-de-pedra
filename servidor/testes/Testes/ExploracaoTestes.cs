@@ -189,19 +189,26 @@ public class ExploracaoTestes
     }
 
     [Fact]
-    public void Foto_de_um_castelo_aparece_uma_vez_so_no_centro()
+    public void Castelo_alheio_aparece_uma_vez_so_no_centro_mesmo_na_nevoa()
     {
         var t = new MundoTeste();
         var r = t.NovoReino();
         var outro = t.NovoReino();
         var c = Castelo(t, outro);
-        Nevoas.RevelarArea(t.M, r.Id, c.Hex, 2);
-        Fotos.Tirar(t.M, r.Id, Pegada.DoLocal(t.M, c));
-        var fotos = VisaoExploracao.Mapa(t.M, r, new HashSet<int>()).OfType<JsonObject>()
-            .Where(o => (string?)o["tipo"] == "local" && (long?)o["id"] == c.Id).ToList();
-        var foto = Assert.Single(fotos);
-        Assert.Equal(c.Hex, (int)foto["hex"]!);
-        Assert.Equal(7, foto["ocupa"]!.AsArray().Count);
+        Assert.False(Nevoas.Explorado(t.M, r.Id, c.Hex));
+        var mapa = System.Text.Json.JsonSerializer.SerializeToElement(VisaoMapa.Montar(t.M, r), ReinoDePedra.Api.Json.Web);
+        var locais = mapa.GetProperty("objetos").EnumerateArray()
+            .Where(o => o.GetProperty("tipo").GetString() == "local" && o.GetProperty("id").GetInt64() == c.Id).ToList();
+        var o = Assert.Single(locais);
+        Assert.Equal(c.Hex, o.GetProperty("hex").GetInt32());
+        Assert.Equal(7, o.GetProperty("ocupa").GetArrayLength());
+        Assert.Equal("outro", o.GetProperty("dono").GetString());
+        Assert.Equal(outro.Id, o.GetProperty("reinoId").GetInt64());
+        // no mapa cabe o terreno inteiro; a névoa é só a idade -1
+        Assert.Equal(t.M.G.Total, mapa.GetProperty("terreno").GetString()!.Length);
+        Assert.Equal(-1, mapa.GetProperty("idade")[c.Hex].GetInt32());
+        // de fora, nada do que há dentro
+        foreach (var segredo in new[] { "guarnicao", "tropas", "civis", "estoque", "portoes", "foto", "visto" }) Assert.False(o.TryGetProperty(segredo, out _), segredo);
     }
 
     [Fact]
@@ -548,10 +555,13 @@ public class ExploracaoTestes
         Assert.Equal(b.Id, preso.CaptorId);
         Assert.Equal(a.Id, preso.DonoId);
         Assert.DoesNotContain(e, t.M.Marchas);
-        Assert.Contains(a.Id, b.ReinosConhecidos);        // quem captura vê o reino de origem
-        Assert.DoesNotContain(b.Id, a.ReinosConhecidos);  // o dono não sabe quem pegou
+        // os dois lados sabem na hora: quem captura vê o reino de origem, o dono vê quem capturou
         Assert.Contains(t.M.Relatorios, x => x.ReinoId == b.Id && x.Tipo == "captura" && x.Dados["origem"]!["nome"]!.GetValue<string>() == a.Nome);
-        Assert.Contains(t.M.Relatorios, x => x.ReinoId == a.Id && x.Tipo == "captura" && x.Dados["origem"] == null);
+        Assert.Contains(t.M.Relatorios, x => x.ReinoId == a.Id && x.Tipo == "captura" && x.Dados["origem"]!["nome"]!.GetValue<string>() == b.Nome);
+        var visao = System.Text.Json.JsonSerializer.SerializeToElement(VisaoExploracao.Montar(t.M, a), ReinoDePedra.Api.Json.Web);
+        var capturado = Assert.Single(visao.GetProperty("capturados").EnumerateArray());
+        Assert.Equal(b.Nome, capturado.GetProperty("captor").GetProperty("nome").GetString());
+        Assert.Equal(t.M.Locais[preso.LocalId].Hex, capturado.GetProperty("cela").GetProperty("hex").GetInt32());
         AvancarAte(t, preso.Ate + 1);
         Assert.Empty(t.M.Prisioneiros);
         var volta = Assert.Single(Exploradores.De(t.M, a.Id));
@@ -591,7 +601,6 @@ public class ExploracaoTestes
         Assert.Throws<RegraException>(() => Capturas.Decidir(t.M, a, p1.Id, "libertar"));   // só quem capturou decide
         Capturas.Decidir(t.M, b, p1.Id, "resgate", new Dictionary<string, double> { ["prata"] = 20 });
         Assert.Equal(Capturas.ResgatePedido, p1.Estado);
-        Assert.Contains(b.Id, a.ReinosConhecidos);   // o pedido revela quem pede
         Capturas.Decidir(t.M, b, p1.Id, "executar");
         Assert.Empty(t.M.Prisioneiros);
         Assert.Contains(t.M.Relatorios, x => x.ReinoId == a.Id && x.Titulo.Contains("executado"));
@@ -610,31 +619,27 @@ public class ExploracaoTestes
         var rel = t.M.Reliquias.Adicionar(new Reliquia { Nome = "Pedra do Vale", Tipo = "producao", ReinoId = b.Id, LocalId = cb.Id });
         Nevoas.RevelarArea(t.M, a.Id, cb.Hex, 2);
         a.ExploradoresLivres["batedor"] = 1;
-        var conhecidos = new List<long>();
-        void Ao(Mundo m, Reino quem, Reino outro, string como) { if (m == t.M) conhecidos.Add(outro.Id); }
-        Conhecimento.AoConhecer += Ao;
-        try
-        {
-            Assert.Throws<RegraException>(() => Exploradores.Enviar(t.M, a, "pe", Exploradores.Espionar, cb.Hex));
-            t.M.Sorte = Sorte(x => x >= 0.25);
-            var e = Exploradores.Enviar(t.M, a, "batedor", Exploradores.Espionar, cb.Hex);
-            AvancarAte(t, e.Chegada + 1);
-            Assert.NotNull(e.EspionandoAte);
-            Assert.Equal(T.DeSegundos(t.B.P.Espiao.TempoNoLocal), e.EspionandoAte!.Value - e.Partida);
-            t.AvancarMin(t.B.P.Espiao.TempoNoLocal / 60 + 1);
-            var r = Assert.Single(t.M.Relatorios, x => x.ReinoId == a.Id && x.Tipo == "espionagem");
-            Assert.Equal(b.Nome, r.Dados["dono"]!["nome"]!.GetValue<string>());
-            Assert.Equal(4, r.Dados["defesa"]!["guarnicao"]!["lanceiro"]!.GetValue<int>());
-            Assert.True(r.Dados["estoque"]!.AsObject().Count > 0);
-            Assert.Equal("Pedra do Vale", r.Dados["reliquias"]![0]!["nome"]!.GetValue<string>());
-            Assert.False(r.Dados["visto"]!.GetValue<bool>());
-            Assert.Equal(cb.Nivel, a.LocaisEspionados[cb.Id].Nivel);
-            Assert.Contains(b.Id, a.ReinosConhecidos);
-            Assert.Contains(b.Id, conhecidos);
-            Assert.Empty(t.M.Avistamentos);
-            Assert.True(e.Retornando);
-        }
-        finally { Conhecimento.AoConhecer -= Ao; }
+        Assert.Throws<RegraException>(() => Exploradores.Enviar(t.M, a, "pe", Exploradores.Espionar, cb.Hex));
+        t.M.Sorte = Sorte(x => x >= 0.25);
+        var e = Exploradores.Enviar(t.M, a, "batedor", Exploradores.Espionar, cb.Hex);
+        AvancarAte(t, e.Chegada + 1);
+        Assert.NotNull(e.EspionandoAte);
+        Assert.Equal(T.DeSegundos(t.B.P.Espiao.TempoNoLocal), e.EspionandoAte!.Value - e.Partida);
+        t.AvancarMin(t.B.P.Espiao.TempoNoLocal / 60 + 1);
+        var r = Assert.Single(t.M.Relatorios, x => x.ReinoId == a.Id && x.Tipo == "espionagem");
+        Assert.Equal(b.Nome, r.Dados["dono"]!["nome"]!.GetValue<string>());
+        Assert.Equal(4, r.Dados["defesa"]!["guarnicao"]!["lanceiro"]!.GetValue<int>());
+        Assert.True(r.Dados["estoque"]!.AsObject().Count > 0);
+        Assert.Equal("Pedra do Vale", r.Dados["reliquias"]![0]!["nome"]!.GetValue<string>());
+        Assert.False(r.Dados["visto"]!.GetValue<bool>());
+        // o relatório traz só estoque, guarnição e relíquias: milícia, torres, presos e equipamento lendário ficam de fora
+        var defesa = r.Dados["defesa"]!.AsObject();
+        Assert.Equal(["guarnicao", "tropas"], defesa.Select(kv => kv.Key).OrderBy(k => k, StringComparer.Ordinal));
+        foreach (var chave in new[] { "milicia", "civis", "torres", "portoes", "bonusDefesa", "presos", "equipamento" })
+            Assert.Null(r.Dados[chave]);
+        Assert.Equal(cb.Nivel, a.LocaisEspionados[cb.Id].Nivel);
+        Assert.Empty(t.M.Avistamentos);
+        Assert.True(e.Retornando);
         _ = rel;
     }
 
@@ -652,8 +657,7 @@ public class ExploracaoTestes
         var preso = Assert.Single(t.M.Prisioneiros);
         Assert.Equal(b.Id, preso.CaptorId);
         Assert.Equal(cb.Id, preso.LocalId);   // fica preso no local espionado
-        Assert.True(preso.LocalConhecido);    // e o dono sabe onde
-        Assert.False(preso.CaptorRevelado);   // mas não de quem é o local
+        Assert.Equal(b.Nome, Assert.Single(t.M.Relatorios, x => x.ReinoId == a.Id && x.Tipo == "captura").Dados["origem"]!["nome"]!.GetValue<string>());   // e o dono sabe quem o pegou
         Assert.DoesNotContain(t.M.Relatorios, x => x.ReinoId == a.Id && x.Tipo == "espionagem");
         var av = Assert.Single(Avistamentos.De(t.M, b.Id));
         Assert.Equal("espiao", av.Tipo);
@@ -673,27 +677,20 @@ public class ExploracaoTestes
     // ---------------------------------------------------------------- névoa com foto
 
     [Fact]
-    public void Foto_da_nevoa_guarda_o_ultimo_estado_conhecido()
+    public void Foto_da_nevoa_guarda_so_perigo_e_ruinas_nunca_locais()
     {
         var (t, a, b, cb, _) = DoisReinos(0);
         var mina = t.M.LocaisDe(b.Id).First(l => l.Tipo == TipoLocal.Mina);
         var rg = Regiao(t, HexA(t, mina.Hex, 2), "lobos", "alto");
         Nevoas.RevelarArea(t.M, a.Id, mina.Hex, 4, t.M.Agora + T.Min);
         var foto = Fotos.De(t.M, a.Id);
-        var obj = Assert.Single(foto.Objetos[mina.Hex]);
-        Assert.Equal("local", obj["tipo"]!.GetValue<string>());
-        Assert.Equal("desconhecido", obj["dono"]!.GetValue<string>());
-        Assert.Equal("Mina", obj["nome"]!.GetValue<string>());
-        Assert.Null(obj["nivel"]);
+        Assert.False(foto.Objetos.ContainsKey(mina.Hex));   // locais são públicos e ao vivo: não passam pela foto
         Assert.True(Fotos.PerigoConhecido(t.M, a.Id, rg.Centro) > 0);
         Assert.Equal("lobos", Fotos.AnimalConhecido(t.M, a.Id, rg.Centro));
         // o mundo muda; a foto não, até o reino ver de novo
         Fauna.Abater(t.M, rg);
-        t.M.MudarDono(mina, 0); mina.Ruina = true;
-        Assert.Equal("desconhecido", foto.Objetos[mina.Hex][0]["dono"]!.GetValue<string>());
         Assert.True(Fotos.PerigoConhecido(t.M, a.Id, rg.Centro) > 0);
         Nevoas.RevelarArea(t.M, a.Id, mina.Hex, 4, t.M.Agora + 2 * T.Min);
-        Assert.Equal("livre", foto.Objetos[mina.Hex][0]["dono"]!.GetValue<string>());
         Assert.Equal(0, Fotos.PerigoConhecido(t.M, a.Id, rg.Centro));
     }
 }

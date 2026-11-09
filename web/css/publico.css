@@ -1,0 +1,55 @@
+/* Reino de Pedra — a página de quem não está logado: o mapa real em tela cheia, com o selo AO VIVO, a crônica e o pedido de
+   convite por cima. */
+.tela-inicio.publico { position: fixed; inset: 0; min-height: 0; display: block; overflow: hidden; background: var(--mapa-fundo); color: var(--cor-texto); z-index: 1; }
+.publico .cena-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.publico .mapa-vp { position: absolute; inset: 0; display: none; }
+.publico[data-modo="tatico"] .mapa-vp { display: block; }
+.publico[data-modo="tatico"] .cena-cv { display: none; }
+
+.pub-topo { position: absolute; top: 14px; left: 14px; display: flex; align-items: center; gap: 18px; pointer-events: none; flex-wrap: wrap; max-width: calc(100% - min(370px, 34vw) - 42px); }
+.pub-marca { background: rgba(13, 15, 18, .78); border-radius: 12px; padding: 8px 16px; backdrop-filter: blur(4px); }
+.pub-marca .titulo-jogo { font-size: clamp(20px, 2.2vw, 30px); margin: 0; }
+.pub-marca .subtitulo-jogo { font-size: var(--fs-2); margin: 0; }
+.pub-aovivo { display: flex; align-items: center; gap: 12px; background: rgba(13, 15, 18, .78); border-radius: 999px; padding: 8px 16px 8px 8px; backdrop-filter: blur(4px); pointer-events: auto; }
+.pub-selo { display: inline-flex; align-items: center; gap: 8px; background: #c8322b; color: #fff; font-weight: 700; letter-spacing: .08em; border-radius: 999px; padding: 5px 13px; font-size: 15px; }
+.pub-selo i { width: 10px; height: 10px; border-radius: 50%; background: #fff; animation: pub-pulso 1.4s ease-in-out infinite; }
+@keyframes pub-pulso { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.75); } }
+@media (prefers-reduced-motion: reduce) { .pub-selo i { animation: none; } }
+.pub-cont { font-size: var(--fs-2); }
+
+.pub-zoom { position: absolute; left: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+
+.pub-lado { position: absolute; top: 14px; right: 14px; bottom: 14px; width: min(370px, 34vw); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.pub-lado .abas { pointer-events: auto; background: rgba(13, 15, 18, .82); border-radius: 12px; padding: 4px; display: flex; }
+.pub-lado .aba { flex: 1; }
+.pub-painel { pointer-events: auto; overflow-y: auto; background: rgba(13, 15, 18, .82); border-radius: 12px; padding: 10px 12px; max-height: calc(100vh - 290px); backdrop-filter: blur(4px); }
+.pub-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pub-reino { display: flex; gap: 10px; align-items: center; cursor: pointer; }
+.pub-reino small { display: block; }
+.pub-barra { display: block; height: 5px; background: var(--cor-perigo, #a33); border-radius: 3px; overflow: hidden; margin-top: 3px; }
+.pub-barra i { display: block; height: 100%; background: var(--cor-destaque, #d9b25c); }
+
+.cronica-item { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-2); line-height: 1.35; border-left: 3px solid var(--cor-destaque, #d9b25c); padding-left: 8px; }
+.cronica-item[data-cronica-hex] { cursor: pointer; }
+.cronica-agora { border-left-color: #c8322b; }
+.cronica-fim-batalha { border-left-color: var(--cor-perigo, #a33); }
+.cronica-mortos { color: var(--cor-texto-fraco, #b5ad9f); }
+
+.pub-convite { position: absolute; right: 14px; bottom: 14px; width: min(370px, 34vw); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: rgba(20, 22, 26, .95); }
+.pub-frase { margin: 0; font-weight: 600; }
+.pub-convite [data-acoes] { display: flex; flex-direction: column; gap: 8px; }
+.pub-form { display: flex; flex-direction: column; gap: 6px; }
+.pub-form label { font-size: var(--fs-2); }
+.pub-form-linha { display: flex; gap: 6px; }
+.pub-form-linha input[type="email"] { flex: 1; min-width: 0; }
+.pub-oculto { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.pub-ok { color: var(--cor-sucesso, #7bc47f); font-size: var(--fs-2); }
+
+@media (max-width: 760px) {
+  .pub-lado { top: auto; bottom: 150px; left: 14px; right: 14px; width: auto; max-height: 30vh; }
+  .pub-painel { max-height: calc(30vh - 50px); }
+  .pub-convite { left: 14px; width: auto; }
+  .pub-zoom { display: none; }
+  .pub-topo { max-width: calc(100% - 28px); }
+  .pub-cont { display: none; }
+}

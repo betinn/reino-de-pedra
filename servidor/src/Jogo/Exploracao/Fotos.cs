@@ -5,9 +5,9 @@ using ReinoDePedra.Jogo.Reinos;
 namespace ReinoDePedra.Jogo.Exploracao
 {
     /// <summary>
-    /// Último estado conhecido de cada hexágono que o reino já viu: o perigo da fauna e os objetos (locais de outros
-    /// reinos com tipo e nome genérico, ruínas antigas, torres...). A foto é tirada sempre que o hexágono é visto
-    /// (<see cref="Nevoas.Revelar"/>); fora da visão, o mapa mostra a foto com a idade da névoa.
+    /// Último estado conhecido da riqueza do chão em cada hexágono que o reino já viu: o perigo da fauna e as ruínas antigas
+    /// (se já estavam esgotadas). Reinos, construções e marchas não passam por aqui: são públicos, ao vivo. A foto é tirada
+    /// sempre que o hexágono é visto (<see cref="Nevoas.Revelar"/>).
     /// </summary>
     public sealed partial class FotoNevoa : Documento
     {
@@ -20,12 +20,6 @@ namespace ReinoDePedra.Jogo.Exploracao
 
     public static class Fotos
     {
-        /// <summary>
-        /// Sistemas que têm objetos no mapa (torres, bandeiras...) acrescentam aqui o que fica na foto de um hexágono:
-        /// (mundo, reino que vê, hexágono) → objetos no formato do mapa (<c>{ "tipo": ..., ... }</c>, sem "hex").
-        /// </summary>
-        public static List<Func<Mundo, long, int, IEnumerable<JsonObject>>> Fotografos { get; } = new();
-
         public static FotoNevoa De(Mundo m, long reinoId)
         {
             if (m.IndiceFotos.TryGetValue(reinoId, out var id) && m.FotosDosReinos.Obter(id) is { } f && f.ReinoId == reinoId)
@@ -49,27 +43,27 @@ namespace ReinoDePedra.Jogo.Exploracao
             {
                 var (nivel, rg) = Fauna.PerigoEm(m, h);
                 f.Perigo[h] = (byte)(nivel == 0 || rg == null ? 0 : nivel | (Array.IndexOf(Fauna.Animais, rg.Animal) + 1) << 2);
-                var objs = Objetos(m, reinoId, h);
+                var objs = Objetos(m, h);
                 if (objs.Count == 0) f.Objetos.Remove(h); else f.Objetos[h] = objs;
             }
             m.Sujar(f);
         }
 
-        private static List<JsonObject> Objetos(Mundo m, long reinoId, int h)
+        private static List<JsonObject> Objetos(Mundo m, int h)
         {
             var l = new List<JsonObject>();
-            var local = m.LocalNoHex(h);
-            if (local != null && local.ReinoId != reinoId)
-                l.Add(new JsonObject
-                {
-                    ["tipo"] = "local", ["id"] = local.Id, ["local"] = local.Tipo.Chave(),
-                    ["nome"] = local.Ruina ? "Ruína" : local.Tipo.NomeGenerico(),
-                    ["dono"] = local.ReinoId == 0 ? "livre" : "desconhecido", ["ruina"] = local.Ruina, ["produz"] = local.Ruina ? null : local.Produz,
-                });
             foreach (var ru in m.Ruinas)
                 if (ru.Hex == h) l.Add(new JsonObject { ["tipo"] = "ruina-antiga", ["id"] = ru.Id, ["esgotada"] = ru.Esgotada });
-            foreach (var f in Fotografos) l.AddRange(f(m, reinoId, h));
             return l;
+        }
+
+        /// <summary>Se a ruína estava esgotada quando o reino a viu pela última vez; null se ele nunca a viu.</summary>
+        public static bool? RuinaEsgotada(Mundo m, long reinoId, int hex, long ruinaId)
+        {
+            if (!De(m, reinoId).Objetos.TryGetValue(hex, out var objs)) return null;
+            foreach (var o in objs)
+                if (o["tipo"]?.GetValue<string>() == "ruina-antiga" && o["id"]?.GetValue<long>() == ruinaId) return o["esgotada"]?.GetValue<bool>();
+            return null;
         }
 
         /// <summary>Nível de perigo que o reino conhece no hexágono (0 a 3).</summary>

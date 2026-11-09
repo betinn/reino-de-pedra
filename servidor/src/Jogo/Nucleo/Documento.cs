@@ -89,6 +89,11 @@ public static class RegistroTipos
         Garantir();
         return _porNome.TryGetValue(nome, out var t) ? t : throw new InvalidDataException("tipo de documento desconhecido: " + nome);
     }
+    public static Type? TipoOuNulo(string nome)
+    {
+        Garantir();
+        return _porNome.GetValueOrDefault(nome);
+    }
     public static string Nome(Type t) => t.Name;
 
     /// <summary>Instâncias de todas as classes concretas que implementam a interface (registro por convenção).</summary>

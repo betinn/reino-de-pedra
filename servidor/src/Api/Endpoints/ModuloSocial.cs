@@ -141,12 +141,9 @@ public static class ExtrasSocial
     public static void AoIniciar(Mundo m) => Sistemas.UmaVez("api-social", () =>
     {
         VisaoMapa.Aliados.Add((mm, r, outro) => Aliancas.SaoAliados(mm, r.Id, outro));
-        VisaoMapa.AoVerEstandarte.Add((mm, r, x) => { if (mm.Reinos.Obter(x.ReinoId) is { } d) Conhecimento.Conhecer(mm, r, d, "estandarte"); });
         VisaoMapa.Extras.Add(VisaoSocial.Mapa);
         VisaoReino.Extras.Add((mm, r, d) =>
         {
-            // reinos de antes deste sistema: quem já conhece outro reino (ou tem aliança) já viu o gatilho
-            if (r.ReinosConhecidos.Count > 0 || r.AliancaId != null) { Sistemas.Revelar(mm, r, "alianca"); Sistemas.Revelar(mm, r, "comercio"); }
             // "sistemas" vem de VisaoSistemas
             var a = Aliancas.De(mm, r);
             var cargo = a?.Membro(r.Id)?.Cargo;

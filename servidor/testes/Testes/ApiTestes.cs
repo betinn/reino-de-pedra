@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ReinoDePedra.Testes;
 
@@ -43,7 +44,7 @@ public class ApiTestes
     {
         await using var s = await ServidorTeste.Iniciar();
         using var c = s.NovoCliente();
-        await c.Post("conta/registrar", new { email = "cid@exemplo.com", senha = "senha muito boa 123" });
+        await c.CriarConta("cid@exemplo.com");
         for (var i = 0; i < 5; i++)
             Assert.Equal(HttpStatusCode.Unauthorized, (await c.Post("conta/entrar", new { email = "cid@exemplo.com", senha = "errada errada" })).status);
         var (st, _) = await c.Post("conta/entrar", new { email = "cid@exemplo.com", senha = "senha muito boa 123" });
@@ -54,9 +55,19 @@ public class ApiTestes
     public async Task Senha_curta_e_email_invalido_recusados()
     {
         await using var s = await ServidorTeste.Iniciar();
+        var contas = s.App.Services.GetRequiredService<ReinoDePedra.Api.Contas.ServicoContas>();
+        var (c1, e1) = await contas.Registrar("x@exemplo.com", "curta");
+        Assert.Null(c1); Assert.NotNull(e1);
+        var (c2, e2) = await contas.Registrar("nao-e-email", "senha muito boa 123");
+        Assert.Null(c2); Assert.NotNull(e2);
+    }
+
+    [Fact]
+    public async Task Nao_ha_cadastro_aberto_pela_api()
+    {
+        await using var s = await ServidorTeste.Iniciar();
         using var c = s.NovoCliente();
-        Assert.Equal(HttpStatusCode.BadRequest, (await c.Post("conta/registrar", new { email = "x@exemplo.com", senha = "curta" })).status);
-        Assert.Equal(HttpStatusCode.BadRequest, (await c.Post("conta/registrar", new { email = "nao-e-email", senha = "senha muito boa 123" })).status);
+        Assert.Equal(HttpStatusCode.NotFound, (await c.Post("conta/registrar", new { email = "x@exemplo.com", senha = "senha muito boa 123" })).status);
     }
 
     [Fact]

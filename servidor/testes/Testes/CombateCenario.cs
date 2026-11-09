@@ -105,8 +105,8 @@ public sealed class CombateCenario
     }
 
     /// <summary>Por padrão as tropas lutam mesmo sem o que levar: o alvo dos cenários nasce com o estoque vazio.</summary>
-    public static JsonObject Plano(string tipo = "saque", string tatica = "semLimite", JsonArray? objetivos = null, bool estandarte = false, bool completar = false, bool recuarVazio = false, string divisao = "prioridade") =>
-        new() { ["tipo"] = tipo, ["tatica"] = tatica, ["objetivos"] = objetivos ?? new JsonArray(), ["estandarte"] = estandarte, ["completar"] = completar, ["recuarVazio"] = recuarVazio, ["divisao"] = divisao };
+    public static JsonObject Plano(string tipo = "saque", string tatica = "semLimite", JsonArray? objetivos = null, bool completar = false, bool recuarVazio = false, string divisao = "prioridade") =>
+        new() { ["tipo"] = tipo, ["tatica"] = tatica, ["objetivos"] = objetivos ?? new JsonArray(), ["completar"] = completar, ["recuarVazio"] = recuarVazio, ["divisao"] = divisao };
 
     public static JsonObject Obj(string k, string? r = null, double q = 0)
     {
@@ -120,12 +120,28 @@ public sealed class CombateCenario
     public Exercito Atacar(Local alvo, IReadOnlyDictionary<string, int> tropas, JsonObject? plano = null, string ordem = OrdemAtacar.Id)
     {
         Guarnecer(CasteloAtk, tropas);
-        Conhecer(Atk, alvo);
         return Exercitos.Enviar(M, Atk, CasteloAtk.Id, tropas, alvo.Hex, ordem, false, plano ?? Plano());
     }
 
-    /// <summary>O reino já viu o local (fica na foto da névoa): só se ataca o que se conhece.</summary>
-    public void Conhecer(Reino r, Local l) => ReinoDePedra.Jogo.Exploracao.Nevoas.RevelarArea(M, r.Id, l.Hex, 0);
+    /// <summary>
+    /// Destino a <paramref name="dist"/> hexágonos de <paramref name="origem"/> cuja marcha lenta pode ser interceptada por
+    /// cavalaria saindo de <paramref name="de"/>: um ponto do trecho à frente (P.guerra.interceptacao.trechoHexes) aonde ela chega com a folga.
+    /// Sem nenhum, o primeiro destino alcançável: o teste que precisa do encontro falha no próprio cálculo.
+    /// </summary>
+    public static int DestinoInterceptavel(Mundo m, int origem, int de, int dist)
+    {
+        var p = m.P.Guerra.Interceptacao;
+        int? alcancavel = null;
+        foreach (var d in m.G.Area(origem, dist).Where(h => m.G.Distancia(h, origem) == dist && Obras.HexLivre(m, h) && !m.Mapa.Rio[h]))
+        {
+            var rota = Caminhos.Calcular(m, origem, d, "Lenta");
+            if (rota.Hexes[^1] != d) continue;
+            alcancavel ??= d;
+            for (var i = 1; i <= Math.Min(p.TrechoHexes, rota.Hexes.Count - 2); i++)
+                if (rota.Minutos[i] - p.FolgaSeg / 60 > Caminhos.Calcular(m, de, rota.Hexes[i], "Rápida").TotalMin + 0.05) return d;
+        }
+        return alcancavel ?? throw new InvalidOperationException("Nenhum destino alcançável a " + dist + " hexágonos.");
+    }
 
     public void AvancarAte(long t) { T.Avancar(TimeSpan.FromMilliseconds(Math.Max(0, t - M.Agora))); AjustesTeste.FalharSeErro(); }
 

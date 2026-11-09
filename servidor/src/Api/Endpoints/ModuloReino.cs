@@ -16,24 +16,11 @@ public sealed class ModuloReino : IModuloApi
 
     public void Mapear(RouteGroupBuilder publico, RouteGroupBuilder conta)
     {
-        publico.MapGet("/mundo", (Motor motor, Configuracao cfg) => motor.Executar(m =>
-        {
-            var e = m.Estado;
-            var ativos = m.Reinos.Count(r => r.Ativo);
-            return Results.Json(new
-            {
-                temporada = e.NumeroTemporada, inicio = e.InicioTemporada, dias = m.P.TemporadaDias,
-                dia = Jogo.Temporada.Temporadas.DiaIndice(m) + 1,
-                fim = Jogo.Temporada.Temporadas.Fim(m), diasRestantes = Jogo.Temporada.Temporadas.DiasRestantes(m),
-                reinos = ativos, limite = m.P.Reinos, agora = m.Agora,
-                vagas = CriacaoReino.VagaLivre(m) >= 0 || m.Reinos.Any(r => r.Ativo && r.EhIA),
-                cols = m.G.Cols, lins = m.G.Lins,
-                reinoNovo = CriacaoReino.TextoInicio(m),   // o que o reino novo já traz pronto (tela de fundar)
-                aceleracao = cfg.Aceleracao,   // > 1 só no teste local (REINO_ACELERACAO): o relógio do cliente anda junto
-            }, Json.Web);
-        }));
+        // visitantes passam por aqui ao abrir a página: a resposta vem do feed, não da fila do motor
+        publico.MapGet("/mundo", async (HttpContext ctx, ReinoDePedra.Api.Publico.FeedPublico feed) =>
+            await ReinoDePedra.Api.Publico.FeedPublico.Responder(ctx, await feed.Obter(feed.Info), feed.Info.MaxAge));
 
-        conta.MapGet("/reino/brasoes", (int? n) =>
+        publico.MapGet("/reino/brasoes", (int? n) =>
         {
             var rng = new Rng((ulong)System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue) * 2654435761UL);
             var lista = Enumerable.Range(0, Math.Clamp(n ?? 8, 1, 24)).Select(_ => Brasao.Aleatorio(rng)).ToList();
@@ -107,17 +94,12 @@ public sealed class ModuloReino : IModuloApi
             return Results.NoContent();
         });
 
-        // a imagem só é servida a quem pode conhecer a identidade: o próprio reino, quem o conhece e aliados (ids são sequenciais;
-        // sem isso, varrer ids diria quais reinos têm imagem própria). Para os outros, 404 como se não houvesse imagem.
-        conta.MapGet("/reinos/{id:long}/icone", async (long id, HttpContext ctx, Banco banco, Motor motor) =>
+        // a imagem do reino é pública, como o nome: aparece no jogo e no mapa ao vivo. A versão vai na URL, por isso o cache é longo.
+        publico.MapGet("/reinos/{id:long}/icone", (long id, HttpContext ctx, Banco banco) =>
         {
-            var conta_ = ctx.ContaId();
-            var pode = await motor.Executar(m => Sessao.ReinoOuNulo(m, conta_) is { } r
-                && (ReinoDePedra.Jogo.Exploracao.Conhecimento.Conhece(r, id) || ReinoDePedra.Jogo.Social.Aliancas.SaoAliados(m, r.Id, id)));
-            if (!pode) return Results.NotFound();
             var l = banco.Consultar("SELECT tipo, dados FROM icones WHERE reino_id=$r", rd => (rd.GetString(0), (byte[])rd[1]), ("$r", id)).FirstOrDefault();
             if (l.Item2 == null) return Results.NotFound();
-            ctx.Response.Headers.CacheControl = "private, max-age=86400";
+            ctx.Response.Headers.CacheControl = "public, max-age=86400";
             ctx.Response.Headers["Content-Security-Policy"] = "default-src 'none'; sandbox";
             return Results.Bytes(l.Item2, l.Item1);
         });

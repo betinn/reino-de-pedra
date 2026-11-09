@@ -79,6 +79,19 @@ public sealed class ServicoContas(Banco banco, TimeProvider? relogio = null)
         return (new Conta(id, email), null);
     }
 
+    /// <summary>Cria a conta com a senha já em hash. Null se o e-mail já tem conta.</summary>
+    public Conta? Inserir(string email, string hash)
+    {
+        try { banco.Exec("INSERT INTO contas(email, senha, criada_em, ultimo_acesso) VALUES($e,$s,$t,$t)", ("$e", email), ("$s", hash), ("$t", Agora)); }
+        catch (Microsoft.Data.Sqlite.SqliteException) { return null; }
+        return new Conta(banco.Escalar<long>("SELECT id FROM contas WHERE email=$e", ("$e", email)), email);
+    }
+
+    public bool TemConta(string email) => banco.Escalar<long>("SELECT COUNT(*) FROM contas WHERE email=$e", ("$e", email)) > 0;
+
+    /// <summary>Desfaz uma conta recém-criada cuja fundação falhou.</summary>
+    public void Apagar(long id) => banco.Exec("DELETE FROM contas WHERE id=$i", ("$i", id));
+
     public async Task<(Conta? conta, string? erro, int esperar)> Entrar(string? emailBruto, string? senha)
     {
         var email = NormalizarEmail(emailBruto) ?? (emailBruto ?? "").Trim().ToLowerInvariant();

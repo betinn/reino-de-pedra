@@ -91,17 +91,15 @@ public static class Obras
 
     /// <summary>Objetos próprios do reino que ocupam o hexágono (torres...): (mundo, reino, hexágono) → ocupado.</summary>
     public static List<Func<Mundo, Reino, int, bool>> HexOcupadoPara { get; } = new();
-    private static readonly HashSet<string> OcupamNaFoto = ["local", "ruina-antiga", "torre"];
 
     /// <summary>
-    /// Livre pelo que o reino sabe (motivo de fundar e de erguer torre): os próprios locais e objetos, o que a foto da névoa
-    /// guarda e as jazidas que ele descobriu. Jazida oculta não ocupa; o resto se resolve na conclusão da obra.
+    /// Livre pelo que o reino sabe (motivo de fundar e de erguer torre): locais, ruínas e torres, que são públicos, e as jazidas
+    /// que ele descobriu. Jazida oculta não ocupa; o resto se resolve na conclusão da obra.
     /// </summary>
     public static bool HexLivrePara(Mundo m, Reino r, int hex)
     {
-        if (m.LocalNoHex(hex) is { } l && l.ReinoId == r.Id) return false;
+        if (m.LocalNoHex(hex) != null || m.Ruinas.Any(x => x.Hex == hex)) return false;
         if (m.Jazidas.Any(j => j.Hex == hex && j.DescobertaPor.Contains(r.Id))) return false;
-        if (Fotos.De(m, r.Id).Objetos.TryGetValue(hex, out var objs) && objs.Any(o => o["tipo"]?.GetValue<string>() is { } k && OcupamNaFoto.Contains(k))) return false;
         return !HexOcupadoPara.Any(f => f(m, r, hex));
     }
 

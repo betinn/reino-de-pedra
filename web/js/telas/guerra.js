@@ -1,11 +1,11 @@
 /* Reino de Pedra — Guerra (combate, parte 2): feridos e cura, selo de veterania, queda do castelo e exílio (#/exilio),
-   interceptação (#/interceptar), avistamentos de forças desconhecidas no mapa, "Repetir último ataque" e as tropas do
+   interceptação (#/interceptar), "Repetir último ataque" e as tropas do
    último ataque como padrão da ordem rápida. Porte de prototipo/js/ferraria.js (feridos, veterania), acoes.js (Tropas),
    legado.js (exílio) e reliquias.js (interceptar), com os dados do servidor:
    GET /feridos, POST /feridos/curar, POST /interceptacao/previa e /interceptacao, GET /exilio, POST /exilio/visto. */
 (function () {
   'use strict';
-  var RP = window.RP, H = RP.hex;
+  var RP = window.RP;
   function linha(r, v) { return '<div class="info-linha"><span class="fraco">' + r + '</span><span>' + v + '</span></div>'; }
   function semMilicia(g) {
     var d = {};
@@ -115,13 +115,11 @@
       RP.esc((u.alvoNome || 'Alvo') + ' · ' + (u.tipoNome || '').toLowerCase() + ' · ' + (u.resumo || '') + ' · mesmos objetivos e tática') + '</small></span>' + RP.icone('avancar', 'ico-p') + '</a>';
   });
 
-  /* ================================================================ faixas no reino: queda, forças vistas, feridos */
+  /* ================================================================ faixas no reino: queda, feridos */
   RP.extrasReino = RP.extrasReino || [];
   RP.extrasReino.push(function (r) {
-    var h = '', q = r.queda, a = r.avistamentos, f = r.feridos;
+    var h = '', q = r.queda, f = r.feridos;
     if (q) h += '<a class="faixa-alerta faixa-guerra" href="#/exilio">' + RP.icone('castelo') + '<span class="txt"><b>' + (q.exilio ? 'Seu reino caiu: você recomeça em exílio' : 'Seu castelo caiu') + '</b><br>Veja o que aconteceu e o que ficou com você.</span>' + RP.icone('avancar', 'ico-p') + '</a>';
-    if (a && a.n) h += '<a class="faixa-alerta faixa-guerra faixa-avist" href="#/mapa?foco=' + a.hex + '">' + RP.icone('olho') + '<span class="txt"><b>Forças desconhecidas</b><br>' +
-      (a.n === 1 ? '1 grupo visto' : a.n + ' grupos vistos') + ' perto do reino · o último ' + RP.fmtHa((RP.agora() - a.quando) / 3600000) + '</span>' + RP.icone('avancar', 'ico-p') + '</a>';
     if (f && f.total) h += '<a class="faixa-alerta faixa-guerra" href="#/tropas">' + RP.icone('ferido') + '<span class="txt"><b>' + f.total + (f.total === 1 ? ' ferido esperando ervas' : ' feridos esperando ervas') + '</b><br>' +
       (f.morreEm ? 'os primeiros morrem em <span data-fim="' + f.morreEm + '">' + RP.fmtResta(f.morreEm - RP.agora()) + '</span> sem cura' : '') + '</span>' + RP.icone('avancar', 'ico-p') + '</a>';
     return h;
@@ -159,11 +157,10 @@
       return;
     }
     var mantido = (x.reliquiasMantidas || []).map(function (n) { return 'Relíquia ' + n; }).concat(['Exércitos em campo e o que carregam', 'Linhagem, títulos e brasão']);
-    var atk = x.atacanteReino ? RP.brasao(x.atacanteReino.brasao, { tamanho: 32 }) + '<span><b>Reino de ' + RP.esc(x.atacanteReino.nome) + '</b><br><small class="fraco">identificado pelo estandarte</small></span>'
-      : RP.brasao(null, { tamanho: 32, desconhecido: true }) + '<span><b>Forças desconhecidas</b><br><small class="fraco">sem estandarte · batedores podem descobrir quem foi</small></span>';
+    var atk = x.atacanteReino ? '<div class="card linha atacante">' + RP.iconeReino(x.atacanteReino, 32) + '<span><b>Reino de ' + RP.esc(x.atacanteReino.nome) + '</b></span></div>' : '';
     var h = '<div class="exilio-titulo"><span class="rotulo">Temporada ' + x.temporada + ' · dia ' + x.dia + '</span><h1>' + (x.exilio ? 'Seu reino caiu' : 'Seu castelo caiu') + '</h1>' +
       '<p class="suave">O ' + RP.esc(x.casteloAntigo) + ' (nível ' + x.nivelAntigo + ') caiu num cerco' + (x.exilio ? ' e o reino não tinha outros locais.' : ' e virou ruína.') + '</p></div>' +
-      '<div class="card linha atacante">' + atk + '</div>';
+      atk;
     if (x.exilio) {
       h += '<div class="card card-moldura pilha"><h2>Você recomeça em exílio</h2>' +
         '<div class="exilio-item">' + RP.icone('bussola') + '<span><b>Um novo ponto do mapa</b><br><small class="fraco">' + (RP.reino && RP.reino.legado && RP.reino.legado.regiaoExilio ? 'Na região escolhida pela sua linhagem (' + RP.esc(RP.reino.legado.regiaoExilio) + ').' : 'Região aleatória, longe de quem derrubou você. A escolha da região vem com a linhagem (veja Temporada e legado).') + '</small></span></div>' +
@@ -221,7 +218,6 @@
 
   /* ================================================================ Interceptar (#/interceptar?marcha=<id>) */
   var INTERCEPTAVEIS = { exercito: 1, carregadores: 1, caravana: 1 };
-  function objetosHex(h, dados) { return (dados && dados.porHex && dados.porHex[h]) || []; }
   RP.mapa.acoesFolhaHex.push(function (h, dados) {
     if (RP.envio && RP.envio.ativo()) return '';
     return RP.mapa.marchasEm(h, dados).filter(function (o) { return o.tipo === 'marcha' && o.dono !== 'meu' && INTERCEPTAVEIS[o.marcha] && o.id; }).map(function (o) {
@@ -255,15 +251,12 @@
     var p = it.previa;
     RP.$('.rodape-acao', el).hidden = !p && !!it.erro;
     if (!p) { cont.innerHTML = it.erro ? '<p class="txt-alerta">' + RP.esc(it.erro) + '</p><a class="btn btn-p" href="#/mapa">' + RP.icone('mapa') + 'Mapa</a>' : '<p class="fraco">Carregando…</p>'; itRodape(el); return; }
-    var a = p.alvo, n = RP.somaGrupo(it.grupo), enc = p.encontro, ors = itOrigens(), agora = RP.agora();
+    var a = p.alvo, n = RP.somaGrupo(it.grupo), enc = p.encontro, ors = itOrigens();
     var h = (it.erro ? '<p class="nota-antiga nota-perigo">' + RP.icone('alerta', 'ico-p') + '<span>' + RP.esc(it.erro) + '</span></p>' : '') +
       (p.bloqueio ? '<div class="faixa-alerta">' + RP.icone('alerta') + '<span class="txt"><b>Não dá para enviar</b><br>' + RP.esc(p.bloqueio) + '</span></div>' : '') +
-      '<div class="card linha atacante">' + RP.brasao(null, { tamanho: 40, desconhecido: true }) + '<span style="flex:1;min-width:0"><b>Forças desconhecidas</b><br><small class="fraco">' +
-      RP.esc(a.nome.charAt(0).toUpperCase() + a.nome.slice(1)) + ' · ' + RP.esc(a.tamanho) + ' tropas' + (a.rumo ? ' · rumo ao ' + RP.esc(a.rumo) : '') + '</small></span>' +
+      '<div class="card linha atacante">' + RP.iconeReino(a.reino, 40) + '<span style="flex:1;min-width:0"><b>' + RP.esc(a.reino ? 'Reino de ' + a.reino.nome : 'Outro reino') + '</b><br><small class="fraco">' +
+      RP.esc(a.nome.charAt(0).toUpperCase() + a.nome.slice(1)) + (a.rumo ? ' · rumo ao ' + RP.esc(a.rumo) : '') + '</small></span>' +
       '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + a.hex + '">' + RP.icone('mapa') + 'Mapa</a></div>' +
-      (a.carga ? '<div class="card linha" style="margin-top:var(--esp-3)"><span class="ico-placa">' + RP.icone('carroca') + '</span><span style="flex:1"><b>Levam carga</b><br><small class="fraco">Se vencerem, suas tropas trazem o que couber na carga delas.</small></span></div>' : '') +
-      (a.some ? '<p class="nota-antiga nota-perigo" style="margin-top:var(--esp-3)">' + RP.icone('alerta', 'ico-p pulso') + '<span>Somem na névoa em <b class="num" data-fim="' + a.some + '">' + RP.fmtResta(a.some - agora) + '</b>. Depois disso, só a espionagem acha ' + (a.carga ? 'a carga' : 'essas forças') + '.</span></p>'
-        : '<p class="nota-antiga" style="margin-top:var(--esp-3)">' + RP.icone('olho', 'ico-p') + '<span>Seguem à vista até chegar' + (a.chegada ? ', em <b class="num" data-fim="' + a.chegada + '">' + RP.fmtResta(a.chegada - agora) + '</b>' : '') + '.</span></p>') +
       '<div class="nota-regra" style="margin-top:var(--esp-3)">' + RP.icone('alvo', 'ico-p') + '<span>Suas tropas vão a um ponto do caminho <b>antes</b> deles e esperam. Se vencerem, trazem a carga e as relíquias de volta, e na volta elas também podem ser interceptadas. Se eles mudarem de rota, a interceptação falha.</span></div>' +
       '<div class="secao-titulo">1. Tropas</div>' +
       (ors.length > 1 ? '<div class="abas abas-rolagem envio-origens" role="group" aria-label="De onde saem">' + ors.map(function (x) {
@@ -272,7 +265,7 @@
       '<div class="card pilha" data-it-grupo>' + (ors.length ? RP.grupoTropas.linhas(it.grupo, itDisp()) : '<p class="fraco">Nenhuma tropa que ataca. Milícia só defende.</p>') +
       '<div class="ext-numeros"><div><span class="fraco">Tropas</span><b class="num">' + n + '</b></div><div><span class="fraco">Ataque</span><b class="num">' + RP.num(p.forca) + '</b></div>' +
       '<div><span class="fraco">Velocidade</span><b>' + RP.esc(RP.VELOCIDADES[p.vel] || p.vel) + '</b></div></div>' +
-      '<p class="fraco" style="font-size:var(--fs-2)">Eles: ' + RP.esc(a.tamanho) + ' tropas. Tropas lentas podem não alcançar. Tática média: recuam com ' + Math.round(((p.taticas || {}).media || 0.4) * 100) + '% de baixas.</p></div>' +
+      '<p class="fraco" style="font-size:var(--fs-2)">Quantos são, só se sabe no encontro. Tropas lentas podem não alcançar. Tática média: recuam com ' + Math.round(((p.taticas || {}).media || 0.4) * 100) + '% de baixas.</p></div>' +
       '<div class="secao-titulo">2. Ponto de encontro</div>' +
       (!n ? '<p class="fraco">Escolha as tropas para calcular onde alcançam.</p>'
         : enc ? '<div class="card pilha it-encontro"><div class="linha"><span class="ico-placa">' + RP.icone('alvo') + '</span><span style="flex:1;min-width:0"><b>Hexágono ' + enc.c + ', ' + enc.l + '</b><br><small class="fraco">' + enc.hexes + ' hexágonos pela rota curta</small></span>' +
@@ -318,7 +311,7 @@
         it = null;
         var cont = RP.$('.it-conteudo', el), rod = RP.$('.rodape-acao', el);
         if (rod) rod.hidden = true;
-        if (cont) cont.innerHTML = '<div class="vazio">' + RP.icone('alvo') + '<b>Escolha as forças no mapa</b><p class="fraco">Clique numa marcha de outro reino que esteja à vista e escolha Interceptar.</p>' +
+        if (cont) cont.innerHTML = '<div class="vazio">' + RP.icone('alvo') + '<b>Escolha a marcha no mapa</b><p class="fraco">Clique numa marcha de outro reino e escolha Interceptar.</p>' +
           '<a class="btn btn-primario" href="#/mapa">' + RP.icone('mapa') + 'Ir ao mapa</a></div>';
         return;
       }
@@ -334,38 +327,5 @@
       }, function (e) { it.erro = e.message; desenharInterceptar(el); });
     },
     sair: function () { clearTimeout(itTimer); }
-  });
-
-  /* ================================================================ avistamentos no mapa ("visto há X") */
-  function folhaAvistamento(o) {
-    return linha('Forças vistas', RP.esc(o.tamanho) + ' · ' + RP.fmtHa((RP.agora() - o.quando) / 3600000) + (o.rumo ? ' · rumo ao ' + RP.esc(o.rumo) : '') +
-      ' · some em <span data-fim="' + o.ate + '">' + RP.fmtResta(o.ate - RP.agora()) + '</span>');
-  }
-  function cor(nome, padrao) { return (getComputedStyle(document.documentElement).getPropertyValue(nome) || '').trim() || padrao; }
-  function desenharAvistamento(ctx, o, p) {
-    var idade = Math.max(0, Math.min(1, (RP.agora() - o.quando) / Math.max(1, o.ate - o.quando)));
-    ctx.save();
-    ctx.globalAlpha = 0.9 - idade * 0.6;
-    ctx.setLineDash([4, 4]); ctx.lineWidth = 2; ctx.strokeStyle = cor('--cor-perigo', 'firebrick');
-    ctx.beginPath(); ctx.arc(p.x, p.y, 11, 0, 7); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = cor('--cor-perigo', 'firebrick');
-    ctx.font = '700 13px "Barlow Semi Condensed", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('?', p.x, p.y + 1);
-    ctx.restore();
-  }
-  RP.mapa.tiposObjeto = RP.mapa.tiposObjeto || {};
-  /* o sistema de exploração também pode registrar "avistamento": quem chegar primeiro desenha; o outro só manda os dados */
-  if (!RP.mapa.tiposObjeto.avistamento) {
-    RP.mapa.tiposObjeto.avistamento = { nome: 'Forças vistas', icone: 'olho', guerra: true, desenharTatico: function (ctx, o, p) { desenharAvistamento(ctx, o, p); }, folha: folhaAvistamento };
-  }
-  function meuDesenho() { return RP.mapa.tiposObjeto.avistamento && RP.mapa.tiposObjeto.avistamento.guerra && !RP.mapa.desenhaTiposObjeto; }
-  RP.mapa.desenhosExtras.push(function (ctx, dados) {
-    if (!meuDesenho()) return;
-    (dados.objetos || []).forEach(function (o) { if (o.tipo === 'avistamento' && o.avistado !== 'espiao') desenharAvistamento(ctx, o, H.centroH(o.hex)); });
-  });
-  RP.mapa.extrasFolhaHex.push(function (h, dados) {
-    if (!meuDesenho()) return '';
-    return objetosHex(h, dados).filter(function (o) { return o.tipo === 'avistamento' && o.avistado !== 'espiao'; }).map(folhaAvistamento).join('');
   });
 })();

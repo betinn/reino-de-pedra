@@ -83,16 +83,6 @@
    "poucas": 4,
    "passo": 5
   },
-  "regiaoReino": {
-   "raio": 14,
-   "desvio": 9
-  },
-  "rastro": {
-   "tropas": 12,
-   "alcance": 14,
-   "grade": 3,
-   "adiante": 6
-  },
   "custoNovoLocal": 150,
   "novoLocalCresc": 1.22,
   "tempoNovoLocal": 5400,
@@ -569,7 +559,8 @@
     "longe": 0.5
    },
    "interceptacao": {
-    "folgaSeg": 60
+    "folgaSeg": 60,
+    "trechoHexes": 30
    },
    "postura": {
     "alcance": 2,
@@ -596,7 +587,6 @@
   },
   "extracaoRotaFrac": 0.5,
   "reliquiaVis": {
-   "brilho": 2,
    "farol": 3
   },
   "logisticaLongeHex": 8,
@@ -882,7 +872,8 @@
     "forca": 2.5,
     "fracTropas": 0.6,
     "reserva": 3,
-    "tatica": "conservadora"
+    "tatica": "conservadora",
+    "vigiaAlcance": 14
    },
    "espionagem": {
     "castelo": 4,
@@ -898,8 +889,7 @@
      8,
      48
     ],
-    "tentativas": 6,
-    "regiaoAlcance": 84
+    "tentativas": 6
    },
    "caca": {
     "couroMin": 40,

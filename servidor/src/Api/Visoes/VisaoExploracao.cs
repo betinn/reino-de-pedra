@@ -50,13 +50,10 @@ public static class VisaoExploracao
             {
                 p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), pessoa = p.Nome, p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
                 resgate = p.Estado == Capturas.ResgatePedido ? p.Resgate.Arredondado() : null,
-                // quem capturou só aparece se ele se revelou: pediu resgate, aceitou a oferta ou um batedor o viu com o preso
-                captor = (p.CaptorRevelado || p.Estado == Capturas.ResgatePedido) && m.Reinos.Obter(p.CaptorId) is { } c ? Espionagem.Identidade(c) : null,
+                captor = m.Reinos.Obter(p.CaptorId) is { } c ? Espionagem.Identidade(c) : null,
                 oferta = p.Oferta.Count > 0 ? p.Oferta.Arredondado() : null, p.OfertaEm,
                 pagamento = Capturas.PagamentoACaminho(m, p),
-                // onde está preso: só se o dono sabe (pego espionando aquele local, ou um batedor o viu lá)
-                cela = p.LocalConhecido && Capturas.Onde(m, p) is { } cl ? new { cl.Hex, c = m.G.C(cl.Hex), l = m.G.L(cl.Hex), nome = Jogo.Combate.Ataques.NomeAlvo(cl) } : null,
-                levado = !p.LocalConhecido && Capturas.Onde(m, p) is { } cl2 && cl2.Hex != p.Hex ? m.G.Direcao(p.Hex, cl2.Hex) : null,
+                cela = Capturas.Onde(m, p) is { } cl ? new { cl.Hex, c = m.G.C(cl.Hex), l = m.G.L(cl.Hex), nome = Jogo.Combate.Ataques.NomeAlvo(cl) } : null,
             }).ToList(),
             bandos = Bandos(m, r),
             regras = new
@@ -154,12 +151,12 @@ public static class VisaoExploracao
         }
         object? espiao = null;
         var l = m.LocalNoHex(para);
-        if (tipo == Exploradores.Batedor && l != null && l.ReinoId != r.Id && l.ReinoId != 0 && Nevoas.Explorado(m, r.Id, para))
+        if (tipo == Exploradores.Batedor && l != null && l.ReinoId != r.Id && l.ReinoId != 0)
         {
             var antigo = r.LocaisEspionados.GetValueOrDefault(l.Id);
             espiao = new
             {
-                localId = l.Id, nome = l.Tipo.NomeGenerico(),
+                localId = l.Id, nome = l.Nome,
                 estimativa = antigo != null ? Math.Round(m.F.ChanceEspiao(antigo.Torres, antigo.Tropas), 3) : (double?)null,
                 antigo = antigo == null ? null : new { antigo.Tropas, antigo.Torres, antigo.Quando },
             };
@@ -171,44 +168,13 @@ public static class VisaoExploracao
 
     private static readonly string[] NiveisChar = ["0", "1", "2", "3"];
 
-    /// <summary>Objetos do mapa: foto das áreas fora da visão, espionagem, fauna à vista, perigo conhecido e avistamentos.</summary>
+    /// <summary>Objetos do mapa: espionagem, fauna à vista, perigo conhecido e avistamentos.</summary>
     public static IEnumerable<object> Mapa(Mundo m, Reino r, HashSet<int> vis)
     {
         var l = new List<object>();
         var nevoa = Nevoas.De(m, r.Id);
         var foto = Fotos.De(m, r.Id);
-        // rumores (decisão 0035): a região de cada reino, desde o início, e a poeira das marchas grandes fora da vista
-        foreach (var rg in Rumores.Regioes(m, r.Id))
-            l.Add(new { tipo = "regiao-reino", id = rg.Chave, hex = rg.Centro, raio = rg.Raio });
-        foreach (var ra in Rumores.Rastros(m, r.Id, vis, outro => VisaoMapa.Aliado(m, r, outro)))
-            l.Add(new { tipo = "rastro", hex = ra.Hex, tamanho = ra.Tamanho, rumo = ra.Rumo, rumoHex = ra.RumoHex });
-        // último estado conhecido: locais de outros reinos, ruínas antigas e o que outros sistemas fotografam
-        var locaisVistos = new HashSet<long>();   // a foto guarda o local em cada hexágono da pegada; o desenho é um só, no centro
-        foreach (var (h, objs) in foto.Objetos)
-        {
-            if (vis.Contains(h) || nevoa.MinutoVisto(h) == 0) continue;
-            var visto = Nevoas.Instante(m, nevoa.MinutoVisto(h));
-            foreach (var o in objs)
-            {
-                if (o["tipo"]?.GetValue<string>() == "local" && m.LocalNoHex(h) is { } atual && (atual.ReinoId == r.Id || VisaoMapa.Aliado(m, r, atual.ReinoId))) continue;   // virou seu (ou é de aliado: vem ao vivo)
-                var c = (JsonObject)o.DeepClone();
-                c["hex"] = h; c["foto"] = true; c["visto"] = visto;
-                if (o["tipo"]?.GetValue<string>() == "local")
-                {
-                    var id = o["id"]?.GetValue<long>() ?? 0;
-                    var real = m.Locais.Obter(id);
-                    if (real != null && vis.Contains(real.Hex)) continue;   // o centro está à vista: o local já vai ao vivo
-                    if (!locaisVistos.Add(id)) continue;
-                    if (real != null)
-                    {
-                        c["hex"] = real.Hex;
-                        c["ocupa"] = new JsonArray(Jogo.Mapa.Pegada.DoLocal(m, real).Select(x => (JsonNode)x).ToArray());
-                    }
-                }
-                l.Add(c);
-            }
-        }
-        // o que a espionagem revelou (dono e nível), com a data
+        // o que a espionagem revelou, com a data
         foreach (var (lid, info) in r.LocaisEspionados)
         {
             if (m.Locais.Obter(lid) is not { } loc) continue;

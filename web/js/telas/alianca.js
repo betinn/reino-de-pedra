@@ -33,18 +33,18 @@
   }
 
   function semAlianca(d) {
-    var h = '<div class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Aliados se reconhecem no mapa, veem as marchas uns dos outros, <b>pedem recursos</b> e reforçam os locais uns dos outros. Locais de aliados não são alvo. No máximo <b>' + d.limite + ' reinos</b> por aliança.</span></div>';
+    var h = '<div class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Aliados <b>pedem recursos</b> e reforçam os locais uns dos outros. Locais de aliados não são alvo. No máximo <b>' + d.limite + ' reinos</b> por aliança.</span></div>';
     if (d.livreEm) h += '<p class="nota-antiga">' + RP.icone('relogio', 'ico-p') + 'Você saiu de uma aliança: só entra em outra em <b class="num" data-fim="' + d.livreEm + '">' + RP.fmtResta(d.livreEm - RP.agora()) + '</b>.</p>';
     if (d.convitesRecebidos.length) h += '<div class="secao-titulo">Convites</div><div class="pilha">' + d.convitesRecebidos.map(function (c) {
       return '<div class="card pilha"><div class="linha">' + RP.brasao(c.alianca.brasao, { tamanho: 40 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(c.alianca.nome) + '</b><br><small class="fraco">' + c.alianca.membros + ' de ' + d.limite + ' reinos · convite de ' + RP.esc(S.nome(c.por)) + ' · até ' + RP.fmtHora(c.ate) + '</small></span></div>' +
         '<div class="linha relq-acoes"><button type="button" class="btn btn-p btn-primario" data-convite-aceitar="' + c.alianca.id + '">' + RP.icone('check') + 'Entrar</button><button type="button" class="btn btn-p btn-fantasma" data-convite-recusar="' + c.alianca.id + '">Recusar</button></div></div>';
     }).join('') + '</div>';
-    if (d.aliancasConhecidas.length) h += '<div class="secao-titulo">Alianças de reinos que você conhece</div><div class="pilha">' + d.aliancasConhecidas.map(function (a) {
-      return '<div class="card linha">' + RP.brasao(a.brasao, { tamanho: 32 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(a.nome) + '</b><br><small class="fraco">' + a.membros + ' de ' + d.limite + ' · com ' + RP.esc(a.conhecidos.join(', ')) + '</small></span>' +
+    if (d.aliancas.length) h += '<div class="secao-titulo">Alianças do mundo</div><div class="pilha">' + d.aliancas.map(function (a) {
+      return '<div class="card linha">' + RP.brasao(a.brasao, { tamanho: 32 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(a.nome) + '</b><br><small class="fraco">' + a.membros + ' de ' + d.limite + ' · ' + RP.esc(a.nomes.join(', ')) + '</small></span>' +
         (a.pedido ? '<span class="selo selo-info">' + RP.icone('relogio') + 'Pedido enviado</span>' : a.cheia ? '<span class="selo">Completa</span>' : '<button type="button" class="btn btn-p" data-pedir-entrada="' + a.id + '">Pedir para entrar</button>') + '</div>';
     }).join('') + '</div>';
     h += '<div class="secao-titulo">Fundar uma aliança</div><div class="card pilha"><div class="campo"><label for="nome-alianca">Nome da aliança</label><input id="nome-alianca" type="text" minlength="' + d.nome.min + '" maxlength="' + d.nome.max + '" placeholder="Ex.: Liga do Vale" autocomplete="off">' +
-      '<span class="campo-ajuda">De ' + d.nome.min + ' a ' + d.nome.max + ' letras. Você será o líder e convida reinos que conhece.</span></div>' +
+      '<span class="campo-ajuda">De ' + d.nome.min + ' a ' + d.nome.max + ' letras. Você será o líder e convida outros reinos.</span></div>' +
       '<button type="button" class="btn btn-p btn-primario" data-fundar-alianca>' + RP.icone('estandarte') + 'Fundar aliança</button></div><div style="height:var(--esp-8)"></div>';
     return h;
   }
@@ -54,7 +54,7 @@
     var nCons = a.membros.filter(function (x) { return x.cargo === 'conselheiro'; }).length;
     var paraMim = d.pedidosRecursos.filter(function (p) { return !p.minha && p.estado === 'aberta'; }), meus = d.pedidosRecursos.filter(function (p) { return p.minha; });
     var h = '<div class="card card-moldura linha al-topo">' + RP.brasao(a.brasao, { tamanho: 56 }) + '<span style="flex:1;min-width:0"><h2>' + RP.esc(a.nome) + '</h2><small class="fraco">Desde ' + RP.fmtHora(a.criadaEm) + ' · você é ' + CARGOS[a.meuCargo].toLowerCase() + '</small></span><span class="selo">' + a.membros.length + ' de ' + d.limite + '</span></div>' +
-      '<div class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Aliados se reconhecem no mapa e podem <b>pedir recursos</b> uns aos outros. A ajuda <b>viaja</b>: leva tempo e pode ser roubada no caminho. Locais de aliados não são alvo; não há ataque conjunto.</span></div>';
+      '<div class="nota-regra">' + RP.icone('estandarte', 'ico-p') + '<span>Aliados podem <b>pedir recursos</b> uns aos outros. A ajuda <b>viaja</b>: leva tempo e pode ser roubada no caminho. Locais de aliados não são alvo; não há ataque conjunto.</span></div>';
     if (paraMim.length) h += '<div class="secao-titulo">Pedidos para você</div><div class="pilha">' + paraMim.map(pedidoCard).join('') + '</div>';
     if (gerencia && a.pedidos && a.pedidos.length) h += '<div class="secao-titulo">Pedidos de entrada</div><div class="pilha">' + a.pedidos.map(function (p) {
       return '<div class="card linha">' + S.brasao(p.reino, 30) + '<span style="flex:1;min-width:0"><b>' + RP.esc(S.nome(p.reino)) + '</b><br><small class="fraco">quer entrar · até ' + RP.fmtHora(p.ate) + '</small></span>' +
@@ -68,10 +68,10 @@
     }).join('') + '</div>' +
       '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Líder convida, expulsa e promove. Até ' + d.conselheirosMax + ' conselheiros (agora ' + nCons + ') convidam e aceitam pedidos de entrada. Se o líder entrar em regência, a liderança passa ao conselheiro mais antigo.</p>';
     if (gerencia && a.membros.length < d.limite) {
-      var cands = d.conhecidos.filter(function (c) { return !c.naAlianca && !(a.convites || []).some(function (v) { return v.reino && v.reino.id === c.reino.id; }); });
+      var cands = d.reinos.filter(function (c) { return !c.naAlianca && !(a.convites || []).some(function (v) { return v.reino && v.reino.id === c.reino.id; }); });
       h += '<div class="secao-titulo">Convidar · ' + (d.limite - a.membros.length) + ' vagas</div>' + (cands.length ? '<div class="escolhas escolhas-lista">' + cands.map(function (c) {
-        return '<button type="button" class="escolha escolha-linha" data-convidar="' + c.reino.id + '">' + S.brasao(c.reino, 30) + '<span class="escolha-txt"><b>' + RP.esc(c.reino.nome) + '</b><small class="fraco">Reino que você conhece · clique para convidar</small></span>' + RP.icone('mais', 'ico-p') + '</button>';
-      }).join('') + '</div>' : S.vazio('Você só convida reinos que conhece: espionados, identificados por estandarte, bandeira ou mensagem.'));
+        return '<button type="button" class="escolha escolha-linha" data-convidar="' + c.reino.id + '">' + S.brasao(c.reino, 30) + '<span class="escolha-txt"><b>' + RP.esc(c.reino.nome) + '</b><small class="fraco">Clique para convidar</small></span>' + RP.icone('mais', 'ico-p') + '</button>';
+      }).join('') + '</div>' : S.vazio('Nenhum reino sem aliança para convidar agora.'));
       if ((a.convites || []).length) h += '<div class="pilha" style="margin-top:var(--esp-2)">' + a.convites.map(function (v) {
         return '<div class="card linha">' + S.brasao(v.reino, 24) + '<span style="flex:1"><b>' + RP.esc(S.nome(v.reino)) + '</b><br><small class="fraco">convidado por ' + RP.esc(v.por || '') + ' · vale até ' + RP.fmtHora(v.ate) + '</small></span><span class="selo selo-info">' + RP.icone('relogio') + 'Convite</span></div>';
       }).join('') + '</div>';
@@ -84,7 +84,7 @@
       d.reforcos.recebidos.map(function (e) { return '<div class="card linha">' + S.brasao(e.reino, 28) + '<span style="flex:1;min-width:0"><b>' + RP.esc(S.nome(e.reino)) + ' defende ' + RP.esc(e.local) + '</b><br><small class="fraco">' + RP.esc(RP.partesGrupo(e.tropas)) + ' · continuam sendo dele</small></span></div>'; }).join('') +
       d.reforcos.meus.map(function (e) { return '<div class="card linha">' + S.brasao(e.aliado, 28) + '<span style="flex:1;min-width:0"><b>Suas tropas em ' + RP.esc(e.local) + '</b><br><small class="fraco">' + RP.esc(RP.partesGrupo(e.tropas)) + '</small></span><button type="button" class="btn btn-p" data-reforco-volta="' + e.localId + '">' + RP.icone('voltar') + 'Voltar</button></div>'; }).join('') + '</div>';
     h += '<div class="secao-titulo">Seus pedidos</div><div class="pilha">' + (meus.length ? meus.map(meuPedido).join('') : S.vazio('Nenhum pedido feito. Clique em Pedir ao lado de um aliado.')) + '</div>' +
-      '<div class="secao-titulo">Sair</div><div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Qualquer membro sai quando quiser. Ao sair ou ser expulso, vale uma <b>trégua de ' + d.treguaH + ' h</b> entre o reino e a aliança, garantida pelo jogo, e só se entra em outra aliança depois de ' + d.treguaH + ' h. A visão das marchas acaba na hora.</p>' +
+      '<div class="secao-titulo">Sair</div><div class="card pilha"><p class="fraco" style="font-size:var(--fs-2)">Qualquer membro sai quando quiser. Ao sair ou ser expulso, vale uma <b>trégua de ' + d.treguaH + ' h</b> entre o reino e a aliança, garantida pelo jogo, e só se entra em outra aliança depois de ' + d.treguaH + ' h.</p>' +
       '<button type="button" class="btn btn-p btn-fantasma" data-sair-alianca>' + RP.icone('voltar') + 'Sair da aliança</button></div><div style="height:var(--esp-8)"></div>';
     return h;
   }
@@ -111,7 +111,7 @@
       el.addEventListener('click', function (e) {
         var b;
         if (e.target.closest('[data-fundar-alianca]')) { acao(RP.post('/alianca', { nome: (RP.$('#nome-alianca', el).value || '').trim() }), 'Aliança fundada', 'Convide reinos que você conhece.', el); return; }
-        if ((b = e.target.closest('[data-convite-aceitar]'))) { acao(RP.post('/aliancas/' + b.getAttribute('data-convite-aceitar') + '/convite/aceitar'), 'Você entrou na aliança', 'Aliados se reconhecem no mapa.', el); return; }
+        if ((b = e.target.closest('[data-convite-aceitar]'))) { acao(RP.post('/aliancas/' + b.getAttribute('data-convite-aceitar') + '/convite/aceitar'), 'Você entrou na aliança', 'Aliados pedem recursos e reforçam uns aos outros.', el); return; }
         if ((b = e.target.closest('[data-convite-recusar]'))) { acao(RP.post('/aliancas/' + b.getAttribute('data-convite-recusar') + '/convite/recusar'), 'Convite recusado', null, el); return; }
         if ((b = e.target.closest('[data-pedir-entrada]'))) { acao(RP.post('/aliancas/' + b.getAttribute('data-pedir-entrada') + '/entrar'), 'Pedido enviado', 'O líder e os conselheiros respondem.', el); return; }
         if ((b = e.target.closest('[data-entrada-aceitar]'))) { acao(RP.post('/alianca/pedidos-entrada/' + b.getAttribute('data-entrada-aceitar') + '/aceitar'), 'Novo membro', null, el); return; }
@@ -137,7 +137,7 @@
         if (e.target.closest('[data-sair-alianca]')) {
           RP.modal({
             titulo: 'Sair da ' + RP.esc(dados.alianca.nome) + '?',
-            corpo: '<p class="suave">A visão das marchas dos aliados acaba na hora. Por ' + dados.treguaH + ' h, nenhum lado pode atacar o outro, e você só entra em outra aliança depois disso. Seus reforços em locais de aliados voltam para casa.' +
+            corpo: '<p class="suave">Por ' + dados.treguaH + ' h, nenhum lado pode atacar o outro, e você só entra em outra aliança depois disso. Seus reforços em locais de aliados voltam para casa.' +
               (dados.alianca.meuCargo === 'lider' ? ' A liderança passa ao conselheiro mais antigo.' : '') + '</p>',
             acoes: [{ rotulo: 'Sair', classe: 'btn-perigo', acao: function () { acao(RP.post('/alianca/sair'), 'Você saiu da aliança', 'Trégua de ' + dados.treguaH + ' h.', RP.$('[data-tela=alianca]')); } }, { rotulo: 'Ficar' }]
           });

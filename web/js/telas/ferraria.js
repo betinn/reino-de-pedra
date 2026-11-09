@@ -266,16 +266,4 @@
     var l = obj && RP.local(obj.id);
     return l && l.tipo === 'ferraria' ? '<a class="btn btn-p" href="#/ferraria">' + RP.icone('ferraria') + 'Ferraria e eras</a>' : '';
   });
-
-  /* relatório de espionagem: o equipamento lendário visto na guarnição */
-  RP.desenhosRelatorio = RP.desenhosRelatorio || {};
-  var espionagem = RP.desenhosRelatorio.espionagem;
-  RP.desenhosRelatorio.espionagem = function (rel) {
-    var base = espionagem ? espionagem(rel) : '', eqs = (rel.dados && rel.dados.lendario) || [];
-    if (!eqs.length) return base;
-    return base + '<div class="secao-titulo">Equipamento lendário</div><div class="pilha">' + eqs.map(function (e) {
-      return '<div class="card linha"><span class="ico-placa">' + RP.icone('lendario', 'r-minerio') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(e.nome) + '</b> · ' + RP.esc(e.tipo) +
-        '<br><small class="fraco">Na guarnição. Vencer esse grupo deixa o equipamento no campo para você levar.</small></span></div>';
-    }).join('') + '</div>';
-  };
 })();

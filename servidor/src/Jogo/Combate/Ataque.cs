@@ -15,7 +15,7 @@ public sealed record Objetivo(string K, string? R, double Q)
 
 /// <summary>
 /// Plano de um ataque: tipo, objetivos em ordem de prioridade, divisão da carga, tática, completar a carga, recuar sem o que
-/// levar e estandarte. Recursos não têm quantidade: o jogo decide quanto trazer pela carga, pelo estoque e pela divisão.
+/// levar. Recursos não têm quantidade: o jogo decide quanto trazer pela carga, pelo estoque e pela divisão.
 /// Vive em <c>Exercito.Dados</c> (normalizado pelo servidor ao dar a ordem).
 /// </summary>
 public sealed class PlanoAtaque
@@ -24,7 +24,6 @@ public sealed class PlanoAtaque
     public List<Objetivo> Objetivos { get; set; } = new();
     public string Tatica { get; set; } = "";
     public bool Completar { get; set; }
-    public bool Estandarte { get; set; }
     /// <summary>Como a carga se divide entre os recursos: <see cref="Ataques.DivisaoPrioridade"/> ou <see cref="Ataques.DivisaoIgual"/>.</summary>
     public string Divisao { get; set; } = "";
     /// <summary>Saque: sem nada do que foi pedido no local, as tropas voltam em vez de lutar.</summary>
@@ -37,7 +36,6 @@ public sealed class PlanoAtaque
         p.Tipo = Str(d["tipo"]) ?? "";   // sem tipo: o Normalizar usa o padrão do alvo (ocupação para ruína)
         p.Tatica = Str(d["tatica"]) ?? "";
         p.Completar = Bool(d["completar"]);
-        p.Estandarte = Bool(d["estandarte"]);
         p.Divisao = Str(d["divisao"]) ?? "";
         if (d["recuarVazio"] != null) p.RecuarVazio = Bool(d["recuarVazio"]);
         if (d["objetivos"] is JsonArray arr)
@@ -61,7 +59,7 @@ public sealed class PlanoAtaque
             if (o.Q > 0) j["q"] = o.Q;
             arr.Add(j);
         }
-        return new JsonObject { ["tipo"] = Tipo, ["objetivos"] = arr, ["tatica"] = Tatica, ["completar"] = Completar, ["estandarte"] = Estandarte, ["divisao"] = Divisao, ["recuarVazio"] = RecuarVazio };
+        return new JsonObject { ["tipo"] = Tipo, ["objetivos"] = arr, ["tatica"] = Tatica, ["completar"] = Completar, ["divisao"] = Divisao, ["recuarVazio"] = RecuarVazio };
     }
 
     private static string? Str(JsonNode? n) { try { return n?.GetValue<string>(); } catch { return null; } }
@@ -94,7 +92,7 @@ public static class Ataques
     public static bool LevaCarga(string tipo) => tipo is Saque or Cerco;
 
     /// <summary>Local é alvo sem dono (ruína ou terra livre): só pode ser ocupado.</summary>
-    public static bool SemDono(Mundo m, Local l) => l.Ruina || l.ReinoId == 0 || (!l.Fantasma && m.Reinos.Obter(l.ReinoId) is not { Ativo: true });
+    public static bool SemDono(Mundo m, Local l) => l.Ruina || l.ReinoId == 0 || m.Reinos.Obter(l.ReinoId) is not { Ativo: true };
 
     /// <summary>Tipos de ataque possíveis contra o local.</summary>
     public static List<string> TiposPara(Mundo m, Local l)
@@ -203,42 +201,13 @@ public static class Ataques
                 throw new RegraException(u.Nome + " só defende: tire-a do ataque.");
     }
 
-    public const string SemAlvoConhecido = "Não há local conhecido neste hexágono para atacar.";
-
-    /// <summary>
-    /// Alvo de um ataque no hexágono, ou erro. Só vale o que o reino pode saber: o local à vista agora, ou o que a foto da
-    /// névoa guarda. Na névoa (sem local na foto), a resposta é a mesma tenha ou não local de verdade.
-    /// </summary>
-    public static Local Alvo(Mundo m, Reino r, int hex, HashSet<int>? vis = null)
+    /// <summary>Alvo de um ataque no hexágono, ou erro. Locais são públicos: não depende do que o reino já explorou.</summary>
+    public static Local Alvo(Mundo m, Reino r, int hex)
     {
-        vis ??= Nevoas.VisiveisAgora(m, r.Id);
-        var l = m.LocalNoHex(hex);
-        if (!vis.Contains(hex))
-        {
-            var foto = FotoDoLocal(m, r, hex) ?? throw new RegraException(SemAlvoConhecido);
-            // o local da foto sumiu (ou outro tomou o lugar): recusar agora revelaria a mudança. O ataque segue contra o
-            // que a foto guarda e as tropas descobrem na chegada, como o escudo.
-            if (l == null || l.Id != (long?)foto["id"]) return Fantasma(hex, foto);
-        }
-        else if (l == null) throw new RegraException("Não há local neste hexágono para atacar.");
+        var l = m.LocalNoHex(hex) ?? throw new RegraException("Não há local neste hexágono para atacar.");
         if (l.ReinoId == r.Id && !l.Ruina) throw new RegraException("Esse local é seu.");
         return l;
     }
-
-    /// <summary>O local como a foto o guarda; o dono fica desconhecido (-1) a não ser que a foto diga ruína ou terra livre.</summary>
-    private static Local Fantasma(int hex, JsonObject foto)
-    {
-        var ruina = foto["ruina"]?.GetValue<bool>() == true;
-        return new Local
-        {
-            Id = (long?)foto["id"] ?? 0, Hex = hex, Tipo = TiposLocal.DeChave((string?)foto["local"]) ?? TipoLocal.Vila, Ruina = ruina,
-            ReinoId = ruina || (string?)foto["dono"] == "livre" ? 0 : -1, Nivel = 1, Nome = (string?)foto["nome"] ?? "", Fantasma = true,
-        };
-    }
-
-    /// <summary>O local que a foto da névoa do reino guarda no hexágono (último estado conhecido), ou null.</summary>
-    public static JsonObject? FotoDoLocal(Mundo m, Reino r, int hex) =>
-        Fotos.De(m, r.Id).Objetos.TryGetValue(hex, out var objs) ? objs.FirstOrDefault(o => (string?)o["tipo"] == "local") : null;
 
     // ---------------------------------------------------------------- carga do saque
 
@@ -299,7 +268,7 @@ public static class Ataques
 
     // ---------------------------------------------------------------- textos
 
-    public static string NomeAlvo(Local l) => l.Ruina ? "Ruína" : l.ReinoId == 0 ? "Terra livre" : l.Tipo.NomeGenerico();
+    public static string NomeAlvo(Local l) => l.Ruina ? "Ruína" : l.ReinoId == 0 ? "Terra livre" : l.Nome;
 
     public static string TextoObjetivo(Mundo m, Objetivo o, Local? alvo)
     {
@@ -336,7 +305,7 @@ public static class Ataques
 
 /// <summary>
 /// Ordem "atacar": vai até um local de outro reino (ou sem dono, para ocupar) e ataca ao chegar. O plano (tipo, objetivos,
-/// tática, completar a carga, estandarte) vem em Dados e é normalizado aqui. Bloqueios conhecidos (aliança, pacto, trégua)
+/// tática, completar a carga) vem em Dados e é normalizado aqui. Bloqueios conhecidos (aliança, pacto, trégua)
 /// recusam antes de enviar; o escudo só é descoberto ao chegar.
 /// </summary>
 public sealed class OrdemAtacar : IOrdemExercito
@@ -361,7 +330,6 @@ public sealed class OrdemAtacar : IOrdemExercito
         plano = Ataques.Normalizar(m, alvo, plano);
         ex.Dados = plano.ParaJson();
         ex.AlvoLocalId = alvo.Id;
-        ex.Estandarte = plano.Estandarte;
     }
 }
 

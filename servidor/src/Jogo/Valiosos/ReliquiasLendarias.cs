@@ -12,8 +12,8 @@ namespace ReinoDePedra.Jogo.Valiosos;
 /// Bônus no local onde estão guardadas (várias somam; o teto de bônus é do combate): produção (<c>P.reliquia.producao</c>),
 /// ataque das tropas que partem do local (<c>ataque</c>) e defesa do local (<c>resistencia</c>).
 /// Nunca andam sozinhas: tropas as carregam (escavação, escolta, saque) e quem entra num local com elas as guarda lá.
-/// Visibilidade: 1 num local, só espionagem; a partir de <c>reliquiaVis.brilho</c>, brilho para quem explorou a área;
-/// a partir de <c>reliquiaVis.farol</c>, farol para todos, até na névoa.
+/// Visibilidade: local com relíquia aparece para todos, sem o tipo (brilho); a partir de <c>reliquiaVis.farol</c>, farol. O tipo,
+/// só a espionagem revela.
 /// </summary>
 [Sistema]
 public static class ReliquiasLendarias
@@ -38,18 +38,16 @@ public static class ReliquiasLendarias
         return d;
     }
 
-    /// <summary>"oculta" (1), "brilho" ou "farol", conforme quantas relíquias há no mesmo local.</summary>
-    public static string Nivel(Mundo m, int n) => n >= m.P.ReliquiaVis.Farol ? "farol" : n >= m.P.ReliquiaVis.Brilho ? "brilho" : n > 0 ? "oculta" : "nenhuma";
+    /// <summary>"brilho" ou "farol", conforme quantas relíquias há no mesmo local.</summary>
+    public static string Nivel(Mundo m, int n) => n >= m.P.ReliquiaVis.Farol ? "farol" : n > 0 ? "brilho" : "nenhuma";
 
     /// <summary>
-    /// O que o reino sabe das relíquias no mapa: as suas (local e marcha), faróis (todos veem, até na névoa), brilhos
-    /// (locais alheios com várias relíquias, numa área que o reino já explorou) e marchas alheias à vista que levam relíquia
-    /// (baú, sem tipo). Uma relíquia sozinha num local alheio não aparece: só a espionagem revela.
+    /// O que o reino vê das relíquias no mapa: as suas (local e marcha, com o tipo), faróis e brilhos (locais alheios com
+    /// relíquia) e marchas alheias que levam relíquia (baú), sem o tipo: só a espionagem revela.
     /// </summary>
-    public static List<ReliquiaNoMapa> NoMapa(Mundo m, long reinoId, ISet<int> visiveis)
+    public static List<ReliquiaNoMapa> NoMapa(Mundo m, long reinoId)
     {
         var lista = new List<ReliquiaNoMapa>();
-        var nevoa = Exploracao.Nevoas.De(m, reinoId);
         foreach (var g in m.Reliquias.Where(r => r.LocalId != null).GroupBy(r => r.LocalId!.Value))
         {
             var l = m.Locais.Obter(g.Key);
@@ -58,7 +56,7 @@ public static class ReliquiasLendarias
             var nivel = Nivel(m, n);
             if (l.ReinoId == reinoId) lista.Add(new("local", l.Id, null, l.Hex, n, nivel, g.Select(r => r.Tipo).ToArray()));
             if (nivel == "farol") lista.Add(new("farol", l.Id, null, l.Hex, n, nivel, []));
-            else if (nivel == "brilho" && l.ReinoId != reinoId && nevoa.MinutoVisto(l.Hex) > 0) lista.Add(new("brilho", l.Id, null, l.Hex, n, nivel, []));
+            else if (nivel == "brilho" && l.ReinoId != reinoId) lista.Add(new("brilho", l.Id, null, l.Hex, n, nivel, []));
         }
         var agora = m.Agora;
         foreach (var mc in m.Marchas)
@@ -67,7 +65,7 @@ public static class ReliquiasLendarias
             var h = mc.HexEm(agora);
             if (mc.ReinoId == reinoId)
                 lista.Add(new("marcha", null, mc.Id, h, mc.Reliquias.Count, "", mc.Reliquias.Select(id => m.Reliquias.Obter(id)?.Tipo ?? "").ToArray()));
-            else if (visiveis.Contains(h) && !Oculta(mc))
+            else if (!Oculta(mc))
                 lista.Add(new("marcha", null, mc.Id, h, mc.Reliquias.Count, "", []));
         }
         return lista;

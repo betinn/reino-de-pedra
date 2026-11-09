@@ -13,13 +13,12 @@ public class FrentesESaqueTestes
 {
     private static Dictionary<string, int> G(params (string k, int n)[] g) => g.ToDictionary(x => x.k, x => x.n);
 
-    /// <summary>Um terceiro reino, com tropas numa base à mesma distância do atacante, que conhece o alvo: as duas frentes começam juntas.</summary>
+    /// <summary>Um terceiro reino, com tropas numa base à mesma distância do atacante: as duas frentes começam juntas.</summary>
     private static (Reino r, Exercito ex) Outro(CombateCenario s, Local alvo, Dictionary<string, int> g, JsonObject? plano = null)
     {
         var r = s.T.NovoReino(); r.EscudoAte = 0;
         var c = s.M.AdicionarLocal(new Local { ReinoId = r.Id, Tipo = TipoLocal.Armazem, Hex = s.HexLivre(alvo.Hex, 4), Nome = "Base" });
         s.Guarnecer(c, g);
-        s.Conhecer(r, alvo);
         return (r, Exercitos.Enviar(s.M, r, c.Id, g, alvo.Hex, OrdemAtacar.Id, false, plano ?? CombateCenario.Plano()));
     }
 

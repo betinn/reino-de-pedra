@@ -13,8 +13,8 @@ namespace ReinoDePedra.Api.Endpoints;
 
 public sealed record PedidoCurar(int? Qtd);
 public sealed record PedidoSacrificar(long? LoteId);
-public sealed record PedidoInterceptar(long MarchaId, long? DeLocalId, long? ExercitoId, Dictionary<string, int>? Tropas, string? Tatica, bool? Estandarte, List<long>? Pessoas = null);
-public sealed record PedidoModelo(string? Nome, string? Tipo, string? Tatica, bool? Estandarte, bool? Completar, Dictionary<string, int>? Tropas,
+public sealed record PedidoInterceptar(long MarchaId, long? DeLocalId, long? ExercitoId, Dictionary<string, int>? Tropas, string? Tatica, List<long>? Pessoas = null);
+public sealed record PedidoModelo(string? Nome, string? Tipo, string? Tatica, bool? Completar, Dictionary<string, int>? Tropas,
     List<VisaoCombate.PedidoObjetivo>? Objetivos, string? Divisao = null, bool? RecuarVazio = null);
 
 /// <summary>Feridos e cura, interceptação, modelos de ataque e exílio (combate, parte 2).</summary>
@@ -62,7 +62,7 @@ public sealed class ModuloGuerra : IModuloApi
             {
                 var r = Sessao.ReinoDa(m, id);
                 var alvo = Interceptacoes.Alvo(m, r, p.MarchaId);
-                var dados = new JsonObject { ["marchaId"] = p.MarchaId, ["tatica"] = p.Tatica, ["estandarte"] = p.Estandarte == true };
+                var dados = new JsonObject { ["marchaId"] = p.MarchaId, ["tatica"] = p.Tatica };
                 int de; IReadOnlyDictionary<string, int> grupo; Dictionary<string, int>? tropas = p.Tropas;
                 PS.Escolha? escolha = null;
                 if (p.ExercitoId is long eid) { var ex0 = Exercitos.Do(m, r, eid); de = ex0.HexEm(m.Agora); grupo = ex0.Tropas; }
@@ -95,7 +95,7 @@ public sealed class ModuloGuerra : IModuloApi
             {
                 var r = Sessao.ReinoDa(m, id);
                 var objs = (p.Objetivos ?? []).Select(o => new Objetivo(o.K ?? "", o.R, o.Q ?? 0));
-                return ModelosAtaque.ParaJson(ModelosAtaque.Salvar(m, r, p.Nome, p.Tipo, p.Tatica, p.Estandarte == true, p.Completar == true, p.Tropas, objs, p.Divisao, p.RecuarVazio != false));
+                return ModelosAtaque.ParaJson(ModelosAtaque.Salvar(m, r, p.Nome, p.Tipo, p.Tatica, p.Completar == true, p.Tropas, objs, p.Divisao, p.RecuarVazio != false));
             }), Json.Web, statusCode: 201);
         });
 
@@ -125,7 +125,7 @@ public sealed class ModuloGuerra : IModuloApi
     }
 }
 
-/// <summary>Combate parte 2 no estado do reino, nos locais e no mapa (feridos, veterania, avistamentos, queda).</summary>
+/// <summary>Combate parte 2 no estado do reino e nos locais (feridos, veterania, queda).</summary>
 [Sistema]
 public static class ExtrasGuerra
 {
@@ -144,25 +144,14 @@ public static class ExtrasGuerra
                 locais = mm.LocaisDe(r.Id).ToDictionary(l => l.Id.ToString(), l => Math.Round(Veterania.DoLocal(mm, l), 2)),
                 exercitos = Exercitos.De(mm, r.Id).ToDictionary(e => e.Id.ToString(), e => Math.Round(Veterania.DaMarcha(mm, e), 2)),
             };
-            var vistas = ForcasVistas.De(mm, r.Id).OrderByDescending(f => f.Quando).ToList();
-            d["avistamentos"] = new { n = vistas.Count, hex = vistas.FirstOrDefault()?.Hex, quando = vistas.FirstOrDefault()?.Quando };
             d["queda"] = r.UltimaQueda is { Vista: false } q ? new { q.Exilio, q.Quando } : null;
             d["escudoExilio"] = r.UltimaQueda is { Exilio: true } qe && qe.EscudoAte == r.EscudoAte && r.EscudoAte > mm.Agora;
             d["ultimoAtaque"] = r.UltimoAtaque is { } u ? VisaoGuerra.ResumoModelo(mm, r, u) : null;
         });
-        VisaoMapa.Extras.Add((mm, r, vis) =>
-        {
-            var vivas = mm.Marchas.Where(x => x.ReinoId != r.Id && vis.Contains(x.HexEm(mm.Agora))).Select(x => x.Id).ToHashSet();
-            return ForcasVistas.De(mm, r.Id).Where(f => !vivas.Contains(f.MarchaId)).Select(f => (object)new
-            {
-                tipo = "avistamento", id = f.Id, hex = f.Hex, avistado = "tropas", marcha = f.Marcha, quando = f.Quando, ate = f.Ate,
-                tamanho = VisaoMapa.Aproximado(m, f.Tropas), rumo = f.Rumo,
-            }).ToList();
-        });
     });
 }
 
-/// <summary>Visões da parte 2 do combate. Nada aqui revela dono de marcha alheia nem identidade sem estandarte.</summary>
+/// <summary>Visões da parte 2 do combate. Nada aqui revela o tamanho nem o destino de uma marcha alheia.</summary>
 public static class VisaoGuerra
 {
     public static object Feridos(Mundo m, Reino r)
@@ -182,8 +171,7 @@ public static class VisaoGuerra
 
     public static object PreviaInterceptar(Mundo m, Reino r, PedidoInterceptar p)
     {
-        var vis = Nevoas.VisiveisAgora(m, r.Id);
-        var alvo = Interceptacoes.Alvo(m, r, p.MarchaId, vis);
+        var alvo = Interceptacoes.Alvo(m, r, p.MarchaId);
         int de; Dictionary<string, int> grupo;
         if (p.ExercitoId is long eid) { var ex = Exercitos.Do(m, r, eid); de = ex.HexEm(m.Agora); grupo = GT.Limpo(ex.Tropas); }
         else
@@ -196,19 +184,16 @@ public static class VisaoGuerra
         string? bloqueio = null;
         try { Ataques.ValidarTropas(m, grupo); } catch (RegraException e) { bloqueio = e.Message; }
         var enc = grupo.Count > 0 && bloqueio == null ? Interceptacoes.Calcular(m, de, grupo, alvo) : null;
-        // até quando a marcha fica à vista pelo caminho conhecido (depois some na névoa)
-        long? some = null;
         var agora = m.Agora;
-        for (var i = 0; i < alvo.Caminho.Count; i++)
-            if (alvo.Tempos[i] >= agora && !vis.Contains(alvo.Caminho[i])) { some = alvo.Tempos[i]; break; }
+        var passo = ReinoDePedra.Jogo.Publico.RegraPublica.Passo(alvo, agora).caminho;
         return new
         {
             agora,
             alvo = new
             {
-                id = alvo.Id, marcha = alvo.Tipo, nome = Campo.NomeMarcha(alvo.Tipo), hex = alvo.HexEm(agora), tamanho = VisaoMapa.Aproximado(m, GT.Total(alvo.Tropas)),
-                some, chegada = VisaoMapa.ParaMim(m, r, alvo) ? alvo.Chegada : (long?)null, rumo = alvo.Caminho.Count > 1 ? m.G.Direcao(alvo.HexEm(agora), alvo.Destino) : null,
-                carga = alvo.Carga.Total >= 1, forcasDesconhecidas = true,
+                id = alvo.Id, marcha = alvo.Tipo, nome = Campo.NomeMarcha(alvo.Tipo), hex = alvo.HexEm(agora), reinoId = alvo.ReinoId,
+                reino = m.Reinos.Obter(alvo.ReinoId) is { } dono ? Espionagem.Identidade(dono) : null,
+                rumo = passo.Count > 1 ? m.G.Direcao(passo[0], passo[1]) : null,
             },
             bloqueio, tropas = grupo, total = GT.Total(grupo), vel = GT.Velocidade(m, grupo), forca = Math.Round(m.F.ValorAtaque(grupo, new Dictionary<string, int>(), 0)),
             carga = GT.Carga(m, grupo), folgaSeg = m.P.Guerra.Interceptacao.FolgaSeg,
@@ -225,7 +210,7 @@ public static class VisaoGuerra
     {
         var j = ModelosAtaque.ParaJson(md);
         var alvo = md.AlvoHex is int h ? m.LocalNoHex(h) : null;
-        j["alvoNome"] = alvo == null ? null : alvo.ReinoId == r.Id ? alvo.Nome : Ataques.NomeAlvo(alvo);
+        j["alvoNome"] = alvo == null ? null : Ataques.NomeAlvo(alvo);
         j["tipoNome"] = Ataques.NomesTipo.GetValueOrDefault(md.Tipo, "");
         j["resumo"] = GT.Partes(m, md.Tropas);
         return j;
@@ -242,7 +227,7 @@ public static class VisaoGuerra
     {
         var q = r.UltimaQueda;
         if (q == null) return null;
-        var atk = q.AtacanteVisivel != 0 ? RelatoriosCombate.Atacante(m, q.AtacanteVisivel, true) : null;
+        var atk = q.AtacanteVisivel != 0 ? RelatoriosCombate.Atacante(m, q.AtacanteVisivel) : null;
         return new
         {
             q.Quando, q.Exilio, q.CasteloAntigo, q.NivelAntigo, q.NovoCastelo, q.NivelNovo, q.HexNovo, q.HexAntigo,

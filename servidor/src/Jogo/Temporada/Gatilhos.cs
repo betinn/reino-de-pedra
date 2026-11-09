@@ -10,7 +10,7 @@ namespace ReinoDePedra.Jogo.Temporada
     /// <summary>
     /// Gatilhos dos sistemas apresentados aos poucos que faltavam (CLAUDE.md, Experiência do jogador):
     /// espionagem, ao ver o primeiro espião ou sofrer o primeiro ataque; torres de arqueiros ("defesas"), ao ver forças
-    /// desconhecidas perto do reino (uma marcha de outro reino, não aliado, entrando na visão dos seus locais e tropas).
+    /// de outro reino perto (uma marcha de outro reino, não aliado, entrando na visão dos seus locais e tropas).
     /// </summary>
     public static class GatilhosRestantes
     {
@@ -18,7 +18,7 @@ namespace ReinoDePedra.Jogo.Temporada
 
         internal static void Registrar()
         {
-            Sistemas.Revelavel(Espionagem, "Espionagem", "Batedores de elite revelam o dono, a defesa, o estoque e as relíquias de um local.", "reino", "exploradores?tipo=batedor");
+            Sistemas.Revelavel(Espionagem, "Espionagem", "Batedores de elite revelam o estoque, a guarnição e as relíquias de um local.", "reino", "exploradores?tipo=batedor");
             Sistemas.Revelavel(Defesas, "Torres de arqueiros", "Arqueiros no alto protegem os locais em volta. O invasor precisa derrubar a torre.", "reino", "construcao?aba=defesas");
             Exploracao.Avistamentos.AoRegistrar += (m, a) =>
             {
@@ -44,7 +44,7 @@ namespace ReinoDePedra.Jogo.Temporada
             foreach (var w in m.Reinos)
             {
                 if (!w.Ativo || w.Id == mc.ReinoId || Sistemas.Visto(w, Defesas) || Aliancas.SaoAliados(m, w.Id, mc.ReinoId)) continue;
-                var vis = ForcasVistas.Visao(m, w.Id);
+                var vis = Combate.Avistamentos.Visao(m, w.Id);
                 var i = mc.Caminho.FindIndex(vis.Contains);
                 if (i < 0) continue;
                 m.Agendar(new GatilhoDefesasEvento { ReinoId = w.Id, MarchaId = mc.Id, Partida = mc.Partida, Quando = mc.Tempos[i] });
@@ -52,7 +52,7 @@ namespace ReinoDePedra.Jogo.Temporada
         }
     }
 
-    /// <summary>Forças desconhecidas entram na visão do reino: as torres de arqueiros aparecem.</summary>
+    /// <summary>Forças de outro reino entram na visão do reino: as torres de arqueiros aparecem.</summary>
     public sealed class GatilhoDefesasEvento : Evento
     {
         public long ReinoId { get; set; }

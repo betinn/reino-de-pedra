@@ -51,19 +51,13 @@ public class IAApiTestes
         var idIA = await s.Motor.Executar(m =>
         {
             var ia = Ocupacao.CriarUm(m)!;
-            var x = m.Reinos[idA];
-            foreach (var outro in new[] { m.Reinos[idB], ia })
-            {
-                Conhecimento.Conhecer(m, x, outro, "teste");
-                foreach (var l in m.LocaisDe(outro.Id)) Nevoas.RevelarArea(m, x.Id, l.Hex, 0);   // na foto da névoa de A
-            }
             return ia.Id;
         });
-        // comércio: a lista de reinos conhecidos
+        // comércio: a lista de reinos ativos
         var (_, com) = await a.Get("comercio");
-        var conhecidos = com.GetProperty("conhecidos").EnumerateArray().ToList();
-        var deIA = conhecidos.Single(c => c.GetProperty("reino").GetProperty("id").GetInt64() == idIA);
-        var deB = conhecidos.Single(c => c.GetProperty("reino").GetProperty("id").GetInt64() == idB);
+        var reinos = com.GetProperty("reinos").EnumerateArray().ToList();
+        var deIA = reinos.Single(c => c.GetProperty("reino").GetProperty("id").GetInt64() == idIA);
+        var deB = reinos.Single(c => c.GetProperty("reino").GetProperty("id").GetInt64() == idB);
         Assert.Equal(Chaves(deB).OrderBy(x => x), Chaves(deIA).OrderBy(x => x));
         // o escudo de quem não é aliado não aparece antes da chegada (de nenhum dos dois)
         Assert.False(deB.TryGetProperty("escudo", out _)); Assert.False(deIA.TryGetProperty("escudo", out _));

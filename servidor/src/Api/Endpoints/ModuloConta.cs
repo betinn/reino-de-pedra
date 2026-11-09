@@ -6,18 +6,11 @@ namespace ReinoDePedra.Api.Endpoints;
 public sealed record PedidoConta(string? Email, string? Senha, bool App = false);
 public sealed record PedidoTrocaSenha(string Atual, string Nova);
 
-/// <summary>Cadastro, entrada, saída e troca de senha.</summary>
+/// <summary>Entrada, saída e troca de senha. Conta nova só nasce do link de convite (ModuloPublico).</summary>
 public sealed class ModuloConta : IModuloApi
 {
     public void Mapear(RouteGroupBuilder publico, RouteGroupBuilder conta)
     {
-        publico.MapPost("/conta/registrar", async (PedidoConta p, HttpContext ctx, ServicoContas contas, Configuracao cfg) =>
-        {
-            var (c, erro) = await contas.Registrar(p.Email, p.Senha);
-            if (c == null) return Results.Json(new { erro }, statusCode: 400);
-            return Sessao_(ctx, contas, cfg, c, p.App, 201);
-        }).RequireRateLimiting("auth");
-
         publico.MapPost("/conta/entrar", async (PedidoConta p, HttpContext ctx, ServicoContas contas, Configuracao cfg) =>
         {
             var (c, erro, esperar) = await contas.Entrar(p.Email, p.Senha);
@@ -26,7 +19,7 @@ public sealed class ModuloConta : IModuloApi
                 if (esperar > 0) ctx.Response.Headers.RetryAfter = esperar.ToString();
                 return Results.Json(new { erro }, statusCode: esperar > 0 ? 429 : 401);
             }
-            return Sessao_(ctx, contas, cfg, c, p.App, 200);
+            return AbrirSessao(ctx, contas, cfg, c, p.App, 200);
         }).RequireRateLimiting("auth");
 
         publico.MapPost("/conta/sair", (HttpContext ctx, ServicoContas contas, Configuracao cfg) =>
@@ -54,7 +47,7 @@ public sealed class ModuloConta : IModuloApi
         }).RequireRateLimiting("auth");
     }
 
-    private static IResult Sessao_(HttpContext ctx, ServicoContas contas, Configuracao cfg, Conta c, bool app, int status)
+    public static IResult AbrirSessao(HttpContext ctx, ServicoContas contas, Configuracao cfg, Conta c, bool app, int status)
     {
         var token = contas.CriarSessao(c.Id);
         // web: só cookie HttpOnly (o script não enxerga o token); app: token no corpo, para o cabeçalho Bearer

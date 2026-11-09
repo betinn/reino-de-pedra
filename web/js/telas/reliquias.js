@@ -18,8 +18,8 @@
     return '<div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(r.nome) + '</b><br>' + seloTipo(r.tipo) + '</span>' + (extra || '') + '</div>' +
       '<p class="relq-efeito">' + RP.icone('subir', 'ico-p') + RP.esc(r.efeito) + '</p>';
   }
-  function nivelPor(n) { return !dados ? null : n >= dados.farol ? 'farol' : n >= dados.brilho ? 'brilho' : null; }
-  RP.TEXTO_CONC = { brilho: 'Brilha: quem já explorou a área vê que há relíquias aqui.', farol: 'Farol: visível para todos os reinos, até na névoa.' };
+  function nivelPor(n) { return !dados ? null : n >= dados.farol ? 'farol' : n > 0 ? 'brilho' : null; }
+  function qtdRel(n) { n = n || 1; return n + (n > 1 ? ' relíquias' : ' relíquia'); }
 
   function cartaoMinha(r) {
     var corpo;
@@ -34,12 +34,11 @@
   }
   function cartaoAVista(x) {
     var espionar = RP.telas.exploradores ? '<a class="btn btn-p btn-primario" href="#/exploradores?tipo=batedor&alvo=' + x.c + ',' + x.l + '">' + RP.icone('batedor') + 'Espionar</a>' : '';
-    return '<div class="card relq-card"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + x.n + ' relíquias juntas</b><br><small class="fraco">' + RP.esc(x.nome) + ' · dono desconhecido · tipos desconhecidos</small></span><span class="selo selo-destaque">' + (x.nivel === 'farol' ? 'Farol' : 'Brilho') + '</span></div>' +
-      '<p class="fraco" style="font-size:var(--fs-2)">' + RP.TEXTO_CONC[x.nivel] + ' Espione para saber de quem são e o que fazem.</p>' +
+    return '<div class="card relq-card"><div class="linha"><span class="relq-ico">' + RP.icone('lendario') + '</span><span style="flex:1;min-width:0"><b>' + qtdRel(x.n) + '</b><br><small class="fraco">' + RP.esc(x.nome) + '</small></span><span class="selo selo-destaque">' + (x.nivel === 'farol' ? 'Farol' : 'Brilho') + '</span></div>' +
       '<div class="linha relq-acoes">' + espionar + '<a class="btn btn-p btn-fantasma" href="#/mapa?foco=' + x.hex + '">' + RP.icone('mapa') + 'Ver no mapa</a></div></div>';
   }
   function cartaoConhecida(r) {
-    return '<div class="card relq-card tipo-' + (r.tipo || '') + '">' + cabRel({ nome: r.nome || 'Relíquia', tipo: r.tipo || 'desconhecido', efeito: r.efeito || '' }) +
+    return '<div class="card relq-card tipo-' + (r.tipo || '') + '">' + cabRel({ nome: r.nome || 'Relíquia', tipo: r.tipo || '', efeito: r.efeito || '' }) +
       '<p class="fraco" style="font-size:var(--fs-2)">' + RP.esc(r.onde || '') + (r.espionadaEm ? ' · espionado ' + RP.fmtHa((RP.agora() - r.espionadaEm) / 3600000) : '') + '</p></div>';
   }
   function cartaoRuina(ru) {
@@ -56,14 +55,14 @@
     var c = RP.$('.relq-conteudo', el);
     if (!dados) { c.innerHTML = '<p class="fraco">Carregando…</p>'; return; }
     var d = dados;
-    c.innerHTML = '<div class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>Há <b>uma relíquia para cada reino</b> do mundo. Guarde-a num local para fortalecê-lo. Relíquias <b>não andam sozinhas</b>: tropas as carregam, e no caminho podem ser <b>roubadas</b>. Só a <b>espionagem</b> revela onde estão as dos outros.</span></div>' +
+    c.innerHTML = '<div class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>Há <b>uma relíquia para cada reino</b> do mundo. Guarde-a num local para fortalecê-lo. Relíquias <b>não andam sozinhas</b>: tropas as carregam, e no caminho podem ser <b>roubadas</b>. Todos veem os locais que guardam relíquias; só a <b>espionagem</b> revela o tipo.</span></div>' +
       '<div class="ext-numeros"><div><span class="fraco">Com você</span><b class="num">' + d.minhas.length + '</b></div><div><span class="fraco">Conhecidas</span><b class="num">' + d.conhecidas.length + '</b></div><div><span class="fraco">No mundo</span><b class="num">' + RP.num(d.noMundo) + '</b></div></div>' +
       '<div class="relq-tipos">' + Object.keys(TIPOS).map(function (k) {
         var t = d.tipos[k] || {};
         return '<div class="relq-tipo tipo-' + k + '">' + RP.icone(TIPOS[k].icone) + '<b>' + TIPOS[k].nome + ' +' + Math.round((t.bonus || 0) * 100) + '%</b><small class="fraco">' + TIPOS[k].txt + '</small></div>';
       }).join('') + '</div>' +
       '<div class="secao-titulo">Suas relíquias</div><div class="pilha">' + (d.minhas.length ? d.minhas.map(cartaoMinha).join('') : '<p class="fraco">Nenhuma relíquia com você. Escave uma ruína antiga ou tome a de outro reino.</p>') + '</div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Relíquias no mesmo local somam bônus, mas chamam atenção: ' + d.brilho + ' brilham para quem já explorou a área; ' + d.farol + ' ou mais viram farol, visível para todos. Quem vencer um saque, uma ocupação ou um cerco no local leva as relíquias.</p>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Relíquias no mesmo local somam bônus, mas chamam atenção: todo local com relíquia brilha para todos, sem revelar o tipo; ' + d.farol + ' ou mais viram farol. Quem vencer um saque, uma ocupação ou um cerco no local leva as relíquias.</p>' +
       (d.aVista.length ? '<div class="secao-titulo">À vista no mapa</div><div class="pilha">' + d.aVista.map(cartaoAVista).join('') + '</div>' : '') +
       '<div class="secao-titulo">Conhecidas por espionagem</div><div class="pilha">' + (d.conhecidas.length ? d.conhecidas.map(cartaoConhecida).join('') : '<p class="fraco">Espione locais de outros reinos para descobrir relíquias.</p>') + '</div>' +
       '<div class="secao-titulo">Ruínas antigas</div><div class="pilha">' + (d.ruinas.length ? d.ruinas.map(cartaoRuina).join('') : '<p class="fraco">Nenhuma ruína antiga conhecida. Explore o mapa para achá-las.</p>') + '</div><div style="height:var(--esp-8)"></div>';
@@ -119,9 +118,9 @@
         var k = depois(l), nv = nivelPor(k);
         return '<button type="button" class="escolha escolha-linha" data-destino-tr="' + l.id + '" aria-pressed="' + (l.id === tr.destino) + '"><span class="ico-placa dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span>' +
           '<span class="escolha-txt"><b>' + RP.esc(l.nome) + '</b><small class="fraco">' + RP.esc(RP.nomeTipoLocal(l)) + (k > 1 ? ' · ficaria com ' + k + ' relíquias' : '') + '</small></span>' +
-          (nv ? '<span class="selo selo-antigo">' + (nv === 'farol' ? 'Farol' : 'Brilho') + '</span>' : '') + '</button>';
+          (nv === 'farol' ? '<span class="selo selo-antigo">Farol</span>' : '') + '</button>';
       }).join('') + '</div>' +
-      (p && p.nivelDepois && nivelPor(p.depois) ? '<p class="nota-antiga">' + RP.icone('lendario', 'ico-p') + '<span>Com ' + p.depois + ' relíquias no destino, os bônus somam, mas o local ' + (p.nivelDepois === 'farol' ? 'vira farol: visível para todos os reinos, até na névoa.' : 'passa a brilhar para quem já explorou a área.') + '</span></p>' : '') +
+      (p && p.nivelDepois === 'farol' ? '<p class="nota-antiga">' + RP.icone('lendario', 'ico-p') + '<span>Com ' + p.depois + ' relíquias no destino, os bônus somam, mas o local vira farol: todos veem de longe.</span></p>' : '') +
       '<div class="secao-titulo">2. Escolta</div><div class="card pilha">' +
       (bases.length > 1 ? '<div class="abas abas-rolagem" role="group" aria-label="De onde sai a escolta">' + bases.map(function (l) {
         return '<button type="button" class="aba" data-tr-de="' + l.id + '" aria-pressed="' + (l.id === tr.de) + '">' + RP.esc(l.nome) + '</button>';
@@ -194,21 +193,20 @@
 
   var TIPOS_OBJ = RP.mapa.tiposObjeto, A = RP.arte, TT = RP.mapaTatico;
   var folhaConc = function (o) {
-    return '<div class="info-linha"><span class="fraco">Relíquias</span><span>' + (o.n || '') + ' juntas · dono e tipos desconhecidos</span></div>' +
-      '<p class="nota-regra">' + RP.icone('lendario', 'ico-p') + '<span>' + RP.TEXTO_CONC[o.tipo === 'farol' ? 'farol' : 'brilho'] + ' Espione para saber de quem são.</span></p>';
+    return '<div class="info-linha"><span class="fraco">Relíquias</span><span>' + qtdRel(o.n) + '</span></div>';
   };
   var acoesConc = function () { return '<a class="btn btn-p" href="#/reliquias">' + RP.icone('lendario') + 'Relíquias</a>'; };
   TIPOS_OBJ.brilho = TIPOS_OBJ.brilho || {
-    nome: function (o) { return (o.n || 2) + ' relíquias · brilho'; },
+    nome: function (o) { return qtdRel(o.n) + ' · brilho'; },
     icone: function () { return 'lendario'; },
     classe: function () { return 'farol brilho'; },
-    svgTatico: function (o) { return '<circle class="farol-halo" r="16" style="opacity:.55"/><circle class="farol-base" r="11"/><use href="#i-lendario" x="-8" y="-8" width="16" height="16"/>' + TT.rotuloSvg((o.n || 2) + ' relíquias', 27, 'rotulo-farol'); },
+    svgTatico: function (o) { return '<circle class="farol-halo" r="16" style="opacity:.55"/><circle class="farol-base" r="11"/><use href="#i-lendario" x="-8" y="-8" width="16" height="16"/>' + TT.rotuloSvg(qtdRel(o.n), 27, 'rotulo-farol'); },
     desenharCena: function (c, o, info) {
       var pulso = 0.5 + Math.sin((info.t || 0) * 1.6) * 0.5;
       A.elipse(c, 0, -4, 18 + pulso * 4, 8 + pulso * 2, 'rgba(215,150,242,' + (info.antigo ? 0.12 : 0.22 + pulso * 0.15).toFixed(2) + ')');
       A.elipse(c, 0, -4, 6, 3, 'rgba(215,150,242,.55)');
     },
-    rotulo: function (o) { return { txt: (o.n || 2) + ' relíquias · brilho', cls: 'nivel', cor: '#d796f2' }; },
+    rotulo: function (o) { return { txt: qtdRel(o.n) + ' · brilho', cls: 'nivel', cor: '#d796f2' }; },
     rotuloDy: -30,
     folha: folhaConc, acoes: acoesConc
   };
@@ -221,7 +219,7 @@
   RP.extrasFolhaLocal.push(function (l) {
     if (!l.reliquias || !l.reliquias.length) return '';
     return '<div class="info-linha"><span class="fraco">Relíquias</span><span>' + l.reliquias.map(function (r) { return seloTipo(r.tipo) + ' ' + RP.esc(r.nome); }).join('<br>') +
-      (l.nivelReliquias === 'farol' ? '<br><small class="fraco">Farol: todos veem</small>' : l.nivelReliquias === 'brilho' ? '<br><small class="fraco">Brilha para quem explorou a área</small>' : '') + '</span></div>';
+      (l.nivelReliquias === 'farol' ? '<br><small class="fraco">Farol: todos veem</small>' : l.nivelReliquias === 'brilho' ? '<br><small class="fraco">Brilha: todos veem que há relíquia aqui</small>' : '') + '</span></div>';
   });
   RP.extrasCardLocal.push(function (l) {
     return l.reliquias && l.reliquias.length ? '<span class="lc-relq">' + l.reliquias.map(function (r) { return seloTipo(r.tipo); }).join('') + '</span>' : '';
