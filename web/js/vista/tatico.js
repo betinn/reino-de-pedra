@@ -199,9 +199,23 @@
   TP.iniciar = function () {
     this.ativo = true; if (ativos.indexOf(this) < 0) ativos.push(this);
     this.redimensionar(); this.atualizarSvg(); this.quadro();
+    this.animarMarchas();
+  };
+  /* com alguém andando, marcadores e rastros andam a ~15 quadros/s; sem ninguém, o laço não desenha nada */
+  TP.animarMarchas = function () {
+    var self = this, ultimo = 0;
+    cancelAnimationFrame(this.rafMarchas);
+    (function laco(t) {
+      if (!self.ativo) return;
+      self.rafMarchas = requestAnimationFrame(laco);
+      if (t - ultimo < 66 || !M.dados || RP.mapa.camadas.marchas === false) return;
+      ultimo = t;
+      RP.marchasMapa.amostrar(t);
+      if (RP.marchasMapa.haMovimento(self.retanguloMundo())) { self.moverMarchas(); self.pedirQuadro(); }
+    })(performance.now());
   };
   TP.parar = function () {
-    this.ativo = false; cancelAnimationFrame(this.raf); cancelAnimationFrame(this.anim); this.raf = 0;
+    this.ativo = false; cancelAnimationFrame(this.raf); cancelAnimationFrame(this.anim); cancelAnimationFrame(this.rafMarchas); this.raf = 0;
     var i = ativos.indexOf(this); if (i >= 0) ativos.splice(i, 1);
   };
   TP.invalidar = function () { this.ci = null; this.versaoSvg = -1; if (this.ativo) { this.atualizarSvg(); this.quadro(); } };
@@ -334,6 +348,12 @@
         try { tp.desenharTatico(c, ob, { estado: M.estado(ob.hex), s: s, agora: agora }); } catch (e) { console.error(e); }
       });
       MAPA.desenhosExtras.forEach(function (f) { c.setTransform(W, 0, 0, W, ox, oy); try { f(c, d, { x: self.cam.x, y: self.cam.y, z: s }, agora); } catch (e) { console.error(e); } });
+      /* rastros de quem anda: sob os marcadores */
+      if (MAPA.camadas.marchas !== false) {
+        RP.marchasMapa.amostrar(performance.now());
+        c.setTransform(W, 0, 0, W, ox, oy);
+        RP.marchasMapa.desenhar(c, this.retanguloMundo(), performance.now() / 1000, Math.max(0.7, 1.05 / s));
+      }
     }
     c.setTransform(1, 0, 0, 1, 0, 0);
     this.aplicarSvg();
@@ -354,13 +374,14 @@
   var ICONE_MARCHA = { carregadores: 'madeira', mensageiro: 'mensagem', caravana: 'carroca' };
   function iconeMarcha(o) {
     var t = String(o.marcha || ''), def = RP.mapa.tiposMarcha[t];
+    if (RP.marchasMapa.furtiva(o)) return 'batedor';
+    /* a folha usa o mesmo desenho do mapa: gente andando */
+    if (RP.marchasMapa.ehExplorador(o)) return 'marcha-explorador';
     if (def && def.icone) return def.icone;
     if (ICONE_MARCHA[t]) return ICONE_MARCHA[t];
-    if (/batedor/.test(t)) return 'batedor';
-    if (/explor|prospector/.test(t)) return 'explorador';
     if (/caca/.test(t)) return 'lobo';
     if (/extra|escava/.test(t)) return 'picareta';
-    return 'tropas';
+    return 'marcha-tropa';
   }
   function curvaPts(p) {
     if (p.length < 2) return '';
@@ -423,15 +444,14 @@
     return '<g class="ent obj-' + String(o.tipo).replace(/[^a-z0-9-]/gi, '') + extra + (info.antigo ? ' antigo' : '') + '" data-k="' + o._k + '"' + (tipo && tipo.pos ? ' data-movel="' + o._k + '"' : '') + ' transform="translate(' + n1(p.x) + ' ' + n1(p.y) + ')">' +
       '<circle class="ponto" r="5"/><g class="ent-k"><circle class="alvo-toque" r="22"/>' + dentro + '</g></g>';
   }
+  /* a marcha é gente em pé, andando (vista/marchas.js); o disco fica para os locais. Cada reino na cor dele. */
   function svgMarcha(o, pos, agora) {
-    var rev = revelada(o), cls = classeDono(o.dono) + (rev ? '' : ' hostil'), expl = /explor|batedor|prospector|mensageiro/.test(String(o.marcha || ''));
-    var r = expl ? 12 : 15, ic = iconeMarcha(o), cheg = M.chegadaConhecida(o);
-    return '<g class="ent marcha ' + cls + (expl ? ' explorador' : '') + '" data-k="' + o._k + '" data-marcha="' + o._k + '" transform="translate(' + n1(pos.x) + ' ' + n1(pos.y) + ')">' +
-      '<g class="ent-k"><circle class="alvo-toque" r="24"/>' + (rev ? '' : '<circle class="anel-ameaca" r="' + (r + 6) + '"/>') +
-      '<circle class="mc-base" r="' + r + '"/><use href="#i-' + ic + '" x="' + (-r * 0.66) + '" y="' + (-r * 0.66) + '" width="' + (r * 1.32) + '" height="' + (r * 1.32) + '"/>' +
-      (rev ? '' : '<g class="mc-selo" transform="translate(12 -12)"><circle r="8"/><text y="4.5">?</text></g>') +
-      (o.reliquia ? '<g class="relq-badge tipo-' + (o.reliquia.tipo || 'desconhecido') + '" transform="translate(-14 13)"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>' : '') +
-      (cheg && cheg > agora ? '<g class="mc-eta" transform="translate(0 ' + (r + 13) + ')"><rect x="-26" y="-10" width="52" height="20" rx="10"/><text y="4.5" data-fim="' + cheg + '">' + RP.fmtResta(cheg - agora) + '</text></g>' : '') +
+    var mm = RP.marchasMapa, cheg = M.chegadaConhecida(o), anda = mm.andando(o, agora, performance.now());
+    var cor = RP.arte.corDono(o.dono, o), fase = -((o.id || 0) % 7) * 0.07;
+    return '<g class="ent marcha ' + classeDono(o.dono) + ' mcf-' + mm.figuraDe(o) + (mm.ehExplorador(o) ? ' explorador' : '') + (anda ? '' : ' parada') + '" data-k="' + o._k + '" data-marcha="' + o._k + '" style="--dono:' + RP.esc(cor) + ';--mc-fase:' + fase.toFixed(2) + 's" transform="translate(' + n1(pos.x) + ' ' + n1(pos.y) + ')">' +
+      '<g class="ent-k"><circle class="alvo-toque" r="24"/>' + mm.svgMarcador(o, anda, pos.ang) +
+      (o.reliquia ? '<g class="relq-badge tipo-' + (o.reliquia.tipo || 'desconhecido') + '" transform="translate(-16 2)"><circle r="8"/><use href="#i-lendario" x="-6" y="-6" width="12" height="12"/></g>' : '') +
+      (cheg && cheg > agora ? '<g class="mc-eta" transform="translate(0 30)"><rect x="-26" y="-10" width="52" height="20" rx="10"/><text y="4.5" data-fim="' + cheg + '">' + RP.fmtResta(cheg - agora) + '</text></g>' : '') +
       '</g></g>';
   }
 
@@ -475,6 +495,7 @@
       '<g class="camada-objetos">' + outros + '</g><g class="camada-marchas">' + marchas + '</g>';
     this.svg.classList.toggle('sem-rotulos', cam.rotulos === false);
     this.versaoSvg = M.versao;
+    this.elsMarcha = {};
     this.mostrarSelecao();
     this.aplicarSvg();
   };
@@ -504,6 +525,26 @@
     var p = H.centroH(this.selecao);
     sel.setAttribute('points', H.cantos(p.x, p.y, H.R - 1.5));
     sel.removeAttribute('hidden');
+  };
+  /* o marcador acompanha a marcha quadro a quadro; o estado (parada, rumo, de que lado olha) só é escrito quando muda */
+  TP.moverMarchas = function () {
+    var d = M.dados, g = this.g, els = this.elsMarcha || (this.elsMarcha = {}), agora = RP.agora(), real = performance.now();
+    if (!d) return;
+    d.marchas.forEach(function (m) {
+      var el = els[m._k];
+      if (el === undefined) el = els[m._k] = g.querySelector('[data-marcha="' + m._k + '"]') || null;
+      if (!el) return;
+      var pos = M.posMarcha(m, agora), tr = 'translate(' + n1(pos.x) + ' ' + n1(pos.y) + ')';
+      if (el._tr !== tr) { el.setAttribute('transform', tr); el._tr = tr; }
+      var anda = RP.marchasMapa.andando(m, agora, real);
+      if (el._anda !== anda) { el.classList.toggle('parada', !anda); el._anda = anda; }
+      if (el._ang !== pos.ang) {
+        el._ang = pos.ang;
+        var rumo = el._rumo || (el._rumo = el.querySelector('.mc-rumo')), fig = el._fig || (el._fig = el.querySelector('.mc-fig'));
+        if (rumo) rumo.setAttribute('transform', 'rotate(' + (pos.ang * 180 / Math.PI).toFixed(1) + ')');
+        if (fig) fig.setAttribute('transform', 'scale(' + (Math.cos(pos.ang) < 0 ? -1 : 1) + ' 1)');
+      }
+    });
   };
   /* marchas e objetos móveis andam a cada segundo; quem sai da área vista some */
   TP.atualizarMoveis = function () {

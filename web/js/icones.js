@@ -216,6 +216,13 @@
       '<path class="ic-s" d="M2.6 13.6 14.8 5.4l2 3L4.6 16.6Z"/>' +
       '<path class="ic-s" d="M15 4.4l3.6-2.2 2.9 4.6-3.6 2.2Z"/>' +
       '<path class="ic-l" d="M9.2 12.6 6.8 21.5M10.4 11.8l4.4 9.7"/>',
+    /* gente andando (a mesma ideia dos marcadores do mapa): trio de lanças e andarilho de chapéu e cajado */
+    'marcha-tropa':
+      '<circle class="ic-s" cx="5.5" cy="6.6" r="2"/><path class="ic-l" d="M5.5 9.5v5M5.5 14.5l-2.2 5M5.5 14.5l2.2 5M8.6 1.5v11"/>' +
+      '<circle class="ic-s" cx="16" cy="7" r="2.2"/><path class="ic-l" d="M16 10.2v5.2M16 15.4l-2.6 6M16 15.4l2.6 6M20.6 1.5v14"/><path class="ic-s" d="M20.6 1.5l-4 1.8 4 1.8Z"/>',
+    'marcha-explorador':
+      '<path class="ic-l" d="M6 7h10"/><path class="ic-s" d="M8.6 7l.5-4h3.8l.5 4Z"/><circle class="ic-s" cx="11" cy="9.4" r="2.1"/>' +
+      '<path class="ic-s" d="M5.4 12.2h3.2v5.5H5.4Z"/><path class="ic-l" d="M11 12.4v5M11 17.4l-3 4.8M11 17.4l3.2 4.8M11 13.6l4.4 2.6M18.5 22.2V5.4c0-1.6-1.4-2.2-2.6-1.5"/>',
     bota:
       '<path class="ic-s" d="M7.5 2.5H14v9l5.5 2.6c1.5.7 2.5 2 2.5 3.6v3.8H5.5v-7.3c1.1-.7 2-1.7 2-3.2Z"/>' +
       '<path class="ic-d" d="M5.5 18.5H22M7.5 6.2H14"/>',

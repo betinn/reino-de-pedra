@@ -204,12 +204,32 @@ html.tela-fixa, html.tela-fixa body { overflow: hidden; height: 100%; overscroll
   .marcha-rota { animation: marchar 1.2s linear infinite; }
 }
 @keyframes marchar { to { stroke-dashoffset: -22; } }
-.mc-base { fill: var(--dono); stroke: var(--ent-borda); stroke-width: 2.5; }
-.hostil .mc-base { fill: var(--cor-perigo); }
-.marcha use { color: var(--ent-fundo); --ico-d-stroke: var(--dono); }
-.mc-selo circle { fill: var(--ent-fundo); stroke: var(--cor-perigo); stroke-width: 2; }
-.mc-selo text { fill: var(--cor-perigo); font: 700 13px var(--fonte-texto); text-anchor: middle; }
-.mc-estandarte use { color: var(--cor-destaque); --ico-d-stroke: var(--ent-borda); }
+/* marcha: gente em pé (figuras de vista/marchas.js). Dois passos alternados; parada, fica no segundo, sem rumo nem giro. */
+.mc-chao { fill: rgba(0, 0, 0, .38); }
+.mc-sonar { fill: var(--dono); fill-opacity: .14; stroke: var(--dono); stroke-width: 2.4; stroke-dasharray: 5 6; stroke-linecap: round; }
+.parada .mc-sonar { fill-opacity: .06; stroke-opacity: .55; }
+.mc-rumo-f, .mc-rumo-c { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.mc-rumo-f { stroke: #17130e; stroke-width: 5.4; }
+.mc-rumo-c { stroke: var(--dono); stroke-width: 2.8; }
+.parada .mc-rumo { display: none; }
+.mc-passo-b { visibility: hidden; }
+.parada .mc-passo-a { visibility: hidden; }
+.parada .mc-passo-b { visibility: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  .marcha:not(.parada) .mc-passo-a { animation: mc-passo-a .5s steps(1) infinite; animation-delay: var(--mc-fase, 0s); }
+  .marcha:not(.parada) .mc-passo-b { animation: mc-passo-b .5s steps(1) infinite; animation-delay: var(--mc-fase, 0s); }
+  .marcha:not(.parada) .mc-sonar { animation: mc-sonar 1.6s linear infinite; }
+  .marcha:not(.parada) .mc-rumo-c { animation: mc-rumo 1s ease-in-out infinite; }
+}
+@keyframes mc-passo-a { 0% { visibility: visible; } 50% { visibility: hidden; } }
+@keyframes mc-passo-b { 0% { visibility: hidden; } 50% { visibility: visible; } }
+@keyframes mc-sonar { to { stroke-dashoffset: -22; } }
+@keyframes mc-rumo { 50% { stroke-opacity: .45; } }
+/* de longe, os locais viram pontos: a marcha cresce para continuar parecendo gente */
+.mc-esc { transform: scale(1.15); }
+[data-zoom="zoom-longe"] .mc-esc { transform: scale(1.4); }
+[data-zoom="zoom-mundo"] .mc-esc { transform: scale(1.6); }
+.marcha > .ent-k > .relq-badge use { color: var(--ent-fundo); --ico-d-stroke: var(--dono); }
 .mc-eta rect { fill: var(--ent-fundo); stroke: var(--dono); stroke-width: 1.5; }
 .hostil .mc-eta rect { stroke: var(--cor-perigo); }
 .mc-eta text { fill: var(--ent-texto); font: 700 12px var(--fonte-texto); text-anchor: middle; font-variant-numeric: tabular-nums; }

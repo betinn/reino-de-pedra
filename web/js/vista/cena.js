@@ -10,7 +10,7 @@
   'use strict';
   var RP = window.RP, H = RP.hex, A = RP.arte, M = RP.mapaModelo;
   var K = A.K, P = A.P, PA = A.PA;
-  var SMIN = 0.85, SMAX = 3.2, QUADRO_MS = 33;
+  var SMIN = 0.85, SMAX = 3.2, QUADRO_MS = 33, ZOOM_MARCADOR = 1.3;
 
   /* uma única escuta de visibilidade para todas as cenas (sem vazamento por instância) */
   /* imagens enviadas pelos reinos: pedidas uma vez e desenhadas quando terminam de carregar */
@@ -613,6 +613,12 @@
     }
     /* desenhos extras de sistemas no chão (mesma assinatura do Mapa: ctx no espaço do mundo) */
     (MAPA.desenhosExtrasCena || []).forEach(function (f) { try { chao(c, V); f(c, d, { x: self.cam.x, y: self.cam.y, z: s }, ag); } catch (e) { console.error(e); } });
+    /* rastros de quem anda, no chão, sob as figuras */
+    if (camadas.marchas !== false) {
+      RP.marchasMapa.amostrar(agora);
+      chao(c, V);
+      RP.marchasMapa.desenhar(c, vis, t, Math.max(1, 1.3 / s));
+    }
 
     var itens = [], rotulos = [];
     function alvo(x, y, w, h, ent, o) { return { x: x, y: y, w: w, h: h, ent: ent, obj: o }; }
@@ -796,6 +802,19 @@
       try { tipo.sobreNevoa(c, o, { t: t, A: A, estado: M.estado(o.hex) }); } catch (er) { console.error(er); }
     });
 
+    /* com o zoom afastado, as figuras da marcha ficam pequenas: o marcador de gente andando vai sobre a cabeça delas */
+    if (camadas.marchas !== false && s < ZOOM_MARCADOR) {
+      var agoraReal = performance.now();
+      d.marchas.forEach(function (m) {
+        var pm = M.posMarcha(m, ag);
+        if (!naTela(pm.x, pm.y)) return;
+        var pt = self.tela(pm.x, pm.y), angTela = Math.atan2(Math.sin(pm.ang + AZ) * K, Math.cos(pm.ang + AZ));
+        c.setTransform(dpr * 0.82, 0, 0, dpr * 0.82, pt.x * dpr, (pt.y - 30 * s - 13) * dpr);
+        RP.marchasMapa.desenharFigura(c, m, A.corDono(m.dono, m), t, RP.marchasMapa.andando(m, ag, agoraReal), angTela);
+      });
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
     /* rótulos (espaço de tela) */
     if (camadas.rotulos !== false) {
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -940,7 +959,8 @@
     if (m.reliquia) { var pb = pt(12, 0); add({ x: pb.x, y: pb.y + 1 }, function () { A.bauReliquia(c, t, P, m.reliquia.tipo || 'desconhecido'); }); prefixo = 'Relíquia · '; }
     var tempo = !cheg ? '' : cheg > ag ? RP.fmtResta(cheg - ag) : (propria ? 'parada' : '');
     if (m.dono !== 'meu' && m.reino) prefixo = m.reino.nome;
-    rot(pos.x, pos.y, -40, prefixo + tempo, 'marcha', cor);
+    /* no zoom afastado o rótulo sobe, para dar lugar ao marcador sobre a cabeça */
+    rot(pos.x, pos.y, this.cam.s < ZOOM_MARCADOR ? -96 : -40, prefixo + tempo, 'marcha', cor);
   };
 
   function alvoTela(cena, x, y, w, h, ent, o) {
