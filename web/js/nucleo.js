@@ -113,7 +113,7 @@
         var mdx = e.clientX - meio.x, mdy = e.clientY - meio.y;
         if (!meio.modo && Math.max(Math.abs(e.clientX - meio.x0), Math.abs(e.clientY - meio.y0)) > 6) { meio.modo = Math.abs(mdx) > Math.abs(mdy) && h.girar ? 'girar' : 'inclinar'; meio.movido = true; }
         if (meio.modo === 'inclinar' && h.inclinar) { h.inclinar(mdy); meio.x = e.clientX; meio.y = e.clientY; }
-        else if (meio.modo === 'girar' && h.girar) { h.girar(mdx * 0.006); meio.x = e.clientX; meio.y = e.clientY; }
+        else if (meio.modo === 'girar' && h.girar) { h.girar(-mdx * 0.006); meio.x = e.clientX; meio.y = e.clientY; }
         return;
       }
       /* mouse passando, sem botão: quem desenha troca o cursor sobre o que é clicável */
