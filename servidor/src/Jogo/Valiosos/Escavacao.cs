@@ -182,6 +182,9 @@ public sealed class FimEscavacaoEvento : Evento
 public sealed class OrdemEscavarRuina : IOrdemExercito
 {
     public string Ordem => Escavacoes.OrdemEscavar;
+    /// <summary>Quem já está parado na ruína (ou guarnece o posto dela) escava sem sair do lugar.</summary>
+    public bool NoMesmoHex => true;
+    public Rota Trajeto(Mundo m, Exercito ex, int destino, int de) => Exercitos.Rota(m, ex, de, destino);
     public void Validar(Mundo m, Reino r, Exercito ex, int destino)
     {
         var ru = Escavacoes.NoHex(m, destino);

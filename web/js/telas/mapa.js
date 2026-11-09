@@ -135,7 +135,7 @@
     var acoes = '';
     var livre = !objs.length && !M.rio(h) && !e.nunca;
     /* escolhendo destino, as ações são as ordens da tropa */
-    if (livre && !emEnvio) acoes += '<a class="btn btn-p btn-primario" href="#/construcao?aba=novos" data-tecla="B">' + RP.icone('castelo') + 'Fundar local</a>';
+    if (livre && !emEnvio) acoes += '<a class="btn btn-p btn-primario" href="#/construcao?aba=novos" data-tecla="B" data-submenu="fundar">' + RP.icone('castelo') + 'Fundar local</a>';
     var meu = objs.filter(function (o) { return o.tipo === 'local' && o.dono === 'meu'; })[0];
     if (meu && !emEnvio) acoes += '<button type="button" class="btn btn-p btn-primario" data-local="' + meu.id + '" data-tecla="I">' + RP.icone('info') + 'Detalhes</button>';
     if (!emEnvio) objs.forEach(function (o) { var tp = MAPA.tiposObjeto[o.tipo]; if (tp && tp.acoes) acoes += tp.acoes(o, d) || ''; });
@@ -314,15 +314,34 @@
       if (bt) bt.classList.add('btn-inativo');
     }).catch(function () { /* sem rede: o servidor confirma ao fundar */ });
   }
+  /* põe a fundação na fila; o erro do servidor (fila cheia, lugar tomado...) vira aviso */
+  function fundarJa(tipo, h) {
+    return RP.tentar(RP.post('/obras', { acao: 'fundar', tipo: tipo, hex: h })).then(function (it) {
+      RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: RP.textoFilaItem(it), icone: 'castelo', tipo: 'sucesso' });
+      RP.recarregarReino(); M.carregar().catch(function () { /* aviso já mostrado */ });
+      return it;
+    });
+  }
+  /* submenu de "Fundar local": o que cabe neste hexágono; clicar já põe na fila. Falta de recurso não tira ninguém da lista. */
+  function submenuFundar(h) {
+    var r = RP.reino, f = (r && r.fundaveis) || {}, pode = M.regraFundar();
+    return {
+      titulo: 'Fundar aqui',
+      vazio: 'Nada cabe aqui: o terreno não serve ou o espaço em volta não está explorado, livre e sem rio.',
+      itens: Object.keys(f).filter(function (k) { return pode(h, k); }).map(function (k) {
+        return {
+          rotulo: (RP.NOMES_FUNDAR || {})[k] || k, iconeHTML: RP.icone(RP.iconeLocal({ tipo: f[k].tipo, produz: f[k].produz })), dica: RP.dicaFundar(k),
+          acao: function () { fundarJa(k, h).catch(function () { /* aviso já mostrado */ }); }
+        };
+      })
+    };
+  }
   document.addEventListener('click', function (e) {
     var b;
     if ((b = e.target.closest('[data-fundar-aqui]'))) {
       if (b.classList.contains('btn-inativo')) { var n = RP.$('[data-motivo]'); RP.aviso({ titulo: n ? n.textContent : 'Não dá para fundar aqui.', icone: 'alerta', tipo: 'alerta' }); return; }
-      var h = +b.getAttribute('data-fundar-aqui'), tipo = alvoFundar;
-      RP.tentar(RP.post('/obras', { acao: 'fundar', tipo: tipo, hex: h })).then(function (it) {
+      fundarJa(alvoFundar, +b.getAttribute('data-fundar-aqui')).then(function () {
         RP.fecharFolha(); alvoFundar = null; atualizarFaixaFundar();
-        RP.aviso({ titulo: 'Na fila: ' + it.rotulo, texto: 'Os carregadores levam o material até lá.', icone: 'castelo', tipo: 'sucesso' });
-        RP.recarregarReino(); M.carregar().catch(function () { /* aviso já mostrado */ });
       }).catch(function () { /* aviso já mostrado */ });
     } else if (e.target.closest('[data-fechar-fundar]')) RP.fecharFolha();
     else if ((b = e.target.closest('[data-abrir-obj]')) && ativa() && M.dados) {
@@ -435,7 +454,7 @@
     }
     if (hh != null && hh >= 0 && M.dados) {
       var mh = montarHex(hh);
-      RP.menuContexto({ x: x, y: y, titulo: mh.titulo, itens: itemEnviar(hh), acoes: mh.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-hex="' + hh + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>' });
+      RP.menuContexto({ x: x, y: y, titulo: mh.titulo, itens: itemEnviar(hh), acoes: mh.acoes + '<button type="button" class="btn btn-fantasma" data-abrir-hex="' + hh + '" data-tecla="I">' + RP.icone('info') + 'Abrir</button>', submenus: { fundar: function () { return submenuFundar(hh); } } });
     }
   }
 

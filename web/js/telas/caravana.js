@@ -35,16 +35,6 @@
       (mesma ? '<p class="fraco" style="font-size:var(--fs-2)">A rota curta já é a mais segura que se conhece.</p>' : '');
   };
   V.escolhida = function (v, seguro) { return v ? (seguro && v.segura && v.segura.ok ? v.segura : v.curta) : null; };
-  /* gráfico de barras horizontais (comparação de cenários) */
-  V.grafico = function (cen, fmt, rotulo) {
-    var max = Math.max.apply(null, cen.map(function (c) { return isFinite(c.v) ? c.v : 0; })) || 1;
-    return '<div class="grafico-barras" role="img" aria-label="' + RP.esc(rotulo) + '">' + cen.map(function (c) {
-      var val = fmt(c.v);
-      return '<div class="gb-linha' + (c.atual ? ' atual' : '') + '" tabindex="0" data-dica="' + RP.esc(c.nome + ': ' + val) + '">' +
-        '<span class="gb-rotulo">' + RP.esc(c.nome) + '</span><span class="gb-trilho"><i style="width:' + Math.max(2, (80 * (isFinite(c.v) ? c.v : 0)) / max).toFixed(1) + '%"></i></span>' +
-        '<span class="gb-valor num">' + val + '</span></div>';
-    }).join('') + '</div>';
-  };
   V.escolhaLocal = function (l, attr, ativo, extra) {
     return '<button type="button" class="escolha escolha-linha" ' + attr + '="' + l.id + '" aria-pressed="' + ativo + '"><span class="ico-placa dono-meu">' + RP.icone(RP.iconeLocal(l)) + '</span>' +
       '<span class="escolha-txt"><b>' + RP.esc(l.nome) + '</b><small class="fraco">' + (extra || '') + '</small></span></button>';

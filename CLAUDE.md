@@ -158,6 +158,8 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Até **6 tropas por jazida**; juntar tropas demais rende cada vez menos por tropa.
 - O grupo extrai até a carga encher (ou a jazida acabar), leva ao armazém ou castelo mais próximo e, se pedido, volta. Grupos na mesma jazida dividem o que resta. Nova ordem interrompe e leva o que já tirou.
 - O posto vira um local do reino no hexágono da jazida ou ruína; enquanto existir, outro reino não extrai nem escava ali.
+- **A ordem sai pelo painel da base**, igual ao "Enviar tropas para cá": escolher Extrair ou Escavar já abre com de onde saem e quantas vão, e Enter envia. Repetir, posto e o destino da relíquia ficam no mesmo painel. Sem tropa disponível, o painel diz isso e oferece recrutar. Quem já está parado na jazida ou na ruína (ou guarnece o posto) recebe a ordem ali mesmo.
+- Ruína fora da área explorada não se escava: o painel manda as tropas até lá, para revelar a área, e a ordem se dá ao chegar.
 
 ### Coleta de madeira e pedra
 
@@ -399,6 +401,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **O reino nasce com os primeiros passos já dados**: castelo e locais acima do nível 1, moradias prontas, uma guarnição pequena (lanceiros e arqueiros com nome) e exploradores prontos no castelo (a pé, a cavalo e prospector), com o entorno do castelo já explorado. Quem entra explora, caça, prospecta e manda os civis sem trabalho e as tropas coletarem madeira e pedra na hora, sem passar a primeira sessão só esperando timers: as primeiras melhorias saem nos primeiros minutos. Vale igual para reinos de IA.
 - Sistemas são apresentados **aos poucos**, conforme o jogador chega a eles, em vez de tudo de uma vez.
 - **Enviar tropas para cá**: sem tropa selecionada, o botão direito num hexágono oferece esse item primeiro. Ele abre o painel da base com de onde saem (o local mais perto ou o último usado, ou uma tropa em campo) e quantas vão (as últimas enviadas assim, metade ou todas); Enter envia. Destino que pede escolha (atacar, caçar...) termina na folha com as ordens.
+- **Fundar sem passar pela Construção**: no menu do botão direito num hexágono, clicar em "Fundar local" abre a Construção; com o mouse em cima, abre um submenu com as construções que cabem ali (terreno, espaço explorado e livre, sem rio), com custo e tempo na dica. Clicar numa delas já a põe na fila. Falta de recurso não tira nada da lista, e uma recusa do servidor aparece como aviso.
 - **Atacar em 2 cliques**: clicar na tropa e clicar com o botão direito no alvo. Tudo já vem com padrões; os detalhes (tipo, objetivos, tática) ficam numa opção de **ajuste**, de um local ou de uma tropa em campo, e Shift + botão direito mostra todas as ordens.
 - Tropas podem **andar pelo mapa**: o destino pode ser um alvo, um local seu ou qualquer ponto. Num ponto qualquer, as tropas ficam lá com a postura "atacar apenas quem atacar".
 - **Modelos de ataque**: o jogador pode salvar envios prontos e repetir o último ataque.

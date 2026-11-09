@@ -606,15 +606,6 @@ a.guia-item { color: inherit; text-decoration: none; }
   background: color-mix(in srgb, var(--cor-info) 10%, transparent); font-size: var(--fs-2);
 }
 .nota-regra > .ico { color: var(--cor-info); flex: none; margin-top: 1px; }
-.grafico-barras { display: flex; flex-direction: column; gap: var(--esp-2); }
-.gb-linha { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 4px; border-radius: var(--raio-1); outline-offset: 2px; }
-.gb-linha:hover, .gb-linha:focus-visible { background: var(--cor-superficie-2); }
-.gb-rotulo { font-size: var(--fs-2); color: var(--cor-texto-2); }
-.gb-linha.atual .gb-rotulo { color: var(--cor-texto); font-weight: 700; }
-.gb-trilho { position: relative; height: 16px; }
-.gb-trilho i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--grafico-meu); border-radius: 0 4px 4px 0; opacity: .55; }
-.gb-linha.atual .gb-trilho i { opacity: 1; }
-.gb-valor { justify-self: end; font-weight: 700; font-size: var(--fs-2); margin-top: -22px; }
 .ext-numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--esp-2); margin-top: var(--esp-3); }
 .ext-numeros > div { display: flex; flex-direction: column; align-items: center; padding: var(--esp-2) 4px; border-radius: var(--raio-2); background: var(--cor-superficie-2); border: 1px solid var(--cor-borda); text-align: center; }
 .ext-numeros span { font-size: var(--fs-1); }
@@ -949,6 +940,12 @@ a.guia-item { color: inherit; text-decoration: none; }
 .em-desenho .cena-cv, .em-desenho .mapa-vp, .em-rota .cena-cv, .em-rota .mapa-vp { cursor: crosshair; }
 .envio-atalhos { display: flex; gap: 6px; margin-bottom: var(--esp-2); }
 .envio-resumo { margin-top: var(--esp-2); }
+a.escolha, a.escolha:hover { text-decoration: none; color: inherit; }
+.envio-opcoes { display: grid; gap: 6px; margin-top: var(--esp-2); }
+.envio-opcoes .abas { margin: 0; }
+.envio-opcoes-rotulo { font-size: var(--fs-2); color: var(--cor-texto-3); }
+.envio-resumo .nota-antiga { margin: 0; }
+.envio-antes { margin: var(--esp-2) 0 0; }
 .envio-resumo p { margin: 0; }
 /* envio rápido: painel mais largo e linhas de uma altura só, para ver todas as tropas sem rolar */
 .folha:has(.envio-resumo) { width: 760px; max-width: calc(100vw - 32px); max-height: min(62vh, 480px); }
