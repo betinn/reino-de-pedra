@@ -233,6 +233,11 @@
     quartel: 'Recrutamento de tropas.', armazem: 'Guarda o excedente e os valiosos.', ferraria: 'Eras, armas e armaduras.'
   };
   RP.NOMES_FUNDAR = NOMES_FUNDAR;
+  /* dica de um local a fundar, no padrão das melhorias: o que ele faz, o custo e o tempo */
+  RP.dicaFundar = function (k) {
+    var r = RP.reino; if (!r || !r.custos) return '';
+    return '<b>' + RP.esc(NOMES_FUNDAR[k] || k) + '</b><small>' + RP.esc(DESC_FUNDAR[k] || '') + '</small>' + custoDica(r.custos.novoLocal, r.custos.novoLocalSeg);
+  };
   RP.extrasConstrucao = RP.extrasConstrucao || [];
 
   function desenharConstrucao(el, aba) {

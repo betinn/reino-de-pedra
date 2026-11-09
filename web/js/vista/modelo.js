@@ -156,6 +156,26 @@
   M.rota = function (h) { return !!(M.dados && M.dados.rotaH[h]); };
   M.ponte = function (h) { return !!(M.dados && M.dados.ponteH[h]); };
   M.objetosEm = function (h) { return (M.dados && M.dados.porHex[h]) || []; };
+  /* onde um local pode ser fundado, pelo que o reino sabe (Obras.MotivoNaoFundar; o servidor confirma ao fundar). Devolve
+     (hex, tipo) → sim ou não. A pegada inteira precisa caber no mapa e ser conhecida, sem rio, sem construção, jazida ou
+     ruína e sem outra fundação na fila; animais e bandeiras não tomam o chão. Recursos não contam: a obra espera o material. */
+  var TOMAM_O_CHAO = { local: true, 'ruina-antiga': true, jazida: true, torre: true };
+  M.regraFundar = function () {
+    var d = M.dados, r = RP.reino, f0 = (r && r.fundaveis) || {}, emFila = {};
+    if (!d) return function () { return false; };
+    ((r && r.filas && r.filas.obras) || []).forEach(function (it) {
+      if (it.tipo === 'fundar') RP.hex.pegada(it.hex, (f0[it.param] || {}).ocupa || 3).forEach(function (x) { emFila[x] = true; });
+    });
+    function livre(x) {
+      return d.idade[x] >= 0 && !d.rio[x] && !emFila[x] && !(d.porHex[x] || []).some(function (o) { return TOMAM_O_CHAO[o.tipo]; });
+    }
+    return function (h, tipo) {
+      var f = f0[tipo];
+      if (!f || d.idade[h] < 0 || f.terrenos.indexOf(d.ter[h]) < 0) return false;
+      var pg = RP.hex.pegada(h, f.ocupa || 1);
+      return pg.length >= (f.ocupa || 1) && pg.every(livre);
+    };
+  };
   M.pessoa = function (id) { return M.dados && M.dados.pessoaPorId ? M.dados.pessoaPorId[id] : null; };
   M.local = function (id) { return M.dados ? M.dados.objs.filter(function (o) { return o.tipo === 'local' && o.id === id; })[0] : null; };
 

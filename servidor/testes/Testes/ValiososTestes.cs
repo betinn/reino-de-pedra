@@ -273,6 +273,32 @@ public class ValiososTestes
     }
 
     [Fact]
+    public void Tropa_parada_na_jazida_extrai_sem_sair_do_lugar()
+    {
+        var (t, r, j, c) = CenarioExtracao();
+        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, j.Hex, OrdemMover.Id);
+        AvancarAte(t, ex.Chegada);
+        Exercitos.DarOrdem(t.M, r, ex.Id, Extracoes.OrdemExtrair, j.Hex);
+        t.Avancar(TimeSpan.FromSeconds(1));
+        Assert.Equal(j.Id, ex.ExtraiJazidaId);
+    }
+
+    [Fact]
+    public void Tropa_parada_na_ruina_escava_sem_sair_do_lugar()
+    {
+        var t = new MundoTeste();
+        var r = t.NovoReino();
+        var ru = NovaRuina(t, r, "ataque");
+        var c = Castelo(t, r);
+        Guarnecer(t, r, c, "lanceiro", 2);
+        var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 2 }, ru.Hex, OrdemMover.Id);
+        AvancarAte(t, ex.Chegada);
+        Exercitos.DarOrdem(t.M, r, ex.Id, Escavacoes.OrdemEscavar, ru.Hex);
+        t.Avancar(TimeSpan.FromSeconds(1));
+        Assert.Equal(ru.Id, ex.EscavaRuinaId);
+    }
+
+    [Fact]
     public void Extracao_com_repetir_volta_a_jazida_ate_ela_esgotar()
     {
         var (t, r, j, c) = CenarioExtracao("prata", 500);
