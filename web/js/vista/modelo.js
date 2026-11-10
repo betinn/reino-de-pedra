@@ -193,11 +193,96 @@
     if (j === i && i > 0) { var p = H.centroH(cm[i - 1]); return { x: a.x, y: a.y, ang: Math.atan2(a.y - p.y, a.x - p.x), hex: cm[i], i: i }; }
     return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, ang: Math.atan2(b.y - a.y, b.x - a.x), hex: f < 0.5 ? cm[i] : cm[j], i: i };
   }
+  /* ---------------------------------------------------------------- posição suave (só desenho)
+     M.posMarcha é a posição exata pelo relógio do servidor: anda em linha reta de centro a centro, troca de velocidade na
+     borda de cada hexágono e, na marcha de outro reino (o feed só traz o hexágono atual e o próximo, a cada 3 s), fica
+     parada no centro do último hexágono conhecido até o feed seguinte e então pula. M.posSuave é o que a Vista desenha:
+       1. marcha alheia: os passos de cada feed são guardados em fila e percorridos por um relógio próprio, atrasado de
+          um intervalo do feed em relação ao relógio do jogo. Com esse atraso, o trecho que a figura percorre já é sempre
+          conhecido: ela anda no passo de verdade, sem parar à espera do feed e sem pular quando ele chega. O preço é
+          aparecer até um feed atrás de onde está (menos de 1 hexágono na tropa lenta, perto de 2 na cavalaria). Se o
+          relógio se adianta ou se atrasa, corrige aos poucos (de 0,5× a 1,5×). Quando a marcha sai do feed (chegou), a
+          figura termina o trecho que faltava antes de sumir (M.fantasmas).
+       2. toda marcha: a posição desenhada persegue o alvo com uma mola amortecida (≈ 0,2 s): acelera ao partir, freia ao
+          chegar e arredonda a troca de passo e as curvas. O ângulo gira aos poucos para o rumo do movimento.
+     Nada disso muda a regra: hex, i e a chegada continuam vindo de M.posMarcha. */
+  var suaves = new Map(), limpezaSuaves = 0, MOLA_S = 0.2, PASSOS_GUARDADOS = 8;
+  function noCaminho(pts, tau) {
+    var n = pts.length, a, b, f, pa, pb;
+    if (tau <= pts[0].t || n === 1) { pa = H.centroH(pts[0].h); return { x: pa.x, y: pa.y }; }
+    for (var i = 0; i < n - 1; i++) {
+      a = pts[i]; b = pts[i + 1];
+      if (tau < b.t) { f = (tau - a.t) / Math.max(1, b.t - a.t); pa = H.centroH(a.h); pb = H.centroH(b.h); return { x: pa.x + (pb.x - pa.x) * f, y: pa.y + (pb.y - pa.y) * f }; }
+    }
+    pb = H.centroH(pts[n - 1].h); return { x: pb.x, y: pb.y };
+  }
+  M.posSuave = function (o, t) {
+    var exata = M.posMarcha(o, t), agora = performance.now(), s = suaves.get(o.id);
+    if (window.matchMedia && s === undefined && M._semMola == null) M._semMola = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!s) { s = { x: exata.x, y: exata.y, vx: 0, vy: 0, ang: exata.ang, r: agora, ag: t, tau: t, pts: [], vel: 0, novo: true }; suaves.set(o.id, s); }
+    if (agora - s.r < 2 && s.saida) return s.saida;   /* várias leituras no mesmo quadro: a mesma resposta */
+    var dt = Math.min(0.25, Math.max(0, (agora - s.r) / 1000)), dAg = Math.max(0, t - s.ag), alvo = exata;
+    s.r = agora; s.ag = t; s.visto = agora;
+    var tp = o.tempos, cm = o.caminho;
+    if (o.dono !== 'meu' && cm && tp && tp.length && tp.length <= 2) {
+      /* marcha alheia: junta os passos novos aos já vistos */
+      var ult = s.pts[s.pts.length - 1];
+      for (var k = 0; k < cm.length && k < tp.length; k++) {
+        if (!ult || tp[k] > ult.t) { s.pts.push({ h: cm[k], t: tp[k] }); ult = s.pts[s.pts.length - 1]; }
+        else if (tp[k] === ult.t && cm[k] !== ult.h) { ult.h = cm[k]; }   /* mudou de rota no mesmo instante */
+      }
+      if (s.pts.length > PASSOS_GUARDADOS) s.pts.splice(0, s.pts.length - PASSOS_GUARDADOS);
+      s.obj = o;
+      if (s.pts.length) {
+        var fimT = s.pts[s.pts.length - 1].t, acel = RP.aceleracao || 1, D = (M.intervaloVivo + 350) * acel;
+        /* onde o relógio da figura deve estar: um feed atrás do jogo, sem passar do que se conhece; o fantasma vai até o fim */
+        var alvoTau = o.fantasma ? fimT : Math.min(fimT, t - D), erro = alvoTau - s.tau, atraso = t - s.tau;
+        if (s.novo || atraso > 12000 * acel || atraso < 0) { s.tau = alvoTau; s.novo = false; }
+        else {
+          var ritmo = erro > 500 * acel ? 1.5 : erro > 80 * acel ? 1.15 : erro < -500 * acel ? 0.5 : erro < -80 * acel ? 0.85 : 1;
+          s.tau = Math.min(t, fimT, s.tau + dAg * ritmo);
+        }
+        if (s.tau < s.pts[0].t) s.tau = s.pts[0].t;
+        var p = noCaminho(s.pts, s.tau);
+        alvo = { x: p.x, y: p.y, ang: exata.ang, hex: exata.hex, i: exata.i };
+      }
+    }
+    var dx = s.x - alvo.x, dy = s.y - alvo.y, longe = Math.hypot(dx, dy);
+    if (M._semMola || dt <= 0 || longe > (H.W || 26) * 4) { s.x = alvo.x; s.y = alvo.y; s.vx = 0; s.vy = 0; if (dt > 0) s.ang = exata.ang; }
+    else {
+      var w = 2 / MOLA_S, q = w * dt, e = 1 / (1 + q + 0.48 * q * q + 0.235 * q * q * q);
+      var ax = (s.vx + w * dx) * dt, ay = (s.vy + w * dy) * dt;
+      s.vx = (s.vx - w * ax) * e; s.vy = (s.vy - w * ay) * e;
+      s.x = alvo.x + (dx + ax) * e; s.y = alvo.y + (dy + ay) * e;
+    }
+    s.vel = Math.hypot(s.vx, s.vy);
+    /* o rumo é o do movimento desenhado; parada, fica o último */
+    if (s.vel > 1.2) {
+      var rumo = Math.atan2(s.vy, s.vx), da = Math.atan2(Math.sin(rumo - s.ang), Math.cos(rumo - s.ang));
+      s.ang += da * Math.min(1, dt * 9);
+    }
+    s.saida = { x: s.x, y: s.y, ang: s.ang, hex: exata.hex, i: exata.i, vel: s.vel, exata: exata };
+    if (agora - limpezaSuaves > 5000) { limpezaSuaves = agora; suaves.forEach(function (v, id) { if (agora - v.visto > 12000) suaves.delete(id); }); }
+    return s.saida;
+  };
+  /* marchas alheias que saíram do feed com um trecho conhecido ainda por andar na tela: continuam a ser desenhadas
+     (o.fantasma) até a figura chegar ao último passo que se viu. Sem toque, sem rótulo novo: é só o fim do movimento. */
+  M.fantasmas = function (vivas) {
+    var out = [], t = RP.agora(), agora = performance.now();
+    suaves.forEach(function (s, id) {
+      if (vivas[id] || !s.obj || !s.pts.length || s.obj.dono === 'meu') return;
+      if (s.tau >= s.pts[s.pts.length - 1].t - 80 || agora - s.visto > 4000) return;
+      var f = Object.assign({}, s.obj); f.fantasma = true; out.push(f);
+    });
+    void t;
+    return out;
+  };
+  M.fantasmaAcabou = function (o) { var s = suaves.get(o.id); return !s || !s.pts.length || s.tau >= s.pts[s.pts.length - 1].t - 80; };
   /* de marcha alheia, o servidor manda só o hexágono atual e o próximo: o fim dos tempos não é chegada nenhuma (o destino é segredo) */
   M.chegada = function (o) { return o.tempos && o.tempos.length ? o.tempos[o.tempos.length - 1] : 0; };
   M.chegadaConhecida = function (o) { return o.dono === 'meu' ? M.chegada(o) : 0; };
   /* marchas são públicas: aparecem sempre, e o feed tira a que acabou */
-  M.sumiu = function () { return false; };
+  M.sumiu = function (o) { return !!(o && o.fantasma && M.fantasmaAcabou(o)); };
   M.marchaVisivel = function () { return true; };
 
   /* carregamento compartilhado; quem desenha o mundo se declara ativo para receber atualizações ao vivo */
@@ -274,7 +359,13 @@
   };
   M.sairDoPublico = function () { M.publico = false; M.dados = null; M.mundoPublico = null; chaoTxt = ''; assinaturaMundo = ''; M.versao++; };
   /* troca as marchas dos outros e as batalhas alheias pelas do feed, sem refazer o chão */
+  /* de quanto em quanto tempo o feed chega (ms reais, medido): é o atraso com que as marchas alheias são desenhadas */
+  M.intervaloVivo = 2600;
+  var ultimoVivoEm = 0;
   M.aplicarVivo = function (v) {
+    var chegou = performance.now();
+    if (ultimoVivoEm && chegou - ultimoVivoEm > 400 && chegou - ultimoVivoEm < 9000) M.intervaloVivo = M.intervaloVivo * 0.7 + (chegou - ultimoVivoEm) * 0.3;
+    ultimoVivoEm = chegou;
     M.ultimoVivo = v;
     var d = M.dados;
     if (!d) return;
@@ -288,6 +379,10 @@
     });
     d.objetos = fixos.concat(vivosPara(v, meusHex, d.aliados || [], meuId));
     indexar(d);
+    /* quem saiu do feed termina de andar o trecho que se conhecia (só desenho: não entra nos objetos nem nos hexágonos) */
+    var vivas = {};
+    d.marchas.forEach(function (m) { vivas[m.id] = true; });
+    d.fantasmas = M.fantasmas(vivas);
     var ass = d.marchas.map(function (m) { return m.id; }).join() + '|' + d.objs.filter(function (o) { return o.tipo === 'batalha'; }).map(function (o) { return o.hex; }).join();
     if (ass !== assinaturaMoveis) { assinaturaMoveis = ass; M.versaoMoveis++; }
     document.dispatchEvent(new CustomEvent('rp:vivo', { detail: v }));
@@ -314,7 +409,7 @@
       /* a batalha do próprio reino já chega como notificação */
       if (x.tipo === 'batalha' && RP.reino && x.texto.indexOf('Reino ' + RP.reino.nome + ' ') >= 0) return;
       var p = partesMensagem(x.texto);
-      RP.aviso({ titulo: p[0], texto: p[1], icone: ICONE_MSG[x.tipo] || 'info', tipo: x.tipo === 'queda' ? 'alerta' : 'info', anuncio: true, descartavel: true, link: RP.reino && x.hex != null ? 'mapa?centro=' + x.hex : null });
+      RP.aviso({ titulo: p[0], texto: p[1], icone: ICONE_MSG[x.tipo] || 'info', tipo: x.tipo === 'queda' ? 'alerta' : 'info', anuncio: true, pequeno: x.aviso === 'pequeno', descartavel: true, link: RP.reino && x.hex != null ? 'mapa?centro=' + x.hex : null });
       if (RP.sons && (x.tipo === 'batalha' || x.tipo === 'queda')) RP.sons.tocar('atacar', { vol: 0.5 });
     });
   }

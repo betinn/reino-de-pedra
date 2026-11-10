@@ -29,7 +29,17 @@ public sealed class Formulas(Balanceamento b)
     /// <summary>Trabalhadores que o local comporta: o mesmo que <see cref="Vagas"/>.</summary>
     public int Trabalhadores(int L) => Vagas(L);
     public double CustoMoradia(int n) => P.CustoMoradia + P.MoradiaPasso * n;
-    public double TempoMoradia(int n) => 10 * 60 * (1 + 0.1 * n);
+    public double TempoMoradia(int n) => P.TempoMoradia * (1 + P.TempoMoradiaPasso * n);
+    /// <summary>
+    /// Duração de uma batalha (s), sem contar baixas: não há tempo fixo. Dura o que o lado mais fraco leva para cair: cresce
+    /// com as tropas dele e encolhe com a desigualdade (<paramref name="razao"/> = força menor / força maior, de 0 a 1).
+    /// 50 contra 1 fica no mínimo; forças parecidas e muita gente levam minutos, até o teto.
+    /// </summary>
+    public double DuracaoBatalha(double tropasFraco, double razao)
+    {
+        var b = P.Combate.Batalha;
+        return Math.Min(b.MaxSeg, b.MinSeg + b.PorTropaSeg * Math.Max(0, tropasFraco) * Math.Pow(Math.Clamp(razao, 0, 1), b.ExpRazao));
+    }
     public Dictionary<string, double> CustoNovoLocal(int fundados) => Receita(P.CustoNovoLocal * Math.Pow(P.NovoLocalCresc, fundados));
     public double ViagemMin(double hexes, string vel, bool rota) =>
         hexes * P.TerrenoMedio * (rota ? P.RotaFator : 1) * P.MinPor[vel];

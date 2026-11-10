@@ -173,13 +173,25 @@
   };
 
   /* ---------------------------------------------------------------- avisos: anúncio no centro da tela, um pouco acima do meio
-     RP.aviso({ titulo, texto, icone, tipo, link, ms, anuncio, descartavel })
-     anuncio: o que aconteceu (ataque, batalha, notificação): grande, um por vez, numa fila, sem um cobrir o outro. Com o
-     tipo 'perigo', vem na frente dos outros. descartavel: pode sair da fila se ela encher (mensagens do mundo).
+     RP.aviso({ titulo, texto, icone, tipo, link, ms, anuncio, pequeno, prioridade, descartavel })
+     anuncio: o que aconteceu, um por vez, numa fila, sem um cobrir o outro, em dois tamanhos no mesmo lugar:
+       grande (padrão): ataque, batalha, captura, castelo caído, morte, mensagem global importante;
+       pequeno: a notícia do dia a dia (obra pronta, treino pronto, explorador no destino, carga entregue): menor, mais
+       discreto e mais curto.
+     Ordem na fila: perigo (prioridade 0), depois os grandes (1), depois os pequenos (2); empate, quem chegou antes. O
+     servidor manda tamanho e prioridade de cada notificação; sem eles, valem tipo e pequeno.
+     descartavel: pode sair da fila se ela encher (mensagens do mundo).
      Sem anuncio: resposta a um gesto (confirmação, erro, dica): menor, logo abaixo, na hora; o novo troca o anterior.
      Nada aqui pega o clique do mapa, a não ser o aviso com link. */
-  var FILA_ANUNCIOS = 5, MS_ANUNCIO = 5200, MS_ANUNCIO_COM_FILA = 3400;
+  var FILA_ANUNCIOS = 6, MS_ANUNCIO = 5200, MS_ANUNCIO_COM_FILA = 3400, MS_PEQUENO = 3200, MS_PEQUENO_COM_FILA = 2000, MS_AVISO_COM_ACOES = 14000;
   var filaAnuncios = [], anuncioAtual = null, vagaGesto = null;
+  function prioridadeAviso(o) { return o.prioridade != null ? o.prioridade : o.tipo === 'perigo' ? 0 : o.pequeno ? 2 : 1; }
+  /* onde um anúncio entra na fila: depois de todos os de prioridade igual ou mais urgente */
+  RP.posicaoNaFila = function (fila, o) {
+    var p = prioridadeAviso(o), i = 0;
+    while (i < fila.length && prioridadeAviso(fila[i]) <= p) i++;
+    return i;
+  };
   function caixaAvisos(cls) {
     var box = RP.$('#avisos .' + cls);
     if (box) return box;
@@ -189,11 +201,20 @@
   }
   function montarAviso(o) {
     var el = document.createElement('div');
-    el.className = 'aviso aviso-' + (o.tipo || 'info') + (o.anuncio ? ' aviso-anuncio' : '') + (o.link ? ' aviso-link' : '');
+    var acoes = o.acoes && o.acoes.length ? o.acoes : null;
+    el.className = 'aviso aviso-' + (o.tipo || 'info') + (o.anuncio ? ' aviso-anuncio' + (o.pequeno ? ' aviso-pequeno' : '') : '') + (o.link || acoes ? ' aviso-link' : '') + (acoes ? ' aviso-com-acoes' : '');
     el.setAttribute('role', o.tipo === 'perigo' ? 'alert' : 'status');
+    /* acoes: [{ rotulo, classe, attr }] — o que dá para responder no próprio aviso (ex.: convite de aliança); quem trata o
+       clique é o sistema dono do atributo, por delegação */
     el.innerHTML = '<span class="aviso-ico">' + RP.icone(o.icone || 'info', '', '') + '</span><div class="aviso-txt"><b>' + RP.esc(o.titulo) + '</b>' + (o.texto ? '<span>' + RP.esc(o.texto) + '</span>' : '') +
-      (o.link ? '<small class="aviso-abrir">Clique para abrir</small>' : '') + '</div>';
+      (acoes ? '<div class="aviso-acoes">' + acoes.map(function (a) { return '<button type="button" class="btn btn-p ' + (a.classe || '') + '" ' + (a.attr || '') + '>' + RP.esc(a.rotulo) + '</button>'; }).join('') + '</div>' : '') +
+      (o.link && !acoes ? '<small class="aviso-abrir">Clique para abrir</small>' : '') + '</div>';
     return el;
+  }
+  /* clique no aviso: num botão de ação, só fecha (a ação é de quem a registrou); fora dele, abre o link */
+  function cliqueAviso(e, o, sair) {
+    if (e.target.closest('.aviso-acoes .btn')) { sair(); return; }
+    if (o.link) { RP.ir(o.link); sair(); }
   }
   function tirarAviso(el, depois) {
     el.classList.add('sai');
@@ -205,23 +226,22 @@
     if (!o) return;
     var el = montarAviso(o), feito = false;
     var sair = function () { if (feito) return; feito = true; tirarAviso(el, proximoAnuncio); };
-    if (o.link) el.addEventListener('click', function () { RP.ir(o.link); sair(); });
+    if (o.link || o.acoes) el.addEventListener('click', function (e) { cliqueAviso(e, o, sair); });
     caixaAvisos('avisos-anuncio').appendChild(el);
     o._el = el;
-    setTimeout(sair, o.ms || (filaAnuncios.length ? MS_ANUNCIO_COM_FILA : MS_ANUNCIO));
+    /* aviso com resposta fica mais tempo: dá para ler e decidir */
+    setTimeout(sair, o.ms || (o.acoes && o.acoes.length ? MS_AVISO_COM_ACOES : o.pequeno ? (filaAnuncios.length ? MS_PEQUENO_COM_FILA : MS_PEQUENO) : (filaAnuncios.length ? MS_ANUNCIO_COM_FILA : MS_ANUNCIO)));
   }
   RP.aviso = function (o) {
     if (o.anuncio) {
       var igual = function (x) { return x && x.titulo === o.titulo && x.texto === o.texto; };
       if (igual(anuncioAtual) || filaAnuncios.some(igual)) return;
-      if (o.tipo === 'perigo') {
-        var i = 0;
-        while (i < filaAnuncios.length && filaAnuncios[i].tipo === 'perigo') i++;
-        filaAnuncios.splice(i, 0, o);
-      } else filaAnuncios.push(o);
+      filaAnuncios.splice(RP.posicaoNaFila(filaAnuncios, o), 0, o);
+      /* fila cheia: sai primeiro o que é descartável, depois o menos urgente (o último pequeno) */
       while (filaAnuncios.length > FILA_ANUNCIOS) {
-        var k = filaAnuncios.findIndex(function (x) { return x.descartavel; });
-        filaAnuncios.splice(k >= 0 ? k : 0, 1);
+        var k = -1, j;
+        for (j = filaAnuncios.length - 1; j >= 0; j--) if (filaAnuncios[j].descartavel) { k = j; break; }
+        filaAnuncios.splice(k >= 0 ? k : filaAnuncios.length - 1, 1);
       }
       if (!anuncioAtual) proximoAnuncio();
       return;
@@ -229,7 +249,7 @@
     if (vagaGesto) { clearTimeout(vagaGesto.t); tirarAviso(vagaGesto.el); }
     var el = montarAviso(o), vaga = { el: el };
     var sair = function () { if (vagaGesto === vaga) vagaGesto = null; tirarAviso(el); };
-    if (o.link) el.addEventListener('click', function () { clearTimeout(vaga.t); RP.ir(o.link); sair(); });
+    if (o.link || o.acoes) el.addEventListener('click', function (e) { clearTimeout(vaga.t); cliqueAviso(e, o, sair); });
     caixaAvisos('avisos-gesto').appendChild(el);
     vagaGesto = vaga;
     vaga.t = setTimeout(sair, o.ms || (o.texto ? 3600 : 2400));
@@ -1051,6 +1071,7 @@
     { tela: 'tropas', icone: 'tropas', rotulo: 'Exército', cor: 'tropas', tecla: 'E' },
     { tela: 'recrutamento', icone: 'populacao', rotulo: 'Recrutar', cor: 'tropas', tecla: 'T' },
     { tela: 'pessoas', icone: 'populacao', rotulo: 'Pessoas', cor: 'mais', tecla: 'P' },
+    { tela: 'alianca', icone: 'estandarte', rotulo: 'Aliança', cor: 'mais', tecla: 'J', contador: 'alianca' },
     { tela: 'agora', icone: 'sino', rotulo: 'Atenção', cor: 'agora', tecla: 'N', contador: true },
     { tela: 'mais', icone: 'menu', rotulo: 'Mais', cor: 'mais', tecla: null, menu: true }
   ];
@@ -1076,7 +1097,8 @@
       RP.NAV.filter(function (i) { return RP.telas[i.tela]; }).map(function (i) {
         return '<button type="button" class="topo-btn nav-' + i.cor + '" data-nav="' + i.tela + '"' + (i.menu ? ' data-menu-mais' : ' data-ir="' + i.tela + '"') +
           ' data-dica="<b>' + RP.esc(i.rotulo) + '</b>' + (i.tecla ? '<kbd class=\'tecla\'>' + i.tecla + '</kbd>' : '') + '">' + RP.icone(i.icone) + '<span>' + i.rotulo + '</span>' +
-          (i.contador ? '<span class="contador" data-nav-contador' + (RP.naoLidas ? '' : ' hidden') + '>' + RP.naoLidas + '</span>' : '') +
+          (i.contador === 'alianca' ? '<span class="contador" data-nav-contador-alianca' + (RP.naoLidasAlianca ? '' : ' hidden') + '>' + (RP.naoLidasAlianca || 0) + '</span>' :
+            i.contador ? '<span class="contador" data-nav-contador' + (RP.naoLidas ? '' : ' hidden') + '>' + RP.naoLidas + '</span>' : '') +
           (i.tecla ? '<kbd class="tecla" aria-hidden="true">' + i.tecla + '</kbd>' : '') + '</button>';
       }).join('') + '</div>';
     marcarNav();

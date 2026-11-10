@@ -218,8 +218,8 @@ public class CorrecoesUsabilidadeApiTestes
         Assert.True(Nulo(obra, "fim"));
         Assert.True(obra.GetProperty("materialChegaEm").GetInt64() > 0);
 
-        // quando o material chega, a obra começa; a fila de recrutamento anda
-        await s.Avancar(TimeSpan.FromMinutes(5));
+        // quando o material chega, a obra começa; a fila de recrutamento anda (a moradia leva pouco mais de 3 min: olha logo depois da chegada)
+        await s.Avancar(TimeSpan.FromMilliseconds(obra.GetProperty("materialChegaEm").GetInt64() - s.Relogio.Agora + 2000));
         var (_, r) = await c.Get("reino");
         var filas = r.GetProperty("filas");
         var ob = Assert.Single(filas.GetProperty("obras").EnumerateArray());

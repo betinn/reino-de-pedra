@@ -75,6 +75,7 @@ namespace ReinoDePedra.Jogo.Social
                 Batalhas.RecalcularLocal(m, l.Id, "Reforço aliado chegou: " + partes + ".", "defesa");
             Registros.Notificar(m, r.Id, "tropas", "Reforço chegou", partes + " defendem " + l.Nome + ", de " + dono.Nome + ".", "tropas");
             Registros.Notificar(m, dono.Id, "alianca", "Reforço de " + r.Nome, partes + " defendem " + l.Nome + ". Continuam sendo de " + r.Nome + ".", "reino?local=" + l.Id);
+            if (Aliancas.De(m, r) is { } ali) Aliancas.Evento(m, ali, "reforco", "Reforço de " + r.Nome + " chegou a " + l.Nome + ", de " + dono.Nome + ".", r.Id, hex: l.Hex, localId: l.Id, alvoId: dono.Id);
             m.Avisar(r.Id, "reino"); m.Avisar(dono.Id, "reino");
             return true;
         }

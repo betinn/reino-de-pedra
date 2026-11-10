@@ -71,15 +71,17 @@ public class FrentesESaqueTestes
     {
         var s = new CombateCenario();
         var alvo = s.Alvo(TipoLocal.Mina, G(("lanceiro", 2)), 0);
-        var (b1, b2, outro) = DuasFrentes(s, alvo, G(("arqueiro", 3)), G(("cavalaria", 30)), CombateCenario.Plano("ocupacao"));
-        Assert.True(b1.FimPrevisto < b2.FimPrevisto, "a frente menor acaba antes");
-        s.AvancarAte(b1.FimPrevisto);
-        Assert.Equal("vitoria", b1.Resultado);
-        Assert.Equal(s.Atk.Id, alvo.ReinoId);
-        Assert.True(b2.Encerrada);
-        Assert.Equal("recuo", b2.Resultado);
-        Assert.Contains("outra força", b2.MotivoRecuo);
-        Assert.Contains(s.M.Marchas.OfType<Exercito>(), e => e.ReinoId == outro.Id && e.Retornando);
+        var (b1, b2, outro) = DuasFrentes(s, alvo, G(("arqueiro", 3)), G(("cavalaria", 30)), CombateCenario.Plano("ocupacao"), CombateCenario.Plano("ocupacao"));
+        // a batalha não tem tempo fixo: vale a frente que acabar primeiro, seja qual for
+        var (primeira, outra) = b1.FimPrevisto <= b2.FimPrevisto ? (b1, b2) : (b2, b1);
+        s.AvancarAte(primeira.FimPrevisto);
+        Assert.Equal("vitoria", primeira.Resultado);
+        Assert.Equal(primeira.AtacanteId, alvo.ReinoId);
+        Assert.True(outra.Encerrada);
+        Assert.Equal("recuo", outra.Resultado);
+        Assert.Contains("outra força", outra.MotivoRecuo);
+        Assert.Contains(s.M.Marchas.OfType<Exercito>(), e => e.ReinoId == outra.AtacanteId && e.Retornando);
+        Assert.NotEqual(0, outro.Id);
     }
 
     [Fact]
@@ -226,7 +228,7 @@ public class FrentesESaqueTestes
     // ---------------------------------------------------------------- repouso no castelo
 
     [Fact]
-    public void Soldado_no_castelo_cura_10_por_cento_por_minuto()
+    public void Soldado_no_castelo_recupera_a_vida_no_ritmo_do_repouso()
     {
         var s = new CombateCenario();
         var ex = s.Atacar(s.Alvo(TipoLocal.Mina, G(("lanceiro", 1)), 0), G(("lanceiro", 3)));
@@ -238,8 +240,9 @@ public class FrentesESaqueTestes
         Assert.Equal(Estados.Guarnecida, p.Estado);
         Assert.True(p.Repouso);
         var antes = Vidas.Atual(s.M, p);
-        s.T.AvancarMin(2);
-        Assert.Equal(Math.Min(max, antes + max * 0.2), Vidas.Atual(s.M, p), 6);
+        // P.vida.repousoPorMin da vida máxima por minuto (30% no ritmo 3×: eram 10%)
+        s.T.AvancarMin(1);
+        Assert.Equal(Math.Min(max, antes + max * s.M.P.Vida.RepousoPorMin), Vidas.Atual(s.M, p), 6);
         s.T.AvancarMin(10);
         Assert.False(Vidas.Ferida(s.M, p));
     }
@@ -259,8 +262,9 @@ public class FrentesESaqueTestes
         var max = Vidas.Max(s.M, p);
         Vidas.Ferir(s.M, p, max / 2);
         var antes = Vidas.Atual(s.M, p);
-        s.T.AvancarMin(1);
-        Assert.Equal(antes + max / s.M.P.Vida.RecuperaH / 60, Vidas.Atual(s.M, p), 6);
+        // 10 s: a batalha não tem mais tempo fixo e esta, pequena, acaba em menos de 1 min
+        s.T.Avancar(TimeSpan.FromSeconds(10));
+        Assert.Equal(antes + max / s.M.P.Vida.RecuperaH / 360, Vidas.Atual(s.M, p), 6);
         Assert.False(b.Encerrada);
     }
 }

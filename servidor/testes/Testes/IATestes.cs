@@ -24,11 +24,15 @@ public static class MundoIA
         return t;
     }
 
-    /// <summary>Reino de IA com perfil e habilidade escolhidos (na vaga livre mais longe dos jogadores).</summary>
+    /// <summary>
+    /// Reino de IA com perfil e habilidade escolhidos (na vaga livre mais longe dos jogadores). Quem governa é a persona
+    /// neutra (<see cref="Personas.Neutra"/>): não falta, não esquece e não puxa para lado nenhum, para os testes da conduta
+    /// medirem só habilidade × perfil. O que a persona muda é testado em PersonaTestes.
+    /// </summary>
     public static Reino Criar(MundoTeste t, string perfil, string habilidade = "medio", int vaga = -1)
     {
         var r = Ocupacao.CriarUm(t.M, vaga) ?? throw new Exception("sem vaga");
-        r.PerfilIA = perfil; r.HabilidadeIA = habilidade;
+        r.PerfilIA = perfil; r.HabilidadeIA = habilidade; r.Persona = Personas.Neutra();
         Governo.Preparar(t.M, r);
         Sessoes.Agendar(t.M, r);
         return r;
@@ -210,8 +214,8 @@ public class IATestes(ITestOutputHelper saida)
     [Fact]
     public void IA_media_cresce_no_ritmo_da_simulacao_e_a_ativa_tem_mais_tropas()
     {
-        // metas do modelo (balanceamento/tabelas.md, jogador médio): dia 3 = nível 5, castelo 6, 5 tropas;
-        // dia 7 = 5 locais, nível 7, castelo 7, 6 tropas. O ativo tem 13 tropas no dia 7.
+        // metas do modelo no ritmo 3× (balanceamento/tabelas.md, jogador médio): dia 3 = nível 7, castelo 8, 7 tropas;
+        // dia 7 = 5 locais, nível 9, castelo 9, 10 tropas. O ativo tem 20 tropas no dia 7.
         var t = MundoIA.Novo(criar: false);
         var medios = new[] { "expansionista", "defensivo", "saqueador", "comerciante" }.Select(p => MundoIA.Criar(t, p)).ToList();
         var ativo = MundoIA.Criar(t, "defensivo", "ativo");
@@ -235,13 +239,13 @@ public class IATestes(ITestOutputHelper saida)
                 foreach (var r in medios)
                 {
                     var f = Foto(r);
-                    Assert.InRange(f.nivel, 3.5, 6.5); Assert.InRange(f.castelo, 4, 7); Assert.InRange(f.tropas, 3, 10);
+                    Assert.InRange(f.nivel, 5, 8.5); Assert.InRange(f.castelo, 6, 9); Assert.InRange(f.tropas, 3, 12);
                 }
         }
         foreach (var r in medios)
         {
             var f = Foto(r);
-            Assert.InRange(f.nivel, 4.5, 8); Assert.InRange(f.castelo, 5, 8); Assert.InRange(f.tropas, 4, 14); Assert.InRange(f.locais, 4, 7);
+            Assert.InRange(f.nivel, 6.5, 10); Assert.InRange(f.castelo, 7, 10); Assert.InRange(f.tropas, 4, 18); Assert.InRange(f.locais, 4, 7);
         }
         Assert.True(Foto(ativo).tropas > medios.Max(r => Foto(r).tropas), "o ativo devia ter mais tropas que os médios");
         Assert.True(Foto(fraco).tropas < medios.Min(r => Foto(r).tropas), "o fraco devia ter menos tropas que os médios");

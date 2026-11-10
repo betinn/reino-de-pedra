@@ -17,7 +17,11 @@
     if (document.hidden && window.Notification && Notification.permission === 'granted') {
       try { var x = new Notification(n.titulo, { body: n.texto || '', tag: 'rp-' + n.id }); x.onclick = function () { window.focus(); if (n.link) RP.ir(n.link); }; } catch (e) { /* ignora */ }
     } else {
-      RP.aviso({ titulo: n.titulo, texto: n.texto || '', icone: n.categoria === 'ataques' ? 'alerta' : 'sino', tipo: n.categoria === 'ataques' ? 'perigo' : 'info', link: n.link, anuncio: true });
+      /* o servidor diz o tamanho (grande ou pequeno) e a ordem na fila de cada notícia */
+      RP.aviso({ titulo: n.titulo, texto: n.texto || '', icone: n.categoria === 'ataques' ? 'alerta' : 'sino', tipo: n.categoria === 'ataques' ? 'perigo' : 'info', link: n.link, anuncio: true,
+        pequeno: n.tamanho === 'pequeno', prioridade: n.prioridade,
+        /* notícia que se responde no próprio aviso (convite de aliança, pedido de entrada): os botões vêm de quem cuida dela */
+        acoes: n.acao && RP.acoesDeAviso && RP.acoesDeAviso[n.acao.tipo] ? RP.acoesDeAviso[n.acao.tipo](n.acao) : null });
     }
   });
 

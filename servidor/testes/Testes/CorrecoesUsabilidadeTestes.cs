@@ -232,7 +232,7 @@ public class CorrecoesUsabilidadeTestes
         var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 5 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         AvancarAte(t, ex.Chegada + 1);
         Assert.Equal(j.Id, ex.ExtraiJazidaId);
-        t.AvancarHoras(2);
+        t.AvancarHoras(0.5);   // antes de a carga encher (no ritmo 3×, 5 lanceiros enchem em ≈ 1 h 50)
         var v = J(VisaoTropas.Exercito(t.M, ex));
         Assert.Equal("trabalhando", v.GetProperty("estado").GetString());
         var tr = v.GetProperty("trabalho");

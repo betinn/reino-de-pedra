@@ -258,14 +258,15 @@ public class ValiososTestes
         Assert.Equal(j.Id, ex.ExtraiJazidaId);
         Assert.True(ex.Parado);
         var ritmo = t.M.F.ExtracaoH(g, false, false) / t.M.P.Valor["prata"];
-        t.AvancarHoras(5);
+        var horas = 0.8 * ex.CargaMax(t.M) / ritmo;   // antes de a carga encher, em qualquer ritmo de extração
+        t.AvancarHoras(horas);
         Extracoes.Liquidar(t.M, j);
-        Assert.Equal(ritmo * 5, ex.Carga.Qtd("prata"), 3);
-        Assert.Equal(2000 - ritmo * 5, j.Restante, 3);
+        Assert.Equal(ritmo * horas, ex.Carga.Qtd("prata"), 3);
+        Assert.Equal(2000 - ritmo * horas, j.Restante, 3);
         // a carga enche (6 lanceiros levam 30) e o grupo leva ao castelo (o depósito mais próximo)
         var cheia = ex.CargaMax(t.M);
         var prata0 = c.Estoque.Qtd("prata");
-        t.AvancarHoras(cheia / ritmo - 5 + 0.01);
+        t.AvancarHoras(cheia / ritmo - horas + 0.001);
         Assert.Null(ex.ExtraiJazidaId);
         Assert.Equal(Extracoes.OrdemEntregar, ex.Ordem);
         Assert.Equal(cheia, ex.Carga.Qtd("prata"), 3);
@@ -308,11 +309,11 @@ public class ValiososTestes
         var (t, r, j, c) = CenarioExtracao("prata", 500);
         var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 6 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject { ["repetir"] = true });
         var prata0 = c.Estoque.Qtd("prata");
-        t.AvancarHoras(60);   // várias cargas (30 cada) entregues
+        t.AvancarHoras(20);   // várias cargas (30 cada) entregues
         Assert.True(t.M.Marchas.ContemId(ex.Id));
         Assert.True(c.Estoque.Qtd("prata") >= prata0 + 200 - 1e-6);
         Assert.True(ex.Ordem == Extracoes.OrdemExtrair);   // voltou à jazida
-        t.AvancarHoras(80);   // o resto acaba com a jazida
+        t.AvancarHoras(30);   // o resto acaba com a jazida
         Assert.Equal(0, j.Restante, 6);
         Assert.False(t.M.Marchas.ContemId(ex.Id));
         Assert.Equal(prata0 + 500, c.Estoque.Qtd("prata"), 3);
@@ -328,7 +329,7 @@ public class ValiososTestes
         AvancarAte(t, Math.Max(a.Chegada, b.Chegada));
         Assert.Equal(2, j.Extratores.Count);
         var ritmo = t.M.F.ExtracaoH(new Dictionary<string, int> { ["lanceiro"] = 3 }, false, false) / t.M.P.Valor["prata"];
-        t.AvancarHoras(30 / (2 * ritmo) + 0.01);
+        t.AvancarHoras(30 / (2 * ritmo) + 0.0005);   // folga curta: a volta para casa agora leva segundos
         Assert.Equal(0, j.Restante, 6);
         Assert.Equal(30, a.Carga.Qtd("prata") + b.Carga.Qtd("prata"), 3);
         Assert.Equal(15, a.Carga.Qtd("prata"), 3);
@@ -364,7 +365,7 @@ public class ValiososTestes
         AvancarAte(t, ex.Chegada);
         var item = Postos.Construir(t.M, r, j.Hex);
         Assert.Throws<RegraException>(() => Postos.Construir(t.M, r, j.Hex));
-        t.AvancarHoras(2);
+        t.AvancarHoras(0.5);   // o posto fica pronto em menos de 7 min; no ritmo 3× o ouro encheria a carga em 2 h
         Assert.DoesNotContain(r.Fila(Obras.Fila).Itens, i => i.Id == item.Id);
         var posto = Extracoes.PostoNoHex(t.M, j.Hex);
         Assert.NotNull(posto);
@@ -372,10 +373,10 @@ public class ValiososTestes
         Assert.Equal(0, r.Fundados);   // o posto não encarece o próximo local
         Extracoes.Liquidar(t.M, j);
         var antes = ex.Carga.Qtd("ouro");
-        t.AvancarHoras(3);
+        t.AvancarHoras(1);
         Extracoes.Liquidar(t.M, j);
         var valor = t.M.P.Valor["ouro"];
-        Assert.Equal(t.M.F.ExtracaoH(g, true, false) / valor * 3, ex.Carga.Qtd("ouro") - antes, 3);
+        Assert.Equal(t.M.F.ExtracaoH(g, true, false) / valor * 1, ex.Carga.Qtd("ouro") - antes, 3);
         Assert.Equal(t.M.P.Extracao.Posto, t.M.F.ExtracaoH(g, true, false) / t.M.F.ExtracaoH(g, false, false), 6);
         // rota pública na maior parte do caminho até o depósito: ×1,2
         var rota = Caminhos.Calcular(t.M, j.Hex, c.Hex, "Lenta");
@@ -395,7 +396,7 @@ public class ValiososTestes
         var (t, r, j, c) = CenarioExtracao();
         var ex = Extracoes.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 6 }, j.Hex, Extracoes.OrdemExtrair, false, new JsonObject());
         AvancarAte(t, ex.Chegada);
-        t.AvancarHoras(4);
+        t.AvancarHoras(1);   // antes de a carga encher (no ritmo 3×, enche em ≈ 2 h)
         Exercitos.DarOrdem(t.M, r, ex.Id, OrdemRetornar.Id, null);
         Assert.Null(ex.ExtraiJazidaId);
         Assert.Empty(j.Extratores);

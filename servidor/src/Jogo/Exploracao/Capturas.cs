@@ -102,7 +102,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                     Fauna.Linha("Reino de origem", dono?.Nome ?? "desconhecido"), Fauna.Linha("Onde", onde),
                     Fauna.Linha("Preso em", cela?.Nome ?? "—"),
                 },
-            }, "exploracao", "Explorador capturado · " + (dono?.Nome ?? ""));
+            }, "exploracao", "Explorador capturado · " + (dono?.Nome ?? ""), TamanhoAviso.Grande);
             if (dono != null)
             {
                 Registros.Relatar(m, dono.Id, "captura", nome + " capturado", new JsonObject
@@ -111,7 +111,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                                  captor.Nome + " tem " + m.P.ResgateH + " h para decidir; sem decisão, volta. Você pode oferecer um pagamento ou resgatá-lo à força: vencer uma batalha no local onde ele está o liberta.",
                     ["hex"] = hex, ["nome"] = p.Nome, ["prisioneiro"] = p.Id, ["ate"] = p.Ate, ["dono"] = true, ["origem"] = Espionagem.Identidade(captor),
                     ["linhas"] = new JsonArray { Fauna.Linha("Onde", onde), Fauna.Linha("Capturado por", captor.Nome), Fauna.Linha("Preso em", cela?.Nome ?? "—") },
-                }, "exploracao");
+                }, "exploracao", tamanho: TamanhoAviso.Grande);
             }
             m.Avisar(captor.Id, "reino");
             AoCapturar?.Invoke(m, p);
@@ -191,7 +191,7 @@ namespace ReinoDePedra.Jogo.Exploracao
             Registros.Relatar(m, p.DonoId, "captura", Exploradores.NomeTipo(m, p.TipoExp) + " executado", new JsonObject
             {
                 ["resumo"] = (p.Nome.Length > 0 ? p.Nome + ", o explorador" : "O explorador") + " capturado perto do hexágono " + m.G.C(p.Hex) + ", " + m.G.L(p.Hex) + ", não vai voltar.", ["hex"] = p.Hex,
-            }, "exploracao");
+            }, "exploracao", tamanho: TamanhoAviso.Grande);
             m.Avisar(p.CaptorId, "reino");
         }
 

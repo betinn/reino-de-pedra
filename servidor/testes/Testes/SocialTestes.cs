@@ -74,14 +74,18 @@ public class SocialTestes
         Aliancas.Promover(t.M, rs[0], rs[1].Id);
         Aliancas.Promover(t.M, rs[0], rs[2].Id);
         Assert.Contains("máximo", Assert.Throws<RegraException>(() => Aliancas.Promover(t.M, rs[0], rs[3].Id)).Message);
-        // conselheiro convida e aceita pedido de entrada, mas não expulsa
+        // conselheiro convida, aceita pedido de entrada e expulsa membro comum, mas não outro conselheiro nem o líder
         Aliancas.Convidar(t.M, rs[1], novo.Id);
         Aliancas.RecusarConvite(t.M, novo, a.Id);
         Aliancas.PedirEntrada(t.M, novo, a.Id);
         Assert.Throws<RegraException>(() => Aliancas.AceitarPedido(t.M, rs[3], novo.Id));   // membro não aceita
         Aliancas.AceitarPedido(t.M, rs[2], novo.Id);
         Assert.Equal(a.Id, novo.AliancaId);
-        Assert.Throws<RegraException>(() => Aliancas.Expulsar(t.M, rs[1], rs[3].Id));
+        Assert.Throws<RegraException>(() => Aliancas.Expulsar(t.M, rs[1], rs[2].Id));   // conselheiro não expulsa conselheiro
+        Assert.Throws<RegraException>(() => Aliancas.Expulsar(t.M, rs[1], rs[0].Id));   // nem o líder
+        Assert.Throws<RegraException>(() => Aliancas.Expulsar(t.M, rs[3], novo.Id));    // membro não expulsa ninguém
+        Aliancas.Expulsar(t.M, rs[1], novo.Id);
+        Assert.Null(novo.AliancaId);
         Aliancas.Rebaixar(t.M, rs[0], rs[2].Id);
         Assert.Equal(Aliancas.Membro, a.Membro(rs[2].Id)!.Cargo);
         Aliancas.Expulsar(t.M, rs[0], rs[3].Id);
@@ -606,7 +610,10 @@ public class SocialTestes
             db2.Carregar(m2);
             m2.PrepararMapa();
             Assert.Equal(al.Membros.Count, m2.Aliancas[al.Id].Membros.Count);
-            Assert.Single(m2.Aliancas[al.Id].Conversa);
+            // a conversa volta inteira: a fala e os eventos que o jogo escreveu nela (fundação, convites, entradas...)
+            Assert.Equal(al.Conversa.Count, m2.Aliancas[al.Id].Conversa.Count);
+            Assert.Single(m2.Aliancas[al.Id].Conversa, f => f.Tipo == Aliancas.TipoFala);
+            Assert.Equal(al.Conversa.Select(f => f.Evento), m2.Aliancas[al.Id].Conversa.Select(f => f.Evento));
             Assert.Equal(t.M.Propostas.Count, m2.Propostas.Count);
             Assert.Single(m2.Pactos);
             Assert.Single(m2.Mensagens);

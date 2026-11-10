@@ -65,6 +65,20 @@ public static class Nomes
         ["Vale", "Monte", "Campo", "Porto", "Bosque", "Forte", "Cabo", "Planalto", "Castro", "Vau", "Pico", "Cume", "Reino", "Império",
          "Condado", "Domínio", "Principado", "Ducado"];
 
+    private static readonly string[] TitulosAlianca = ["Liga", "Pacto", "Irmandade", "Ordem", "Círculo", "Coroa", "Guarda", "Concílio", "Aliança", "Mesa", "Juramento"];
+
+    /// <summary>Nome de aliança como os que jogadores dão: "Liga do Corvo", "Pacto de Ferro", "Irmandade Negra". Cabe no limite do nome de aliança.</summary>
+    public static string Alianca(Rng rng)
+    {
+        for (var i = 0; i < 40; i++)
+        {
+            var t = rng.Escolher(TitulosAlianca);
+            var n = rng.Chance(0.75) ? t + " " + rng.Escolher(Complementos) : t + " " + rng.Escolher(Qualificativos);
+            if (n.Length <= 24) return n;
+        }
+        return "Liga do Norte";
+    }
+
     public static string Novo(Mundo m, Rng rng)
     {
         for (var i = 0; i < 200; i++)
@@ -145,13 +159,7 @@ public static class Nomes
         "Bravo" => "Brava", "Gelado" => "Gelada", "Invicto" => "Invicta", _ => a,
     };
 
-    private static string SemAcento(string s)
-    {
-        var sb = new StringBuilder(s.Length);
-        foreach (var ch in s.Normalize(NormalizationForm.FormD))
-            if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark) sb.Append(ch);
-        return sb.ToString().Normalize(NormalizationForm.FormC);
-    }
+    private static string SemAcento(string s) => FalasPorModelo.SemAcento(s);
 
     private static string Romano(int k) => k switch { 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX", _ => "X" };
 }

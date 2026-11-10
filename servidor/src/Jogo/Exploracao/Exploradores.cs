@@ -403,7 +403,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                 m.Sujar(j);
                 e.JazidasAchadas++;
                 Registros.Notificar(m, e.ReinoId, "exploracao", "Jazida descoberta: " + Logistica.NomeRecurso(j.Recurso),
-                    "Hexágono " + m.G.C(j.Hex) + ", " + m.G.L(j.Hex), "mapa?foco=" + j.Hex);
+                    "Hexágono " + m.G.C(j.Hex) + ", " + m.G.L(j.Hex), "mapa?foco=" + j.Hex, TamanhoAviso.Grande);
                 m.Avisar(e.ReinoId, "mapa");
             }
         }

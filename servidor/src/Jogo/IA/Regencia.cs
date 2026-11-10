@@ -39,7 +39,7 @@ public static class Regencia
         m.Sujar(r);
         Aliancas.AoEntrarEmRegencia(m, r);
         Sessoes.Agendar(m, r);
-        Registros.Notificar(m, r.Id, "reino", "Regência", "Depois de " + m.P.RegenciaH + " h sem entrar, a regência governa o reino até você voltar.", "regencia");
+        Registros.Notificar(m, r.Id, "reino", "Regência", "Depois de " + m.P.RegenciaH + " h sem entrar, a regência governa o reino até você voltar.", "regencia", TamanhoAviso.Grande);
     }
 
     /// <summary>O jogador voltou (GET /reino depois do início): retoma o controle; o relatório fica para ele ver.</summary>
@@ -50,7 +50,7 @@ public static class Regencia
         m.Cancelar(r.SessaoIAEventoId); r.SessaoIAEventoId = null;
         m.Sujar(r);
         Agendar(m, r);
-        Registros.Notificar(m, r.Id, "reino", "Fim da regência", "Você retomou o reino. Veja o que a regência fez e o que se perdeu.", "regencia");
+        Registros.Notificar(m, r.Id, "reino", "Fim da regência", "Você retomou o reino. Veja o que a regência fez e o que se perdeu.", "regencia", TamanhoAviso.Grande);
         return true;
     }
 

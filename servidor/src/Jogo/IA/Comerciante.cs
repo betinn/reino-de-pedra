@@ -10,7 +10,7 @@ namespace ReinoDePedra.Jogo.IA;
 /// moeda: vale o valor cheio), só com o próprio estoque e pelo mesmo <see cref="Comercio.AceitarTroca"/> dos jogadores;
 /// os outros perfis pedem <c>P.ia.comercio.margemOutros</c> vezes essa margem. Ninguém dá mais que
 /// <c>P.ia.comercio.reserva</c> do que guarda de um recurso. Pactos: aceita sem pagar (o saqueador só se receber);
-/// pedidos de aliado e pactos cobrados, recusa.
+/// pactos cobrados, recusa. Pedido de recursos de aliado: atende conforme a lealdade de quem governa, com o próprio estoque.
 /// </summary>
 public static class Comerciante
 {
@@ -18,7 +18,7 @@ public static class Comerciante
 
     /// <summary>Margem que o reino pede: a da IA comerciante, ou a dos outros perfis.</summary>
     public static double Margem(Mundo m, Conduta c) =>
-        m.P.Comercio.MargemIA * (c.Perfil?.Comercia == true ? 1 : m.P.IA.Comercio.MargemOutros);
+        m.P.Comercio.MargemIA * (c.Perfil?.Comercia == true ? 1 : m.P.IA.Comercio.MargemOutros) * c.Margem;
 
     /// <summary>Valor para a IA do que ela recebe (compra: abaixo da referência) ou dá (venda: acima). Prata vale o valor cheio.</summary>
     public static double Valor(Mundo m, IReadOnlyDictionary<string, double> c, double fator) =>
@@ -57,6 +57,10 @@ public static class Comerciante
                         var pago = p.Da.Count > 0;
                         var aceita = !cobrado && (pago || c.Perfil?.Ataca != true);
                         if (aceita) Comercio.AceitarPacto(m, r, p.Id); else Comercio.Recusar(m, r, p.Id);
+                        break;
+                    case Comercio.Pedido:
+                        // pedido de recursos de um aliado: quem é leal e tem de sobra manda; o ganancioso segura
+                        ConvivioAlianca.ResponderPedido(m, r, p);
                         break;
                     default:
                         Comercio.Recusar(m, r, p.Id);

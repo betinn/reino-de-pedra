@@ -58,7 +58,7 @@ public static class RelatoriosCombate
         if (l != null) dados["hex"] = l.Hex;
         var titulo = tipoNome + " a " + nome + ": sem combate";
         var rel = Registros.Relatar(m, ex.ReinoId, "ataque", titulo, dados);
-        Registros.Notificar(m, ex.ReinoId, "batalhas", titulo, motivo + " As tropas estão voltando.", "relatorio?id=" + rel.Id);
+        Registros.Notificar(m, ex.ReinoId, "batalhas", titulo, motivo + " As tropas estão voltando.", "relatorio?id=" + rel.Id, TamanhoAviso.Pequeno);
         if (def == null || l == null || l.ReinoId != def.Id) return;
         var quem = NomeAtacante(m, ex.ReinoId);
         var dd = new JsonObject
@@ -69,7 +69,7 @@ public static class RelatoriosCombate
             ["tropasVistas"] = Grupo(ex.Tropas), ["direcao"] = m.G.Direcao(l.Hex, ex.Origem),
             ["linhas"] = new JsonArray(Linha("Forças", quem), Linha("Tropas vistas", GT.Partes(m, ex.Tropas)), Linha("Vindas do", m.G.Direcao(l.Hex, ex.Origem))),
         };
-        Registros.Relatar(m, def.Id, "defesa", l.Nome + ": forças voltaram sem combate", dd, "ataques");
+        Registros.Relatar(m, def.Id, "defesa", l.Nome + ": forças voltaram sem combate", dd, "ataques", tamanho: TamanhoAviso.Pequeno);
     }
 
     /// <summary>Ocupação de ruína ou terra livre (sem batalha).</summary>

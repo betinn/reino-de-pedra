@@ -175,7 +175,7 @@ namespace ReinoDePedra.Jogo.Combate
             m.Sujar(r);
             if (GT.Total(lote.Unidades) > 0)
                 Registros.Notificar(m, r.Id, "tropas", "Feridos morreram", GT.Partes(m, lote.Unidades) + " sem ervas raras em " + m.P.Feridos.EsperaH + " h" +
-                    (nomes.Count > 0 ? ": " + PS.Nomear(nomes) : "") + ".", "tropas");
+                    (nomes.Count > 0 ? ": " + PS.Nomear(nomes) : "") + ".", "tropas", TamanhoAviso.Grande);
             m.Avisar(r.Id, "reino");
         }
     }

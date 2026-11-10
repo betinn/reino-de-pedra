@@ -5,14 +5,18 @@
      guarnecida   soldados em formação, por unidade (lança e escudo, arco, cavalo); explorador e mensageiro livres
      treinando    estocadas no pátio
      ferida       sentada
-   Com o zoom afastado, ou com mais de MAX_FIG pessoas no hexágono, vira uma pilha com contador. Pessoas de outros
+   Ninguém do reino fica escondido: quem está sem trabalho fica em volta do castelo conversando, sentado ou passeando; a
+   guarnição fica em formação, com um ou outro soldado de ronda; quem trabalha larga a ferramenta de vez em quando para
+   levar a carga até a construção ou descansar; explorador parado olha em volta e aponta. O que cada um faz sai do
+   relógio e do id da pessoa (cada uma com o próprio compasso), sem nada novo do servidor.
+   Com o zoom bem afastado, ou acima de MAX_CASTELO / MAX_LOCAL pessoas no local, vira uma pilha com contador. Pessoas de outros
    reinos à vista (`pessoasOutras`, só contagens) aparecem em roupa crua, sem nome. Cada figura é um alvo de toque
    (ent ['pessoa', id]); a pilha, ['pessoas', hex]. Quem está selecionado (RP.selecao) ganha um círculo azul em volta dos pés. */
 (function () {
   'use strict';
   var RP = window.RP, H = RP.hex, A = RP.arte, M = RP.mapaModelo;
   var P = A.P;
-  var MAX_FIG = 12, ZOOM_PILHA = 1.25;
+  var MAX_FIG = 12, MAX_CASTELO = 64, MAX_LOCAL = 30, ZOOM_PILHA = 1.05;
   var SOLDADOS = { milicia: 1, lanceiro: 1, arqueiro: 1, cavalaria: 1, elite: 1, ariete: 1, trebuchet: 1 };
   var ROUPA = { agricultor: 1, lenhador: 2, pedreiro: 3, mineiro: 3, ocioso: 0, mensageiro: 4 };
   /* ferramenta e roupa de cada ofício civil: reconhecíveis sem texto */
@@ -29,6 +33,20 @@
     return (f[(FAMILIA[oficio] || 'infantaria') + ':armaduras'] || 0) >= 2 ? f[(FAMILIA[oficio] || 'infantaria') + ':armaduras'] : 1;
   }
   var ultimos = [];   /* figuras desenhadas no último quadro, em coordenadas de tela (para o laço) */
+  /* o local do reino num hexágono (para saber se é o castelo); refeito quando o reino muda */
+  var locaisHex = null, locaisDe = null;
+  function localDoHex(h) {
+    var r = RP.reino; if (!r) return null;
+    if (locaisDe !== r.locais) { locaisDe = r.locais; locaisHex = {}; (r.locais || []).forEach(function (l) { locaisHex[l.hex] = l; }); }
+    return locaisHex[h] || null;
+  }
+  /* castelos de outros reinos, pelo que o mapa mostra a todos */
+  var castelosDe = null, castelosHex = {};
+  function castelosAlheios() {
+    var d = M.dados;
+    if (d && castelosDe !== d.objs) { castelosDe = d.objs; castelosHex = {}; d.objs.forEach(function (o) { if (o.tipo === 'local' && o.local === 'castelo') castelosHex[o.hex] = true; }); }
+    return castelosHex;
+  }
 
   function ehSoldado(p) { return !!SOLDADOS[p.oficio]; }
   /* som do trabalho de quem está à vista (RP.sons.mundo): lenhador no machado, pedreiro e mineiro na picareta */
@@ -38,17 +56,98 @@
   }
   function ehExplorador(p) { return /^explorador|^prospector|^batedor/.test(p.oficio); }
 
-  /* posição de cada pessoa em volta do local: soldados em formação ao sul; civis em arco pelos lados; estável pela ordem */
-  function posicoes(pessoas, centro) {
-    var sold = pessoas.filter(ehSoldado), civ = pessoas.filter(function (p) { return !ehSoldado(p); }), out = {};
-    /* tudo na frente da construção (sul), para ninguém ficar escondido atrás dela */
-    sold.forEach(function (p, i) {
-      var col = i % 4, lin = Math.floor(i / 4);
-      out[p.id] = { x: centro.x - 15 + col * 10 + (lin % 2) * 5, y: centro.y + 28 + lin * 8 };
+  /* ---------------------------------------------------------------- onde cada um fica e o que faz agora
+     Tudo na frente e dos lados da construção (o sul do mapa), para ninguém passar a vida escondido atrás dela.
+     Pontos em unidades do mundo, a partir do centro do local. O castelo ocupa 7 hexágonos; os outros locais, 3. */
+  var PONTOS = {
+    castelo: {
+      encontro: [[24, 46], [48, 30], [62, 8], [14, 66], [44, 60], [-62, 14], [68, 38], [-20, 78]],
+      formacao: { x: -46, y: 48, cols: 5 }, livres: { x: 6, y: 84 }, feridos: { x: -72, y: 58 }, treino: { x: 62, y: 56 }, ronda: [66, 50], porta: [0, 30]
+    },
+    local: {
+      encontro: [[32, 24], [-32, 26], [2, 44], [46, 10], [-46, 12]],
+      formacao: { x: -16, y: 28, cols: 4 }, livres: { x: 22, y: 40 }, feridos: { x: -44, y: 34 }, treino: { x: 38, y: 34 }, ronda: [46, 30], porta: [0, 16]
+    }
+  };
+  function suave(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
+  /* a vez de cada pessoa: um trecho de `dur` segundos, com início próprio; k = qual trecho, f = quanto dele já passou */
+  function vez(p, t, dur) { var u = (t + (p.id % 97) * 1.37) / dur, k = Math.floor(u); return { k: k, f: u - k }; }
+  function sorte(p, k, s) { return A.hash(p.id % 9973, k % 9973, s); }
+  function emPe(P0, pt) { return { x: P0.x + pt[0], y: P0.y + pt[1] }; }
+  function lado(a, b) { return b.x >= a.x ? 1 : -1; }
+  function andar(a, b, f) { var e = suave(f); return { x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, ang: Math.atan2(b.y - a.y, b.x - a.x), mexe: f > 0.03 && f < 0.97 }; }
+
+  /* quem está sem trabalho: passeia de um ponto de encontro a outro, conversa com quem está no mesmo ponto, ou senta */
+  function ocioso(p, t, ce, G, conversa) {
+    var dur = 11 + (p.id % 5), v = vez(p, t, dur), n = G.encontro.length;
+    /* o ponto em que a pessoa está é o do último passeio (procura para trás; sem passeio recente, o ponto dela) */
+    function ponto(k) { var e = G.encontro[Math.floor(sorte(p, k, 31) * n) % n], j = (p.id % 4) - 1.5; return { x: ce.x + e[0] + j * 5.5, y: ce.y + e[1] + ((p.id >> 2) % 3 - 1) * 4, s: Math.floor(sorte(p, k, 31) * n) % n }; }
+    function passeia(k) { return sorte(p, k, 32) < 0.38; }
+    function onde(k) { for (var i = 0; i < 6; i++) if (passeia(k - i)) return ponto(k - i); return ponto(-1 - (p.id % 7)); }
+    var aqui = onde(v.k - 1), r = sorte(p, v.k, 32);
+    if (passeia(v.k)) {
+      var d = ponto(v.k), m = andar(aqui, d, Math.min(1, v.f / 0.7));
+      if (m.mexe) return { x: m.x, y: m.y, dir: lado(aqui, d), extra: { andando: true, ang: m.ang, dir4: true }, s: -1 };
+      return { x: d.x, y: d.y, dir: lado(aqui, d), extra: { pose: 'parado' }, s: d.s };
+    }
+    var olha = ((p.id >> 1) % 2) ? 1 : -1;
+    if (r < 0.74) return { x: aqui.x, y: aqui.y, dir: olha, extra: { pose: conversa && conversa[aqui.s] > 1 ? 'conversar' : (r < 0.5 ? 'parado' : 'olhar') }, s: aqui.s, conversa: true };
+    return { x: aqui.x, y: aqui.y, dir: olha, extra: { sentado: true }, s: aqui.s };
+  }
+  /* quem trabalha: quase sempre na ferramenta; de vez em quando leva a carga até a construção e volta, ou descansa */
+  function trabalhador(p, i, t, ce, G) {
+    var a = 0.45 + (i % 6) * 0.44 + (i >= 6 ? 0.22 : 0), r0 = G === PONTOS.castelo ? 58 : 36;
+    var posto = { x: ce.x + Math.cos(a) * r0 * 1.2, y: ce.y + Math.sin(a) * r0 * 0.62 + 8 }, dirP = (p.id + i) % 3 === 0 ? -1 : 1;
+    var v = vez(p, t, 9 + (p.id % 4)), r = sorte(p, v.k, 41);
+    if (r < 0.64) return { x: posto.x, y: posto.y, dir: dirP, extra: null, trabalha: true };
+    if (r < 0.84) {
+      var porta = emPe(ce, G.porta), ida = v.f < 0.5, m = ida ? andar(posto, porta, v.f / 0.42) : andar(porta, posto, (v.f - 0.56) / 0.42);
+      if (!m.mexe) return { x: m.x, y: m.y, dir: dirP, extra: { pose: 'parado', ferramenta: null, trabalho: null } };
+      return { x: m.x, y: m.y, dir: lado(ida ? posto : porta, ida ? porta : posto), extra: { andando: true, ang: m.ang, dir4: true, ferramenta: null, trabalho: null, carga: ida ? CARGA[p.oficio] || 'saco' : null, pose: ida ? 'carregar' : 'andando' } };
+    }
+    return { x: posto.x, y: posto.y, dir: dirP, extra: { pose: r < 0.93 ? 'parado' : 'olhar', ferramenta: null, trabalho: null } };
+  }
+  var CARGA = { lenhador: 'tronco', pedreiro: 'minerio', mineiro: 'minerio', agricultor: 'saco' };
+  /* a guarnição: em formação; a cada 6 soldados, um faz a ronda em volta do local */
+  function soldado(p, i, t, ce, G) {
+    var f = G.formacao;
+    if (i % 6 === 5 && p.estado !== 'treinando' && !/cavalaria|elite|ariete|trebuchet/.test(p.oficio)) {
+      var u = (t / (46 + (p.id % 9)) + (p.id % 13) / 13) * 6.2832, rx = G.ronda[0], ry = G.ronda[1];
+      return { x: ce.x + Math.cos(u) * rx, y: ce.y + 10 + Math.sin(u) * ry, dir: -Math.sin(u) >= 0 ? 1 : -1, extra: { andando: true, ang: Math.atan2(Math.cos(u) * ry, -Math.sin(u) * rx) } };
+    }
+    var n = i - Math.floor((i + 1) / 6), col = n % f.cols, lin = Math.floor(n / f.cols);
+    var pos = { x: ce.x + f.x + col * 9 + (lin % 2) * 4.5, y: ce.y + f.y + lin * 8 };
+    if (p.estado === 'treinando') {
+      var tr = G.treino, v = vez(p, t, 5);
+      return { x: ce.x + tr.x + (i % 3) * 9, y: ce.y + tr.y + Math.floor(i / 3) * 8, dir: i % 2 ? -1 : 1, extra: p.oficio === 'lanceiro' && sorte(p, v.k, 51) < 0.4 ? { pose: 'aparar', estocada: false } : null };
+    }
+    return { x: pos.x, y: pos.y, dir: 1, extra: null };
+  }
+  /* explorador ou mensageiro esperando ordem: olha em volta, aponta, descansa */
+  function livre(p, i, t, ce, G) {
+    var v = vez(p, t, 7 + (p.id % 3)), r = sorte(p, v.k, 61), montado = /cavalo/.test(p.oficio) || p.oficio === 'mensageiro';
+    return { x: ce.x + G.livres.x + i * 11, y: ce.y + G.livres.y + (i % 2) * 5, dir: sorte(p, v.k, 62) < 0.5 ? -1 : 1, extra: montado ? null : { pose: r < 0.45 ? 'olhar' : r < 0.7 ? 'apontar' : 'parado' } };
+  }
+  /* todas as pessoas de um local, cada uma no seu lugar de agora: [{ p, x, y, dir, extra, trabalha }] */
+  function arrumar(lista, ce, castelo, t) {
+    var G = castelo ? PONTOS.castelo : PONTOS.local, out = [], nS = 0, nL = 0, nF = 0, nT = 0, ociosos = [];
+    lista.forEach(function (p) {
+      var o;
+      if (p.estado === 'ferida') { o = { x: ce.x + G.feridos.x + (nF % 4) * 8, y: ce.y + G.feridos.y + Math.floor(nF / 4) * 8, dir: nF % 2 ? -1 : 1, extra: null }; nF++; }
+      else if (ehSoldado(p)) o = soldado(p, nS++, t, ce, G);
+      else if (ehExplorador(p) || p.oficio === 'mensageiro') o = p.estado === 'treinando' ? { x: ce.x + G.treino.x + 6 + nL * 8, y: ce.y + G.treino.y - 10, dir: 1, extra: null } : livre(p, nL++, t, ce, G);
+      else if (p.estado === 'trabalhando' || p.estado === 'carregando') o = trabalhador(p, nT++, t, ce, G);
+      else if (p.estado === 'treinando') { o = { x: ce.x + G.treino.x + (nS % 3) * 9, y: ce.y + G.treino.y + 16, dir: -1, extra: null }; }
+      else { ociosos.push(p); return; }
+      o.p = p; out.push(o);
     });
-    civ.forEach(function (p, i) {
-      var a = 0.3 + (i % 7) * 0.41 + (i >= 7 ? 0.2 : 0), r = 32 + (i >= 7 ? 11 : 0) + (i % 2) * 4;
-      out[p.id] = { x: centro.x + Math.cos(a) * r * 1.35, y: centro.y + Math.sin(a) * r * 0.5 + 9 };
+    /* quem conversa precisa de companhia: conta quem está parado em cada ponto de encontro e só então escolhe a pose */
+    var conta = {}, meio = {}, previa = ociosos.map(function (p) { var o = ocioso(p, t, ce, G, null); if (o.conversa) { conta[o.s] = (conta[o.s] || 0) + 1; meio[o.s] = (meio[o.s] || 0) + o.x; } return o; });
+    ociosos.forEach(function (p, i) {
+      var o = previa[i].conversa ? ocioso(p, t, ce, G, conta) : previa[i];
+      /* quem conversa olha para a roda */
+      if (o.conversa && conta[o.s] > 1) o.dir = meio[o.s] / conta[o.s] >= o.x ? 1 : -1;
+      o.p = p; out.push(o);
     });
     return out;
   }
@@ -70,7 +169,7 @@
       return;
     }
     if (ehExplorador(p)) {
-      if (/cavalo/.test(p.oficio)) { A.cavalo(c, 0, 0, t, P, op({ pelagem: (p.id + 2) % 5, andando: !!ex.andando, galope: !!(ex.andando || ex.correndo), cavaleiro: '#6b5a3a', capuz: '#4a3d28' })); return; }
+      if (/cavalo/.test(p.oficio)) { A.cavalo(c, 0, 0, t, P, op({ pelagem: (p.id + 2) % 5, andando: !!ex.andando, galope: !!(ex.andando || ex.correndo), pastando: !ex.andando && ex.pose === 'olhar', cavaleiro: '#6b5a3a', capuz: '#4a3d28' })); return; }
       S.pessoa(c, 0, 0, t, op({ roupa: /batedor/.test(p.oficio) ? '#2f3a2c' : '#6b5a3a', capuz: /batedor/.test(p.oficio) ? '#26301f' : null, carga: /prospector/.test(p.oficio) ? 'picareta' : null }));
       return;
     }
@@ -118,7 +217,8 @@
       Object.keys(porHex).forEach(function (hs) {
         var h = +hs, lista = porHex[h], ce = H.centroH(h);
         if (!lista.length || !q.naTela(ce.x, ce.y)) return;
-        var pilha = s < ZOOM_PILHA || lista.length > MAX_FIG;
+        var loc = localDoHex(h), castelo = !!(loc && loc.tipo === 'castelo');
+        var pilha = s < ZOOM_PILHA || lista.length > (castelo ? MAX_CASTELO : MAX_LOCAL);
         if (pilha) {
           /* na pilha, quem está selecionado vem na frente, para o círculo aparecer */
           var marcados = sel ? lista.filter(function (p) { return sel.tem(p.id); }) : [];
@@ -134,13 +234,12 @@
           lista.forEach(function (p) { var tp = q.cena.tela(ce.x, ce.y + 22); ultimos.push({ id: p.id, x: tp.x, y: tp.y, hex: h }); });
           return;
         }
-        var pos = posicoes(lista, ce);
-        lista.forEach(function (p, i) {
-          var pp = pos[p.id], dir = (p.id + i) % 3 === 0 ? -1 : 1, selecionada = sel && sel.tem(p.id);
-          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, som: somDe(p), d: function () {
+        arrumar(lista, ce, castelo, q.t).forEach(function (pp) {
+          var p = pp.p, selecionada = sel && sel.tem(p.id);
+          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, som: pp.trabalha ? somDe(p) : null, d: function () {
             q.obj(pp.x, pp.y);
             if (selecionada) anel(c, p, q.t);
-            figura(c, p, q.t, dir, q.cor, false);
+            figura(c, p, q.t, pp.dir, q.cor, false, pp.extra);
             barraVida(c, p);
           }, alvo: q.alvo(pp.x, pp.y, 14, 28, ['pessoa', p.id], p) });
           var tp = q.cena.tela(pp.x, pp.y);
@@ -153,10 +252,9 @@
         if (!q.naTela(ce.x, ce.y) || M.estado(o.hex).v !== 'visivel') return;
         var n = Math.min(MAX_FIG, (o.civis || 0) + (o.soldados || 0)), lista = [];
         for (var i = 0; i < n; i++) lista.push({ id: o.hex * 100 + i, oficio: i < (o.soldados || 0) ? 'lanceiro' : 'ocioso', estado: i < (o.soldados || 0) ? 'guarnecida' : 'ociosa' });
-        var pos = posicoes(lista, ce);
-        lista.forEach(function (p, i) {
-          var pp = pos[p.id];
-          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, d: function () { q.obj(pp.x, pp.y); figura(c, p, q.t, i % 2 ? -1 : 1, P.hostil, true); } });
+        /* o mesmo vaivém das pessoas do reino: a contagem continua arredondada e ninguém tem nome nem cor */
+        arrumar(lista, ce, castelosAlheios()[o.hex] === true, q.t).forEach(function (pp) {
+          q.itens.push({ y: pp.y, x: pp.x, silhueta: true, d: function () { q.obj(pp.x, pp.y); figura(c, pp.p, q.t, pp.dir, P.hostil, true, pp.extra); } });
         });
         if (n < (o.civis || 0) + (o.soldados || 0)) q.rot(ce.x, ce.y + 22, 10, ((o.civis || 0) + (o.soldados || 0)) + ' pessoas', 'marcha', '#a39d90');
       });

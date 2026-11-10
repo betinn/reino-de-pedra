@@ -124,7 +124,7 @@ public class GuerraApiTestes
         var (sp, p) = await a.Post("interceptacao/previa", new { marchaId, deLocalId = casteloA, tropas = new { cavalaria = 30 } });
         Assert.True(sp == HttpStatusCode.OK, p.ToString());
         Assert.Equal(JsonValueKind.Object, p.GetProperty("encontro").ValueKind);
-        Assert.True(p.GetProperty("encontro").GetProperty("folga").GetInt64() >= 60_000);
+        Assert.True(p.GetProperty("encontro").GetProperty("folga").GetInt64() >= (long)(ReinoDePedra.Jogo.Config.Balanceamento.Padrao.P.Guerra.Interceptacao.FolgaSeg * 1000));
         var alvoP = p.GetProperty("alvo");
         Assert.Equal("exercito", alvoP.GetProperty("marcha").GetString());
         Assert.Equal("Valdren", alvoP.GetProperty("reino").GetProperty("nome").GetString());

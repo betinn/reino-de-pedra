@@ -23,7 +23,7 @@ public class ExploracaoApiTestes
         Assert.Equal(HttpStatusCode.Created, st);
         Assert.Equal("explorador", item.GetProperty("tipo").GetString());
         Assert.Equal(HttpStatusCode.BadRequest, (await c.Post("exploradores/treinar", new { tipo = "dragao", qtd = 1 })).status);
-        await s.Avancar(TimeSpan.FromMinutes(13));   // o treino a cavalo leva 12 min
+        await s.Avancar(TimeSpan.FromMinutes(5));   // o treino a cavalo leva 4 min
         var (_, ex) = await c.Get("exploracao");
         var cav = ex.GetProperty("tipos").EnumerateArray().First(x => x.GetProperty("id").GetString() == "cavalo");
         Assert.Equal(1, cav.GetProperty("livres").GetInt32());
@@ -44,7 +44,7 @@ public class ExploracaoApiTestes
         var (_, r) = await c.Get("reino");
         Assert.Equal(1, r.GetProperty("exploracao").GetProperty("emCampo").GetInt32());
 
-        await s.Avancar(TimeSpan.FromMinutes(4));
+        await s.Avancar(TimeSpan.FromSeconds(3));   // ainda a caminho: a cavalo, 6 hexágonos levam ≈ 8 s
         var (so, volta) = await c.Post($"exploradores/{id}/ordem", new { ordem = "retornar" });
         Assert.Equal(HttpStatusCode.OK, so);
         Assert.Equal("retornando", volta.GetProperty("estado").GetString());

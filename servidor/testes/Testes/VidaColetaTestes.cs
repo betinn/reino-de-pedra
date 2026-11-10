@@ -142,7 +142,7 @@ public class VidaColetaTestes
         Economia.Atualizar(t.M, r);
         var pedraAntes = c.Estoque.Qtd("pedra");
         var ex = Exercitos.Enviar(t.M, r, c.Id, new Dictionary<string, int> { ["lanceiro"] = 6 }, hex, Coletas.OrdemColetarId, dados: new System.Text.Json.Nodes.JsonObject { ["repetir"] = true });
-        t.AvancarHoras(3);
+        t.AvancarMin(45);   // no ritmo 3×, 6 coletores enchem a carga em ≈ 36 min: uma entrega feita, de volta ao hexágono
         var p = Coletas.Ponto(t.M, hex);
         Assert.NotNull(p);
         Assert.True(Coletas.Disponivel(t.M, hex) < t.B.P.Coleta.Estoque);

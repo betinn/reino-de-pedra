@@ -53,6 +53,10 @@ namespace ReinoDePedra.Jogo.Reinos
         public string? HabilidadeIA { get; set; }
         /// <summary>Próxima sessão da IA (reino de IA ou em regência).</summary>
         public long? SessaoIAEventoId { get; set; }
+        /// <summary>Segunda parte da sessão em curso (o que a pessoa faz minutos depois de entrar).</summary>
+        public long? SessaoIA2EventoId { get; set; }
+        /// <summary>Reação a um ataque, fora da sessão, já marcada.</summary>
+        public long? ReacaoIAEventoId { get; set; }
         /// <summary>Verificação de regência agendada (reino de jogador).</summary>
         public long? RegenciaEventoId { get; set; }
         /// <summary>Regência em curso ou a última que terminou (relatório para o jogador).</summary>

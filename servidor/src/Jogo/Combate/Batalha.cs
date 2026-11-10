@@ -115,11 +115,16 @@ namespace ReinoDePedra.Jogo.Combate
         public static List<Batalha> Ativas(Mundo m, long localId) => m.Batalhas.Where(b => !b.Encerrada && b.LocalId == localId).OrderBy(b => b.Id).ToList();
         public static IEnumerable<Batalha> DoReino(Mundo m, long reinoId) => m.Batalhas.Where(b => b.AtacanteId == reinoId || b.DefensorId == reinoId);
 
-        /// <summary>Duração sem nenhuma baixa: base + por tropa envolvida, até o máximo (P.combate.batalha).</summary>
-        public static long Duracao(Mundo m, int tropas)
+        /// <summary>
+        /// Duração sem nenhuma baixa (P.combate.batalha): não há tempo fixo. Sai das tropas do lado mais fraco e de quão
+        /// desigual é a luta (<see cref="Config.Formulas.DuracaoBatalha"/>): 50 contra 1 acaba em segundos.
+        /// </summary>
+        public static long Duracao(Mundo m, double tropasAtaque, double tropasDefesa, double forcaAtaque, double forcaDefesa)
         {
-            var p = m.P.Combate.Batalha;
-            return T.DeSegundos(Math.Min(p.MaxSeg, p.BaseSeg + p.PorTropaSeg * Math.Max(0, tropas)));
+            var maior = Math.Max(forcaAtaque, forcaDefesa);
+            var razao = maior > 0 ? Math.Min(forcaAtaque, forcaDefesa) / maior : 1;
+            var fraco = forcaAtaque <= forcaDefesa ? tropasAtaque : tropasDefesa;
+            return T.DeSegundos(m.F.DuracaoBatalha(fraco, razao));
         }
 
         public static bool EhAtaque(Exercito ex) => ex.Ordem is OrdemAtacar.Id or OrdemOcupar.Id;
@@ -305,7 +310,7 @@ namespace ReinoDePedra.Jogo.Combate
             var mc = new MarcoBatalha
             {
                 T = agora, A = full.A, D = full.D, PerdaA = full.PerdaA, PerdaD = full.PerdaD, Txt = txt, Lado = lado, P = p0, Parte = c.Parte,
-                Dur = Duracao(m, nA + (int)Math.Round(GT.Total(c.Defesa) * c.Parte)),
+                Dur = Duracao(m, nA, defesa, full.A, full.D),
                 M = nA + defesa > 0 ? Math.Clamp((nA * full.PerdaA + defesa * full.PerdaD) / (nA + defesa), 0, 1) : 0,
             };
             b.Marcos.Add(mc);

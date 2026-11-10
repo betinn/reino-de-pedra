@@ -51,7 +51,6 @@
   /* ---------------------------------------------------------------- entradas em Mais, Reino e Tropas */
   RP.itensMais = RP.itensMais || [];
   RP.itensMais.push(
-    { icone: 'estandarte', titulo: 'Aliança', texto: 'Membros, pedidos de recursos e conversa', href: '#/alianca' },
     { icone: 'troca', titulo: 'Comércio e diplomacia', texto: 'Trocas, pactos e resgates', href: '#/comercio' },
     { icone: 'mensagem', titulo: 'Mensagens', texto: 'Mensageiros para outros reinos', href: '#/mensagens' },
     { icone: 'bandeira', titulo: 'Bandeiras', texto: 'Sinais para outros jogadores', href: '#/bandeiras' }

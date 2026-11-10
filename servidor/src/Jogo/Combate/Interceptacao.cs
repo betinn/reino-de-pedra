@@ -146,7 +146,7 @@ namespace ReinoDePedra.Jogo.Combate
                 ["tropas"] = new JsonObject { ["enviadas"] = RelatoriosCombate.Grupo(ex.Tropas), ["perdas"] = new JsonObject() },
                 ["linhas"] = new JsonArray(new JsonObject { ["rotulo"] = "Tropas", ["valor"] = GT.Partes(m, ex.Tropas) }, new JsonObject { ["rotulo"] = "Por que voltaram", ["valor"] = motivo }),
             };
-            Registros.Relatar(m, ex.ReinoId, "ataque", "Interceptação: sem combate", dados, "batalhas");
+            Registros.Relatar(m, ex.ReinoId, "ataque", "Interceptação: sem combate", dados, "batalhas", tamanho: TamanhoAviso.Pequeno);
             ex.Retornar(m);
         }
     }

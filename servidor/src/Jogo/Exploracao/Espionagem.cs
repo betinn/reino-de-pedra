@@ -148,7 +148,7 @@ namespace ReinoDePedra.Jogo.Exploracao
         {
             var a = m.Avistamentos.Adicionar(new Avistamento { ReinoId = reinoId, Hex = hex, Tipo = tipo, Quando = m.Agora, Ate = m.Agora + T.DeHoras(m.P.AvistamentoH) });
             m.Agendar(new FimAvistamentoEvento { AvistamentoId = a.Id, Quando = a.Ate });
-            Registros.Notificar(m, reinoId, "ataques", titulo, "Fica no mapa por " + m.P.AvistamentoH + " h.", "mapa?foco=" + hex);
+            Registros.Notificar(m, reinoId, "ataques", titulo, "Fica no mapa por " + m.P.AvistamentoH + " h.", "mapa?foco=" + hex, TamanhoAviso.Pequeno);
             m.Avisar(reinoId, "mapa");
             AoRegistrar?.Invoke(m, a);
             return a;

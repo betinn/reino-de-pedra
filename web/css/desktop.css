@@ -85,6 +85,24 @@ kbd.tecla {
 .topo-btn .contador { position: absolute; top: 2px; right: 6px; }
 .topo-btn kbd.tecla { position: absolute; right: 3px; bottom: 3px; min-width: 14px; height: 14px; padding: 0 3px; font-size: 9px; opacity: .7; }
 .topo-sep { width: 1px; height: 26px; margin: 0 4px; background: var(--painel-borda); }
+/* medidor de quadros (Ctrl + Shift + F): só para conferir o desempenho */
+.medidor-quadros {
+  position: fixed; left: 12px; top: calc(var(--topo-alt) + 8px); z-index: 9999; pointer-events: none;
+  padding: 4px 8px; border-radius: var(--raio-2); font: 600 12px/1.2 var(--fonte-texto); color: #d7f5d0; background: rgba(8, 9, 12, .82);
+}
+/* monitor estreito: a barra aperta por etapas e nada sai da tela. Primeiro os espaços, depois o "por hora" dos recursos
+   (continua na dica), por fim os rótulos (ficam o ícone, a tecla e a dica). */
+@media (max-width: 1500px) {
+  .topo-btn { min-width: 50px; padding: 0 4px; }
+  .topo-jogo .rec { padding: 0 7px; }
+}
+@media (max-width: 1300px) { .topo-jogo .rec-taxa { display: none; } }
+@media (max-width: 1100px) {
+  .topo-reino-btn > span { display: none; }
+  .topo-btn { min-width: 44px; }
+  .topo-btn > span:not(.contador) { display: none; }
+  .topo-btn .ico { width: 22px; height: 22px; }
+}
 .topo-relogio { font-size: 12px; color: var(--cor-texto-3); font-weight: 600; white-space: nowrap; margin-right: var(--esp-2); }
 
 /* ---------------------------------------------------------------- janela (uma tela do jogo, flutuante) */

@@ -41,7 +41,7 @@ public sealed class ModuloRegistros : IModuloApi
             {
                 var r = Sessao.ReinoDa(m, id);
                 var lista = m.Notificacoes.Where(x => x.ReinoId == r.Id).OrderByDescending(x => x.Id).Take(100)
-                    .Select(x => new { x.Id, x.Categoria, x.Titulo, x.Texto, x.Link, x.Quando, x.Lida }).ToList();
+                    .Select(x => new { x.Id, x.Categoria, x.Titulo, x.Texto, x.Link, x.Quando, x.Lida, tamanho = TamanhoAviso.Da(x), acao = x.Acao }).ToList();
                 return new { naoLidas = m.Notificacoes.Count(x => x.ReinoId == r.Id && !x.Lida), itens = lista };
             }), Json.Web);
         });

@@ -87,7 +87,7 @@ public class ValiososApiTestes
         Assert.Equal(3, pe.GetProperty("cenarios").GetArrayLength());
         var (spr, pr) = await c.Post("extracao/previa", new { deLocalId = castelo, tropas = new { lanceiro = 1 }, hex = hexRuina });
         Assert.Equal(HttpStatusCode.OK, spr);
-        Assert.Equal(12, pr.GetProperty("horas").GetDouble(), 6);
+        Assert.Equal(ReinoDePedra.Jogo.Config.Balanceamento.Padrao.P.Reliquia.EscavarHoras1, pr.GetProperty("horas").GetDouble(), 6);
         var (sx, grupo) = await c.Post("extracao", new { deLocalId = castelo, tropas = new { lanceiro = 5 }, hex = hexJazida, repetir = true });
         Assert.Equal(HttpStatusCode.Created, sx);
         Assert.Equal("extrair", grupo.GetProperty("ordem").GetString());

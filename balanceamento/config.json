@@ -2,17 +2,17 @@
  "gerado": "node balanceamento/modelo.js --json",
  "P": {
   "temporadaDias": 70,
-  "prodBase": 3,
+  "prodBase": 9,
   "prodCresc": 1.3,
-  "nivelMax": 10,
+  "nivelMax": 11,
   "fatorSerraria": 1.5,
-  "casteloBase": 2.5,
+  "casteloBase": 7.5,
   "casteloCresc": 1.12,
   "casteloCusto": 4,
   "casteloTempo": 2,
   "custoN2": 5,
-  "custoCresc": 2.15,
-  "tempoN2": 120,
+  "custoCresc": 2.18,
+  "tempoN2": 40,
   "tempoCresc": 2,
   "receita": {
    "madeira": 0.45,
@@ -25,8 +25,10 @@
   "popInicial": 8,
   "custoMoradia": 40,
   "moradiaPasso": 24,
-  "popMinH": 1,
-  "popMaxH": 2,
+  "tempoMoradia": 200,
+  "tempoMoradiaPasso": 0.1,
+  "popMinH": 3,
+  "popMaxH": 6,
   "bonusComida": 0.3,
   "vagas": {
    "porNivel": 0.3,
@@ -39,9 +41,9 @@
    "ferro": 90
   },
   "estoqueHoras": 10,
-  "estoqueMinimo": 200,
+  "estoqueMinimo": 600,
   "armazem": {
-   "capN1": 200,
+   "capN1": 600,
    "capCresc": 1.35
   },
   "kitExtra": {
@@ -75,7 +77,7 @@
    "tropa": 2
   },
   "avistamentoH": 10,
-  "revelacaoSeg": 10,
+  "revelacaoSeg": 4,
   "patrulha": {
    "maxHexes": 200
   },
@@ -85,11 +87,11 @@
   },
   "custoNovoLocal": 150,
   "novoLocalCresc": 1.22,
-  "tempoNovoLocal": 5400,
+  "tempoNovoLocal": 1800,
   "minPor": {
-   "Lenta": 0.125,
-   "Média": 0.083,
-   "Rápida": 0.05
+   "Lenta": 0.041666666666666664,
+   "Média": 0.02766666666666667,
+   "Rápida": 0.016666666666666666
   },
   "terreno": {
    "planicie": 1,
@@ -147,7 +149,7 @@
   "torre": {
    "custoN1": 150,
    "custoCresc": 1.8,
-   "tempoN1": 2400,
+   "tempoN1": 800,
    "arqPorNivel": 2,
    "bonusAlto": 3,
    "nivelMax": 3,
@@ -162,8 +164,8 @@
    "ataque": 0.15,
    "producao": 0.15,
    "resistencia": 0.2,
-   "escavarHoras1": 12,
-   "escavarMin": 4
+   "escavarHoras1": 4,
+   "escavarMin": 1.3333333333333333
   },
   "escudoNovatoH": 72,
   "escudoExilioH": 24,
@@ -188,7 +190,7 @@
    "acima": 0.05,
    "abaixo": 0.25
   },
-  "faunaVoltaH": 24,
+  "faunaVoltaH": 8,
   "caca": {
    "javalis": {
     "comida": 12,
@@ -222,7 +224,7 @@
     "custo": {
      "comida": 40
     },
-    "tempo": 240,
+    "tempo": 80,
     "vel": "Lenta",
     "visao": 4,
     "forca": 10
@@ -233,7 +235,7 @@
      "comida": 60,
      "couro": 15
     },
-    "tempo": 720,
+    "tempo": 240,
     "vel": "Rápida",
     "visao": 6,
     "forca": 15
@@ -244,7 +246,7 @@
      "comida": 80,
      "ferro": 40
     },
-    "tempo": 1440,
+    "tempo": 480,
     "vel": "Lenta",
     "visao": 2,
     "jazidas": 4,
@@ -256,7 +258,7 @@
      "comida": 90,
      "couro": 30
     },
-    "tempo": 1920,
+    "tempo": 640,
     "vel": "Rápida",
     "visao": 6,
     "forca": 20
@@ -267,14 +269,14 @@
     "madeira": 6,
     "pedra": 4
    },
-   "tempo": 150
+   "tempo": 50
   },
   "ponte": {
    "custo": {
     "madeira": 60,
     "pedra": 40
    },
-   "tempo": 1800
+   "tempo": 600
   },
   "espiao": {
    "base": 0.15,
@@ -282,7 +284,7 @@
    "porTropa": 0.025,
    "max": 0.6,
    "capturado": 0.5,
-   "tempoNoLocal": 600
+   "tempoNoLocal": 200
   },
   "alianca": 5,
   "valor": {
@@ -308,7 +310,7 @@
    "lendariasPorReinos": 6
   },
   "extracao": {
-   "taxa": 2.5,
+   "taxa": 7.5,
    "expTropas": 0.8,
    "posto": 1.5,
    "rota": 1.2,
@@ -316,7 +318,7 @@
   },
   "comercio": {
    "margemIA": 0.15,
-   "novatoDia": 200
+   "novatoDia": 600
   },
   "pacto": {
    "diasMin": 1,
@@ -334,8 +336,8 @@
      "ferro": 150,
      "madeira": 120
     },
-    "tempo": 21600,
-    "dia": 10,
+    "tempo": 7200,
+    "dia": 4,
     "libera": "armas e armaduras dos níveis 2 e 3, cavaleiro de elite, equipamento lendário"
    },
    "cerco": {
@@ -347,8 +349,8 @@
      "pedra": 300,
      "ferro": 150
     },
-    "tempo": 43200,
-    "dia": 21,
+    "tempo": 14400,
+    "dia": 7,
     "libera": "trebuchet e portões dos níveis 4 e 5"
    }
   },
@@ -363,7 +365,7 @@
       "madeira": 50,
       "couro": 15
      },
-     "tempo": 7200,
+     "tempo": 2400,
      "req": "ferraria nível 3"
     },
     {
@@ -372,7 +374,7 @@
       "madeira": 200,
       "aco": 6
      },
-     "tempo": 21600,
+     "tempo": 7200,
      "req": "Era do Aço"
     },
     {
@@ -382,7 +384,7 @@
       "aco": 15,
       "ouro": 5
      },
-     "tempo": 43200,
+     "tempo": 14400,
      "req": "Era do Aço e ferraria nível 9"
     }
    ],
@@ -410,14 +412,14 @@
     "ferro": 150,
     "aco": 10
    },
-   "tempo": 86400,
+   "tempo": 28800,
    "req": "Era do Aço e ferraria nível 8"
   },
   "feridos": {
    "frac": 0.3,
    "ervas": 5,
    "esperaH": 24,
-   "curaH": 2
+   "curaH": 0.6666666666666666
   },
   "tetoBonus": 0.5,
   "queda": {
@@ -431,7 +433,7 @@
     "comida": 30
    },
    "pop": 1,
-   "tempo": 240,
+   "tempo": 80,
    "vel": "Rápida",
    "caracteres": 200,
    "recadoProposta": 120
@@ -441,7 +443,7 @@
     "sal": 20,
     "madeira": 30
    },
-   "tempo": 3600,
+   "tempo": 1200,
    "horas": 20
   },
   "recrutaCastelo": [
@@ -458,9 +460,10 @@
    },
    "taticaPadrao": "media",
    "batalha": {
-    "baseSeg": 300,
-    "porTropaSeg": 15,
-    "maxSeg": 1200
+    "minSeg": 20,
+    "porTropaSeg": 12,
+    "expRazao": 1.5,
+    "maxSeg": 600
    },
    "saqueJanelaH": 24,
    "massacrePorTropa": 1,
@@ -475,7 +478,7 @@
    "portao": {
     "custoN1": 100,
     "custoCresc": 2,
-    "tempoN1": 3600,
+    "tempoN1": 1200,
     "nivelSemEra": 3,
     "receita": {
      "pedra": 0.5,
@@ -515,8 +518,8 @@
    "pertoReino": 6,
    "variacao": 0.25,
    "moverH": [
-    3,
-    5
+    1,
+    1.6666666666666667
    ],
    "bando": {
     "lobos": [
@@ -538,12 +541,12 @@
    },
    "forcaCarregador": 5,
    "custoSeguro": {
-    "baixo": 1,
-    "medio": 3,
-    "alto": 10
+    "baixo": 0.3333333333333333,
+    "medio": 1,
+    "alto": 3.3333333333333335
    }
   },
-  "cacaMin": 20,
+  "cacaMin": 7,
   "guerra": {
    "exilio": {
     "kit": {
@@ -559,7 +562,7 @@
     "longe": 0.5
    },
    "interceptacao": {
-    "folgaSeg": 60,
+    "folgaSeg": 20,
     "trechoHexes": 30
    },
    "postura": {
@@ -571,8 +574,8 @@
   },
   "veiculo": {
    "tempo": {
-    "carroca": 300,
-    "carrocao": 900
+    "carroca": 100,
+    "carrocao": 300
    }
   },
   "caravana": {
@@ -583,7 +586,7 @@
     "madeira": 35,
     "pedra": 20
    },
-   "tempo": 1200
+   "tempo": 400
   },
   "extracaoRotaFrac": 0.5,
   "reliquiaVis": {
@@ -631,7 +634,9 @@
    },
    "conversa": {
     "caracteres": 200,
-    "guardar": 100
+    "guardar": 200,
+    "recado": 120,
+    "repetirPedidoSeg": 300
    },
    "caixa": 100,
    "propostaH": 24,
@@ -941,8 +946,8 @@
     "batedor": 90,
     "mensageiro": 70
    },
-   "recuperaH": 6,
-   "repousoPorMin": 0.1,
+   "recuperaH": 2,
+   "repousoPorMin": 0.3,
    "golpe": {
     "baixo": 20,
     "medio": 40,
@@ -961,12 +966,12 @@
     "colina": "pedra",
     "montanha": "pedra"
    },
-   "taxa": 4,
+   "taxa": 12,
    "expPessoas": 0.8,
    "maxPessoas": 6,
    "cargaCivil": 10,
    "estoque": 60,
-   "recuperaH": 24,
+   "recuperaH": 8,
    "vizinhos": 4,
    "minimo": 5,
    "ia": {
@@ -988,7 +993,7 @@
     "comida": 20,
     "madeira": 10
    },
-   "tempo": 120,
+   "tempo": 40,
    "pop": 1,
    "so": "defesa"
   },
@@ -1005,7 +1010,7 @@
     "madeira": 30,
     "ferro": 30
    },
-   "tempo": 720,
+   "tempo": 240,
    "pop": 1,
    "vence": "cavalaria"
   },
@@ -1022,7 +1027,7 @@
     "madeira": 50,
     "couro": 10
    },
-   "tempo": 840,
+   "tempo": 280,
    "pop": 1,
    "vence": "infantaria"
   },
@@ -1039,7 +1044,7 @@
     "ferro": 50,
     "couro": 30
    },
-   "tempo": 1440,
+   "tempo": 480,
    "pop": 1,
    "vence": "arqueiros"
   },
@@ -1057,7 +1062,7 @@
     "couro": 40,
     "cavalo": 1
    },
-   "tempo": 1920,
+   "tempo": 640,
    "pop": 1,
    "vence": "arqueiros",
    "req": "Era do Aço"
@@ -1074,7 +1079,7 @@
     "madeira": 60,
     "ferro": 15
    },
-   "tempo": 3600,
+   "tempo": 1200,
    "pop": 1,
    "cerco": 40
   },
@@ -1091,7 +1096,7 @@
     "pedra": 40,
     "ferro": 30
    },
-   "tempo": 7200,
+   "tempo": 2400,
    "pop": 1,
    "cerco": 90,
    "req": "Era do Cerco Avançado"
@@ -1118,40 +1123,43 @@
  },
  "referencia": {
   "producao": [
-   3,
-   3.9000000000000004,
-   5.07,
-   6.591,
-   8.5683,
-   11.138790000000002,
-   14.480427000000002,
-   18.824555100000005,
-   24.471921630000008,
-   31.81349811900001
+   9,
+   11.700000000000001,
+   15.21,
+   19.773,
+   25.704900000000006,
+   33.41637000000001,
+   43.441281000000004,
+   56.473665300000015,
+   73.41576489000002,
+   95.44049435700003,
+   124.07264266410004
   ],
   "castelo": [
-   2.5,
-   2.8000000000000003,
-   3.1360000000000006,
-   3.5123200000000008,
-   3.9337984000000015,
-   4.405854208000002,
-   4.934556712960003,
-   5.526703518515204,
-   6.1899079407370285,
-   6.932696893625473
+   7.5,
+   8.4,
+   9.408000000000001,
+   10.536960000000002,
+   11.801395200000005,
+   13.217562624000006,
+   14.803670138880008,
+   16.58011055554561,
+   18.569723822211085,
+   20.79809068087642,
+   23.29386156258159
   ],
   "custo": [
    0,
    5,
-   10.75,
-   23.112499999999997,
-   49.691874999999996,
-   106.83753124999998,
-   229.70069218749995,
-   493.8564882031249,
-   1061.7914496367184,
-   2282.8516167189446
+   10.9,
+   23.762000000000004,
+   51.80116000000001,
+   112.92652880000004,
+   246.17983278400007,
+   536.6720354691201,
+   1169.945037322682,
+   2550.4801813634476,
+   5560.046795372316
   ],
   "receita": [
    null,
@@ -1168,59 +1176,66 @@
     "comida": 1
    },
    {
-    "madeira": 10,
+    "madeira": 11,
     "pedra": 8,
     "ferro": 2,
     "comida": 2
    },
    {
-    "madeira": 22,
-    "pedra": 17,
+    "madeira": 23,
+    "pedra": 18,
     "ferro": 5,
     "comida": 5
    },
    {
-    "madeira": 48,
-    "pedra": 37,
+    "madeira": 51,
+    "pedra": 40,
     "ferro": 11,
     "comida": 11
    },
    {
-    "madeira": 103,
-    "pedra": 80,
-    "ferro": 23,
-    "comida": 23
+    "madeira": 111,
+    "pedra": 86,
+    "ferro": 25,
+    "comida": 25
    },
    {
-    "madeira": 222,
-    "pedra": 173,
-    "ferro": 49,
-    "comida": 49
+    "madeira": 242,
+    "pedra": 188,
+    "ferro": 54,
+    "comida": 54
    },
    {
-    "madeira": 478,
-    "pedra": 372,
-    "ferro": 106,
-    "comida": 106
+    "madeira": 526,
+    "pedra": 409,
+    "ferro": 117,
+    "comida": 117
    },
    {
-    "madeira": 1027,
-    "pedra": 799,
-    "ferro": 228,
-    "comida": 228
+    "madeira": 1148,
+    "pedra": 893,
+    "ferro": 255,
+    "comida": 255
+   },
+   {
+    "madeira": 2502,
+    "pedra": 1946,
+    "ferro": 556,
+    "comida": 556
    }
   ],
   "tempoObra": [
    0,
-   120,
-   240,
-   480,
-   960,
-   1920,
-   3840,
-   7680,
-   15360,
-   30720
+   40,
+   80,
+   160,
+   320,
+   640,
+   1280,
+   2560,
+   5120,
+   10240,
+   20480
   ],
   "vagas": [
    1,
@@ -1232,33 +1247,34 @@
    2,
    2,
    3,
+   3,
    3
   ],
   "moradia": [
    {
     "n": 0,
     "custo": 40,
-    "tempo": 600
+    "tempo": 200
    },
    {
     "n": 1,
     "custo": 64,
-    "tempo": 660
+    "tempo": 220.00000000000003
    },
    {
     "n": 2,
     "custo": 88,
-    "tempo": 720
+    "tempo": 240
    },
    {
     "n": 5,
     "custo": 160,
-    "tempo": 900
+    "tempo": 300
    },
    {
     "n": 10,
     "custo": 280,
-    "tempo": 1200
+    "tempo": 400
    }
   ],
   "novoLocal": [
@@ -1304,31 +1320,31 @@
     "hexes": 4,
     "vel": "Lenta",
     "rota": false,
-    "min": 0.675
+    "min": 0.225
    },
    {
     "hexes": 72,
     "vel": "Lenta",
     "rota": false,
-    "min": 12.15
+    "min": 4.05
    },
    {
     "hexes": 312,
     "vel": "Lenta",
     "rota": false,
-    "min": 52.650000000000006
+    "min": 17.55
    },
    {
     "hexes": 10,
     "vel": "Rápida",
     "rota": true,
-    "min": 0.3712500000000001
+    "min": 0.12375000000000001
    },
    {
     "hexes": 10,
     "vel": "Média",
     "rota": false,
-    "min": 1.1205
+    "min": 0.37350000000000005
    }
   ],
   "batalhas": [
@@ -1647,7 +1663,7 @@
     },
     "posto": false,
     "rota": false,
-    "valorH": 12.5
+    "valorH": 37.5
    },
    {
     "grupo": {
@@ -1655,7 +1671,7 @@
     },
     "posto": false,
     "rota": false,
-    "valorH": 37.89291416275996
+    "valorH": 113.67874248827987
    },
    {
     "grupo": {
@@ -1663,7 +1679,7 @@
     },
     "posto": false,
     "rota": false,
-    "valorH": 52.41203390786845
+    "valorH": 157.23610172360534
    },
    {
     "grupo": {
@@ -1671,7 +1687,7 @@
     },
     "posto": true,
     "rota": false,
-    "valorH": 78.61805086180267
+    "valorH": 235.85415258540803
    },
    {
     "grupo": {
@@ -1679,7 +1695,7 @@
     },
     "posto": true,
     "rota": true,
-    "valorH": 108.37011083763115
+    "valorH": 325.1103325128934
    },
    {
     "grupo": {
@@ -1687,7 +1703,7 @@
     },
     "posto": false,
     "rota": false,
-    "valorH": 52.41203390786845
+    "valorH": 157.23610172360534
    }
   ],
   "espiao": [
@@ -1773,7 +1789,7 @@
      "pedra": 105,
      "madeira": 45
     },
-    "tempo": 2400,
+    "tempo": 800,
     "estrutura": 80
    },
    {
@@ -1784,7 +1800,7 @@
      "pedra": 189,
      "madeira": 81
     },
-    "tempo": 4800,
+    "tempo": 1600,
     "estrutura": 160
    },
    {
@@ -1795,7 +1811,7 @@
      "pedra": 340,
      "madeira": 146
     },
-    "tempo": 7200,
+    "tempo": 2400,
     "estrutura": 240
    }
   ],
@@ -1848,23 +1864,23 @@
    },
    {
     "pessoas": 1,
-    "porHora": 4
+    "porHora": 12
    },
    {
     "pessoas": 2,
-    "porHora": 6.964404506368993
+    "porHora": 20.89321351910698
    },
    {
     "pessoas": 4,
-    "porHora": 12.125732532083186
+    "porHora": 36.37719759624956
    },
    {
     "pessoas": 6,
-    "porHora": 16.771850850517904
+    "porHora": 50.31555255155371
    },
    {
     "pessoas": 9,
-    "porHora": 16.771850850517904
+    "porHora": 50.31555255155371
    }
   ],
   "vida": [
@@ -1899,6 +1915,53 @@
    {
     "oficio": "desconhecido",
     "max": 100
+   }
+  ],
+  "duracaoBatalha": [
+   {
+    "tropas": 1,
+    "razao": 0.02,
+    "seg": 20.033941125496955
+   },
+   {
+    "tropas": 4,
+    "razao": 0.9,
+    "seg": 60.9831184757822
+   },
+   {
+    "tropas": 7,
+    "razao": 0.73,
+    "seg": 72.3918309662871
+   },
+   {
+    "tropas": 20,
+    "razao": 1,
+    "seg": 260
+   },
+   {
+    "tropas": 22,
+    "razao": 0.82,
+    "seg": 216.03097747039877
+   },
+   {
+    "tropas": 50,
+    "razao": 1,
+    "seg": 600
+   },
+   {
+    "tropas": 0,
+    "razao": 1,
+    "seg": 20
+   },
+   {
+    "tropas": 10,
+    "razao": 0,
+    "seg": 20
+   },
+   {
+    "tropas": 500,
+    "razao": 1,
+    "seg": 600
    }
   ],
   "metasOk": true
