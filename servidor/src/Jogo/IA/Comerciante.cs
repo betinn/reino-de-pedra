@@ -18,7 +18,7 @@ public static class Comerciante
 
     /// <summary>Margem que o reino pede: a da IA comerciante, ou a dos outros perfis.</summary>
     public static double Margem(Mundo m, Conduta c) =>
-        m.P.Comercio.MargemIA * (c.Perfil?.Comercia == true ? 1 : m.P.IA.Comercio.MargemOutros);
+        m.P.Comercio.MargemIA * (c.Perfil?.Comercia == true ? 1 : m.P.IA.Comercio.MargemOutros) * c.Margem;
 
     /// <summary>Valor para a IA do que ela recebe (compra: abaixo da referência) ou dá (venda: acima). Prata vale o valor cheio.</summary>
     public static double Valor(Mundo m, IReadOnlyDictionary<string, double> c, double fator) =>

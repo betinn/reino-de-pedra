@@ -37,4 +37,16 @@ Pedido do dono: a duração tem de sair da quantidade de tropas e da velocidade 
 - **Batalha com o que já é público.** Quantos ficam em pé sai da parte da força de cada lado e do andamento; as quedas saem do contador de baixas. O tamanho de verdade nunca entra: 50 contra 50 e 5 contra 5 começam iguais na tela.
 - **Poses que se somavam.** O mixer do three.js só escreve num osso quando o valor da animação muda entre duas amostras. As poses de trabalho usam sempre a mesma amostra do idle, então os giros de uma pose ficavam por baixo da seguinte. Agora toda pose parte do repouso gravado na carga do modelo.
 
-(As seções de IA com persona e de alianças entram neste documento com as respectivas partes.)
+## IA com persona
+
+Pedido do dono: reino de IA não pode parecer IA. Cada um ganha uma pessoa que o governa.
+
+- **Onde fica.** `Reino.Persona` (`servidor/src/Jogo/IA/Persona.cs`), gravada com o reino. É um documento só de propriedades, serializável como está: é o que uma LLM receberia. Nunca entra em visão, feed ou log; `PersonaTestes` procura os nomes proibidos em tudo o que o jogador e o visitante recebem.
+- **0,5 é neutro.** Todo traço vai de 0 a 1 e multiplica a conduta por `1 + (traço − 0,5) × 2 × amplitude`. A persona neutra (tudo em 0,5, nunca falta, nunca esquece, sem atraso) é a conduta pura de habilidade × perfil. Os testes antigos da conduta usam a neutra; o que a persona muda tem teste próprio. Assim a persona desvia o comportamento sem trocar de perfil: as amplitudes são de 10% a 30%.
+- **Sorte própria.** Presença, esquecimento e atraso saem de uma sorte derivada do reino e do instante, não da sorte do mundo: ligar a persona não muda nenhum outro sorteio do jogo, e o mesmo mundo dá sempre a mesma história.
+- **Geração estável.** A persona sai de uma semente feita da semente do mundo, do id e da criação do reino. Um mundo gravado antes desta regra ganha as personas na subida, e elas são as mesmas a cada subida.
+- **Sessão em duas partes e reação.** São eventos comuns da agenda (`SessaoIAEvento` com `Etapa` e `ReacaoIAEvento`), um por reino: nada varre o mundo. A reação fora da sessão só defende; todo o resto continua esperando a sessão, como um jogador que só abriu o jogo para responder ao ataque.
+- **Falas.** `Falas.Gerar(mundo, reino, contexto)` é o único lugar de onde sai texto de IA. `Falas.Gerador` é quem escreve: hoje `FalasPorModelo` (frases por assunto, passadas pelo jeito de escrever da persona); amanhã, uma LLM com a mesma interface (`IGeradorDeFala`). `Falas.Pedido` monta o pedido que ela receberia (persona + contexto), para o formato ficar definido e testado. Quem escreve pode calar ou falhar: a IA fica quieta e o jogo segue. Os modelos não afirmam fatos que o servidor não deu no contexto.
+- **O que não foi feito de propósito.** A persona não aparece no jogo (nem o nome de quem governa): mostrá-la só nos reinos de IA os denunciaria, e os jogadores não têm campo equivalente.
+
+(A seção de alianças entra neste documento com a parte dela.)

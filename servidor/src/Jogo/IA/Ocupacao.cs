@@ -98,6 +98,7 @@ public static class Ocupacao
         var r = CriacaoReino.Criar(m, null, nome, Brasao.Aleatorio(m.Sorte), vaga);
         r.PerfilIA = Sortear(m, m.P.IA.Perfis.ToDictionary(kv => kv.Key, kv => kv.Value.Peso));
         r.HabilidadeIA = Sortear(m, m.P.IA.PesosHabilidade);
+        Personas.Garantir(m, r);   // quem governa: nome, temperamento, horário e jeito de falar (segredo do servidor)
         m.Sujar(r);
         Governo.Preparar(m, r);
         Sessoes.Agendar(m, r);

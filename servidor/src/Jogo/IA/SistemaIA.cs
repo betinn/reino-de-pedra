@@ -35,6 +35,24 @@ public static class SistemaIA
                 if (mm.IA.Ativa && r.EhIA && q.Exilio) { Ocupacao.Abdicar(mm, r); Ocupacao.Completar(mm); }
             };
             Combates.AoTerminar.Add(Regencia.AoTerminarBatalha);
+            // memória de quem governa: quem ataca, saqueia ou captura fica marcado
+            Combates.AoTerminar.Add((mm, rc) =>
+            {
+                if (mm.Reinos.Obter(rc.DefensorId) is { EhIA: true } def) Personas.Ofensa(mm, def, rc.AtacanteId, rc.AtacanteVenceu ? 0.45 : 0.25);
+            });
+            Exploracao.Capturas.AoCapturar += (mm, p) =>
+            {
+                if (mm.Reinos.Obter(p.DonoId) is { EhIA: true } dono) Personas.Ofensa(mm, dono, p.CaptorId, 0.25);
+            };
+            // ataque fora da sessão: se a pessoa está acordada e vê a notificação, entra para defender, com o atraso de quem reage
+            Batalhas.AoComecar += (mm, b, l) =>
+            {
+                if (!mm.IA.Ativa || mm.Reinos.Obter(b.DefensorId) is not { EhIA: true, Persona: { Reflexo: > 0 } quem } def) return;
+                if (def.ReacaoIAEventoId != null || Sessoes.De(mm, def) is not { } c || !Personas.Acordada(mm, def, c.C)) return;
+                if (!Personas.Sorte(mm, def, "viu").Chance(0.25 + 0.5 * quem.Disciplina)) return;
+                def.ReacaoIAEventoId = mm.Agendar(new ReacaoIAEvento { ReinoId = def.Id, Quando = mm.Agora + Personas.TempoDeReacao(mm, def, "ataque") }).Id;
+                mm.Sujar(def);
+            };
             Aliancas.EmRegencia = (_, r) => r.EmRegencia;
             // temporada nova: reserva de ids nova e a leva inicial de IA (o estado da IA foi apagado com o mundo)
             Temporada.Temporadas.AoReiniciar += mm =>
@@ -51,6 +69,7 @@ public static class SistemaIA
             if (r.EhIA || r.EmRegencia)
             {
                 if (r.EhIA && r.PerfilIA == null) continue;   // reino sem dono criado à mão (testes, ferramentas): ninguém governa
+                Personas.Garantir(m, r);   // mundo de antes da persona: cada reino de IA ganha a sua
                 if (r.SessaoIAEventoId is not long sid || m.Eventos.Obter(sid) is not SessaoIAEvento) Sessoes.Agendar(m, r);
             }
             else Regencia.Agendar(m, r);

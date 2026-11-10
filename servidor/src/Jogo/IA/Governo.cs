@@ -32,42 +32,68 @@ public static class Governo
             foreach (var l in m.LocaisDe(r.Id)) { l.Postura = Postura.AtacarQuemAtacar; m.Sujar(l); }
     }
 
-    public static void Sessao(Mundo m, Reino r, Conduta c)
+    /// <param name="etapa">−1: a sessão inteira de uma vez. 0: só o que a pessoa faz ao entrar. 1: o que faz minutos depois.</param>
+    public static void Sessao(Mundo m, Reino r, Conduta c, int etapa = -1)
     {
         var castelo = m.Locais.Obter(r.CasteloId);
         if (castelo == null || castelo.Ruina || castelo.ReinoId != r.Id) return;
         // a fila aceita item sem recurso, mas a IA (e a regência) só pede o que pode pagar: nada de fila cheia de item parado
         var antes = m.ExigirRecursos;
         m.ExigirRecursos = true;
-        try { Decidir(m, r, c, castelo); }
+        try { Decidir(m, r, c, castelo, etapa); }
         finally { m.ExigirRecursos = antes; }
     }
 
-    private static void Decidir(Mundo m, Reino r, Conduta c, Local castelo)
+    /// <summary>Entrou só para defender (viu a notificação do ataque): manda reforço ou recua, e nada mais.</summary>
+    public static void Reagir(Mundo m, Reino r, Conduta c)
+    {
+        var antes = m.ExigirRecursos;
+        m.ExigirRecursos = true;
+        try { Economia.Atualizar(m, r); Tentar(() => Defender(m, r, c)); }
+        finally { m.ExigirRecursos = antes; }
+    }
+
+    /// <summary>Passos que alguém já quis fazer na sessão e esqueceu (para conferir em teste; não é gravado).</summary>
+    public static Action<Reino, string>? AoEsquecer { get; set; }
+
+    private static void Decidir(Mundo m, Reino r, Conduta c, Local castelo, int etapa)
     {
         Economia.Atualizar(m, r);
         Filas.Avaliar(m, r);
-        if (r.EhIA) DesistirDoParado(m, r);
-        Nevoas.VisiveisAgora(m, r.Id);   // olha o mapa, como o jogador ao abrir o jogo
-        Tentar(() => Defender(m, r, c));
-        if (!c.Regencia) Tentar(() => Comerciante.Responder(m, r, c));
-        Tentar(() => Construir(m, r, c, castelo));
-        Tentar(() => ExploradoresParados(m, r, castelo, c.Regencia));
-        Tentar(() => Recrutar(m, r, c, castelo));
-        Tentar(() => Curar(m, r));   // a regência também cura: guarda o reino para quem volta
-        if (c.Regencia) return;
-        Tentar(() => Prisioneiros(m, r));
-        Tentar(() => Explorar(m, r, castelo));
-        Tentar(() => Cacar(m, r, castelo));
-        Tentar(() => Coletar(m, r, castelo));
+        // erro de atenção: quem governa às vezes esquece um passo (deixa a fila vazia, não manda o explorador)
+        bool Lembra(string passo)
+        {
+            if (Personas.Lembra(m, r, passo)) return true;
+            AoEsquecer?.Invoke(r, passo);
+            return false;
+        }
+        if (etapa <= 0)
+        {
+            if (r.EhIA) { Personas.Envelhecer(m, r); DesistirDoParado(m, r, c.Espera); }
+            Nevoas.VisiveisAgora(m, r.Id);   // olha o mapa, como o jogador ao abrir o jogo
+            if (Lembra("defender")) Tentar(() => Defender(m, r, c));
+            if (!c.Regencia && Lembra("comercio")) Tentar(() => Comerciante.Responder(m, r, c));
+            if (Lembra("construir")) Tentar(() => Construir(m, r, c, castelo));
+            if (Lembra("exploradores")) Tentar(() => ExploradoresParados(m, r, castelo, c.Regencia));
+            if (Lembra("recrutar")) Tentar(() => Recrutar(m, r, c, castelo));
+            if (Lembra("curar")) Tentar(() => Curar(m, r));   // a regência também cura: guarda o reino para quem volta
+        }
+        if (c.Regencia || etapa == 0) return;
+        if (Lembra("prisioneiros")) Tentar(() => Prisioneiros(m, r));
+        if (Lembra("explorar")) Tentar(() => Explorar(m, r, castelo));
+        if (Lembra("cacar")) Tentar(() => Cacar(m, r, castelo));
+        if (Lembra("coletar")) Tentar(() => Coletar(m, r, castelo));
         if (c.Perfil is { } p)
         {
-            if (p.Torres > 0) Tentar(() => Torres(m, r, p, castelo));
-            if (p.Prospecta) Tentar(() => Extrair(m, r, castelo));
-            if (p.Ocupa) Tentar(() => Ocupar(m, r, castelo));
-            if (p.Espiona) Tentar(() => Espionar(m, r, castelo));
-            if (p.Ataca) Tentar(() => Atacar(m, r, castelo));
+            if (p.Torres > 0 && Lembra("torres")) Tentar(() => Torres(m, r, p, castelo));
+            if (p.Prospecta && Lembra("extrair")) Tentar(() => Extrair(m, r, castelo));
+            if (p.Ocupa && Lembra("ocupar")) Tentar(() => Ocupar(m, r, castelo));
+            // rancor: quem foi atacado e não esquece vai atrás de quem atacou, mesmo sem ser saqueador (só dele)
+            var desafeto = c.Persona is { Rancor: >= 0.55, Agressividade: >= 0.3 } ? Personas.Desafeto(r) : null;
+            if ((p.Espiona || desafeto != null) && Lembra("espionar")) Tentar(() => Espionar(m, r, castelo, p.Espiona ? null : desafeto, desafeto));
+            if ((p.Ataca || desafeto != null) && Lembra("atacar")) Tentar(() => Atacar(m, r, castelo, c, p.Ataca ? null : desafeto, desafeto));
         }
+        if (r.EhIA && Lembra("social")) Tentar(() => Convivio.Sessao(m, r, c));
     }
 
     /// <summary>Uma decisão que esbarra numa regra (fila cheia, falta recurso...) só deixa de acontecer, como para o jogador.</summary>
@@ -77,9 +103,9 @@ public static class Governo
     /// Item da vez que perdeu o material (saque, comércio) há mais de um dia: a IA desiste, como um jogador faria, para ele não
     /// segurar a fila e os recursos. Só o reino de IA: a regência não mexe no que o jogador deixou na fila.
     /// </summary>
-    public static void DesistirDoParado(Mundo m, Reino r)
+    public static void DesistirDoParado(Mundo m, Reino r, double espera = 1)
     {
-        var limite = m.Agora - T.Dia;
+        var limite = m.Agora - (long)(T.Dia * espera);   // o paciente espera mais de um dia; o impaciente, menos
         foreach (var (nome, fila) in r.Filas.ToList())
             if (fila.Itens.Count > 0 && fila.Itens[0] is { Aguardando: true } it && it.CriadoEm < limite)
                 Filas.Cancelar(m, r, nome, it.Id);
@@ -100,10 +126,14 @@ public static class Governo
     /// </summary>
     public static void Prisioneiros(Mundo m, Reino r)
     {
+        var quem = r.Persona;
         foreach (var p in Capturas.PresosPor(m, r.Id).Where(x => x.Estado == Capturas.Preso).ToList())
         {
-            if (r.PerfilIA == "saqueador") { Tentar(() => Capturas.Decidir(m, r, p.Id, "executar")); continue; }
-            if (r.PerfilIA == "comerciante" && m.P.Exploradores.TryGetValue(p.TipoExp, out var x))
+            // o temperamento pesa mais que o perfil: quem guarda rancor do dono executa; o ganancioso pede resgate
+            var executa = r.PerfilIA == "saqueador" || Personas.RancorDe(r, p.DonoId) > 0.5 || quem is { Agressividade: > 0.88 };
+            if (executa && quem is { Ganancia: > 0.85, Agressividade: < 0.6 }) executa = false;
+            if (executa) { Tentar(() => Capturas.Decidir(m, r, p.Id, "executar")); continue; }
+            if ((r.PerfilIA == "comerciante" || quem is { Ganancia: > 0.8 }) && m.P.Exploradores.TryGetValue(p.TipoExp, out var x))
             {
                 var pedido = x.Custo.ToDictionary(kv => kv.Key, kv => Math.Ceiling(kv.Value * (1 + m.P.Comercio.MargemIA)));
                 Tentar(() => Capturas.Decidir(m, r, p.Id, "resgate", pedido));
@@ -137,7 +167,7 @@ public static class Governo
     {
         var p = c.C;
         if (p.LocaisCadaDias <= 0) return 0;
-        var mult = c.Perfil?.Locais ?? 1;
+        var mult = c.Perfil == null ? 1 : c.Locais;
         return (int)Math.Min(Math.Round(p.LocaisMax * mult), m.P.IA.LocaisBase + Math.Floor(dia * mult / p.LocaisCadaDias));
     }
 
@@ -514,7 +544,9 @@ public static class Governo
     }
 
     /// <summary>Perfil saqueador: um batedor de elite espiona o local de outro reino mais perto ainda não espionado há pouco.</summary>
-    public static void Espionar(Mundo m, Reino r, Local castelo)
+    /// <param name="soDe">Só locais deste reino (quem vai atrás de um desafeto sem ser saqueador).</param>
+    /// <param name="primeiro">Reino cujos locais vêm primeiro (o desafeto).</param>
+    public static void Espionar(Mundo m, Reino r, Local castelo, long? soDe = null, long? primeiro = null)
     {
         var p = m.P.IA.Espionagem;
         if (castelo.Nivel < p.Castelo) return;
@@ -522,8 +554,10 @@ public static class Governo
         if (r.ExploradoresLivres.GetValueOrDefault(Exploradores.Batedor) < 1) return;
         var desde = m.Agora - T.DeHoras(p.RefazerH);
         var alvo = LocaisConhecidos(m, r).Where(x => !x.livre && m.G.Distancia(x.hex, castelo.Hex) <= p.Alcance
-                && !(r.LocaisEspionados.TryGetValue(x.id, out var e) && e.Quando > desde))
-            .OrderBy(x => m.G.Distancia(x.hex, castelo.Hex)).ThenBy(x => x.hex).Select(x => (int?)x.hex).FirstOrDefault();
+                && !(r.LocaisEspionados.TryGetValue(x.id, out var e) && e.Quando > desde)
+                && (soDe == null || m.Locais.Obter(x.id)?.ReinoId == soDe))
+            .OrderBy(x => primeiro != null && m.Locais.Obter(x.id)?.ReinoId == primeiro ? 0 : 1)
+            .ThenBy(x => m.G.Distancia(x.hex, castelo.Hex)).ThenBy(x => x.hex).Select(x => (int?)x.hex).FirstOrDefault();
         if (alvo is int h) Exploradores.Enviar(m, r, Exploradores.Batedor, Exploradores.Espionar, h, seguro: true);
     }
 
@@ -539,9 +573,12 @@ public static class Governo
     /// Perfil saqueador: saque a um local espionado há pouco. Não ataca reino sob escudo, nem reino muito menor (pelo maior nível
     /// que conhece dele), nem sem folga de força; um ataque por vez, e nunca de novo ao mesmo local com saque recente.
     /// </summary>
-    public static void Atacar(Mundo m, Reino r, Local castelo)
+    /// <param name="soContra">Só este reino (quem vai atrás de um desafeto sem ser saqueador).</param>
+    /// <param name="primeiro">Reino cujos locais vêm primeiro (o desafeto).</param>
+    public static void Atacar(Mundo m, Reino r, Local castelo, Conduta? c = null, long? soContra = null, long? primeiro = null)
     {
         var p = m.P.IA.Ataque;
+        var folga = p.Forca * (c?.FolgaDeAtaque ?? 1);
         if (castelo.Nivel < p.Castelo) return;
         if (Exercitos.De(m, r.Id).Any(e => e.Ordem == OrdemAtacar.Id || e.BatalhaId != null)) return;
         if (MarchaVindo(m, r)) return;   // exército vindo para cá: não esvazia a defesa
@@ -551,8 +588,10 @@ public static class Governo
         var ataque = envio.Sum(kv => kv.Value * m.B.U[kv.Key].Atk);
         var desde = m.Agora - T.DeHoras(p.EspionagemH);
         var porDono = r.LocaisEspionados.Values.GroupBy(e => e.DonoId).ToDictionary(g => g.Key, g => g.Max(e => e.Nivel));
-        foreach (var (lid, e) in r.LocaisEspionados.Where(kv => kv.Value.Quando > desde).OrderByDescending(kv => kv.Value.Quando).ThenBy(kv => kv.Key))
+        foreach (var (lid, e) in r.LocaisEspionados.Where(kv => kv.Value.Quando > desde)
+            .OrderBy(kv => primeiro != null && kv.Value.DonoId == primeiro ? 0 : 1).ThenByDescending(kv => kv.Value.Quando).ThenBy(kv => kv.Key))
         {
+            if (soContra != null && e.DonoId != soContra) continue;
             var l = m.Locais.Obter(lid);
             if (l == null || l.Ruina || l.ReinoId != e.DonoId) continue;   // mudou desde a espionagem: espiona de novo antes
             var dono = m.Reinos.Obter(e.DonoId);
@@ -562,7 +601,7 @@ public static class Governo
             if (m.G.Distancia(l.Hex, castelo.Hex) > p.Alcance) continue;
             if (Ataques.SaquesRecentes(m, r, l.Id) > 0) continue;
             if (Permissoes.MotivoEnvio(m, r, dono, l) != null) continue;
-            if (ataque < DefesaEstimada(m, e, l) * p.Forca) continue;
+            if (ataque < DefesaEstimada(m, e, l) * folga) continue;
             var plano = new PlanoAtaque { Tipo = Ataques.Saque, Tatica = p.Tatica };
             Exercitos.Enviar(m, r, castelo.Id, envio, l.Hex, OrdemAtacar.Id, seguro: true, plano.ParaJson());
             return;

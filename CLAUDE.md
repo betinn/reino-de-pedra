@@ -360,7 +360,17 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Abdica o reino de IA de menor porte: o castelo vira ruína e os outros locais, terra livre. Reino de IA que perde o último local não vai ao exílio: sai do mundo.
 - A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h, estimando a milícia pelo que é público (famílias do reino por local). Caça enquanto tem pouco couro, para treinar os batedores. Usa os mesmos serviços por quantidade; a atribuição automática cuida das vagas dela.
 - A regência não funda, não ataca, não espiona e não negocia. O jogador que volta vê o que ela fez e o que se perdeu. O que o jogador deixou na fila continua lá e começa sozinho quando houver recursos.
-- Reinos de IA e regência só põem na fila o que podem pagar agora, descontado o que os itens aguardando vão pedir. O reino de IA desiste do item da vez parado há mais de um dia.
+- Reinos de IA e regência só põem na fila o que podem pagar agora, descontado o que os itens aguardando vão pedir. O reino de IA desiste do item da vez parado há cerca de um dia (o paciente espera mais; o impaciente, menos).
+- **Cada reino de IA tem uma persona**: quem governa tem nome, uma história curta, inspirações, objetivos (riqueza, território, relíquias, segurança, glória, amizades, vingança), temperamento e traços (agressividade, passividade, paciência, ganância, lealdade, rancor, sociabilidade, cautela, orgulho, curiosidade), nível de atenção (uns melhores, outros piores), horário de jogo e jeito de escrever. **A persona é segredo**: fica só no servidor e nunca vai ao cliente, ao feed ou a log.
+- **A persona dá o jeito de gente**, sempre dentro das mesmas regras:
+  - **Horário próprio**: as sessões se deslocam pelo costume dela (madrugadora ou noturna). Às vezes falta a uma sessão, mais ou menos no fim de semana conforme o costume; nunca a três seguidas.
+  - **Sessão em duas partes**: ao entrar, cuida do reino (defesa, propostas, obras, tropas); alguns minutos depois, do resto (explorar, caçar, espionar, atacar, conversar).
+  - **Erros de atenção**: às vezes esquece um passo: uma fila fica vazia, um explorador fica parado, uma proposta fica sem resposta até a sessão seguinte. Quem joga pior esquece mais.
+  - **Tempo de reação**: atacada fora da sessão, só reage se está acordada e vê; aí entra para defender com atraso humano e variado (de segundos a muitos minutos). Pode chegar tarde.
+- **Escolhas coerentes com o temperamento**: o agressivo mantém mais tropas e ataca com menos folga; o cauteloso quer mais folga; o ganancioso pede mais nas trocas e prefere resgate; o passivo expande menos; o paciente espera mais. A persona desvia a conduta do perfil, não a troca.
+- **Memória**: quem ataca, saqueia ou captura fica marcado. O rancor apaga com o tempo, mais devagar em quem é rancoroso. Quem não perdoa vai atrás só de quem a atacou, mesmo sem ser saqueador, e executa o explorador de quem guarda rancor.
+- **Mensagens por mensageiro**: na sessão, a IA sociável responde a quem escreveu; manda recado a quem não perdoa (ameaça, queixa ou proposta de paz, conforme o temperamento); e a bem sociável acena ao vizinho uma vez. No máximo uma mensagem por sessão, com o mensageiro que ela mesma treina.
+- **Falas num ponto só**: tudo o que um reino de IA escreve (conversa da aliança e mensagens) sai de um único lugar, que recebe a persona e o contexto (quem fala, para quem, a situação e o histórico curto). Hoje quem escreve são modelos de texto variados pela persona (tom, minúsculas, pressa, bordão); uma LLM pode assumir esse lugar depois sem mudar o resto. Não há chamada a serviço externo.
 
 ---
 
