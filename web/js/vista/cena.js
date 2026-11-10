@@ -644,6 +644,7 @@
     /* onde há batalha agora: a construção fica meio transparente, para a luta aparecer inteira */
     var emBatalha = {};
     d.objs.forEach(function (o) { if (o.tipo === 'batalha') emBatalha[o.hex] = true; });
+    batalhaNoHex = emBatalha;
     /* objetos parados (locais, jazidas, ruínas e tipos de outros sistemas) */
     d.objs.forEach(function (o) {
       var tipo = MAPA.tiposObjeto[o.tipo];
@@ -698,7 +699,8 @@
       /* tipos de outros sistemas, ou marcador genérico */
       var info = { t: t, pal: pal, anim: anim, antigo: antigo, A: A, estado: e, agora: ag };
       /* tipos que se espalham em várias figuras (a batalha): cada uma entra na ordem de profundidade por conta própria */
-      if (tipo && tipo.itensCena && !antigo) {
+      /* (a batalha é pública e vem do mapa ao vivo: aparece animada também fora da visão atual) */
+      if (tipo && tipo.itensCena && (!antigo || tipo.aoVivoSempre)) {
         info.castelo = (d.porHex[h] || []).some(function (x) { return x.tipo === 'local' && x.local === 'castelo'; });
         try {
           tipo.itensCena(o, p, info, function (x, y, fn) { itens.push({ y: y, x: x, silhueta: true, d: function () { obj(c, V, x, y); fn(c); } }); });
@@ -918,7 +920,15 @@
   }
 
   /* uma marcha na Vista: formação, carregadores, explorador..., na cor do dono */
+  /* hexágonos com batalha no quadro de agora (para a marcha parada ali não se desenhar por cima da luta) */
+  var batalhaNoHex = {};
   C.desenharMarcha = function (c, V, m, pos, t, ag, itens, rot) {
+    /* parada num hexágono em batalha: quem luta ali já aparece na batalha à vista (as linhas, as quedas e o selo). Desenhar
+       a formação por cima dobraria a tropa e poria o rótulo "parada" no meio da luta. */
+    var chegou = M.chegadaConhecida(m);
+    /* a própria: pela chegada; a de outro reino (a chegada é segredo): o mapa ao vivo já não traz o próximo hexágono */
+    var parou = m.dono === 'meu' ? (!chegou || chegou <= ag) : !(m.caminho && m.caminho.length > 1);
+    if (batalhaNoHex[m.hex] && parou) return;
     var Cs = A.cores(), MAPA = RP.mapa, propria = m.dono === 'meu' || m.dono === 'aliado';
     var revelado = true;
     var cor = A.corDono(m.dono, m);
@@ -1078,6 +1088,22 @@
   };
   /* as cenas que rodam agora (para medir e conferir em teste) */
   Cena.ativas = function () { return ativas.slice(); };
+  /* medidor na tela (Ctrl + Shift + F liga e desliga): a taxa de quadros que o monitor de quem joga está mostrando de
+     verdade, o custo do quadro e quantas figuras. Fica desligado; serve para conferir o desempenho, não é parte do jogo. */
+  var medidor = null, medidorT = 0;
+  Cena.medidor = function (ligar) {
+    if (ligar === undefined) ligar = !medidor;
+    clearInterval(medidorT);
+    if (!ligar) { if (medidor) medidor.remove(); medidor = null; return false; }
+    if (!medidor) { medidor = document.createElement('div'); medidor.className = 'medidor-quadros'; medidor.setAttribute('aria-hidden', 'true'); document.body.appendChild(medidor); }
+    var pinta = function () {
+      var m = Cena.medida()[0];
+      medidor.textContent = m ? m.fps + ' quadros/s (alvo ' + (m.alvoFps > 45 ? 60 : 30) + ') · ' + m.custoMs + ' ms por quadro · ' + m.itens + ' figuras' : 'sem cena na tela';
+    };
+    medidorT = setInterval(pinta, 500); pinta();
+    return true;
+  };
+  if (RP.teclas) RP.teclas.registrar('F', { ctrl: true, shift: true, oculta: true, descricao: 'Medidor de quadros', grupo: 'Geral', acao: function () { Cena.medidor(); } });
   Cena.SMIN = SMIN; Cena.SMAX = SMAX;
   RP.Cena = Cena;
 })();

@@ -250,6 +250,7 @@ public class AliancaVivaTestes
         Assert.Contains(alvo.Nome, ataque.Texto); Assert.Contains(s.Atk.Nome, ataque.Texto);
         s.AvancarAte(b.FimPrevisto + 1000);
         var fim = Assert.Single(a.Conversa, f => f.Evento == "vitoria");
+        Assert.DoesNotContain(a.Conversa, f => f.Evento == "ataque");   // o resultado toma o lugar do "está sob ataque"
         Assert.Equal(s.Def.Id, fim.ReinoId);
         // pedido de recursos: aparece para todos; só quem recebeu responde na linha
         t.DarRecursos(amigo, 5000, "pedra");

@@ -577,6 +577,7 @@ public static class Governo
     /// <param name="primeiro">Reino cujos locais vêm primeiro (o desafeto).</param>
     public static void Atacar(Mundo m, Reino r, Local castelo, Conduta? c = null, long? soContra = null, long? primeiro = null)
     {
+        const double DiasSemVoltar = 2;
         var p = m.P.IA.Ataque;
         var folga = p.Forca * (c?.FolgaDeAtaque ?? 1);
         if (castelo.Nivel < p.Castelo) return;
@@ -597,6 +598,8 @@ public static class Governo
             var dono = m.Reinos.Obter(e.DonoId);
             if (dono == null || !dono.Ativo || dono.Id == r.Id) continue;
             if (dono.SobEscudo(m.Agora)) continue;                         // respeita o escudo de novato
+            // perdeu para este reino há pouco: a conta que ela fez estava errada, não repete o mesmo ataque (o paciente espera mais)
+            if (r.Persona is { } pe && Convivio.JaFalou(pe, "perdi:" + dono.Id, m.Agora, DiasSemVoltar * (c?.Espera ?? 1))) continue;
             if (porDono[e.DonoId] < castelo.Nivel * p.Porte) continue;     // não ataca quem é muito menor
             if (m.G.Distancia(l.Hex, castelo.Hex) > p.Alcance) continue;
             if (Ataques.SaquesRecentes(m, r, l.Id) > 0) continue;

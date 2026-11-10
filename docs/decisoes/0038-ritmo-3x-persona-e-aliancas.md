@@ -62,3 +62,22 @@ Pedido do dono: rever as alianças e o chat; criar e entrar tem de ser fácil; a
 - **Sem chat geral.** Continua valendo: fora da aliança, só mensageiro. Menção e ponto do mapa são da conversa da aliança.
 - **Aliança na barra do topo** (tecla J), fora do menu Mais: com conversa e não lidas, é uma janela de uso diário.
 - **IA.** `ConvivioAlianca` usa os mesmos serviços dos jogadores e a persona decide: `VontadeDeEntrar` junta sociabilidade, afinidade e rancor; convite é respondido depois de um tempo de pensar; pedir entrada exige sociabilidade, dias de temporada, sorte e vizinhança; fundar é do orgulhoso. Limite de 2 falas por sessão, todas por `Falas.Gerar`. Reforço e ajuda saem da lealdade e do que sobra. Nada disso é automático nem imediato, de propósito: aliança de IA que aceita tudo na hora denuncia a IA.
+
+## O que o diário de 25 dias mostrou
+
+Um mundo só de IA, com fauna, por 25 dias de jogo (teste de diagnóstico, fora do repositório), e uma rodada no navegador com quatro reinos de teste. O que parecia máquina e foi corrigido:
+
+- **Convite repetido.** O líder convidava o mesmo vizinho a cada dois dias, para sempre (9 convites ao mesmo reino em 20 dias). Agora lembra de quem convidou por 20 dias e passa ao vizinho seguinte.
+- **Aliança de uma pessoa só.** Todas as orgulhosas fundavam nos dois primeiros dias em que podiam, e ficavam sozinhas. A fundação ficou escalonada pelo orgulho e mais rara, não acontece se há uma aliança vizinha em que ela entraria, e quem fica sozinha por uma semana desiste.
+- **Resposta à resposta.** Duas IAs sociáveis trocavam "recebi sua mensagem" sem fim. A resposta a uma resposta agora só é lida.
+- **Frases repetidas e sem réplica.** Oito frases de conversa fiada, cada um falando sozinho. Agora são dezoito, nenhuma se repete enquanto está no histórico recente (de quem for), e quem gosta de conversar responde à pergunta do outro. O único fato que a conversa fiada cita é o básico que o reino tem de menos, dado pelo servidor.
+- **Bordão colado na pergunta** ("Como estão as coisas?, certo.") e fecho empilhado com bordão. Um arremate por fala; depois de pergunta, vira frase própria.
+- **Diário de guerra na conversa.** Um membro saqueado quatro vezes num dia gerava oito linhas e oito parabéns. O resultado toma o lugar do "está sob ataque", e cada aliado ganha no máximo um parabéns ou consolo por dia, por pessoa.
+- **O mesmo ataque perdido, de novo.** A saqueadora repetia o ataque que tinha acabado de perder (a estimativa dela não vê os bônus de defesa). Quem perde lembra de quem a venceu por cerca de dois dias.
+- **Agradecer ameaça.** A uma ameaça ou queixa conhecida, a resposta agora é de desafio ou de quem não quer briga, conforme o orgulho.
+- **Acentos.** O servidor roda com globalização invariante, em que `string.Normalize` não decompõe letras: "comer acento" na pressa e reconhecer frases sem acento não funcionavam. Passou a ser por tabela.
+- **Captura no anúncio grande.** São dezenas de capturas de explorador por dia no mundo; como mensagem global virou anúncio pequeno (o dono e o captor continuam com o aviso grande deles).
+
+No cliente: a batalha de outros reinos só aparecia animada dentro da visão atual, embora seja pública (agora aparece sempre); a tropa parada no hexágono da luta era desenhada por cima dela com o rótulo "parada"; a barra do topo estourava a tela a 1280 px com o botão Aliança (agora aperta por etapas); e o aviso de confirmação repetia a notificação do servidor ao entrar numa aliança.
+
+Ficou anotado, sem mexer: os reinos de IA guardam pouca tropa em casa (um castelo de nível 8 defendido só pela milícia caiu para 6 tropas de um reino novo). É assunto de balanceamento da conduta militar da IA, não desta entrega.

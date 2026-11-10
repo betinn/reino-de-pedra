@@ -159,13 +159,7 @@ public static class Nomes
         "Bravo" => "Brava", "Gelado" => "Gelada", "Invicto" => "Invicta", _ => a,
     };
 
-    private static string SemAcento(string s)
-    {
-        var sb = new StringBuilder(s.Length);
-        foreach (var ch in s.Normalize(NormalizationForm.FormD))
-            if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark) sb.Append(ch);
-        return sb.ToString().Normalize(NormalizationForm.FormC);
-    }
+    private static string SemAcento(string s) => FalasPorModelo.SemAcento(s);
 
     private static string Romano(int k) => k switch { 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX", _ => "X" };
 }

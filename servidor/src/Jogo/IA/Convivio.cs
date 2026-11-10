@@ -56,7 +56,8 @@ public static class Convivio
         foreach (var x in recebidas)
         {
             var de = m.Reinos.Obter(x.DeId);
-            var quer = de is { Ativo: true } && responder == null
+            // resposta a uma mensagem dela encerra o assunto: ninguém fica respondendo à resposta da resposta
+            var quer = de is { Ativo: true } && responder == null && x.RespondeA == null
                 && (JaFalou(p, "vou-responder:" + x.Id, m.Agora, 3) || Personas.Sorte(m, r, "responde:" + x.Id).Chance(0.2 + 0.7 * p.Sociabilidade));
             if (quer) { responder = x; continue; }
             x.Lida = true; m.Sujar(x);   // leu e deixou sem resposta
@@ -66,7 +67,11 @@ public static class Convivio
             if (!Mensageiro(m, r)) { Marcar(m, r, "vou-responder:" + responder.Id); return; }   // responde na próxima, quando o mensageiro estiver pronto
             var de = m.Reinos.Obter(responder.DeId)!;
             var rancor = Personas.RancorDe(r, de.Id);
-            var tipo = rancor > 0.45 ? (p.Orgulho > 0.5 ? Falas.Ameaca : Falas.Queixa) : Falas.Resposta;
+            // a quem ela não perdoa, responde atravessado; a uma ameaça ou queixa, devolve ou baixa o tom conforme o orgulho;
+            // ao resto, uma resposta comum
+            var tipo = rancor > 0.45 ? (p.Orgulho > 0.5 ? Falas.Ameaca : Falas.Queixa)
+                : FalasPorModelo.Hostil(responder.Texto) ? (p.Orgulho > 0.55 || p.Agressividade > 0.6 ? Falas.Desafio : Falas.Apaziguar)
+                : Falas.Resposta;
             var texto = Falas.Gerar(m, r, new ContextoFala
             {
                 Tipo = tipo, Canal = Falas.CanalMensageiro, ParaReino = de.Nome, MaxCaracteres = m.P.Mensageiro.Caracteres,
@@ -79,7 +84,7 @@ public static class Convivio
         }
 
         // por conta própria: a quem não perdoa (uma vez a cada alguns dias)
-        if (Personas.Desafeto(r) is long did && m.Reinos.Obter(did) is { Ativo: true } desafeto && !JaFalou(p, "recado:" + did, m.Agora, 4))
+        if (Personas.Desafeto(r) is long did && m.Reinos.Obter(did) is { Ativo: true } desafeto && !JaFalou(p, "recado:" + did, m.Agora, 6))
         {
             if (!Personas.Sorte(m, r, "recado").Chance(0.15 + 0.5 * p.Orgulho)) { Marcar(m, r, "recado:" + did); return; }   // engoliu calado desta vez
             if (!Mensageiro(m, r)) return;

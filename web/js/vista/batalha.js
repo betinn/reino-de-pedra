@@ -84,6 +84,8 @@
   }
 
   /* as figuras da luta, cada uma na sua profundidade: add(x, y, desenho(c)) */
+  /* batalha é notícia pública e ao vivo: as figuras aparecem mesmo onde o reino não tem visão agora */
+  tb.aoVivoSempre = true;
   tb.itensCena = function (o, ce, info, add) {
     var t = info.t, ag = info.agora || RP.agora(), Cs = A.cores(), S = RP.sprites;
     var corA = o.papel === 'ataque' ? Cs.meu : P.hostil, corD = o.papel === 'defesa' ? Cs.meu : o.papel === 'ataque' ? P.hostil : Cs.desconhecido;

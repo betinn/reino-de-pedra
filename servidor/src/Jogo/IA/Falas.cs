@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -54,9 +53,9 @@ public static class Falas
         PedidoReforco = "pedido-reforco", AvisoAtaque = "aviso-ataque", VouAjudar = "vou-ajudar", NaoPossoAjudar = "nao-posso-ajudar",
         PedidoRecurso = "pedido-recurso", MandeiRecurso = "mandei-recurso", Agradecimento = "agradecimento",
         Vitoria = "vitoria", Derrota = "derrota", Parabens = "parabens", Consolo = "consolo",
-        RespostaMencao = "resposta-mencao", Resposta = "resposta",
+        RespostaMencao = "resposta-mencao", Resposta = "resposta", RespostaConversa = "resposta-conversa", RespostaVaga = "resposta-vaga",
         ConviteAlianca = "convite-alianca", AceitaConvite = "aceita-convite", RecusaConvite = "recusa-convite",
-        Ameaca = "ameaca", Queixa = "queixa", PropostaPaz = "proposta-paz", Vizinho = "vizinho";
+        Ameaca = "ameaca", Queixa = "queixa", PropostaPaz = "proposta-paz", Vizinho = "vizinho", Desafio = "desafio", Apaziguar = "apaziguar";
 
     /// <summary>Quem escreve. Padrão: modelos de texto variados pela persona.</summary>
     public static IGeradorDeFala Gerador { get; set; } = new FalasPorModelo();
@@ -105,7 +104,16 @@ public sealed class FalasPorModelo : IGeradorDeFala
         [Falas.Saudacao] = ["Cheguei. Contem comigo.", "Olá a todos, feliz de estar aqui.", "Boa, entrei. O que precisam?", "Salve! Vamos fazer essa aliança valer.", "Oi, pessoal. Qualquer coisa, chamem."],
         [Falas.BoasVindas] = ["Bem-vindo, {para}!", "Boa, {para} chegou.", "Seja bem-vindo, {para}. Precisando, é só falar.", "{para}, bem-vindo à {alianca}.", "Mais um! Bem-vindo, {para}."],
         [Falas.Despedida] = ["Vou sair por hoje. Até amanhã.", "Fico por aqui, boa noite.", "Saindo. Volto mais tarde.", "Até mais tarde, pessoal."],
-        [Falas.ConversaFiada] = ["Alguém mais com pouca pedra?", "Como estão as coisas por aí?", "Madeira nunca chega, não é?", "Tudo calmo do meu lado.", "Alguém viu marcha estranha hoje?", "Boa temporada até aqui.", "Quem está precisando de alguma coisa?", "De olho no mapa por aqui."],
+        // {recurso} é o básico que ela tem de menos agora (fato dado pelo servidor); o resto é pergunta ou comentário sem fato
+        [Falas.ConversaFiada] = ["Alguém mais sem {recurso}?", "Como estão as coisas por aí?", "{Recurso} nunca chega, não é?", "Tudo calmo do meu lado.", "Alguém viu marcha estranha hoje?",
+            "Boa temporada até aqui.", "Quem está precisando de alguma coisa?", "De olho no mapa por aqui.", "Por aqui falta {recurso}. E vocês?", "Alguém já achou ruína antiga?",
+            "Os lobos andam soltos na floresta, cuidado com os exploradores.", "Hoje foi só obra e fila.", "Estou juntando {recurso} para a próxima obra.", "Como está a vizinhança de vocês?",
+            "Mais alguém demorando para subir o castelo?", "Quem sabe de jazida boa por perto?", "Meus exploradores ainda não acharam nada que preste.", "Semana parada por aqui. Melhor assim."],
+        // resposta a uma pergunta de conversa (das de cima): curta, sobre ela mesma
+        [Falas.RespostaConversa] = ["Por aqui tudo certo.", "Nada de estranho do meu lado.", "Tudo em ordem. E por aí?", "Aqui falta {recurso}, de resto bem.", "Tranquilo por enquanto.", "Do meu lado, só obra.",
+            "Também. {Recurso} some rápido.", "Por aqui nada ainda.", "Mesma coisa aqui.", "Nada de novo. Aviso se mudar."],
+        // resposta a uma pergunta que ela não sabe do que trata: não se compromete
+        [Falas.RespostaVaga] = ["Vi agora. Deixa eu olhar aqui e te falo.", "Boa pergunta. Vou ver.", "Não sei te dizer agora.", "Deixa comigo, vejo isso mais tarde.", "Preciso olhar o mapa antes de responder."],
         [Falas.PedidoReforco] = ["Estão atacando {local}! Alguém consegue mandar reforço?", "{atacante} em cima de {local}. Preciso de ajuda.", "Socorro em {local}, {atacante} chegou com tudo.", "Reforço em {local}, quem puder!"],
         [Falas.AvisoAtaque] = ["{para}, estão te atacando em {local}.", "Batalha em {local}! {para}, viu?", "Atenção: {atacante} atacando {para} em {local}.", "{para}, olha {local}. {atacante} está lá."],
         [Falas.VouAjudar] = ["Mandei tropas para {local}.", "Indo. Segura aí, {para}.", "Reforço a caminho de {local}.", "Já mandei o que tinha livre.", "Tropas saindo agora para {local}."],
@@ -124,7 +132,10 @@ public sealed class FalasPorModelo : IGeradorDeFala
         [Falas.RecusaConvite] = ["Agradeço o convite, mas por ora sigo sozinho.", "Obrigado, mas não agora.", "Prefiro ficar por conta própria nesta temporada.", "Não desta vez. Sem ressentimentos."],
         [Falas.Ameaca] = ["Você atacou {local}. Não vou esquecer, {para}.", "{para}, da próxima vez que pisar em {local}, não volta ninguém.", "Guardei seu nome, {para}.", "Isso vai ter volta, {para}."],
         [Falas.Queixa] = ["{para}, por que atacar {local}? Não te fiz nada.", "Somos vizinhos, {para}. Não precisava atacar {local}.", "{para}, deixe {local} em paz e eu deixo você em paz."],
-        [Falas.PropostaPaz] = ["{para}, proponho paz entre nós. Um pacto serve aos dois.", "Chega de briga, {para}? Mando proposta de pacto.", "{para}, tenho mais a ganhar com você em paz. Vamos conversar."],
+        [Falas.PropostaPaz] = ["{para}, proponho paz entre nós. Um pacto serve aos dois.", "Chega de briga, {para}? Um pacto resolve isso.", "{para}, tenho mais a ganhar com você em paz. Vamos conversar."],
+        // resposta a uma ameaça ou queixa recebida: quem é orgulhoso devolve; quem não quer briga baixa o tom
+        [Falas.Desafio] = ["Venha, então.", "Estou esperando, {para}.", "Ameaça não derruba castelo, {para}.", "Fale menos e venha ver, {para}.", "Sei onde você mora também, {para}."],
+        [Falas.Apaziguar] = ["Não quero briga, {para}.", "Recado dado, {para}. Cada um no seu canto.", "Entendido. Não procuro confusão.", "Fica registrado, {para}. Prefiro paz.", "Não era contra você, {para}. Sigo meu caminho."],
         [Falas.Vizinho] = ["Saudações, {para}. Somos vizinhos; prefiro que seja em paz.", "Olá, {para}. Vi seu castelo daqui. Boa sorte na temporada.", "{para}, se quiser trocar recursos, estou por perto.", "Boas, vizinho. Não pretendo te incomodar."],
     };
     private static readonly string[] Genericas = ["Certo.", "Entendido.", "Vamos ver.", "Anotado."];
@@ -132,7 +143,7 @@ public sealed class FalasPorModelo : IGeradorDeFala
     /// <summary>Aberturas e fechos por tom: o que muda de pessoa para pessoa mesmo quando a frase é a mesma.</summary>
     private static readonly Dictionary<string, (string[] abre, string[] fecha)> PorTom = new()
     {
-        ["formal"] = (["", "", "Senhores. ", "Saudações. "], ["", "", " Atenciosamente."]),
+        ["formal"] = (["", "", "Senhores. ", "Saudações. "], ["", "", "", " Grato."]),
         ["seco"] = (["", "", ""], ["", "", ""]),
         ["brincalhão"] = (["", "", "Eita. ", "Opa! "], ["", " haha", " kkk", ""]),
         ["arcaico"] = (["", "Salve. ", "Ouçam: ", ""], ["", " Que os ventos ajudem.", "", " Assim seja."]),
@@ -145,11 +156,11 @@ public sealed class FalasPorModelo : IGeradorDeFala
     public string? Gerar(Persona p, ContextoFala c, Rng s)
     {
         var lista = Modelos.GetValueOrDefault(c.Tipo) ?? Genericas;
-        // não repete a frase que ela mesma disse por último nesta conversa
-        var ultima = c.Historico.LastOrDefault(h => h.Propria)?.Texto;
-        var frase = s.Escolher(lista);
-        for (var i = 0; i < 3 && ultima != null && Parecido(Preencher(frase, c), ultima); i++) frase = s.Escolher(lista);
-        var t = Preencher(frase, c);
+        // não repete o que já está na conversa recente, dela ou dos outros: sorteia entre as frases que ninguém disse há pouco.
+        // Se todas já foram ditas, a conversa fiada cala (ninguém repete o mesmo comentário); os outros assuntos repetem.
+        var livres = lista.Where(f => !c.Historico.Any(h => Contem(h.Texto, Preencher(f, c)))).ToArray();
+        if (livres.Length == 0 && c.Tipo is Falas.ConversaFiada or Falas.RespostaConversa) return null;
+        var t = Preencher(s.Escolher(livres.Length > 0 ? livres : lista), c);
 
         // quem é seco fala só a primeira frase; quem é brincalhão ou caloroso às vezes emenda um bordão
         if (p.Tom == "seco") { var i = t.IndexOfAny(['.', '!', '?']); if (i > 0 && i < t.Length - 1) t = t[..(i + 1)]; }
@@ -157,9 +168,12 @@ public sealed class FalasPorModelo : IGeradorDeFala
         var curto = c.MaxCaracteres - t.Length;
         var a = s.Escolher(abre); var f = s.Escolher(fecha);
         // abertura e fecho só na conversa: numa mensagem a outro reino, "Pessoal!" não cabe
-        if (c.Canal == Falas.CanalAlianca && a.Length + f.Length < curto && (f.Length == 0 || !t.Contains(f.Trim(), StringComparison.OrdinalIgnoreCase))) t = a + t + f;
-        if (p.Bordoes.Count > 0 && s.Chance(0.22) && t.Length + p.Bordoes[0].Length + 2 < c.MaxCaracteres && !t.Contains(p.Bordoes[0], StringComparison.OrdinalIgnoreCase))
-            t = t.TrimEnd('.', '!') + ", " + p.Bordoes[0] + ".";
+        var comFecho = false;
+        if (c.Canal == Falas.CanalAlianca && a.Length + f.Length < curto && (f.Length == 0 || !t.Contains(f.Trim(), StringComparison.OrdinalIgnoreCase))) { t = a + t + f; comFecho = f.Length > 0; }
+        // o bordão não se empilha com o fecho do tom: um arremate por fala
+        if (!comFecho && p.Bordoes.Count > 0 && s.Chance(0.22) && t.Length + p.Bordoes[0].Length + 2 < c.MaxCaracteres && !t.Contains(p.Bordoes[0], StringComparison.OrdinalIgnoreCase))
+            // depois de pergunta ou exclamação o bordão é outra frase ("Tudo bem? Certo."); senão, emenda com vírgula
+            t = t.EndsWith('?') || t.EndsWith('!') ? t + " " + char.ToUpperInvariant(p.Bordoes[0][0]) + p.Bordoes[0][1..] + "." : t.TrimEnd('.') + ", " + p.Bordoes[0] + ".";
 
         // o jeito de digitar: pressa abrevia e come acento; há quem escreva tudo em minúsculas
         if (p.Pressa > 0.3 && s.Chance(p.Pressa))
@@ -178,13 +192,32 @@ public sealed class FalasPorModelo : IGeradorDeFala
         while (t.IndexOf('{') is var i && i >= 0 && t.IndexOf('}', i) is var j && j > i) t = t.Remove(i, j - i + 1);
         return t.Replace("  ", " ").Replace(" ,", ",").Replace(" .", ".").Replace(" !", "!").Replace(" ?", "?").Trim();
     }
-    private static bool Parecido(string a, string b) => string.Equals(SemAcento(a).Trim('.', '!', ' '), SemAcento(b).Trim('.', '!', ' '), StringComparison.OrdinalIgnoreCase);
-    private static string SemAcento(string t)
+    /// <summary>A fala <paramref name="dita"/> traz a frase (com abertura, fecho, minúsculas ou sem acento por cima)?</summary>
+    private static bool Contem(string dita, string frase) =>
+        SemAcento(dita).Contains(SemAcento(frase).Trim('.', '!', '?', ' '), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>A fala é uma das perguntas de conversa que os modelos conhecem? (vale para quem quer que a tenha escrito)</summary>
+    public static bool PerguntaDeConversa(string dita) =>
+        Modelos[Falas.ConversaFiada].Where(f => f.EndsWith('?')).Select(Fixo).Any(f => f.Length >= 6 && Contem(dita, f));
+
+    /// <summary>A mensagem é uma ameaça ou uma queixa das que os modelos conhecem? (vale para quem quer que a tenha escrito)</summary>
+    public static bool Hostil(string dita) =>
+        Modelos[Falas.Ameaca].Concat(Modelos[Falas.Queixa]).Select(Fixo).Any(f => f.Length >= 8 && Contem(dita, f));
+
+    /// <summary>O maior pedaço fixo de um modelo (sem as chaves): "Por aqui falta {recurso}. E vocês?" → "Por aqui falta".</summary>
+    private static string Fixo(string modelo) =>
+        System.Text.RegularExpressions.Regex.Split(modelo, @"\{[^}]*\}").Select(x => x.Trim(' ', '.', '?', '!', ',')).OrderByDescending(x => x.Length).First();
+    private const string ComAcento = "áàâãäéèêëíìîïóòôõöúùûüçñÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑ", SemAcentoDe = "aaaaaeeeeiiiiooooouuuucnAAAAAEEEEIIIIOOOOOUUUUCN";
+
+    /// <summary>
+    /// O texto sem os acentos do português. Por tabela: o servidor roda com globalização invariante, em que
+    /// <c>string.Normalize</c> não decompõe as letras (o jeito antigo, por decomposição, não tirava acento nenhum).
+    /// </summary>
+    public static string SemAcento(string t)
     {
         var sb = new StringBuilder(t.Length);
-        foreach (var ch in t.Normalize(NormalizationForm.FormD))
-            if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark) sb.Append(ch);
-        return sb.ToString().Normalize(NormalizationForm.FormC);
+        foreach (var ch in t) { var i = ComAcento.IndexOf(ch); sb.Append(i >= 0 ? SemAcentoDe[i] : ch); }
+        return sb.ToString();
     }
 
     /// <summary>Assuntos que os modelos sabem escrever.</summary>

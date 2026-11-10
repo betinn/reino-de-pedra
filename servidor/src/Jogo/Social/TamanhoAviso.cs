@@ -32,12 +32,13 @@ namespace ReinoDePedra.Jogo.Social
         public static string Da(Notificacao n) => Valido(n.Tamanho) ? n.Tamanho! : DaCategoria(n.Categoria);
 
         /// <summary>
-        /// Tamanho de uma mensagem global: castelo caído e captura são grandes; o fim de uma batalha é grande quando morreu muita
-        /// gente; o começo de uma batalha entre outros reinos e as perdas pequenas são notícia pequena.
+        /// Tamanho de uma mensagem global: castelo caído é grande; o fim de uma batalha é grande quando morreu muita gente; o
+        /// começo de uma batalha entre outros reinos, as perdas pequenas e o explorador capturado (dezenas por dia no mundo; o
+        /// dono e o captor recebem a notificação grande deles) são notícia pequena.
         /// </summary>
         public static string DaMensagemGlobal(string tipo, int mortos) => tipo switch
         {
-            "queda" or "captura" => Grande,
+            "queda" => Grande,
             "fim-batalha" => mortos >= MorteEmMassa ? Grande : Pequeno,
             _ => Pequeno,
         };

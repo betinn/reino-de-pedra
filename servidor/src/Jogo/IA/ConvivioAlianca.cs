@@ -17,6 +17,10 @@ public static class ConvivioAlianca
 {
     /// <summary>Frases por sessão: gente não enche a conversa.</summary>
     public const int FalasPorSessao = 2;
+    /// <summary>Dias até convidar de novo o mesmo reino (quem recusou ou deixou o convite vencer).</summary>
+    public const double InsistirDias = 20;
+    /// <summary>Dias que quem fundou espera sozinha antes de desistir da aliança.</summary>
+    public const double SozinhaDias = 7;
 
     private static void Tentar(Action a) { try { a(); } catch (RegraException) { } }
     private static Rng Sorte(Mundo m, Reino r, string sal) => Personas.Sorte(m, r, "alianca:" + sal);
@@ -29,6 +33,7 @@ public static class ConvivioAlianca
         if (a == null) { SemAlianca(m, r, p); return; }
         var falas = 0;
         if (a.Membro(r.Id)!.Cargo != Aliancas.Membro) Tentar(() => Gerir(m, r, p, a));
+        if (DesistirSozinha(m, r, p, a)) return;
         Tentar(() => Conversar(m, r, p, a, c, ref falas));
         Aliancas.MarcarLida(m, r);
     }
@@ -86,8 +91,10 @@ public static class ConvivioAlianca
             if (alvo != null) { Tentar(() => Aliancas.PedirEntrada(m, r, alvo.Id)); return; }
         }
         // fundar: quem é orgulhoso e minimamente sociável, quando ninguém o chamou e há poucas alianças por perto
-        if (p.Orgulho >= 0.6 && p.Sociabilidade >= 0.4 && dias >= 2 && !Convivio.JaFalou(p, "fundar", m.Agora, 20)
-            && m.Aliancas.Count < Math.Max(2, m.P.Reinos / m.P.Alianca) && Sorte(m, r, "fundar").Chance(0.12))
+        // (o mais orgulhoso funda cedo; os outros, ao longo das primeiras semanas; nunca com uma aliança vizinha em que entraria)
+        if (p.Orgulho >= 0.6 && p.Sociabilidade >= 0.4 && dias >= 2 + (1 - p.Orgulho) * 12 && !Convivio.JaFalou(p, "fundar", m.Agora, 20)
+            && m.Aliancas.Count < Math.Max(2, m.P.Reinos / m.P.Alianca) && Sorte(m, r, "fundar").Chance(0.08)
+            && !m.Aliancas.Any(a => a.Membros.Count < m.P.Alianca && Proximidade(m, castelo, a) <= m.P.VizinhoHex * 2 && VontadeDeEntrar(m, r, a) >= 0.5))
         {
             Convivio.Marcar(m, r, "fundar");
             var s = Sorte(m, r, "nome");
@@ -123,6 +130,8 @@ public static class ConvivioAlianca
         {
             var alvo = m.Reinos.Obter(f.AlvoId!.Value);
             if (alvo is not { Ativo: true, AliancaId: null } || a.Convites.Any(x => x.ReinoId == alvo.Id) || Personas.RancorDe(r, alvo.Id) > 0.3) continue;
+            if (Convivio.JaFalou(p, "convidei:" + alvo.Id, agora, InsistirDias)) continue;
+            Convivio.Marcar(m, r, "convidei:" + alvo.Id);
             Tentar(() => Aliancas.Convidar(m, r, alvo.Id));
         }
         // convidar por conta própria: de vez em quando, o vizinho mais perto sem aliança, de quem não guarda rancor
@@ -131,11 +140,25 @@ public static class ConvivioAlianca
         var castelo = m.Locais.Obter(r.CasteloId);
         if (castelo == null) return;
         var vizinho = m.Reinos.Where(q => q.Ativo && q.Id != r.Id && q.AliancaId == null && q.AliancaLivreEm <= agora
-                && !a.Convites.Any(x => x.ReinoId == q.Id) && !a.Treguas.Any(t => t.ReinoId == q.Id) && Personas.RancorDe(r, q.Id) <= 0.2)
+                && !a.Convites.Any(x => x.ReinoId == q.Id) && !a.Treguas.Any(t => t.ReinoId == q.Id) && Personas.RancorDe(r, q.Id) <= 0.2
+                && !Convivio.JaFalou(p, "convidei:" + q.Id, agora, InsistirDias))   // quem não respondeu ou recusou não é convidado de novo tão cedo
             .Select(q => (q, l: m.Locais.Obter(q.CasteloId))).Where(x => x.l != null)
             .Select(x => (x.q, d: m.G.Distancia(x.l!.Hex, castelo.Hex))).Where(x => x.d <= m.P.VizinhoHex * 2)
             .OrderBy(x => x.d).ThenBy(x => x.q.Id).Select(x => x.q).FirstOrDefault();
-        if (vizinho != null) Tentar(() => Aliancas.Convidar(m, r, vizinho.Id));
+        if (vizinho != null) { Convivio.Marcar(m, r, "convidei:" + vizinho.Id); Tentar(() => Aliancas.Convidar(m, r, vizinho.Id)); }
+    }
+
+    /// <summary>
+    /// Fundou e ficou sozinha: depois de uma semana sem ninguém entrar, desiste da aliança (ela acaba com o último membro) e
+    /// volta a poder entrar na de outro. Não é no dia exato: decide numa sessão qualquer depois disso.
+    /// </summary>
+    private static bool DesistirSozinha(Mundo m, Reino r, Persona p, Alianca a)
+    {
+        if (a.Membros.Count != 1 || m.Agora - a.CriadaEm < SozinhaDias * T.Dia) return false;
+        if (a.Convites.Any(c => c.Ate > m.Agora) || a.Pedidos.Any(c => c.Ate > m.Agora)) return false;   // ainda espera alguém
+        if (!Sorte(m, r, "desistir").Chance(0.25)) return false;
+        Tentar(() => Aliancas.Sair(m, r));
+        return r.AliancaId == null;
     }
 
     // ---------------------------------------------------------------- pedidos de recursos
@@ -169,7 +192,12 @@ public static class ConvivioAlianca
         var a = Aliancas.De(m, r);
         if (a == null || r.Persona == null) return false;
         situacao.TryAdd("alianca", a.Nome);
-        var historico = a.Conversa.TakeLast(6).Select(f => new FalaAnterior(f.ReinoId != 0 ? m.Reinos.Obter(f.ReinoId)?.Nome ?? "" : a.Nome, f.Texto, f.ReinoId == r.Id && f.Tipo == Aliancas.TipoFala)).ToList();
+        // o básico que ela tem de menos agora: o único fato que a conversa fiada pode citar
+        var guardado = Economia.TotalGuardado(m, r);
+        var falta = new[] { "madeira", "pedra", "comida", "ferro" }.OrderBy(k => guardado.Qtd(k)).First();
+        situacao.TryAdd("recurso", falta);
+        situacao.TryAdd("Recurso", char.ToUpperInvariant(falta[0]) + falta[1..]);
+        var historico = a.Conversa.TakeLast(14).Select(f => new FalaAnterior(f.ReinoId != 0 ? m.Reinos.Obter(f.ReinoId)?.Nome ?? "" : a.Nome, f.Texto, f.ReinoId == r.Id && f.Tipo == Aliancas.TipoFala)).ToList();
         var texto = Falas.Gerar(m, r, new ContextoFala
         {
             Tipo = tipo, Canal = Falas.CanalAlianca, ParaReino = para, Situacao = situacao, Historico = historico, MaxCaracteres = m.P.Social.Conversa.Caracteres,
@@ -216,6 +244,14 @@ public static class ConvivioAlianca
         return true;
     }
 
+    /// <summary>Primeira vez deste assunto nas últimas 24 h? Marca ao perguntar: a chance de falar se joga uma vez por dia.</summary>
+    private static bool UmaVezPorDia(Mundo m, Reino r, string assunto)
+    {
+        if (Convivio.JaFalou(r.Persona!, assunto, m.Agora, 1)) return false;
+        Convivio.Marcar(m, r, assunto);
+        return true;
+    }
+
     private static void Conversar(Mundo m, Reino r, Persona p, Alianca a, Conduta c, ref int falas)
     {
         var ate = a.LidaAte.GetValueOrDefault(r.Id);
@@ -257,17 +293,18 @@ public static class ConvivioAlianca
             var outro = f.AlvoId is long oid ? Nome(oid) : "";
             switch (f.Evento)
             {
+                // cada assunto no máximo uma vez por dia, por pessoa: quem é atacado três vezes no dia não ganha três parabéns
                 case "vitoria" when f.ReinoId == r.Id:
-                    if (s.Chance(0.25 + 0.5 * p.Sociabilidade) && Dizer(m, r, Falas.Vitoria, null, new() { ["local"] = local, ["atacante"] = outro })) falas++;
+                    if (UmaVezPorDia(m, r, "disse-vitoria") && s.Chance(0.25 + 0.5 * p.Sociabilidade) && Dizer(m, r, Falas.Vitoria, null, new() { ["local"] = local, ["atacante"] = outro })) falas++;
                     break;
                 case "derrota" when f.ReinoId == r.Id:
-                    if (s.Chance(0.2 + 0.4 * p.Sociabilidade - 0.3 * (p.Orgulho - 0.5)) && Dizer(m, r, Falas.Derrota, null, new() { ["local"] = local, ["atacante"] = outro })) falas++;
+                    if (UmaVezPorDia(m, r, "disse-derrota") && s.Chance(0.2 + 0.4 * p.Sociabilidade - 0.3 * (p.Orgulho - 0.5)) && Dizer(m, r, Falas.Derrota, null, new() { ["local"] = local, ["atacante"] = outro })) falas++;
                     break;
                 case "vitoria" when f.ReinoId != 0:
-                    if (s.Chance(0.55 * p.Sociabilidade) && Dizer(m, r, Falas.Parabens, Nome(f.ReinoId), new() { ["local"] = local })) falas++;
+                    if (UmaVezPorDia(m, r, "parabens:" + f.ReinoId) && s.Chance(0.55 * p.Sociabilidade) && Dizer(m, r, Falas.Parabens, Nome(f.ReinoId), new() { ["local"] = local })) falas++;
                     break;
                 case "derrota" when f.ReinoId != 0:
-                    if (s.Chance(0.5 * p.Sociabilidade + 0.2 * (p.Lealdade - 0.5)) && Dizer(m, r, Falas.Consolo, Nome(f.ReinoId), new() { ["local"] = local })) falas++;
+                    if (UmaVezPorDia(m, r, "consolo:" + f.ReinoId) && s.Chance(0.5 * p.Sociabilidade + 0.2 * (p.Lealdade - 0.5)) && Dizer(m, r, Falas.Consolo, Nome(f.ReinoId), new() { ["local"] = local })) falas++;
                     break;
                 case "entrou" when f.ReinoId != r.Id && f.ReinoId != 0:
                     if (s.Chance(0.7 * p.Sociabilidade) && Dizer(m, r, Falas.BoasVindas, Nome(f.ReinoId), new())) falas++;
@@ -284,6 +321,16 @@ public static class ConvivioAlianca
         }
         // quem fala com ela na conversa fica um pouco mais próximo
         foreach (var id in novas.Where(f => f.Tipo == Aliancas.TipoFala && f.ReinoId != 0).Select(f => f.ReinoId).Distinct()) Personas.Favor(m, r, id, 0.01);
+        // alguém perguntou algo na conversa e ninguém respondeu ainda: quem gosta de conversar responde. Pergunta de conversa
+        // conhecida, resposta sobre ela mesma; pergunta que ela não sabe do que trata, resposta que não se compromete.
+        var ultimaFala = a.Conversa.LastOrDefault(f => f.Tipo == Aliancas.TipoFala);
+        if (falas == 0 && ultimaFala != null && ultimaFala.ReinoId != r.Id && ultimaFala.Id > ate && ultimaFala.Texto.TrimEnd().EndsWith('?')
+            && ultimaFala.Mencoes.Count == 0 && !ultimaFala.Todos && m.Agora - ultimaFala.Quando < T.Dia)
+        {
+            var conhecida = FalasPorModelo.PerguntaDeConversa(ultimaFala.Texto);
+            if (Sorte(m, r, "pergunta:" + ultimaFala.Id).Chance((conhecida ? 0.2 : 0.1) + 0.6 * p.Sociabilidade)
+                && Dizer(m, r, conhecida ? Falas.RespostaConversa : Falas.RespostaVaga, null, new())) { falas++; Personas.Favor(m, r, ultimaFala.ReinoId, 0.02); }
+        }
         // conversa fiada: raramente, no máximo uma vez por dia, e só quem gosta de conversar
         if (falas == 0 && a.Membros.Count > 1 && !Convivio.JaFalou(p, "fiada", m.Agora, 1) && Sorte(m, r, "fiada").Chance(0.14 * p.Sociabilidade))
         {

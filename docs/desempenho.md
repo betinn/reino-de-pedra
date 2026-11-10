@@ -73,6 +73,8 @@ Com tudo junto (mapa de 312 × 240, vida e coleta da [0028](decisoes/0028-vida-e
 
 ## Cliente: a Vista com muita gente
 
+**Medidor na tela.** Ctrl + Shift + F liga e desliga, no canto de cima à esquerda, a taxa de quadros que o monitor está mostrando de verdade, o alvo (30 ou 60), o custo médio do quadro e quantas figuras há nele. É a forma de conferir o desempenho na máquina de quem joga: num painel de navegador oculto ou coberto o navegador segura os quadros (perto de 1 por segundo), e a medida de lá não vale.
+
 Com mais quadros por pose (12 no que se mexe, eram 8), a população inteira à vista e a batalha desenhada combatente a combatente, o custo do quadro da Vista foi medido de novo. Medição no navegador embutido, 800 × 600, zoom 1,5, sprites já prontos, chamando o quadro direto (o painel estava oculto: é o custo de montar e desenhar o quadro em JavaScript; a taxa de quadros real na tela não foi observada).
 
 | Cena | Itens no quadro | Mediana | p90 | p99 |

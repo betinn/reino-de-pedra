@@ -56,9 +56,13 @@ namespace ReinoDePedra.Jogo.Social
                 var l = rc.LocalId != 0 ? mm.Locais.Obter(rc.LocalId) : null;
                 var onde = l != null ? " em " + l.Nome : "";
                 var def = mm.Reinos.Obter(rc.DefensorId); var atk = mm.Reinos.Obter(rc.AtacanteId);
+                // o resultado toma o lugar da linha "está sob ataque" daquela batalha: a conversa não vira diário de guerra
                 if (def != null && Aliancas.De(mm, def) is { } ad)
+                {
+                    if (l != null && ad.Conversa.RemoveAll(f => f.Evento == "ataque" && f.LocalId == l.Id && f.AlvoId == rc.AtacanteId && f.Quando > mm.Agora - T.Hora) > 0) mm.Sujar(ad);
                     Aliancas.Evento(mm, ad, rc.AtacanteVenceu ? "derrota" : "vitoria",
                         def.Nome + (rc.AtacanteVenceu ? " perdeu a batalha" : " venceu a batalha") + onde + (atk != null ? " contra " + atk.Nome : "") + ".", def.Id, hex: l?.Hex, localId: l?.Id, alvoId: atk?.Id);
+                }
                 if (atk != null && rc.AtacanteVenceu && Aliancas.De(mm, atk) is { } aa)
                     Aliancas.Evento(mm, aa, "vitoria", atk.Nome + " venceu" + onde + (def != null ? ", de " + def.Nome : "") + ".", atk.Id, hex: l?.Hex, alvoId: def?.Id);
             });

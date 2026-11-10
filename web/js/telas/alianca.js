@@ -110,7 +110,7 @@
     var nCons = a.membros.filter(function (x) { return x.cargo === 'conselheiro'; }).length;
     var paraMim = d.pedidosRecursos.filter(function (p) { return !p.minha && p.estado === 'aberta'; }), meus = d.pedidosRecursos.filter(function (p) { return p.minha; });
     var h = '<div class="card card-moldura linha al-topo">' + RP.brasao(a.brasao, { tamanho: 48 }) + '<span style="flex:1;min-width:0"><h2>' + RP.esc(a.nome) + '</h2><small class="fraco">' + a.membros.length + ' de ' + d.limite + ' reinos · você é ' + CARGOS[a.meuCargo].toLowerCase() + '</small></span>' +
-      (lider ? '<button type="button" class="btn btn-p btn-fantasma" data-modo="' + (a.aberta ? 0 : 1) + '" data-dica="' + (a.aberta ? 'Quem pedir, entra na hora. Clique para passar a ser por convite.' : 'Pedidos de entrada esperam você ou um conselheiro. Clique para abrir a aliança.') + '">' + RP.icone('cadeado') + (a.aberta ? 'Aberta' : 'Por convite') + '</button>'
+      (lider ? '<button type="button" class="btn btn-p btn-fantasma" data-alianca-modo="' + (a.aberta ? 0 : 1) + '" data-dica="' + (a.aberta ? 'Quem pedir, entra na hora. Clique para passar a ser por convite.' : 'Pedidos de entrada esperam você ou um conselheiro. Clique para abrir a aliança.') + '">' + RP.icone('cadeado') + (a.aberta ? 'Aberta' : 'Por convite') + '</button>'
         : '<span class="selo' + (a.aberta ? ' selo-info' : '') + '">' + (a.aberta ? 'Aberta' : 'Por convite') + '</span>') + '</div>';
     h += conversaHTML(a, d);
     if (paraMim.length) h += '<div class="secao-titulo">Pedidos para você</div><div class="pilha">' + paraMim.map(pedidoCard).join('') + '</div>';
@@ -208,13 +208,13 @@
           var ab = RP.$('#alianca-aberta', el);
           acao(RP.post('/alianca', { nome: (RP.$('#nome-alianca', el).value || '').trim(), aberta: !!(ab && ab.checked) }), 'Aliança fundada', 'Convide os vizinhos: eles estão logo abaixo.', el); return;
         }
-        if ((b = e.target.closest('[data-convite-aceitar]'))) { acao(RP.post('/aliancas/' + b.getAttribute('data-convite-aceitar') + '/convite/aceitar'), 'Você entrou na aliança', 'A conversa já é sua.', el); return; }
+        if ((b = e.target.closest('[data-convite-aceitar]'))) { acao(RP.post('/aliancas/' + b.getAttribute('data-convite-aceitar') + '/convite/aceitar'), null, null, el); return; }   /* o servidor já avisa "Você entrou na aliança" */
         if ((b = e.target.closest('[data-convite-recusar]'))) { acao(RP.post('/aliancas/' + b.getAttribute('data-convite-recusar') + '/convite/recusar'), 'Convite recusado', null, el); return; }
         if ((b = e.target.closest('[data-pedir-entrada]'))) {
           var aberta = b.getAttribute('data-aberta') === '1';
-          acao(RP.post('/aliancas/' + b.getAttribute('data-pedir-entrada') + '/entrar'), aberta ? 'Você entrou na aliança' : 'Pedido enviado', aberta ? 'A conversa já é sua.' : 'O líder e os conselheiros respondem.', el); return;
+          acao(RP.post('/aliancas/' + b.getAttribute('data-pedir-entrada') + '/entrar'), aberta ? null : 'Pedido enviado', aberta ? null : 'O líder e os conselheiros respondem.', el); return;
         }
-        if ((b = e.target.closest('[data-entrada-aceitar]'))) { acao(RP.post('/alianca/pedidos-entrada/' + b.getAttribute('data-entrada-aceitar') + '/aceitar'), 'Novo membro', null, el); return; }
+        if ((b = e.target.closest('[data-entrada-aceitar]'))) { acao(RP.post('/alianca/pedidos-entrada/' + b.getAttribute('data-entrada-aceitar') + '/aceitar'), null, null, el); return; }   /* o servidor avisa os membros: "X entrou na aliança" */
         if ((b = e.target.closest('[data-entrada-recusar]'))) { acao(RP.post('/alianca/pedidos-entrada/' + b.getAttribute('data-entrada-recusar') + '/recusar'), 'Pedido recusado', null, el); return; }
         if ((b = e.target.closest('[data-convidar]'))) { acao(RP.post('/alianca/convidar', { reinoId: +b.getAttribute('data-convidar') }), 'Convite enviado', 'O reino responde no próprio aviso.', el); return; }
         if ((b = e.target.closest('[data-indicar]'))) { acao(RP.post('/alianca/indicar', { reinoId: +b.getAttribute('data-indicar') }), 'Reino indicado', 'O líder e os conselheiros veem na conversa.', el); return; }
@@ -222,7 +222,7 @@
         if ((b = e.target.closest('[data-proposta-recusar]'))) { acao(RP.post('/propostas/' + b.getAttribute('data-proposta-recusar') + '/recusar'), 'Pedido recusado', 'O aliado é avisado.', el); return; }
         if ((b = e.target.closest('[data-proposta-cancelar]'))) { acao(RP.post('/propostas/' + b.getAttribute('data-proposta-cancelar') + '/cancelar'), 'Pedido cancelado', null, el); return; }
         if ((b = e.target.closest('[data-reforco-volta]'))) { acao(RP.post('/alianca/reforcos/' + b.getAttribute('data-reforco-volta') + '/retornar'), 'Tropas voltando', null, el); return; }
-        if ((b = e.target.closest('[data-modo]'))) { acao(RP.post('/alianca/modo', { aberta: b.getAttribute('data-modo') === '1' }), b.getAttribute('data-modo') === '1' ? 'Aliança aberta' : 'Aliança por convite', null, el); return; }
+        if ((b = e.target.closest('[data-alianca-modo]'))) { acao(RP.post('/alianca/modo', { aberta: b.getAttribute('data-alianca-modo') === '1' }), b.getAttribute('data-alianca-modo') === '1' ? 'Aliança aberta' : 'Aliança por convite', null, el); return; }
         if ((b = e.target.closest('[data-ver-mapa]'))) { verNoMapa(b.getAttribute('data-ver-mapa')); return; }
         if ((b = e.target.closest('[data-reforcar]'))) {
           /* leva ao local no mapa e abre o envio de tropas para lá (o mesmo "Enviar tropas para cá") */
@@ -334,13 +334,13 @@
     if ((b = e.target.closest('[data-al-entrar]'))) {
       var aberta = b.getAttribute('data-aberta') === '1';
       RP.fecharMenu && RP.fecharMenu();
-      acao(RP.post('/aliancas/' + b.getAttribute('data-al-entrar') + '/entrar'), aberta ? 'Você entrou na aliança' : 'Pedido enviado', aberta ? 'A conversa já é sua.' : 'O líder e os conselheiros respondem.'); return;
+      acao(RP.post('/aliancas/' + b.getAttribute('data-al-entrar') + '/entrar'), aberta ? null : 'Pedido enviado', aberta ? null : 'O líder e os conselheiros respondem.'); return;
     }
     if ((b = e.target.closest('[data-al-mostrar]'))) { RP.fecharMenu && RP.fecharMenu(); RP.ir('alianca?ponto=' + b.getAttribute('data-al-mostrar')); return; }
     /* convite e pedido de entrada respondidos no próprio aviso */
     if ((b = e.target.closest('[data-aviso-alianca]'))) {
       var p = b.getAttribute('data-aviso-alianca').split(':'), rota = p[0] === 'convite' ? '/aliancas/' + p[1] + '/convite/' + p[2] : '/alianca/pedidos-entrada/' + p[1] + '/' + p[2];
-      acao(RP.post(rota), p[2] === 'aceitar' ? (p[0] === 'convite' ? 'Você entrou na aliança' : 'Novo membro') : 'Recusado', null);
+      acao(RP.post(rota), p[2] === 'aceitar' ? null : 'Recusado', null);   /* quem aceita recebe o aviso do servidor */
     }
   });
   /* o que a notificação deixa responder sem abrir tela: vira botões no aviso (RP.aviso({ acoes })) */

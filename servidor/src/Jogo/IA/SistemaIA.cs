@@ -39,6 +39,8 @@ public static class SistemaIA
             Combates.AoTerminar.Add((mm, rc) =>
             {
                 if (mm.Reinos.Obter(rc.DefensorId) is { EhIA: true } def) Personas.Ofensa(mm, def, rc.AtacanteId, rc.AtacanteVenceu ? 0.45 : 0.25);
+                // quem atacou e perdeu lembra de quem a venceu: não volta lá tão cedo (Governo.Atacar)
+                if (!rc.AtacanteVenceu && rc.DefensorId != 0 && mm.Reinos.Obter(rc.AtacanteId) is { EhIA: true, Persona: not null } atk) Convivio.Marcar(mm, atk, "perdi:" + rc.DefensorId);
             });
             Exploracao.Capturas.AoCapturar += (mm, p) =>
             {

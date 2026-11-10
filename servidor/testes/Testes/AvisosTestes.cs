@@ -94,7 +94,7 @@ public class AvisosTestes
 
     [Theory]
     [InlineData("queda", 0, "grande")]
-    [InlineData("captura", 0, "grande")]
+    [InlineData("captura", 0, "pequeno")]   // explorador de outros reinos: acontece muitas vezes por dia no mundo; o dono e o captor têm o aviso grande deles
     [InlineData("batalha", 0, "pequeno")]
     [InlineData("fim-batalha", 3, "pequeno")]
     [InlineData("fim-batalha", 10, "grande")]
