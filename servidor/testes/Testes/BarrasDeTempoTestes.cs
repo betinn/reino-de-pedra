@@ -167,8 +167,8 @@ public class BarrasDeTempoTestes
         var (_, r) = await c.Get("reino");
         var ob = Assert.Single(r.GetProperty("filas").GetProperty("obras").EnumerateArray());
         Assert.Equal(partida, ob.GetProperty("materialPartida").GetInt64());
-        // quando o material chega, a obra começa e o campo some
-        await s.Avancar(TimeSpan.FromMinutes(5));
+        // quando o material chega, a obra começa e o campo some (a moradia leva pouco mais de 3 min: olha logo depois da chegada)
+        await s.Avancar(TimeSpan.FromMilliseconds(chega - s.Relogio.Agora + 2000));
         var (_, r2) = await c.Get("reino");
         var ob2 = Assert.Single(r2.GetProperty("filas").GetProperty("obras").EnumerateArray());
         Assert.True(Nulo(ob2, "materialPartida"));

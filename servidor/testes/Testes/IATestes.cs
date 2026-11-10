@@ -210,8 +210,8 @@ public class IATestes(ITestOutputHelper saida)
     [Fact]
     public void IA_media_cresce_no_ritmo_da_simulacao_e_a_ativa_tem_mais_tropas()
     {
-        // metas do modelo (balanceamento/tabelas.md, jogador médio): dia 3 = nível 5, castelo 6, 5 tropas;
-        // dia 7 = 5 locais, nível 7, castelo 7, 6 tropas. O ativo tem 13 tropas no dia 7.
+        // metas do modelo no ritmo 3× (balanceamento/tabelas.md, jogador médio): dia 3 = nível 7, castelo 8, 7 tropas;
+        // dia 7 = 5 locais, nível 9, castelo 9, 10 tropas. O ativo tem 20 tropas no dia 7.
         var t = MundoIA.Novo(criar: false);
         var medios = new[] { "expansionista", "defensivo", "saqueador", "comerciante" }.Select(p => MundoIA.Criar(t, p)).ToList();
         var ativo = MundoIA.Criar(t, "defensivo", "ativo");
@@ -235,13 +235,13 @@ public class IATestes(ITestOutputHelper saida)
                 foreach (var r in medios)
                 {
                     var f = Foto(r);
-                    Assert.InRange(f.nivel, 3.5, 6.5); Assert.InRange(f.castelo, 4, 7); Assert.InRange(f.tropas, 3, 10);
+                    Assert.InRange(f.nivel, 5, 8.5); Assert.InRange(f.castelo, 6, 9); Assert.InRange(f.tropas, 3, 12);
                 }
         }
         foreach (var r in medios)
         {
             var f = Foto(r);
-            Assert.InRange(f.nivel, 4.5, 8); Assert.InRange(f.castelo, 5, 8); Assert.InRange(f.tropas, 4, 14); Assert.InRange(f.locais, 4, 7);
+            Assert.InRange(f.nivel, 6.5, 10); Assert.InRange(f.castelo, 7, 10); Assert.InRange(f.tropas, 4, 18); Assert.InRange(f.locais, 4, 7);
         }
         Assert.True(Foto(ativo).tropas > medios.Max(r => Foto(r).tropas), "o ativo devia ter mais tropas que os médios");
         Assert.True(Foto(fraco).tropas < medios.Min(r => Foto(r).tropas), "o fraco devia ter menos tropas que os médios");

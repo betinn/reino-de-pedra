@@ -557,9 +557,13 @@ public class CombateTestes
         var ct = s.M.Locais[terceiro.CasteloId];
         s.Guarnecer(ct, G(("cavalaria", 5)));
         var e3 = Exercitos.Enviar(s.M, terceiro, ct.Id, G(("cavalaria", 5)), alvo.Hex, OrdemAtacar.Id, false, CombateCenario.Plano());
-        s.AvancarAte(Math.Max(e2.Chegada, Math.Min(e3.Chegada, b.FimPrevisto - 1)));
-        if (e2.Chegada < b.FimPrevisto) Assert.Contains(e2.Id, b.Exercitos);
-        if (e3.Chegada < b.FimPrevisto) Assert.Contains(s.M.Batalhas, x => x.AtacanteId == terceiro.Id && x.Exercitos.Contains(e3.Id) && x.Id != b.Id);
+        // o segundo ataque muda a duração da batalha (não há tempo fixo): primeiro ele chega, depois se vê se o terceiro alcança
+        var antesDoSegundo = b.FimPrevisto;
+        s.AvancarAte(e2.Chegada);
+        if (e2.Chegada < antesDoSegundo) Assert.Contains(e2.Id, b.Exercitos);
+        var fim = b.Encerrada ? s.M.Agora : b.FimPrevisto;
+        s.AvancarAte(Math.Max(s.M.Agora, Math.Min(e3.Chegada, fim - 1)));
+        if (!b.Encerrada && e3.Chegada < fim) Assert.Contains(s.M.Batalhas, x => x.AtacanteId == terceiro.Id && x.Exercitos.Contains(e3.Id) && x.Id != b.Id);
         s.T.AvancarHoras(3);
         Assert.True(s.M.Batalhas.All(x => x.Encerrada));
     }

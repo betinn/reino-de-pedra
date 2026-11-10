@@ -40,5 +40,6 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0035](0035-regiao-dos-reinos-e-poeira-das-marchas.md) | Região de cada reino marcada desde o início e poeira das marchas grandes fora da vista, sem dono nem detalhes; a IA usa as mesmas informações |
 | [0036](0036-mapa-publico-e-convites.md) | Mapa público ao vivo, entrada por convite com link de uso único, feed filtrado no servidor e fim do anonimato. Substitui a 0035 |
 | [0037](0037-filas-aguardam-recursos.md) | Filas aceitam item sem recurso: enfileirar não gasta, o item da vez reserva numa passagem única (`EstadoItem`), o mais antigo tem direito primeiro e o reino reavalia sozinho. Muda a 0010 |
+| [0038](0038-ritmo-3x-persona-e-aliancas.md) | Ritmo 3× pelo balanceamento (o que acelera e o que fica em tempo real), nível máximo 11, batalha sem tempo fixo, posição desenhada das marchas, IA com persona e alianças com vida |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

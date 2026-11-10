@@ -32,6 +32,19 @@ public class FormulasTestes
     }
 
     [Fact]
+    public void Duracao_da_batalha_sem_tempo_fixo()
+    {
+        foreach (var x in Ref("duracaoBatalha").EnumerateArray())
+            Perto(x.GetProperty("seg").GetDouble(), F.DuracaoBatalha(x.GetProperty("tropas").GetDouble(), x.GetProperty("razao").GetDouble()));
+        var b = Balanceamento.Padrao.P.Combate.Batalha;
+        // 50 contra 1 acaba no mínimo; o mesmo número de tropas dura mais quanto mais parecidas as forças; nada passa do teto
+        Assert.True(F.DuracaoBatalha(1, 0.02) < b.MinSeg + 1);
+        Assert.True(F.DuracaoBatalha(20, 0.3) < F.DuracaoBatalha(20, 0.6) && F.DuracaoBatalha(20, 0.6) < F.DuracaoBatalha(20, 1));
+        Assert.True(F.DuracaoBatalha(5, 1) < F.DuracaoBatalha(30, 1));
+        Assert.Equal(b.MaxSeg, F.DuracaoBatalha(100000, 1));
+    }
+
+    [Fact]
     public void Moradia_e_novo_local()
     {
         foreach (var x in Ref("moradia").EnumerateArray())

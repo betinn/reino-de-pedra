@@ -74,6 +74,9 @@ public sealed class ParametrosP
     public int PopInicial { get; init; }
     public double CustoMoradia { get; init; }
     public double MoradiaPasso { get; init; }
+    /// <summary>Tempo de obra da primeira moradia (s); cada moradia já feita soma <see cref="TempoMoradiaPasso"/> disso.</summary>
+    public double TempoMoradia { get; init; }
+    public double TempoMoradiaPasso { get; init; }
     /// <summary>Pessoas por hora com espaço no teto: de PopMinH (teto quase cheio) a PopMaxH (teto vazio), +BonusComida com sobra, até PopMaxH.</summary>
     public double PopMinH { get; init; }
     public double PopMaxH { get; init; }
@@ -340,7 +343,8 @@ public sealed class CombateP
     public double GuardarBatalhaH { get; init; }
     public PortaoP Portao { get; init; } = new();
 }
-public sealed class BatalhaP { public double BaseSeg { get; init; } public double PorTropaSeg { get; init; } public double MaxSeg { get; init; } }
+/// <summary>Duração da batalha, sem tempo fixo: <c>minSeg + porTropaSeg × tropas do lado mais fraco × (força menor / força maior)^expRazao</c>, até <c>maxSeg</c>.</summary>
+public sealed class BatalhaP { public double MinSeg { get; init; } public double PorTropaSeg { get; init; } public double ExpRazao { get; init; } public double MaxSeg { get; init; } }
 public sealed class PortaoP
 {
     public double CustoN1 { get; init; }

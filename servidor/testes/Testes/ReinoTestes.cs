@@ -86,10 +86,10 @@ public class ReinoTestes
         var r = t.NovoReino();
         var item = Obras.Melhorar(t.M, r, r.CasteloId);
         Assert.True(item.Iniciado);
-        Assert.Equal(240, item.DuracaoSeg);   // nível 2: 2 min × 2 (castelo)
-        t.AvancarMin(3.9);
+        Assert.Equal(80, item.DuracaoSeg);   // nível 2: 40 s × 2 (castelo), no ritmo 3×
+        t.AvancarMin(1.3);
         Assert.Equal(1, t.M.Locais[r.CasteloId].Nivel);
-        t.AvancarMin(0.2);
+        t.AvancarMin(0.1);
         Assert.Equal(2, t.M.Locais[r.CasteloId].Nivel);
     }
 
