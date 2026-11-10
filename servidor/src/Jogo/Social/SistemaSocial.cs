@@ -42,6 +42,26 @@ namespace ReinoDePedra.Jogo.Social
             Remessas.AoTerminar[Comercio.PactoT] = Comercio.PagamentoPacto;
             Remessas.AoTerminar[Comercio.Resgate] = Comercio.PagamentoResgate;
             Capturas.AoPedirResgate += (mm, p) => mm.Avisar(p.DonoId, "comercio");
+
+            // a conversa da aliança tem vida: o jogo escreve nela o que acontece com os membros. Só o que os aliados já
+            // sabem (aliados veem as marchas e os locais uns dos outros, e a batalha é pública)
+            Batalhas.AoComecar += (mm, b, l) =>
+            {
+                if (Aliancas.DoReino(mm, b.DefensorId) is not { } a) return;
+                var def = mm.Reinos.Obter(b.DefensorId); var atk = mm.Reinos.Obter(b.AtacanteId);
+                Aliancas.Evento(mm, a, "ataque", (def?.Nome ?? "Um aliado") + " está sob ataque em " + l.Nome + (atk != null ? ", de " + atk.Nome : "") + ".", b.DefensorId, hex: l.Hex, localId: l.Id, alvoId: b.AtacanteId);
+            };
+            Combates.AoTerminar.Add((mm, rc) =>
+            {
+                var l = rc.LocalId != 0 ? mm.Locais.Obter(rc.LocalId) : null;
+                var onde = l != null ? " em " + l.Nome : "";
+                var def = mm.Reinos.Obter(rc.DefensorId); var atk = mm.Reinos.Obter(rc.AtacanteId);
+                if (def != null && Aliancas.De(mm, def) is { } ad)
+                    Aliancas.Evento(mm, ad, rc.AtacanteVenceu ? "derrota" : "vitoria",
+                        def.Nome + (rc.AtacanteVenceu ? " perdeu a batalha" : " venceu a batalha") + onde + (atk != null ? " contra " + atk.Nome : "") + ".", def.Id, hex: l?.Hex, localId: l?.Id, alvoId: atk?.Id);
+                if (atk != null && rc.AtacanteVenceu && Aliancas.De(mm, atk) is { } aa)
+                    Aliancas.Evento(mm, aa, "vitoria", atk.Nome + " venceu" + onde + (def != null ? ", de " + def.Nome : "") + ".", atk.Id, hex: l?.Hex, alvoId: def?.Id);
+            });
         });
 
         private static string? Bloqueio(Mundo m, Reino a, Reino b) =>

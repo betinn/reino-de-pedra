@@ -634,7 +634,9 @@
    },
    "conversa": {
     "caracteres": 200,
-    "guardar": 100
+    "guardar": 200,
+    "recado": 120,
+    "repetirPedidoSeg": 300
    },
    "caixa": 100,
    "propostaH": 24,

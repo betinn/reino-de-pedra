@@ -114,9 +114,3 @@ public static class Convivio
         return d;
     }
 }
-
-/// <summary>A parte da aliança do convívio da IA (preenchida com as alianças).</summary>
-public static class ConvivioAlianca
-{
-    public static void Sessao(Mundo m, Reino r, Conduta c) { }
-}

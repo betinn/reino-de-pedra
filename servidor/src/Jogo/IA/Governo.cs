@@ -49,7 +49,7 @@ public static class Governo
     {
         var antes = m.ExigirRecursos;
         m.ExigirRecursos = true;
-        try { Economia.Atualizar(m, r); Tentar(() => Defender(m, r, c)); }
+        try { Economia.Atualizar(m, r); Tentar(() => Defender(m, r, c)); Tentar(() => ConvivioAlianca.AoSerAtacada(m, r)); }
         finally { m.ExigirRecursos = antes; }
     }
 
@@ -71,7 +71,7 @@ public static class Governo
         {
             if (r.EhIA) { Personas.Envelhecer(m, r); DesistirDoParado(m, r, c.Espera); }
             Nevoas.VisiveisAgora(m, r.Id);   // olha o mapa, como o jogador ao abrir o jogo
-            if (Lembra("defender")) Tentar(() => Defender(m, r, c));
+            if (Lembra("defender")) { Tentar(() => Defender(m, r, c)); if (r.EhIA) Tentar(() => ConvivioAlianca.AoSerAtacada(m, r)); }
             if (!c.Regencia && Lembra("comercio")) Tentar(() => Comerciante.Responder(m, r, c));
             if (Lembra("construir")) Tentar(() => Construir(m, r, c, castelo));
             if (Lembra("exploradores")) Tentar(() => ExploradoresParados(m, r, castelo, c.Regencia));

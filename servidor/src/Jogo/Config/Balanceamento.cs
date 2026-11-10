@@ -488,7 +488,8 @@ public sealed class SocialP
     public BandeirasP Bandeiras { get; init; } = new();
 }
 public sealed class FaixaP { public int Min { get; init; } public int Max { get; init; } }
-public sealed class ConversaP { public int Caracteres { get; init; } public int Guardar { get; init; } }
+/// <summary>Conversa da aliança: tamanho da fala, quantas linhas ficam guardadas, tamanho do recado fixado e de quanto em quanto tempo o mesmo pedido de reforço pode se repetir.</summary>
+public sealed class ConversaP { public int Caracteres { get; init; } public int Guardar { get; init; } public int Recado { get; init; } public double RepetirPedidoSeg { get; init; } }
 public sealed class BandeirasP { public int Ativas { get; init; } public int Minimo { get; init; } public int Caracteres { get; init; } }
 
 public sealed class SalgadeiraP { public Dictionary<string, double> Custo { get; init; } = new(); public double Tempo { get; init; } public double Horas { get; init; } }

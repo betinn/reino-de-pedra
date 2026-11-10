@@ -19,7 +19,9 @@
     } else {
       /* o servidor diz o tamanho (grande ou pequeno) e a ordem na fila de cada notícia */
       RP.aviso({ titulo: n.titulo, texto: n.texto || '', icone: n.categoria === 'ataques' ? 'alerta' : 'sino', tipo: n.categoria === 'ataques' ? 'perigo' : 'info', link: n.link, anuncio: true,
-        pequeno: n.tamanho === 'pequeno', prioridade: n.prioridade });
+        pequeno: n.tamanho === 'pequeno', prioridade: n.prioridade,
+        /* notícia que se responde no próprio aviso (convite de aliança, pedido de entrada): os botões vêm de quem cuida dela */
+        acoes: n.acao && RP.acoesDeAviso && RP.acoesDeAviso[n.acao.tipo] ? RP.acoesDeAviso[n.acao.tipo](n.acao) : null });
     }
   });
 

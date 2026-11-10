@@ -151,6 +151,8 @@ public static class Escavacoes
             },
             ["hex"] = ru.Hex,
         }, "reliquias", "Relíquia encontrada: " + rel.Nome, TamanhoAviso.Grande);
+        // na conversa da aliança: achou uma relíquia (o tipo continua sendo só de quem a tem)
+        if (r != null && Aliancas.De(m, r) is { } ali) Aliancas.Evento(m, ali, "reliquia", r.Nome + " encontrou uma relíquia numa ruína antiga.", r.Id, hex: ru.Hex);
         if (dest == null) { ex.Retornar(m); return; }
         var aqui = ex.HexEm(m.Agora);
         if (dest.Hex == aqui) { ex.EntrarNoLocal(m, dest); return; }

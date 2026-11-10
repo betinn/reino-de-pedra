@@ -7,7 +7,10 @@ using ReinoDePedra.Jogo.Social;
 
 namespace ReinoDePedra.Api.Endpoints;
 
-public sealed record PedidoCriarAlianca(string? Nome, Brasao? Brasao);
+public sealed record PedidoCriarAlianca(string? Nome, Brasao? Brasao, bool Aberta = false);
+public sealed record PedidoModoAlianca(bool Aberta);
+public sealed record PedidoFalaAlianca(string? Texto, int? Hex);
+public sealed record PedidoLocal(long LocalId);
 public sealed record PedidoReinoAlvo(long ReinoId);
 public sealed record PedidoTexto(string? Texto);
 public sealed record PedidoRecursos(long AliadoId, Dictionary<string, double>? Recursos, long? LocalId, string? Recado);
@@ -33,7 +36,17 @@ public sealed class ModuloSocial : IModuloApi
         // ---------------------------------------------------------------- aliança
         conta.MapGet("/alianca", (HttpContext ctx, Motor motor) => Com(ctx, motor, VisaoSocial.Alianca));
         conta.MapPost("/alianca", (PedidoCriarAlianca p, HttpContext ctx, Motor motor) =>
-            Com(ctx, motor, (m, r) => { Aliancas.Criar(m, r, p.Nome, p.Brasao); return VisaoSocial.Alianca(m, r); }, 201));
+            Com(ctx, motor, (m, r) => { Aliancas.Criar(m, r, p.Nome, p.Brasao, p.Aberta); return VisaoSocial.Alianca(m, r); }, 201));
+        conta.MapPost("/alianca/modo", (PedidoModoAlianca p, HttpContext ctx, Motor motor) =>
+            Com(ctx, motor, (m, r) => { Aliancas.DefinirModo(m, r, p.Aberta); return null; }));
+        conta.MapPost("/alianca/recado", (PedidoTexto p, HttpContext ctx, Motor motor) =>
+            Com(ctx, motor, (m, r) => { Aliancas.Fixar(m, r, p.Texto); return null; }));
+        conta.MapPost("/alianca/indicar", (PedidoReinoAlvo p, HttpContext ctx, Motor motor) =>
+            Com(ctx, motor, (m, r) => { Aliancas.Indicar(m, r, p.ReinoId); return null; }));
+        conta.MapPost("/alianca/reforco", (PedidoLocal p, HttpContext ctx, Motor motor) =>
+            Com(ctx, motor, (m, r) => { var f = Aliancas.PedirReforco(m, r, p.LocalId); return new { f.Id }; }, 201));
+        conta.MapPost("/alianca/conversa/lida", (HttpContext ctx, Motor motor) =>
+            Com(ctx, motor, (m, r) => { Aliancas.MarcarLida(m, r); return null; }));
         conta.MapPost("/alianca/convidar", (PedidoReinoAlvo p, HttpContext ctx, Motor motor) =>
             Com(ctx, motor, (m, r) => { Aliancas.Convidar(m, r, p.ReinoId); return null; }));
         conta.MapPost("/aliancas/{aid:long}/convite/{acao}", (long aid, string acao, HttpContext ctx, Motor motor) =>
@@ -62,13 +75,14 @@ public sealed class ModuloSocial : IModuloApi
                     case "promover": Aliancas.Promover(m, r, rid); break;
                     case "rebaixar": Aliancas.Rebaixar(m, r, rid); break;
                     case "expulsar": Aliancas.Expulsar(m, r, rid); break;
+                    case "lider": Aliancas.PassarLideranca(m, r, rid); break;
                     default: throw new RegraException("Ação desconhecida.");
                 }
                 return null;
             }));
         conta.MapPost("/alianca/sair", (HttpContext ctx, Motor motor) => Com(ctx, motor, (m, r) => { Aliancas.Sair(m, r); return null; }));
-        conta.MapPost("/alianca/conversa", (PedidoTexto p, HttpContext ctx, Motor motor) =>
-            Com(ctx, motor, (m, r) => { var f = Aliancas.Falar(m, r, p.Texto); return new { f.Id, f.Texto, f.Quando }; }, 201));
+        conta.MapPost("/alianca/conversa", (PedidoFalaAlianca p, HttpContext ctx, Motor motor) =>
+            Com(ctx, motor, (m, r) => { var f = Aliancas.Falar(m, r, p.Texto, p.Hex); return new { f.Id, f.Texto, f.Quando }; }, 201));
         conta.MapPost("/alianca/pedidos", (PedidoRecursos p, HttpContext ctx, Motor motor) =>
             Com(ctx, motor, (m, r) => VisaoSocial.Proposta(m, r, Comercio.PedirRecursos(m, r, p.AliadoId, p.Recursos, p.LocalId, p.Recado)), 201));
         conta.MapPost("/alianca/reforcos/{localId:long}/retornar", (long localId, HttpContext ctx, Motor motor) =>
@@ -150,7 +164,7 @@ public static class ExtrasSocial
             var agora = mm.Agora;
             d["social"] = new
             {
-                alianca = a == null ? null : new { a.Id, a.Nome, a.Brasao, cargo, membros = a.Membros.Count },
+                alianca = a == null ? null : new { a.Id, a.Nome, a.Brasao, cargo, membros = a.Membros.Count, naoLidas = Aliancas.NaoLidas(a, r.Id), a.Aberta },
                 convites = Aliancas.ConvitesPara(mm, r.Id).Count(),
                 pedidosEntrada = a != null && cargo != Aliancas.Membro ? a.Pedidos.Count(c => c.Ate > agora) : 0,
                 pedidosRecursos = Comercio.Abertas(mm, r.Id).Count(p => p.Tipo == Comercio.Pedido),

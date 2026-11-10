@@ -9,6 +9,29 @@
 /* conversa da aliança: lista rolável, mais recente embaixo */
 .conversa .conversa-lista { max-height: 320px; overflow-y: auto; overscroll-behavior: contain; padding-right: var(--esp-1); }
 .conversa-lista li > span { min-width: 0; overflow-wrap: anywhere; }
+/* fala de membro e linha de sistema (o que acontece na aliança): a de sistema é mais apagada, com ícone, sem brasão */
+.conversa-lista li.conv-evento { color: var(--cor-texto-2); align-items: flex-start; padding-left: 2px; }
+.conversa-lista li.conv-evento > .ico { flex: none; margin-top: 2px; color: var(--cor-info); }
+.conversa-lista li.conv-ataque > .ico, .conversa-lista li.conv-derrota > .ico { color: var(--cor-perigo); }
+.conversa-lista li.conv-ataque .conv-texto { color: var(--cor-texto); font-weight: 600; }
+.conversa-lista li.conv-vitoria > .ico, .conversa-lista li.conv-entrou > .ico, .conversa-lista li.conv-ajuda > .ico { color: var(--cor-sucesso); }
+.conversa-lista li.conv-reliquia > .ico, .conversa-lista li.conv-lider > .ico, .conversa-lista li.conv-cargo > .ico { color: var(--cor-destaque); }
+.conversa-lista li.conv-mencao { background: color-mix(in srgb, var(--cor-destaque) 12%, transparent); border-radius: var(--raio-2); padding: var(--esp-1); }
+.conversa-lista li.conv-nova { box-shadow: inset 2px 0 0 var(--cor-info); padding-left: var(--esp-2); }
+.conversa-lista li.minha.conv-nova { box-shadow: none; }
+.conversa-lista .mencao { color: var(--cor-destaque); font-weight: 600; }
+.conv-acoes { display: flex; flex-wrap: wrap; gap: var(--esp-1); margin-top: var(--esp-1); }
+.conversa-lista li.minha .conv-acoes { justify-content: flex-end; }
+/* recado do líder, fixo no topo da conversa */
+.conv-recado { display: flex; gap: var(--esp-2); align-items: flex-start; padding: var(--esp-2); font-size: var(--fs-2); border-radius: var(--raio-2);
+  background: color-mix(in srgb, var(--cor-destaque) 10%, transparent); border: 1px solid color-mix(in srgb, var(--cor-destaque) 40%, transparent); }
+.conv-recado > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.conv-recado > .ico { flex: none; color: var(--cor-destaque); margin-top: 2px; }
+.conv-recado-novo { align-self: flex-start; }
+.conv-ponto { display: flex; align-items: center; gap: var(--esp-2); font-size: var(--fs-2); color: var(--cor-info); }
+.conv-ponto > span { flex: 1; }
+.conv-rapidos { display: flex; flex-wrap: wrap; gap: var(--esp-1); }
+.al-topo h2 { overflow-wrap: anywhere; }
 
 /* mensagem nova: filete de destaque */
 .msg-card.nova { border-color: color-mix(in srgb, var(--cor-info) 55%, transparent); }

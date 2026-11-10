@@ -32,13 +32,32 @@ namespace ReinoDePedra.Jogo.Social
         public string Como { get; set; } = "saiu";
     }
 
-    /// <summary>Uma mensagem da conversa da aliança (o único chat do jogo).</summary>
+    /// <summary>
+    /// Uma linha da conversa da aliança (o único chat do jogo): a fala de um membro ou um evento da aliança (alguém entrou,
+    /// um aliado está sob ataque, um pedido de recursos...), que o jogo escreve na conversa para ela ter vida.
+    /// </summary>
     public sealed class FalaAlianca
     {
         public long Id { get; set; }
+        /// <summary>Quem falou, ou de quem é o evento (0: a própria aliança).</summary>
         public long ReinoId { get; set; }
         public string Texto { get; set; } = "";
         public long Quando { get; set; }
+        /// <summary>"fala" (um membro escreveu) ou "evento" (o jogo registrou).</summary>
+        public string Tipo { get; set; } = Aliancas.TipoFala;
+        /// <summary>No evento, o que aconteceu: entrou, saiu, expulso, cargo, lider, modo, convite, indicacao, ataque, vitoria, derrota, pedido-recursos, ajuda, reforco, pedido-reforco, reliquia.</summary>
+        public string? Evento { get; set; }
+        /// <summary>Hexágono do mapa a que a linha se refere ("mostrar à aliança", local atacado): clicar centra o mapa lá.</summary>
+        public int? Hex { get; set; }
+        public long? LocalId { get; set; }
+        /// <summary>Pedido de recursos da linha (o destinatário responde na própria linha).</summary>
+        public long? PropostaId { get; set; }
+        /// <summary>Outro reino da linha (o indicado, o convidado, a quem se pede).</summary>
+        public long? AlvoId { get; set; }
+        /// <summary>Reinos mencionados com @.</summary>
+        public List<long> Mencoes { get; set; } = new();
+        /// <summary>@todos (só líder e conselheiros).</summary>
+        public bool Todos { get; set; }
     }
 
     /// <summary>
@@ -57,6 +76,13 @@ namespace ReinoDePedra.Jogo.Social
         public List<TreguaAlianca> Treguas { get; set; } = new();
         public List<FalaAlianca> Conversa { get; set; } = new();
         public long UltimaFala { get; set; }
+        /// <summary>Aberta: quem pede para entrar entra na hora. Por convite (padrão): o pedido espera líder ou conselheiro.</summary>
+        public bool Aberta { get; set; }
+        /// <summary>Recado fixado pelo líder no topo da conversa.</summary>
+        public string Recado { get; set; } = "";
+        public long RecadoEm { get; set; }
+        /// <summary>Até que linha cada membro já leu (para o contador de não lidas).</summary>
+        public Dictionary<long, long> LidaAte { get; set; } = new();
 
         public MembroAlianca? Membro(long reinoId) => Membros.FirstOrDefault(x => x.ReinoId == reinoId);
         public MembroAlianca? Lider => Membros.FirstOrDefault(x => x.Cargo == Aliancas.Lider);
@@ -65,6 +91,9 @@ namespace ReinoDePedra.Jogo.Social
     public static partial class Aliancas
     {
         public const string Lider = "lider", Conselheiro = "conselheiro", Membro = "membro";
+        public const string TipoFala = "fala", TipoEvento = "evento";
+        /// <summary>Categoria de notificação da conversa (o jogador liga e desliga o aviso de fala nova; a menção avisa sempre).</summary>
+        public const string CategoriaConversa = "conversa";
 
         [GeneratedRegex(@"^[\p{L}\p{N}][\p{L}\p{M}\p{N} '\-]*[\p{L}\p{M}\p{N}]$")]
         private static partial Regex NomeValido();
@@ -120,7 +149,7 @@ namespace ReinoDePedra.Jogo.Social
 
         // ---------------------------------------------------------------- criar, convidar, pedir para entrar
 
-        public static Alianca Criar(Mundo m, Reino r, string? nome, Brasao? brasao = null)
+        public static Alianca Criar(Mundo m, Reino r, string? nome, Brasao? brasao = null, bool aberta = false)
         {
             PodeEntrar(m, r);
             nome = NormalizarNome(nome);
@@ -131,11 +160,12 @@ namespace ReinoDePedra.Jogo.Social
             if (brasao != null && !brasao.Valido()) throw new RegraException("Brasão inválido.");
             var a = m.Aliancas.Adicionar(new Alianca
             {
-                Nome = nome, Brasao = brasao ?? Brasao.Aleatorio(m.Sorte), CriadaEm = m.Agora,
+                Nome = nome, Brasao = brasao ?? Brasao.Aleatorio(m.Sorte), CriadaEm = m.Agora, Aberta = aberta,
                 Membros = [new MembroAlianca { ReinoId = r.Id, Cargo = Lider, Desde = m.Agora }],
             });
             r.AliancaId = a.Id; m.Sujar(r);
             TirarPendencias(m, r, a.Id);
+            Evento(m, a, "fundou", r.Nome + " fundou a aliança.", r.Id);
             m.Avisar(r.Id, "alianca"); m.Avisar(r.Id, "reino");
             return a;
         }
@@ -154,27 +184,35 @@ namespace ReinoDePedra.Jogo.Social
             if (a.Convites.Any(c => c.ReinoId == alvoId)) throw new RegraException("Esse reino já foi convidado.");
             var c = new ConviteAlianca { ReinoId = alvoId, PorId = r.Id, Quando = m.Agora, Ate = m.Agora + T.DeHoras(m.P.Social.PropostaH) };
             a.Convites.Add(c); m.Sujar(a);
-            Registros.Notificar(m, alvo.Id, "alianca", "Convite para a aliança " + a.Nome, r.Nome + " convidou seu reino.", "alianca");
+            // o convite se responde no próprio aviso (Entrar / Recusar), sem abrir tela
+            Registros.Notificar(m, alvo.Id, "alianca", "Convite para a aliança " + a.Nome, r.Nome + " convidou seu reino.", "alianca",
+                acao: new System.Text.Json.Nodes.JsonObject { ["tipo"] = "convite-alianca", ["id"] = a.Id });
             m.Avisar(alvo.Id, "alianca");
-            AvisarMembros(m, a);
+            Evento(m, a, "convite", r.Nome + " convidou " + alvo.Nome + ".", r.Id, alvoId: alvo.Id);
             return c;
         }
 
-        /// <summary>Um reino pede para entrar numa aliança.</summary>
-        public static ConviteAlianca PedirEntrada(Mundo m, Reino r, long aliancaId)
+        /// <summary>
+        /// Um reino pede para entrar numa aliança. Aliança aberta: entra na hora (devolve null). Por convite: o pedido espera
+        /// líder ou conselheiro, que respondem no próprio aviso.
+        /// </summary>
+        public static ConviteAlianca? PedirEntrada(Mundo m, Reino r, long aliancaId)
         {
             PodeEntrar(m, r);
             var a = m.Aliancas.Obter(aliancaId) ?? throw new RegraException("Aliança não encontrada.", 404);
             Podar(m, a);
             if (a.Membros.Count >= m.P.Alianca) throw new RegraException($"A aliança já tem {m.P.Alianca} reinos, o máximo.");
+            if (a.Treguas.Any(t => t.ReinoId == r.Id && t.Como == "expulso")) throw new RegraException("Você foi expulso desta aliança há pouco.");
+            if (a.Aberta) { Entrar(m, a, r); return null; }
             if (a.Pedidos.Any(c => c.ReinoId == r.Id)) throw new RegraException("Você já pediu para entrar.");
             var c = new ConviteAlianca { ReinoId = r.Id, PorId = r.Id, Quando = m.Agora, Ate = m.Agora + T.DeHoras(m.P.Social.PropostaH) };
             a.Pedidos.Add(c); m.Sujar(a);
             foreach (var x in a.Membros.Where(x => x.Cargo != Membro))
             {
-                Registros.Notificar(m, x.ReinoId, "alianca", r.Nome + " pede para entrar", "Aceite ou recuse em Aliança.", "alianca");
+                Registros.Notificar(m, x.ReinoId, "alianca", r.Nome + " pede para entrar", "Aceite ou recuse aqui mesmo.", "alianca",
+                    acao: new System.Text.Json.Nodes.JsonObject { ["tipo"] = "pedido-entrada", ["id"] = r.Id });
             }
-            AvisarMembros(m, a);
+            Evento(m, a, "pedido-entrada", r.Nome + " pede para entrar.", r.Id, alvoId: r.Id);
             m.Avisar(r.Id, "alianca");
             return c;
         }
@@ -251,7 +289,9 @@ namespace ReinoDePedra.Jogo.Social
             if (a.Membros.Count >= m.P.Alianca) throw new RegraException($"A aliança já tem {m.P.Alianca} reinos, o máximo.");
             a.Membros.Add(new MembroAlianca { ReinoId = r.Id, Cargo = Membro, Desde = m.Agora });
             r.AliancaId = a.Id; m.Sujar(r); m.Sujar(a);
+            a.LidaAte[r.Id] = a.UltimaFala;   // a conversa de antes não conta como não lida
             TirarPendencias(m, r, a.Id);
+            Evento(m, a, "entrou", r.Nome + " entrou na aliança.", r.Id);
             NotificarMembros(m, a, r.Nome + " entrou na aliança", a.Membros.Count + " de " + m.P.Alianca + " reinos.", r.Id);
             Registros.Notificar(m, r.Id, "alianca", "Você entrou na aliança " + a.Nome, "Aliados pedem recursos, reforçam uns aos outros e conversam.", "alianca");
             foreach (var x in a.Membros) { m.Avisar(x.ReinoId, "alianca"); m.Avisar(x.ReinoId, "mapa"); m.Avisar(x.ReinoId, "reino"); }
@@ -267,6 +307,7 @@ namespace ReinoDePedra.Jogo.Social
             var eu = a.Membro(r.Id)!;
             var ate = m.Agora + T.DeHoras(m.P.TreguaSaidaH);
             a.Membros.Remove(eu);
+            a.LidaAte.Remove(r.Id);
             r.AliancaId = null; r.AliancaLivreEm = ate; m.Sujar(r);
             foreach (var outro in Membros(m, a)) Reforcos.RetornarEntre(m, r, outro);
             if (a.Membros.Count == 0)
@@ -277,6 +318,7 @@ namespace ReinoDePedra.Jogo.Social
             else
             {
                 a.Treguas.Add(new TreguaAlianca { ReinoId = r.Id, Ate = ate, Como = como });
+                Evento(m, a, como == "expulso" ? "expulso" : "saiu", r.Nome + (como == "expulso" ? " foi expulso." : " saiu da aliança."), r.Id);
                 if (eu.Cargo == Lider) Sucessao(m, a);
                 m.Sujar(a);
                 var txt = "Trégua de " + m.P.TreguaSaidaH + " h: nenhum lado ataca o outro.";
@@ -297,11 +339,81 @@ namespace ReinoDePedra.Jogo.Social
             return alvo;
         }
 
+        /// <summary>O líder expulsa qualquer membro; o conselheiro, só quem é membro comum.</summary>
         public static void Expulsar(Mundo m, Reino r, long alvoId)
         {
             var a = Minha(m, r);
-            Cargo(m, r, a, alvoId, true);
+            var eu = a.Membro(r.Id)!;
+            if (eu.Cargo == Membro) throw new RegraException("Só o líder e os conselheiros expulsam.");
+            var alvo = Cargo(m, r, a, alvoId, false);
+            if (eu.Cargo == Conselheiro && alvo.Cargo != Membro) throw new RegraException("Conselheiro só expulsa membro comum.");
             Sair(m, m.Reinos[alvoId], "expulso");
+        }
+
+        /// <summary>O líder passa a liderança a outro membro e vira conselheiro (ou membro, se não há vaga de conselheiro).</summary>
+        public static void PassarLideranca(Mundo m, Reino r, long alvoId)
+        {
+            var a = Minha(m, r);
+            var novo = Cargo(m, r, a, alvoId, true);
+            var eu = a.Membro(r.Id)!;
+            var eraConselheiro = novo.Cargo == Conselheiro;
+            novo.Cargo = Lider;
+            eu.Cargo = eraConselheiro || a.Membros.Count(y => y.Cargo == Conselheiro) < m.P.Social.Conselheiros ? Conselheiro : Membro;
+            m.Sujar(a);
+            var nome = m.Reinos.Obter(alvoId)?.Nome ?? "";
+            Registros.Notificar(m, alvoId, "alianca", "Você agora lidera a " + a.Nome, r.Nome + " passou a liderança.", "alianca");
+            Evento(m, a, "lider", r.Nome + " passou a liderança a " + nome + ".", r.Id, alvoId: alvoId);
+        }
+
+        /// <summary>O líder escolhe: aliança aberta (quem pede, entra) ou por convite.</summary>
+        public static void DefinirModo(Mundo m, Reino r, bool aberta)
+        {
+            var a = Minha(m, r);
+            if (a.Membro(r.Id)!.Cargo != Lider) throw new RegraException("Só o líder faz isso.");
+            if (a.Aberta == aberta) return;
+            a.Aberta = aberta; m.Sujar(a);
+            Evento(m, a, "modo", aberta ? "A aliança agora é aberta: quem pedir, entra." : "A aliança agora é por convite.", r.Id);
+        }
+
+        /// <summary>Recado fixado no topo da conversa (vazio tira o recado). Só o líder.</summary>
+        public static void Fixar(Mundo m, Reino r, string? texto)
+        {
+            var a = Minha(m, r);
+            if (a.Membro(r.Id)!.Cargo != Lider) throw new RegraException("Só o líder fixa o recado.");
+            texto = Regex.Replace((texto ?? "").Trim(), @"\s+", " ");
+            var max = m.P.Social.Conversa.Recado;
+            if (texto.Length > max) throw new RegraException($"O recado pode ter até {max} caracteres.");
+            a.Recado = texto; a.RecadoEm = m.Agora; m.Sujar(a);
+            if (texto.Length > 0) Evento(m, a, "recado", r.Nome + " fixou um recado: " + texto, r.Id);
+            else AvisarMembros(m, a);
+        }
+
+        /// <summary>
+        /// Qualquer membro indica um reino para a aliança: vira uma linha na conversa, com o botão de convidar para líder e
+        /// conselheiros. Quem já pode convidar convida direto.
+        /// </summary>
+        public static void Indicar(Mundo m, Reino r, long alvoId)
+        {
+            var a = Minha(m, r);
+            Podar(m, a);
+            var alvo = m.Reinos.Obter(alvoId);
+            if (alvo == null || !alvo.Ativo || alvo.Id == r.Id) throw new RegraException("Reino não encontrado.", 404);
+            if (a.Membro(alvoId) != null) throw new RegraException("Esse reino já é da aliança.");
+            if (a.Convites.Any(c => c.ReinoId == alvoId)) throw new RegraException("Esse reino já foi convidado.");
+            var desde = m.Agora - T.DeHoras(m.P.Social.PropostaH);
+            if (a.Conversa.Any(f => f.Evento == "indicacao" && f.AlvoId == alvoId && f.Quando > desde)) throw new RegraException("Esse reino já foi indicado há pouco.");
+            Evento(m, a, "indicacao", r.Nome + " indica " + alvo.Nome + " para a aliança.", r.Id, alvoId: alvoId);
+        }
+
+        /// <summary>Pedido rápido: "preciso de reforço em [local]". Vira uma linha na conversa com o local; clicar leva ao mapa para mandar tropas.</summary>
+        public static FalaAlianca PedirReforco(Mundo m, Reino r, long localId)
+        {
+            var a = Minha(m, r);
+            var l = m.Locais.Obter(localId);
+            if (l == null || l.ReinoId != r.Id || l.Ruina) throw new RegraException("Escolha um local seu.", 404);
+            var desde = m.Agora - T.DeSegundos(m.P.Social.Conversa.RepetirPedidoSeg);
+            if (a.Conversa.Any(f => f.Evento == "pedido-reforco" && f.LocalId == l.Id && f.Quando > desde)) throw new RegraException("Você já pediu reforço para " + l.Nome + " há pouco.");
+            return Evento(m, a, "pedido-reforco", r.Nome + " precisa de reforço em " + l.Nome + ".", r.Id, hex: l.Hex, localId: l.Id);
         }
 
         public static void Promover(Mundo m, Reino r, long alvoId)
@@ -312,8 +424,8 @@ namespace ReinoDePedra.Jogo.Social
             if (a.Membros.Count(y => y.Cargo == Conselheiro) >= m.P.Social.Conselheiros)
                 throw new RegraException($"A aliança já tem {m.P.Social.Conselheiros} conselheiros, o máximo.");
             x.Cargo = Conselheiro; m.Sujar(a);
-            Registros.Notificar(m, alvoId, "alianca", "Você agora é conselheiro", "Convida reinos e aceita pedidos de entrada na " + a.Nome + ".", "alianca");
-            AvisarMembros(m, a);
+            Registros.Notificar(m, alvoId, "alianca", "Você agora é conselheiro", "Convida reinos, aceita pedidos de entrada e expulsa membros na " + a.Nome + ".", "alianca");
+            Evento(m, a, "cargo", (m.Reinos.Obter(alvoId)?.Nome ?? "") + " agora é conselheiro.", r.Id, alvoId: alvoId);
         }
 
         public static void Rebaixar(Mundo m, Reino r, long alvoId)
@@ -322,7 +434,7 @@ namespace ReinoDePedra.Jogo.Social
             var x = Cargo(m, r, a, alvoId, true);
             if (x.Cargo != Conselheiro) throw new RegraException("Esse reino não é conselheiro.");
             x.Cargo = Membro; m.Sujar(a);
-            AvisarMembros(m, a);
+            Evento(m, a, "cargo", (m.Reinos.Obter(alvoId)?.Nome ?? "") + " voltou a ser membro.", r.Id, alvoId: alvoId);
         }
 
         /// <summary>A liderança passa ao conselheiro mais antigo, ou ao membro mais antigo (quem está em regência fica de fora, se houver outro).</summary>
@@ -339,7 +451,7 @@ namespace ReinoDePedra.Jogo.Social
             m.Sujar(a);
             var nome = m.Reinos.Obter(novo.ReinoId)?.Nome ?? "";
             NotificarMembros(m, a, nome + " lidera a aliança", null);
-            AvisarMembros(m, a);
+            Evento(m, a, "lider", nome + " agora lidera a aliança.", novo.ReinoId);
         }
 
         /// <summary>Chamado pela regência quando o reino passa a ser governado pela IA: se era o líder, a liderança passa adiante.</summary>
@@ -352,22 +464,86 @@ namespace ReinoDePedra.Jogo.Social
 
         // ---------------------------------------------------------------- conversa
 
-        /// <summary>Conversa da aliança: o único chat do jogo, só para membros. Guarda as últimas <c>P.social.conversa.guardar</c>.</summary>
-        public static FalaAlianca Falar(Mundo m, Reino r, string? texto)
+        /// <summary>
+        /// Conversa da aliança: o único chat do jogo, só para membros. Guarda as últimas <c>P.social.conversa.guardar</c> linhas.
+        /// <c>@Nome do Reino</c> menciona um membro (ele é avisado mesmo com a conversa silenciada); <c>@todos</c>, só líder e
+        /// conselheiros. <paramref name="hex"/>: um ponto do mapa mostrado à aliança (clicar na fala centra o mapa lá).
+        /// </summary>
+        public static FalaAlianca Falar(Mundo m, Reino r, string? texto, int? hex = null)
         {
             var a = Minha(m, r);
             texto = Regex.Replace((texto ?? "").Trim(), @"\s+", " ");
             var max = m.P.Social.Conversa.Caracteres;
+            if (texto.Length == 0 && hex != null) texto = "Olhem aqui no mapa.";
             if (texto.Length == 0) throw new RegraException("Escreva a mensagem.");
             if (texto.Length > max) throw new RegraException($"A mensagem pode ter até {max} caracteres.");
-            var f = new FalaAlianca { Id = ++a.UltimaFala, ReinoId = r.Id, Texto = texto, Quando = m.Agora };
+            if (hex is int h && (h < 0 || h >= m.G.Cols * m.G.Lins)) throw new RegraException("Ponto do mapa inválido.");
+            var f = new FalaAlianca { ReinoId = r.Id, Texto = texto, Quando = m.Agora, Hex = hex };
+            // menções: o nome mais longo primeiro, para "@Vale Frio" não parar em "@Vale"
+            foreach (var x in a.Membros.Where(x => x.ReinoId != r.Id).Select(x => m.Reinos.Obter(x.ReinoId)).OfType<Reino>().OrderByDescending(q => q.Nome.Length))
+                if (texto.Contains("@" + x.Nome, StringComparison.OrdinalIgnoreCase) && !f.Mencoes.Contains(x.Id)) f.Mencoes.Add(x.Id);
+            if (Regex.IsMatch(texto, @"(^|\s)@todos\b", RegexOptions.IgnoreCase))
+            {
+                if (a.Membro(r.Id)!.Cargo == Membro) throw new RegraException("Só o líder e os conselheiros chamam @todos.");
+                f.Todos = true;
+            }
+            Registrar(m, a, f);
+            // a menção avisa sempre (categoria da aliança, não a da conversa, que o jogador pode silenciar)
+            foreach (var id in f.Todos ? a.Membros.Select(x => x.ReinoId).Where(id => id != r.Id).ToList() : f.Mencoes)
+                Registros.Notificar(m, id, "alianca", r.Nome + (f.Todos ? " chamou a aliança" : " mencionou você"), Cortar(texto, 90), "alianca");
+            return f;
+        }
+
+        private static string Cortar(string t, int n) => t.Length <= n ? t : t[..(n - 1)].TrimEnd() + "…";
+
+        /// <summary>Uma linha de evento na conversa: o que aconteceu na aliança, escrito pelo jogo.</summary>
+        public static FalaAlianca Evento(Mundo m, Alianca a, string evento, string texto, long reinoId = 0, int? hex = null, long? localId = null, long? propostaId = null, long? alvoId = null)
+        {
+            var f = new FalaAlianca { ReinoId = reinoId, Texto = texto, Quando = m.Agora, Tipo = TipoEvento, Evento = evento, Hex = hex, LocalId = localId, PropostaId = propostaId, AlvoId = alvoId };
+            Registrar(m, a, f);
+            return f;
+        }
+
+        /// <summary>Guarda a linha, apara a conversa e avisa cada membro (o aviso de fala nova respeita a preferência de cada um).</summary>
+        private static void Registrar(Mundo m, Alianca a, FalaAlianca f)
+        {
+            f.Id = ++a.UltimaFala;
             a.Conversa.Add(f);
             var sobra = a.Conversa.Count - m.P.Social.Conversa.Guardar;
             if (sobra > 0) a.Conversa.RemoveRange(0, sobra);
+            if (f.ReinoId != 0 && f.Tipo == TipoFala) a.LidaAte[f.ReinoId] = f.Id;   // quem escreve leu até aqui
             m.Sujar(a);
-            AvisarMembros(m, a, "alianca", new { fala = f.Id });
-            return f;
+            var de = f.ReinoId != 0 ? m.Reinos.Obter(f.ReinoId)?.Nome : null;
+            foreach (var x in a.Membros)
+            {
+                var q = m.Reinos.Obter(x.ReinoId);
+                // quem foi mencionado já recebe a notificação da menção: não toca duas vezes
+                var mencionado = f.Tipo == TipoFala && (f.Todos || f.Mencoes.Contains(x.ReinoId));
+                // idem para quem o evento já avisa por notificação (o aliado a quem se pede, quem recebe a ajuda ou o reforço)
+                mencionado |= f.Evento is "pedido-recursos" or "ajuda" or "reforco" && f.AlvoId == x.ReinoId;
+                var tocar = q != null && x.ReinoId != f.ReinoId && !mencionado &&!q.NotificacoesDesligadas.Contains(CategoriaConversa);
+                m.Avisar(x.ReinoId, "alianca", new { fala = f.Id, tipo = f.Tipo, evento = f.Evento, de, texto = f.Texto, hex = f.Hex, tocar, naoLidas = NaoLidas(a, x.ReinoId) });
+            }
         }
+
+        /// <summary>Linhas que o membro ainda não leu (as próprias falas não contam).</summary>
+        public static int NaoLidas(Alianca a, long reinoId)
+        {
+            var ate = a.LidaAte.GetValueOrDefault(reinoId);
+            return a.Conversa.Count(f => f.Id > ate && !(f.Tipo == TipoFala && f.ReinoId == reinoId));
+        }
+
+        /// <summary>O membro abriu a conversa: tudo lido.</summary>
+        public static void MarcarLida(Mundo m, Reino r)
+        {
+            var a = De(m, r);
+            if (a == null || a.LidaAte.GetValueOrDefault(r.Id) == a.UltimaFala) return;
+            a.LidaAte[r.Id] = a.UltimaFala; m.Sujar(a);
+            m.Avisar(r.Id, "alianca", new { naoLidas = 0 });
+        }
+
+        /// <summary>Aliança do reino para registrar um evento dele (null se não tem).</summary>
+        public static Alianca? DoReino(Mundo m, long reinoId) => m.Reinos.Obter(reinoId) is { } q ? De(m, q) : null;
     }
 }
 

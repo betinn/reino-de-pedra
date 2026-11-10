@@ -65,6 +65,20 @@ public static class Nomes
         ["Vale", "Monte", "Campo", "Porto", "Bosque", "Forte", "Cabo", "Planalto", "Castro", "Vau", "Pico", "Cume", "Reino", "Império",
          "Condado", "Domínio", "Principado", "Ducado"];
 
+    private static readonly string[] TitulosAlianca = ["Liga", "Pacto", "Irmandade", "Ordem", "Círculo", "Coroa", "Guarda", "Concílio", "Aliança", "Mesa", "Juramento"];
+
+    /// <summary>Nome de aliança como os que jogadores dão: "Liga do Corvo", "Pacto de Ferro", "Irmandade Negra". Cabe no limite do nome de aliança.</summary>
+    public static string Alianca(Rng rng)
+    {
+        for (var i = 0; i < 40; i++)
+        {
+            var t = rng.Escolher(TitulosAlianca);
+            var n = rng.Chance(0.75) ? t + " " + rng.Escolher(Complementos) : t + " " + rng.Escolher(Qualificativos);
+            if (n.Length <= 24) return n;
+        }
+        return "Liga do Norte";
+    }
+
     public static string Novo(Mundo m, Rng rng)
     {
         for (var i = 0; i < 200; i++)

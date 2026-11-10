@@ -32,6 +32,8 @@ namespace ReinoDePedra.Jogo.Social
         public bool Lida { get; set; }
         /// <summary>"grande" ou "pequeno" (ver <see cref="TamanhoAviso"/>); vazio nas notificações antigas: vale o padrão da categoria.</summary>
         public string? Tamanho { get; set; }
+        /// <summary>O que dá para responder no próprio aviso, sem abrir tela: { tipo: "convite-alianca" | "pedido-entrada", id }.</summary>
+        public JsonObject? Acao { get; set; }
     }
 
     public static class Registros
@@ -43,7 +45,8 @@ namespace ReinoDePedra.Jogo.Social
         {
             ["ataques"] = "Ataques e ameaças", ["batalhas"] = "Batalhas e relatórios de combate", ["obras"] = "Obras e filas",
             ["tropas"] = "Tropas, recrutamento e marchas", ["exploracao"] = "Exploração, fauna e caça", ["recursos"] = "Recursos, extração e caravanas",
-            ["reliquias"] = "Relíquias", ["alianca"] = "Aliança", ["comercio"] = "Comércio e diplomacia", ["mensagens"] = "Mensagens",
+            ["reliquias"] = "Relíquias", ["alianca"] = "Aliança (convites, cargos, menções)", ["conversa"] = "Conversa da aliança (fala nova)",
+            ["comercio"] = "Comércio e diplomacia", ["mensagens"] = "Mensagens",
             ["reino"] = "Reino (população, escudo, regência)", ["temporada"] = "Temporada e legado",
         };
 
@@ -57,16 +60,16 @@ namespace ReinoDePedra.Jogo.Social
         }
 
         /// <param name="tamanho">"grande" ou "pequeno" quando a notícia foge do padrão da categoria (ver <see cref="TamanhoAviso"/>).</param>
-        public static Notificacao? Notificar(Mundo m, long reinoId, string categoria, string titulo, string? texto = null, string? link = null, string? tamanho = null)
+        public static Notificacao? Notificar(Mundo m, long reinoId, string categoria, string titulo, string? texto = null, string? link = null, string? tamanho = null, JsonObject? acao = null)
         {
             var reino = m.Reinos.Obter(reinoId);
             if (reino == null) return null;
             var tam = TamanhoAviso.Valido(tamanho) ? tamanho! : TamanhoAviso.DaCategoria(categoria);
-            var n = m.Notificacoes.Adicionar(new Notificacao { ReinoId = reinoId, Categoria = categoria, Titulo = titulo, Texto = texto, Link = link, Quando = m.Agora, Tamanho = tam });
+            var n = m.Notificacoes.Adicionar(new Notificacao { ReinoId = reinoId, Categoria = categoria, Titulo = titulo, Texto = texto, Link = link, Quando = m.Agora, Tamanho = tam, Acao = acao });
             Podar(m, m.Notificacoes.Where(x => x.ReinoId == reinoId), MaxNotificacoes, d => m.Notificacoes.Remover(d.Id));
             // a preferência decide se o aviso "toca" (push/aviso do navegador); a notificação fica na lista de qualquer jeito
             var ligada = !reino.NotificacoesDesligadas.Contains(categoria);
-            m.Avisar(reinoId, "notificacao", new { id = n.Id, categoria, titulo, texto, link, tocar = ligada, tamanho = tam, prioridade = TamanhoAviso.Prioridade(n) });
+            m.Avisar(reinoId, "notificacao", new { id = n.Id, categoria, titulo, texto, link, tocar = ligada, tamanho = tam, prioridade = TamanhoAviso.Prioridade(n), acao });
             return n;
         }
 

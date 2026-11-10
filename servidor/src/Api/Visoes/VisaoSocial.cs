@@ -37,7 +37,8 @@ public static class VisaoSocial
         var agora = m.Agora;
         var a = Aliancas.De(m, r);
         var castelo = m.Locais.Obter(r.CasteloId);
-        double[]? tempos = castelo != null && a != null ? Caminhos.MinutosAte(m, castelo.Hex, m.P.Carregador.Vel) : null;
+        double[]? tempos = castelo != null ? Caminhos.MinutosAte(m, castelo.Hex, m.P.Carregador.Vel) : null;
+        double? Minutos(Reino? q) => q != null && m.Locais.Obter(q.CasteloId) is { } cq && tempos != null && !double.IsInfinity(tempos[cq.Hex]) ? Math.Round(tempos[cq.Hex]) : null;
         object? dados = null;
         if (a != null)
         {
@@ -45,7 +46,9 @@ public static class VisaoSocial
             var gerencia = eu.Cargo != Aliancas.Membro;
             dados = new
             {
-                a.Id, a.Nome, a.Brasao, a.CriadaEm, meuCargo = eu.Cargo,
+                a.Id, a.Nome, a.Brasao, a.CriadaEm, meuCargo = eu.Cargo, a.Aberta,
+                recado = a.Recado.Length > 0 ? new { texto = a.Recado, quando = a.RecadoEm } : null,
+                naoLidas = Aliancas.NaoLidas(a, r.Id), lidaAte = a.LidaAte.GetValueOrDefault(r.Id),
                 membros = a.Membros.OrderBy(x => x.Cargo == Aliancas.Lider ? 0 : x.Cargo == Aliancas.Conselheiro ? 1 : 2).ThenBy(x => x.Desde).Select(x =>
                 {
                     var q = m.Reinos.Obter(x.ReinoId);
@@ -62,15 +65,37 @@ public static class VisaoSocial
                 convites = gerencia ? a.Convites.Where(c => c.Ate > agora).Select(c => new { reino = Id(m, c.ReinoId), por = m.Reinos.Obter(c.PorId)?.Nome, c.Quando, c.Ate }).ToList() : null,
                 pedidos = gerencia ? a.Pedidos.Where(c => c.Ate > agora).Select(c => new { reino = Id(m, c.ReinoId), c.Quando, c.Ate }).ToList() : null,
                 treguas = a.Treguas.Where(t => t.Ate > agora).Select(t => new { reino = Id(m, t.ReinoId), t.Ate, t.Como }).ToList(),
-                conversa = a.Conversa.TakeLast(50).Select(f => new { f.Id, reino = Id(m, f.ReinoId), f.Texto, f.Quando, minha = f.ReinoId == r.Id }).ToList(),
+                // cada linha: fala de um membro ou evento da aliança. O que dá para fazer na linha vai dito (o cliente não deduz)
+                conversa = a.Conversa.TakeLast(80).Select(f =>
+                {
+                    var p = f.PropostaId is long pid ? m.Propostas.Obter(pid) : null;
+                    var alvo = f.AlvoId is long aid ? m.Reinos.Obter(aid) : null;
+                    return new
+                    {
+                        f.Id, reino = f.ReinoId != 0 ? Id(m, f.ReinoId) : null, f.Texto, f.Quando, minha = f.ReinoId == r.Id && f.Tipo == Aliancas.TipoFala,
+                        f.Tipo, f.Evento, f.Hex, f.LocalId, mencionaVoce = f.Todos && f.ReinoId != r.Id || f.Mencoes.Contains(r.Id),
+                        // pedido de recursos feito a você e ainda aberto: Enviar na própria linha
+                        propostaId = p != null && p.ParaId == r.Id && p.Estado == Comercio.Aberta && p.Ate > agora ? p.Id : (long?)null,
+                        // indicação ainda sem convite: Convidar na própria linha (líder e conselheiros)
+                        convidar = f.Evento == "indicacao" && gerencia && alvo is { Ativo: true, AliancaId: null } && a.Membros.Count < m.P.Alianca && !a.Convites.Any(c => c.ReinoId == alvo.Id && c.Ate > agora) ? alvo.Id : (long?)null,
+                        // pedido de entrada ainda aberto: Aceitar na própria linha
+                        aceitar = f.Evento == "pedido-entrada" && gerencia && alvo != null && a.Pedidos.Any(c => c.ReinoId == alvo.Id && c.Ate > agora) ? alvo.Id : (long?)null,
+                        // pedido de reforço de outro membro: leva ao mapa, no local
+                        reforcar = f.Evento is "pedido-reforco" or "ataque" && f.ReinoId != r.Id && f.Hex != null,
+                    };
+                }).ToList(),
             };
         }
         var outras = m.Aliancas.Where(x => x.Id != a?.Id)
             .Select(x => new
             {
-                x.Id, x.Nome, x.Brasao, membros = x.Membros.Count, cheia = x.Membros.Count >= m.P.Alianca,
+                x.Id, x.Nome, x.Brasao, membros = x.Membros.Count, cheia = x.Membros.Count >= m.P.Alianca, x.Aberta,
+                // a aliança mais perto primeiro: a distância até o castelo do membro mais próximo
+                minutos = x.Membros.Select(y => Minutos(m.Reinos.Obter(y.ReinoId))).Where(v => v != null).DefaultIfEmpty(null).Min(),
                 nomes = x.Membros.Select(y => m.Reinos.Obter(y.ReinoId)?.Nome).ToList(),
                 pedido = x.Pedidos.Any(c => c.ReinoId == r.Id && c.Ate > agora),
+                // quem são os membros (público): o menu do mapa diz de que aliança é o reino clicado
+                ids = x.Membros.Select(y => y.ReinoId).ToList(),
             }).ToList();
         var pedidos = m.Propostas.Where(p => p.Tipo == Comercio.Pedido && (p.DeId == r.Id || p.ParaId == r.Id)).OrderByDescending(p => p.Id).Select(p => Proposta(m, r, p)).ToList();
         var meusReforcos = new List<object>();
@@ -84,7 +109,7 @@ public static class VisaoSocial
         return new
         {
             agora, limite = m.P.Alianca, conselheirosMax = m.P.Social.Conselheiros, treguaH = m.P.TreguaSaidaH,
-            nome = m.P.Social.NomeAlianca, conversaMax = m.P.Social.Conversa.Caracteres, recadoMax = m.P.Mensageiro.RecadoProposta,
+            nome = m.P.Social.NomeAlianca, conversaMax = m.P.Social.Conversa.Caracteres, recadoFixadoMax = m.P.Social.Conversa.Recado, recadoMax = m.P.Mensageiro.RecadoProposta,
             livreEm = r.AliancaLivreEm > agora ? r.AliancaLivreEm : (long?)null,
             alianca = dados,
             convitesRecebidos = Aliancas.ConvitesPara(m, r.Id).Select(x => new
@@ -92,8 +117,10 @@ public static class VisaoSocial
                 alianca = new { x.a.Id, x.a.Nome, x.a.Brasao, membros = x.a.Membros.Count }, por = Id(m, x.c.PorId), x.c.Ate,
             }).ToList(),
             aliancas = outras,
+            // quem convidar: os vizinhos primeiro (a posição dos castelos é pública)
             reinos = m.Reinos.Where(q => q.Ativo && q.Id != r.Id && a?.Membro(q.Id) == null)
-                .OrderBy(q => q.Nome).Select(q => new { reino = Espionagem.Identidade(q), naAlianca = q.AliancaId != null }).ToList(),
+                .Select(q => new { reino = Espionagem.Identidade(q), naAlianca = q.AliancaId != null, minutos = Minutos(q), nome = q.Nome })
+                .OrderBy(x => x.minutos ?? double.MaxValue).ThenBy(x => x.nome).ToList(),
             pedidosRecursos = pedidos,
             reforcos = new { meus = meusReforcos, recebidos },
         };

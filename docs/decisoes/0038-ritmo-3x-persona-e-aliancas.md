@@ -49,4 +49,16 @@ Pedido do dono: reino de IA não pode parecer IA. Cada um ganha uma pessoa que o
 - **Falas.** `Falas.Gerar(mundo, reino, contexto)` é o único lugar de onde sai texto de IA. `Falas.Gerador` é quem escreve: hoje `FalasPorModelo` (frases por assunto, passadas pelo jeito de escrever da persona); amanhã, uma LLM com a mesma interface (`IGeradorDeFala`). `Falas.Pedido` monta o pedido que ela receberia (persona + contexto), para o formato ficar definido e testado. Quem escreve pode calar ou falhar: a IA fica quieta e o jogo segue. Os modelos não afirmam fatos que o servidor não deu no contexto.
 - **O que não foi feito de propósito.** A persona não aparece no jogo (nem o nome de quem governa): mostrá-la só nos reinos de IA os denunciaria, e os jogadores não têm campo equivalente.
 
-(A seção de alianças entra neste documento com a parte dela.)
+## Alianças e conversa
+
+Pedido do dono: rever as alianças e o chat; criar e entrar tem de ser fácil; a IA participa como gente, sem desespero.
+
+- **A conversa é o registro da aliança.** `FalaAlianca` ganhou `Tipo` (fala ou evento). Os eventos são escritos pelos próprios serviços (entrar, sair, pedido de recursos, reforço, batalha num local de membro, relíquia achada), sempre com o que os membros já podem saber. Assim a janela não precisa de abas: quem abre lê o que houve.
+- **A linha diz o que dá para fazer nela.** A visão manda `propostaId`, `convidar`, `aceitar` e `reforcar` só quando a ação ainda vale para quem lê; o cliente não deduz permissão.
+- **Aberta ou por convite.** Padrão por convite, para não mudar o que já existia. Na aberta, `PedirEntrada` já é a entrada. O limite de 5 e a trégua de 24 h valem igual.
+- **Resposta no aviso.** A notificação leva `acao` (tipo e id); o aviso do centro da tela mostra os botões e chama as mesmas rotas da janela. Nada novo no servidor além do campo.
+- **Conselheiro expulsa membro.** Só membro: não derruba outro conselheiro nem o líder. O líder passa a liderança sem sair.
+- **Não lidas por membro** (`LidaAte`), zeradas ao abrir a janela. A fala nova vai por SSE a cada membro; o aviso pequeno depende da categoria "Conversa da aliança", mas a menção avisa pela categoria da aliança.
+- **Sem chat geral.** Continua valendo: fora da aliança, só mensageiro. Menção e ponto do mapa são da conversa da aliança.
+- **Aliança na barra do topo** (tecla J), fora do menu Mais: com conversa e não lidas, é uma janela de uso diário.
+- **IA.** `ConvivioAlianca` usa os mesmos serviços dos jogadores e a persona decide: `VontadeDeEntrar` junta sociabilidade, afinidade e rancor; convite é respondido depois de um tempo de pensar; pedir entrada exige sociabilidade, dias de temporada, sorte e vizinhança; fundar é do orgulhoso. Limite de 2 falas por sessão, todas por `Falas.Gerar`. Reforço e ajuda saem da lealdade e do que sobra. Nada disso é automático nem imediato, de propósito: aliança de IA que aceita tudo na hora denuncia a IA.

@@ -269,7 +269,9 @@ const P = {
   social: {
     conselheiros: 2,                                       /* conselheiros por aliança: convidam e aceitam pedidos de entrada */
     nomeAlianca: { min: 3, max: 24 },                      /* letras do nome da aliança */
-    conversa: { caracteres: 200, guardar: 100 },           /* conversa da aliança: até 200 caracteres por mensagem; guarda as 100 últimas */
+    /* conversa da aliança: até 200 caracteres por mensagem; guarda as 200 últimas linhas (falas e eventos da aliança); recado
+       fixado do líder com até 120 caracteres; o mesmo pedido de reforço para o mesmo local só se repete depois de 5 min */
+    conversa: { caracteres: 200, guardar: 200, recado: 120, repetirPedidoSeg: 300 },
     caixa: 100,                                            /* mensagens por mensageiro guardadas por reino (as mais antigas saem) */
     propostaH: 24,                                         /* convites, pedidos de entrada e de recursos, trocas e pactos sem resposta expiram em 24 h */
     novatoJanelaH: 24,                                     /* o "dia" do limite do novato (P.comercio.novatoDia) é uma janela móvel de 24 h */

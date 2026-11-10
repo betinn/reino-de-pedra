@@ -219,6 +219,8 @@ namespace ReinoDePedra.Jogo.Social
             var p = Nova(m, new Proposta { Tipo = Pedido, DeId = r.Id, ParaId = al.Id, Quer = q, LocalId = l.Id, Recado = txt });
             Registros.Notificar(m, al.Id, "alianca", r.Nome + " pede recursos", Remessas.Texto(q) + ". Aceite ou recuse em Aliança.", "alianca");
             m.Avisar(r.Id, "alianca"); m.Avisar(al.Id, "alianca");
+            // na conversa: o pedido aparece para todos e quem recebeu responde na própria linha
+            if (Aliancas.De(m, r) is { } ali) Aliancas.Evento(m, ali, "pedido-recursos", r.Nome + " pede " + Remessas.Texto(q) + " a " + al.Nome + ".", r.Id, hex: l.Hex, localId: l.Id, propostaId: p.Id, alvoId: al.Id);
             return p;
         }
 
@@ -235,6 +237,7 @@ namespace ReinoDePedra.Jogo.Social
             RegistrarNovato(m, r, pedinte, p.Quer, new Recursos());
             Responder(m, p, Aceita);
             Registros.Notificar(m, pedinte.Id, "alianca", r.Nome + " mandou a ajuda", Remessas.Texto(p.Quer) + " a caminho. Pode ser roubada no caminho.", "alianca");
+            if (Aliancas.De(m, r) is { } ali) Aliancas.Evento(m, ali, "ajuda", r.Nome + " mandou " + Remessas.Texto(p.Quer) + " a " + pedinte.Nome + ".", r.Id, alvoId: pedinte.Id);
         }
 
         // ---------------------------------------------------------------- pacto de não agressão

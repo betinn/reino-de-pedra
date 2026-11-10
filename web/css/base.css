@@ -401,6 +401,9 @@ a { color: var(--cor-info); }
 .aviso-anuncio.aviso-pequeno .aviso-txt > span { margin-top: 1px; font-size: 14px; color: #d9d2c4; }
 .aviso-anuncio.aviso-pequeno .aviso-abrir { display: none; }
 .aviso-anuncio.aviso-pequeno { animation-name: aviso-entra-pequeno; }
+/* aviso que se responde ali mesmo (convite de aliança): botões embaixo do texto */
+.aviso-acoes { display: flex; justify-content: center; gap: var(--esp-2); margin-top: var(--esp-2); }
+.aviso-com-acoes { cursor: default; }
 .aviso.sai { animation: aviso-sai .22s ease-in forwards; }
 @keyframes aviso-entra-pequeno { from { transform: translateY(6px); opacity: 0; } }
 @keyframes aviso-entra { from { transform: scale(1.14); opacity: 0; } }
