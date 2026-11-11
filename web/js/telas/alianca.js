@@ -126,7 +126,7 @@
           (x.castelo != null ? '<button type="button" class="btn btn-p btn-fantasma btn-icone" data-ver-mapa="' + x.castelo + '" aria-label="Ver o castelo no mapa">' + RP.icone('mapa') + '</button>' : '') +
           '<a class="btn btn-p" href="#/pedido?reino=' + x.reino.id + '">' + RP.icone('carroca') + 'Pedir</a>') + '</div>';
     }).join('') + '</div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">O líder convida, expulsa, promove e pode passar a liderança. Até ' + d.conselheirosMax + ' conselheiros (agora ' + nCons + ') convidam, aceitam pedidos de entrada e expulsam membros. Se o líder entrar em regência, a liderança passa ao conselheiro mais antigo.</p>';
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">O líder convida, expulsa, promove e pode passar a liderança. Até ' + d.conselheirosMax + ' conselheiros (agora ' + nCons + ') convidam, aceitam pedidos de entrada e expulsam membros. Se o líder sair, a liderança passa ao conselheiro mais antigo.</p>';
     if (a.membros.length < d.limite) {
       var cands = d.reinos.filter(function (c) { return !c.naAlianca && !(a.convites || []).some(function (v) { return v.reino && v.reino.id === c.reino.id; }); }).slice(0, 8);
       h += '<div class="secao-titulo">' + (gerencia ? 'Convidar' : 'Indicar') + ' · ' + (d.limite - a.membros.length) + ' vagas · os vizinhos primeiro</div>' + (cands.length ? '<div class="escolhas escolhas-lista">' + cands.map(function (c) {

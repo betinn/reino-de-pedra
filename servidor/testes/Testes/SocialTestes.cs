@@ -94,7 +94,7 @@ public class SocialTestes
     }
 
     [Fact]
-    public void Lider_que_sai_ou_entra_em_regencia_passa_ao_conselheiro_mais_antigo()
+    public void Lider_que_sai_passa_ao_conselheiro_mais_antigo()
     {
         var t = new MundoTeste();
         var rs = Enumerable.Range(0, 4).Select(_ => t.NovoReino()).ToList();
@@ -103,9 +103,9 @@ public class SocialTestes
         a.Membro(rs[3].Id)!.Desde = t.M.Agora - 1;                        // rs[3] é o membro mais antigo depois do líder
         Aliancas.Promover(t.M, rs[0], rs[2].Id);
         Aliancas.Promover(t.M, rs[0], rs[1].Id);
-        Aliancas.AoEntrarEmRegencia(t.M, rs[0]);
+        Aliancas.Sair(t.M, rs[0]);
         Assert.Equal(rs[1].Id, a.Lider!.ReinoId);   // o conselheiro mais antigo (rs[3] é mais antigo, mas não é conselheiro)
-        Assert.Equal(Aliancas.Membro, a.Membro(rs[0].Id)!.Cargo);
+        Assert.Null(a.Membro(rs[0].Id));
         // sem conselheiros, o membro mais antigo
         Aliancas.Rebaixar(t.M, rs[1], rs[2].Id);
         Aliancas.Sair(t.M, rs[1]);

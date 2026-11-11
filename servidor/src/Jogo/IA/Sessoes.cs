@@ -5,7 +5,7 @@ using ReinoDePedra.Jogo.Reinos;
 namespace ReinoDePedra.Jogo.IA;
 
 /// <summary>
-/// Sessões da IA: cada reino de IA (ou em regência) tem um único evento agendado, na próxima hora de sessão da sua conduta
+/// Sessões da IA: cada reino de IA tem um único evento agendado, na próxima hora de sessão da sua conduta
 /// (hora local do fuso <c>P.ia.fusoH</c>, com variação sorteada de até <c>P.ia.variacaoMin</c>). Nada varre o mundo:
 /// a sessão decide, age pelos mesmos serviços da API e agenda a seguinte.
 /// <para>A <see cref="Persona"/> de quem governa dá o jeito de gente: as horas se deslocam pelo cronotipo dela, às vezes
@@ -14,15 +14,14 @@ namespace ReinoDePedra.Jogo.IA;
 /// </summary>
 public static class Sessoes
 {
-    /// <summary>Conduta do reino agora: a da regência, ou habilidade × perfil do reino de IA. Null: ninguém governa.</summary>
+    /// <summary>Conduta do reino agora: habilidade × perfil do reino de IA. Null: ninguém governa (reino de jogador).</summary>
     public static Conduta? De(Mundo m, Reino r)
     {
         if (!r.Ativo) return null;
-        if (r.EmRegencia) return new Conduta(m.P.IA.Regencia, null, true);
         if (!r.EhIA) return null;
         var hab = m.P.IA.Habilidades.GetValueOrDefault(r.HabilidadeIA ?? "") ?? m.P.IA.Habilidades.Values.First();
         var perfil = m.P.IA.Perfis.GetValueOrDefault(r.PerfilIA ?? "") ?? m.P.IA.Perfis.Values.First();
-        return new Conduta(hab, perfil, false) { Persona = r.Persona };
+        return new Conduta(hab, perfil) { Persona = r.Persona };
     }
 
     /// <summary>Hora local (0 a 23,99) de um instante.</summary>
@@ -75,10 +74,10 @@ public static class Sessoes
     }
 }
 
-/// <summary>Conduta de uma sessão: regras da habilidade (ou da regência) e o perfil do reino de IA (null na regência).</summary>
-public sealed record Conduta(CondutaIAP C, PerfilIAP? Perfil, bool Regencia)
+/// <summary>Conduta de uma sessão: regras da habilidade e o perfil do reino de IA.</summary>
+public sealed record Conduta(CondutaIAP C, PerfilIAP? Perfil)
 {
-    /// <summary>Quem governa (null na regência e nos reinos sem persona): desvia a conduta para o lado do temperamento dela.</summary>
+    /// <summary>Quem governa (null nos reinos sem persona): desvia a conduta para o lado do temperamento dela.</summary>
     public Persona? Persona { get; init; }
     /// <summary>Parte do estoque que vira tropas: o agressivo gasta mais com exército.</summary>
     public double Militar => C.Militar * (Perfil?.Militar ?? 1) * Personas.Fator(Persona?.Agressividade ?? 0.5, 0.15);
@@ -95,7 +94,7 @@ public sealed record Conduta(CondutaIAP C, PerfilIAP? Perfil, bool Regencia)
 }
 
 /// <summary>
-/// Sessão de um reino de IA (ou em regência): decide, age e agenda a próxima. Com persona, a pessoa pode faltar à sessão
+/// Sessão de um reino de IA: decide, age e agenda a próxima. Com persona, a pessoa pode faltar à sessão
 /// e, quando vem, joga em duas partes: ao entrar cuida do reino (defesa, propostas, obras, tropas); alguns minutos depois
 /// (<see cref="Etapa"/> 1) faz o resto (explorar, caçar, espionar, atacar, conversar). Sem persona, ou com a neutra, é tudo
 /// de uma vez, como sempre foi.
@@ -122,7 +121,7 @@ public sealed class SessaoIAEvento : Evento
         if (c == null) { m.Sujar(r); return; }
         if (m.IA.Ativa && Personas.Aparece(m, r))
         {
-            var pausa = c.Regencia ? 0 : Personas.TempoDeReacao(m, r, "etapa", 150);
+            var pausa = Personas.TempoDeReacao(m, r, "etapa", 150);
             if (pausa <= 0) Governo.Sessao(m, r, c);
             else
             {
@@ -147,6 +146,6 @@ public sealed class ReacaoIAEvento : Evento
         var r = m.Reinos.Obter(ReinoId);
         if (r == null || !r.Ativo || r.ReacaoIAEventoId != Id) return;
         r.ReacaoIAEventoId = null; m.Sujar(r);
-        if (m.IA.Ativa && Sessoes.De(m, r) is { Regencia: false } c) Governo.Reagir(m, r, c);
+        if (m.IA.Ativa && Sessoes.De(m, r) is { } c) Governo.Reagir(m, r, c);
     }
 }

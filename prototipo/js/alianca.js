@@ -59,7 +59,7 @@
         return '<div class="lista-item">' + RP.brasao(eu ? RP.estado.brasao : r.brasao, { tamanho: 32 }) + '<span style="flex:1;min-width:0"><b>' + RP.esc(eu ? RP.estado.nome + ' (você)' : r.nome) + '</b><br><small class="fraco">' + RP.esc(A.papeis[id]) + (cam ? ' · castelo a ' + RP.fmtDuracao(cam.seg) : '') + (r.novato ? ' · sob escudo de novato' : '') + '</small></span>' +
           (eu ? '' : (A.papeis.meu === 'Líder' ? '<button type="button" class="btn btn-p btn-fantasma btn-icone" data-cargo="' + id + '" aria-label="Cargo de ' + RP.esc(r.nome) + '">' + RP.icone('coroa') + '</button>' : '') + '<a class="btn btn-p" href="#/pedido?reino=' + id + '">' + RP.icone('carroca') + 'Pedir</a>') + '</div>';
       }).join('') + '</div>' +
-      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Líder convida, expulsa e promove. Até ' + A.conselheirosMax + ' conselheiros convidam e aceitam pedidos de entrada. Se o líder entrar em regência, a liderança passa ao conselheiro mais antigo.</p>' +
+      '<p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">Líder convida, expulsa e promove. Até ' + A.conselheirosMax + ' conselheiros convidam e aceitam pedidos de entrada. Se o líder sair, a liderança passa ao conselheiro mais antigo.</p>' +
       (membros.length < A.limite ? '<button type="button" class="btn btn-p btn-fantasma" data-convidar style="margin-top:var(--esp-2)">' + RP.icone('mais') + 'Convidar reino (' + (A.limite - membros.length) + ' vagas)</button>' : '') +
       '<div class="secao-titulo">Conversa</div>' + RP.conversaHTML() +
       (A.tregua.length ? '<div class="secao-titulo">Em trégua</div><div class="pilha">' + A.tregua.map(function (t) {

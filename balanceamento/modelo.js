@@ -12,7 +12,7 @@
    - Dividido por 3: tempo de obras, recrutamento, ferraria, eras, cura, escavação, caça, rotas, veículos e deslocamento;
      e o que o mundo leva para se refazer (fauna que volta, hexágono de coleta que enche, vida que volta).
    - Multiplicado por 3: produção por hora, nascimentos, extração e coleta.
-   - Em tempo real, porque é a vida do jogador: temporada, escudos, regência, tréguas, convites, prazos de 24 h, pactos,
+   - Em tempo real, porque é a vida do jogador: temporada, escudos, tréguas, convites, prazos de 24 h, pactos,
      "visto há X horas", janela do saque repetido. Cada local continua guardando 10 h da própria produção (a noite de
      quem joga), então guarda 3× mais; o armazém cresceu junto.
    - Nível máximo 11 (era 10) e custo ×2,18 por nível (era ×2,15): o jogador ativo fecha a economia perto do dia 20.
@@ -108,7 +108,7 @@ const P = {
   /* relíquias */
   reliquia: { ataque: 0.15, producao: 0.15, resistencia: 0.20, escavarHoras1: 4, escavarMin: 4 / 3 },
   /* proteções */
-  escudoNovatoH: 72, escudoExilioH: 24, regenciaH: 48,
+  escudoNovatoH: 72, escudoExilioH: 24,
   /* legado: relíquias da temporada (+1% a +2% cada, até 3 equipadas, teto somado de 5%) */
   legado: { relMin: 0.01, relMax: 0.02, equipadas: 3, teto: 0.05 },
   /* fauna (força = soma de (ataque + defesa) / 2 do grupo): com o dobro do limite, passa ileso; acima do limite, risco um nível menor.
@@ -311,7 +311,7 @@ const P = {
     armazem: 0.9,             /* armazém a 90% */
     maxPorTipo: 3             /* no máximo 3 itens de cada tipo (jazidas, ruínas, estoques...) */
   },
-  /* ---------- reinos de IA, meta de ocupação, regência e IA comerciante (servidor) ---------- */
+  /* ---------- reinos de IA, meta de ocupação e IA comerciante (servidor) ---------- */
   /* Meta de ocupação: a temporada começa com 25 reinos de IA (dos P.reinos) e o mundo nunca fica com menos de 20 reinos
      ativos (jogadores + IA); abaixo disso, surge um reino de IA na vaga livre mais longe dos jogadores ativos. Quem entra usa
      uma vaga livre; sem vaga, o reino de IA de menor porte abdica (castelo em ruína, os outros locais viram terra livre).
@@ -366,10 +366,7 @@ const P = {
        dela cair abaixo de metade da do ataque */
     defesa: { reforco: 0.5, recuo: 0.5 },
     /* comércio: os perfis não comerciantes pedem margemOutros × P.comercio.margemIA; ninguém troca mais que metade do que guarda */
-    comercio: { margemOutros: 2, reserva: 0.5 },
-    /* regência (P.regenciaH sem entrar): IA conservadora com 2 sessões por dia, sem fundar, atacar, espionar ou ocupar;
-       relatório com até 30 linhas de ações e de perdas */
-    regencia: { sessoes: [9, 21], militar: 0.2, mantemTrab: 1.0, fracTropas: 0.3, horizonte: 12, horizonteNoite: 12, acerto: 1.0, arqueiros: 0.25, linhas: 30 }
+    comercio: { margemOutros: 2, reserva: 0.5 }
   },
   /* ---------- vida das pessoas e fauna como dano (servidor) ---------- */
   /* Cada pessoa tem vida (máximo por ofício; civis usam "civil", o resto sem entrada usa "padrao") que volta inteira em
@@ -733,7 +730,7 @@ out('## Fauna, saque, relíquias e proteções\n');
 out('- Fauna (força = soma de (ataque + defesa)/2): baixo ' + P.fauna.baixo + ', médio ' + P.fauna.medio + ', alto ' + P.fauna.alto + '. Com o dobro do limite, o grupo passa ileso. 4 lanceiros = ' + forcaFauna({ lanceiro: 4 }) + ' (ilesos no baixo); 12 arqueiros = ' + forcaFauna({ arqueiro: 12 }) + ' (ilesos em qualquer nível); 1 explorador a cavalo = ' + P.exploradores.cavalo.forca + '.');
 out('- Saque repetido ao mesmo alvo em 24 h: −' + P.saqueQueda * 100 + '% por saque, até restar ' + P.saqueMinimo * 100 + '%.');
 out('- Relíquias: ataque +' + P.reliquia.ataque * 100 + '%, produção +' + P.reliquia.producao * 100 + '%, resistência +' + P.reliquia.resistencia * 100 + '%. Produção +15% num local de nível 6 = +' + r1(prod(6) * 0.15) + '/h, perto de meio nível (' + r1(prod(7) - prod(6)) + '/h). Escavação: ' + fmtT(P.reliquia.escavarHoras1 * 3600) + ' com 1 unidade, mínimo ' + fmtT(P.reliquia.escavarMin * 3600) + '.');
-out('- Escudo de novato ' + P.escudoNovatoH + ' h; escudo de exílio ' + P.escudoExilioH + ' h; regência após ' + P.regenciaH + ' h sem entrar. Relíquias da temporada (legado): +' + P.legado.relMin * 100 + '% a +' + P.legado.relMax * 100 + '% cada, até ' + P.legado.equipadas + ' equipadas, teto somado de ' + P.legado.teto * 100 + '%. Aliança: até ' + P.alianca + ' reinos.\n');
+out('- Escudo de novato ' + P.escudoNovatoH + ' h; escudo de exílio ' + P.escudoExilioH + ' h. Relíquias da temporada (legado): +' + P.legado.relMin * 100 + '% a +' + P.legado.relMax * 100 + '% cada, até ' + P.legado.equipadas + ' equipadas, teto somado de ' + P.legado.teto * 100 + '%. Aliança: até ' + P.alianca + ' reinos.\n');
 
 out('## Simulação de uma temporada (' + P.temporadaDias + ' dias)\n');
 const sims = {};

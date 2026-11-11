@@ -71,7 +71,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Caminhos.CustosExtras` | Peso extra por hexágono na rota segura (fauna). |
 | `Nevoas.FontesDeVisao` | Visão extra (torres, exploradores parados...). |
 | `Obras.HexOcupado` | Hexágonos ocupados por objetos do sistema (torres, postos...). |
-| `CheckpointReinoEvento.AoCheckpoint` | Rodar de hora em hora por reino (IA, regência). |
+| `CheckpointReinoEvento.AoCheckpoint` | Rodar de hora em hora por reino (IA...). |
 | `CriacaoReino.AoCriar`, `ObraFundar.AoFundar`, `Filas.AoConcluir`, `Mundo.AoCriarMundo` | Reagir a acontecimentos. |
 | `ITipoItemFila.Cancelado` | Desfazer o que o item reservou além do material (população do recrutamento...). |
 | `Reino.FilaSe`, `Filas.DevolverMaterial` | Ler uma fila pelo nome sem criá-la (nomes vindos do cliente; `Reino.Fila` cria); devolver o material de um item a um local do próprio reino (ou ao castelo). |
@@ -99,7 +99,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Sistemas.Registrar/Revelar`, `Reino.SistemasVistos` | Sistemas apresentados aos poucos: registre a chave em AoIniciar e revele no gatilho ("Novo: ..."); GET /reino manda `sistemas`. |
 | `OrdemReforcar.Aceita/Chegada`, `Tropas.Reservadas`, `Tropas.GuarnicaoLivre` | Reforço em local que não é seu (aliança); tropas da guarnição que o dono não pode usar. |
 | `Reforcos.PartesDasPerdas` | Parte de cada reforço aliado nas perdas da defesa de um local (perdas e feridos de cada reino). |
-| `Aliancas.SaoAliados/EmTregua/AoEntrarEmRegencia`, `Aliancas.EmRegencia` | Aliança para outros sistemas (IA, regência, interceptação). |
+| `Aliancas.SaoAliados/EmTregua` | Aliança para outros sistemas (IA, interceptação). |
 | `Remessa`, `Remessas.Enviar`, `Remessas.AoTerminar[motivo]` | Carga de um reino para outro (troca, ajuda, pagamentos): sai dos locais mais próximos, roubável; reação quando a última chega ou uma é roubada. |
 | `Comercio.AceitarTroca/Abertas/PactoAtivo/ConferirNovato` | Comércio para a IA comerciante e para quem precisa do pacto ou do limite do novato. |
 | `VisaoMapa.Aliados`, `VisaoMapa.Dono` (Api) | Quem é aliado e como cada dono aparece (`meu`, `aliado`, `outro`, `livre`). |
@@ -139,15 +139,14 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 | `Temporada.PrecisaDeVoce.Listar/Extras` | "Precisa de você" (GET /agora): itens `{ grupo, icone, titulo, texto, href, botao, fim }`. |
 | `Exploracao.Avistamentos.AoRegistrar`, `Combate.Avistamentos.Visao/Arredondado` | Reagir a um avistamento de espião; visão de um reino sem marcar a névoa; número arredondado para o que se vê de fora. |
 | `RP.aviso({ titulo, texto, icone, tipo, link, ms, anuncio, descartavel })` (cliente) | Aviso no centro da tela. Com `anuncio`, grande e em fila (o que aconteceu); sem ele, menor e na hora (resposta a um gesto). |
-| `RP.agoraItemHTML`, telas `#/temporada`, `#/ranking`, `#/agora`, `#/regencia`, aviso SSE `temporada`, `RP.extrasConstrucao[].sistema` (cliente) | Item do "precisa de você"; telas da temporada; aba de construção que só aparece depois do gatilho do sistema; `RP.reino.legado` (`linhagem`, `titulo`, `regiaoExilio`) e `RP.reino.regencia` (do sistema de IA). |
+| `RP.agoraItemHTML`, telas `#/temporada`, `#/ranking`, `#/agora`, aviso SSE `temporada`, `RP.extrasConstrucao[].sistema` (cliente) | Item do "precisa de você"; telas da temporada; aba de construção que só aparece depois do gatilho do sistema; `RP.reino.legado` (`linhagem`, `titulo`, `regiaoExilio`). |
 | `RP.seloVeterania`, `RP.mapa.tiposObjeto.avistamento`, telas `#/exilio` e `#/interceptar?marcha=` (cliente) | Selo de veterania; espião visto no mapa; exílio e interceptação. |
-| `m.IA` (`Ativa`, `CriarReinos`), `MundoIA.Novo` (testes) | Liga a IA no processo (não é gravado): sessões e regência; meta de ocupação (`REINO_IA=0` desliga só esta). `MundoTeste` sobe com a IA desligada. |
+| `m.IA` (`Ativa`, `CriarReinos`), `MundoIA.Novo` (testes) | Liga a IA no processo (não é gravado): sessões dos reinos de IA; meta de ocupação (`REINO_IA=0` desliga só esta). `MundoTeste` sobe com a IA desligada. |
 | `Ocupacao.Completar/CriarUm/Abdicar/LiberarVaga/VagaLonge` | Meta de ocupação (leva inicial, mínimo de ativos), reino de IA novo, abdicação (castelo em ruína, locais como terra livre) e vaga para jogador. |
 | `CriacaoReino.IdNovo` | Id do reino e dos locais iniciais (a IA sorteia de uma reserva para a ordem dos ids não revelar quem é IA). |
 | `CriacaoReino.VagaUtilizavel/LocalSubstituivel` | Vaga que pode receber reino novo (sem local de outro reino nem relíquia/lendário nos 5 hexágonos); local sem dono que pode dar lugar. |
-| `Sessoes.Agendar/De`, `SessaoIAEvento`, `Conduta` | Próxima sessão de um reino de IA ou em regência e a conduta (habilidade × perfil, ou regência). |
+| `Sessoes.Agendar/De`, `SessaoIAEvento`, `Conduta` | Próxima sessão de um reino de IA e a conduta (habilidade × perfil). Reino de jogador não tem conduta: ninguém o governa. |
 | `Governo.Sessao` e partes (`Construir`, `Recrutar`, `Defender`, `Explorar`, `Cacar`, `Extrair`, `Torres`, `Ocupar`, `Espionar`, `Atacar`) | Decisões da IA, sempre pelos serviços da API e com a informação de um jogador. Um sistema novo que a IA deva usar ganha uma parte aqui. |
-| `Regencia.Agendar/Comecar/AoEntrar/Acao/Perda`, `Reino.Regencia`, `Reino.EmRegencia` | Regência (último acesso + `P.regenciaH`), relatório do que a regência fez e perdeu; GET /reino leva `regencia: { ativaDesde, terminouEm, acoes, perdas }`. Sistemas que agem pelo reino em regência anotam com `Acao`/`Perda`. |
 | `Comerciante.Responder/Vale` | Respostas da IA a trocas e pactos (margens de `P.comercio.margemIA` e `P.ia.comercio`). |
 
 ## Regras de visibilidade (o servidor é quem esconde)

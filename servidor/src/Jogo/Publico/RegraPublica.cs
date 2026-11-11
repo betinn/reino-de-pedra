@@ -14,7 +14,7 @@ namespace ReinoDePedra.Jogo.Publico;
 /// reinos, locais, torres, ruínas, marchas, batalhas e bandeiras por aqui, campo a campo, em vez de filtrar um objeto maior.
 /// Campo novo só entra de propósito, e o teste de segredos falha se um nome da lista proibida aparecer.
 /// Nunca entram: tamanho e composição de marcha, destino, objetivos e carga, jazidas, conteúdo de ruínas, estoque, guarnição,
-/// civis, mensagens, propostas, conversa de aliança, escudo, regência, última entrada e quem é de IA.
+/// civis, mensagens, propostas, conversa de aliança, escudo, última entrada e quem é de IA.
 /// </summary>
 public static class RegraPublica
 {
@@ -134,7 +134,7 @@ public static class RegraPublica
         return lista;
     }
 
-    /// <summary>Aliança: nome, brasão e membros. Cargos não vão: a troca de líder entregaria quem entrou em regência.</summary>
+    /// <summary>Aliança: nome, brasão e membros. Cargos não vão.</summary>
     public static JsonArray Aliancas(Mundo m)
     {
         var l = new JsonArray();

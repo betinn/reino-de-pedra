@@ -11,7 +11,7 @@ using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
 namespace ReinoDePedra.Testes;
 
-/// <summary>Mundo de teste com a IA ligada (sessões, regência e, se <c>criar</c>, a meta de ocupação).</summary>
+/// <summary>Mundo de teste com a IA ligada (sessões e, se <c>criar</c>, a meta de ocupação).</summary>
 public static class MundoIA
 {
     public static MundoTeste Novo(bool criar = true, ulong semente = 7, ulong sorte = 42)

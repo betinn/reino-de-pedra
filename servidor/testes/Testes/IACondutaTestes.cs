@@ -9,7 +9,7 @@ using GT = ReinoDePedra.Jogo.Reinos.Tropas;
 
 namespace ReinoDePedra.Testes;
 
-/// <summary>Guerra (escudo e porte), regência, IA comerciante e horas de sessão.</summary>
+/// <summary>Guerra (escudo e porte), jogador ausente, IA comerciante e horas de sessão.</summary>
 public class IACondutaTestes
 {
     public IACondutaTestes() => AjustesTeste.Garantir();
@@ -130,54 +130,28 @@ public class IACondutaTestes
         Assert.Null(Ataque(t, ia));
     }
 
-    // ---------------------------------------------------------------- regência
+    // ---------------------------------------------------------------- jogador ausente
 
     [Fact]
-    public void Regencia_comeca_em_48_h_sem_entrar_governa_sem_expandir_e_termina_quando_o_jogador_volta()
+    public void Jogador_ausente_fica_como_deixou_e_continua_liderando_a_alianca()
     {
+        // a IA nunca governa um reino de jogador: dias sem entrar não mudam quem decide nem quem lidera
         var t = MundoIA.Novo(criar: false);
         var j = MundoIA.Jogador(t, 0); var k = MundoIA.Jogador(t, 1);
         var a = Aliancas.Criar(t.M, j, "Liga do Norte");
         Aliancas.Convidar(t.M, j, k.Id); Aliancas.AceitarConvite(t.M, k, a.Id);
-        k.UltimoAcesso = t.M.Agora + T.DeHoras(30);   // k entra mais tarde: o evento confere de novo e reagenda
-        t.AvancarHoras(t.M.P.RegenciaH - 1);
-        Assert.False(j.EmRegencia);
-        t.AvancarHoras(2);
+        var fundados = j.Fundados;
+        var tropas = Economia.Tropas(t.M, j);
+        t.AvancarHoras(120);
         AjustesTeste.FalharSeErro();
-        Assert.True(j.EmRegencia);
-        Assert.False(k.EmRegencia);
-        Assert.Equal(Aliancas.Lider, a.Membro(k.Id)!.Cargo);   // a liderança passou
-        var fundadosAntes = j.Fundados;
-        t.AvancarHoras(48);
-        AjustesTeste.FalharSeErro();
-        Assert.True(k.EmRegencia);   // 48 h depois do último acesso dele
-        Assert.Equal(fundadosAntes, j.Fundados);
-        Assert.DoesNotContain(j.Fila(Obras.Fila).Itens, i => i.Tipo == ObraFundar.Id);
-        Assert.DoesNotContain(Exercitos.De(t.M, j.Id), e => e.Ordem is OrdemAtacar.Id or OrdemOcupar.Id);
-        Assert.NotEmpty(j.Regencia!.Acoes);   // produziu: obras e recrutamento
-        // volta: retoma o controle, a sessão da IA some e o relatório fica
-        t.AvancarHoras(1);
-        j.UltimoAcesso = t.M.Agora;
-        Assert.True(Regencia.AoEntrar(t.M, j));
-        Assert.False(j.EmRegencia);
-        Assert.Equal(t.M.Agora, j.Regencia!.TerminouEm);
+        Assert.Null(Sessoes.De(t.M, j));
         Assert.Null(j.SessaoIAEventoId);
-        Assert.IsType<VerificarRegenciaEvento>(t.M.Eventos.Obter(j.RegenciaEventoId!.Value));
-        Assert.False(Regencia.AoEntrar(t.M, j));
-    }
-
-    [Fact]
-    public void Regencia_e_conservadora_e_nao_rende_mais_que_jogar()
-    {
-        // a regência recruta com a conduta conservadora: menos tropas que a IA média no mesmo tempo
-        var t = MundoIA.Novo(criar: false);
-        var j = MundoIA.Jogador(t, 0);
-        var ia = MundoIA.Criar(t, "defensivo");
-        Regencia.Comecar(t.M, j);
-        t.AvancarHoras(72);
-        AjustesTeste.FalharSeErro();
-        Assert.True(Economia.Tropas(t.M, j) < Economia.Tropas(t.M, ia));
-        Assert.True(t.M.P.IA.Regencia.Militar < t.M.P.IA.Habilidades["medio"].Militar);
+        Assert.DoesNotContain(t.M.Eventos.OfType<SessaoIAEvento>(), e => e.ReinoId == j.Id || e.ReinoId == k.Id);
+        Assert.Equal(Aliancas.Lider, a.Membro(j.Id)!.Cargo);   // a liderança só passa quando o líder sai
+        Assert.Equal(fundados, j.Fundados);
+        Assert.Empty(j.Filas.Values.SelectMany(f => f.Itens));   // ninguém pôs nada na fila por ele
+        Assert.Equal(tropas, Economia.Tropas(t.M, j));
+        Assert.Empty(Exercitos.De(t.M, j.Id));
     }
 
     // ---------------------------------------------------------------- IA comerciante

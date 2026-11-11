@@ -6,10 +6,11 @@ using ReinoDePedra.Jogo.Social;
 namespace ReinoDePedra.Jogo.IA;
 
 /// <summary>
-/// Reinos de IA, meta de ocupação e regência. Ganchos: vaga para jogador (abdicação), ids sorteados, sessão de cada reino
-/// de IA novo, verificação de regência de cada reino de jogador, reino de IA que perde tudo abdica (não renasce) e a meta
-/// é conferida de novo, perdas da regência e a aliança que não passa a liderança a quem está em regência.
+/// Reinos de IA e meta de ocupação. Ganchos: vaga para jogador (abdicação), ids sorteados, sessão de cada reino de IA novo,
+/// reino de IA que perde tudo abdica (não renasce) e a meta é conferida de novo. A IA nunca governa um reino de jogador:
+/// o reino de quem está ausente fica como ele deixou, e o mundo segue para ele como para qualquer jogador offline.
 /// Na subida (<see cref="AoIniciar"/>), com <c>m.IA.Ativa</c>, garante os eventos de cada reino (mundos de antes da IA).
+/// Mundos gravados antes da decisão 0039: o reino de jogador perde a sessão de IA que sobrou e volta ao dono.
 /// A leva inicial e a meta são completadas por <see cref="Ocupacao.Completar"/>, chamada pelo servidor depois de todos os sistemas
 /// e de novo a cada reset da temporada (<see cref="Temporada.Temporadas.AoReiniciar"/>).
 /// </summary>
@@ -25,16 +26,13 @@ public static class SistemaIA
             CriacaoReino.AoCriar += (mm, r) =>
             {
                 if (!mm.IA.Ativa) return;
-                if (r.EhIA) { if (r.SessaoIAEventoId == null && r.PerfilIA != null) Sessoes.Agendar(mm, r); }
-                else Regencia.Agendar(mm, r);
+                if (r.EhIA && r.SessaoIAEventoId == null && r.PerfilIA != null) Sessoes.Agendar(mm, r);
             };
             Quedas.AoCair += (mm, r, _, q) =>
             {
-                Regencia.AoCair(mm, r, q);
                 // reino de IA que perdeu tudo não renasce em exílio: abdica, e a meta é conferida de novo
                 if (mm.IA.Ativa && r.EhIA && q.Exilio) { Ocupacao.Abdicar(mm, r); Ocupacao.Completar(mm); }
             };
-            Combates.AoTerminar.Add(Regencia.AoTerminarBatalha);
             // memória de quem governa: quem ataca, saqueia ou captura fica marcado
             Combates.AoTerminar.Add((mm, rc) =>
             {
@@ -55,7 +53,6 @@ public static class SistemaIA
                 def.ReacaoIAEventoId = mm.Agendar(new ReacaoIAEvento { ReinoId = def.Id, Quando = mm.Agora + Personas.TempoDeReacao(mm, def, "ataque") }).Id;
                 mm.Sujar(def);
             };
-            Aliancas.EmRegencia = (_, r) => r.EmRegencia;
             // temporada nova: reserva de ids nova e a leva inicial de IA (o estado da IA foi apagado com o mundo)
             Temporada.Temporadas.AoReiniciar += mm =>
             {
@@ -64,17 +61,30 @@ public static class SistemaIA
                 Ocupacao.Completar(mm);
             };
         });
+        DevolverAosDonos(m);
         if (!m.IA.Ativa) return;
         Ocupacao.ReservarIds(m);
-        foreach (var r in m.Reinos.Where(x => x.Ativo).ToList())
+        foreach (var r in m.Reinos.Where(x => x.Ativo && x.EhIA).ToList())
         {
-            if (r.EhIA || r.EmRegencia)
-            {
-                if (r.EhIA && r.PerfilIA == null) continue;   // reino sem dono criado à mão (testes, ferramentas): ninguém governa
-                Personas.Garantir(m, r);   // mundo de antes da persona: cada reino de IA ganha a sua
-                if (r.SessaoIAEventoId is not long sid || m.Eventos.Obter(sid) is not SessaoIAEvento) Sessoes.Agendar(m, r);
-            }
-            else Regencia.Agendar(m, r);
+            if (r.PerfilIA == null) continue;   // reino sem dono criado à mão (testes, ferramentas): ninguém governa
+            Personas.Garantir(m, r);   // mundo de antes da persona: cada reino de IA ganha a sua
+            if (r.SessaoIAEventoId is not long sid || m.Eventos.Obter(sid) is not SessaoIAEvento) Sessoes.Agendar(m, r);
+        }
+    }
+
+    /// <summary>
+    /// Mundo gravado antes da decisão 0039: um reino de jogador que a IA governava ainda tem sessões de IA marcadas.
+    /// Elas são canceladas e o reino fica com o dono (o relatório e a verificação antigos já não são lidos ao carregar).
+    /// </summary>
+    public static void DevolverAosDonos(Mundo m)
+    {
+        foreach (var r in m.Reinos.Where(x => !x.EhIA).ToList())
+        {
+            if (r.SessaoIAEventoId == null && r.SessaoIA2EventoId == null && r.ReacaoIAEventoId == null) continue;
+            m.Cancelar(r.SessaoIAEventoId); r.SessaoIAEventoId = null;
+            m.Cancelar(r.SessaoIA2EventoId); r.SessaoIA2EventoId = null;
+            m.Cancelar(r.ReacaoIAEventoId); r.ReacaoIAEventoId = null;
+            m.Sujar(r);
         }
     }
 }

@@ -34,7 +34,7 @@ O jogo anda como se estivesse acelerado em 3×, pelo próprio balanceamento (a v
 | Coleta, por pessoa | 4/h | **12/h** |
 | Fauna volta / hexágono de coleta enche / vida volta | 24 h / 24 h / 6 h | **8 h / 8 h / 2 h** |
 
-**Em tempo real**, porque é a vida de quem joga: temporada de 70 dias, escudos de 72 h e 24 h, regência em 48 h, tréguas, convites e prazos de 24 h (feridos sem ervas, resgate, decisão sobre preso), pactos em dias, "visto há 10 h", janela de 24 h do saque repetido. Cada local continua guardando **10 h** da própria produção (a noite de quem joga), então guarda 3× mais; o armazém e o estoque mínimo do castelo cresceram junto (600).
+**Em tempo real**, porque é a vida de quem joga: temporada de 70 dias, escudos de 72 h e 24 h, tréguas, convites e prazos de 24 h (feridos sem ervas, resgate, decisão sobre preso), pactos em dias, "visto há 10 h", janela de 24 h do saque repetido. Cada local continua guardando **10 h** da própria produção (a noite de quem joga), então guarda 3× mais; o armazém e o estoque mínimo do castelo cresceram junto (600).
 
 Três escolhas que vieram com o ritmo:
 
@@ -60,7 +60,7 @@ Em relação à primeira versão do modelo (castelo com teto 300, exércitos de 
 |---|---|
 | Temporada | **70 dias** (10 semanas) |
 | Mundo | 30 reinos num mapa de **312 × 240 hexágonos** pequenos (≈ 2.500 por reino; [decisão 0026](../docs/decisoes/0026-mapa-maior-e-bonecos-3d.md)); construções ocupam 7 (castelo), 3 (locais) ou 1 (posto) hexágonos (`P.ocupa`) |
-| Escudo de novato | **72 h**; escudo de exílio **24 h**; regência após **48 h** sem entrar |
+| Escudo de novato | **72 h**; escudo de exílio **24 h** |
 | Reino novo | **Primeiros passos já dados**: castelo e locais no nível 2, 2 moradias, **4 lanceiros e 2 arqueiros** no castelo, **3 exploradores** prontos (a pé, a cavalo, prospector) e o entorno explorado. **8 civis**; o castelo abriga 15, cada moradia mais 3 (a primeira custa 40 recursos, cada uma 24 a mais) |
 | Produção de um local | 9/h no nível 1 → **124/h no nível 11** (+30% por nível), proporcional às vagas ocupadas |
 | Obras | Nível 2 em **40 s**; nível 6 em 10 min 40 s; nível 11 em **5 h 41 min** (o castelo leva o dobro) |
@@ -183,7 +183,7 @@ A torre é a defesa mais eficiente por recurso (uma torre nível 1 defende como 
 - **Saque**: limitado à carga e ao estoque do local (até 10 h de produção). Saque repetido ao mesmo alvo em 24 h rende −20% a cada vez, até 20%.
 - **Relíquias**: produção +15% num local nível 6 dá +5/h, meio nível. Três relíquias juntas (farol) passam de um nível inteiro, e por isso atraem ataque.
 - **Fauna** (força = soma de (ataque + defesa)/2): baixo 50, médio 110, alto 180, em bandos de 1 a 6 animais; com o dobro, passa ileso. 2 lanceiros (65) passam o perigo baixo; 12 arqueiros (360) atravessam qualquer região; um explorador sozinho (10 a 20) corre risco em todas.
-- **Escudo de novato 72 h**: cobre o primeiro fim de semana de quem entra numa sexta. **Regência após 48 h**: dois dias fora já põem o regente para defender. **Escudo de exílio 24 h**: tempo para refazer o mínimo (castelo nível 1, 6 pessoas, 2 milicianos e um kit).
+- **Escudo de novato 72 h**: cobre o primeiro fim de semana de quem entra numa sexta. **Escudo de exílio 24 h**: tempo para refazer o mínimo (castelo nível 1, 6 pessoas, 2 milicianos e um kit).
 - **Legado**: relíquias da temporada de +1% a +2% cada, até 3 equipadas, teto somado de 5%. **Aliança**: até 5 reinos.
 
 ## Simulação de uma temporada (sem guerra)

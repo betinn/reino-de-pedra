@@ -55,14 +55,13 @@ Fontes vêm do Google Fonts quando há rede; sem rede o protótipo usa as fontes
 | 13 | Notificações | `#/notificacoes` (sino) |
 | 14 | Temporada e legado | `#/temporada`, `#/ranking` |
 | 15 | Exílio | `#/exilio` (exemplo, em Mais) |
-| 16 | Retorno após regência | `#/regencia` (exemplo, em Mais) |
-| 17 | Relíquias lendárias | `#/reliquias` (em Mais, em Meu reino e nas folhas). Escavação: `#/extracao?jazida=j-ruina`. Mover com escolta: `#/transporte?rel=<id>`. Interceptar: `#/interceptar?marcha=<id>` |
-| 18 | Transportar recursos (caravana) | `#/caravana` (`?para=<local>`, `?de=<local>`, `?leva=madeira:300,pedra:150`) |
-| 19 | Aliança e pedido de recursos | `#/alianca`, `#/pedido?reino=<id>` |
-| 20 | Precisa de você | `#/agora` (resumo no topo de Meu reino) |
-| 21 | Ferraria e eras | `#/ferraria` (em Tropas, Construção, Mais e na folha da ferraria) |
-| 22 | Comércio e diplomacia | `#/comercio`, `#/troca` (`?reino=<id>`), `#/pacto` (`?reino=<id>`) |
-| 23 | Mensagens | `#/mensagens`, `#/mensagem` (`?para=<reino>`, `?local=<id>`) |
+| 16 | Relíquias lendárias | `#/reliquias` (em Mais, em Meu reino e nas folhas). Escavação: `#/extracao?jazida=j-ruina`. Mover com escolta: `#/transporte?rel=<id>`. Interceptar: `#/interceptar?marcha=<id>` |
+| 17 | Transportar recursos (caravana) | `#/caravana` (`?para=<local>`, `?de=<local>`, `?leva=madeira:300,pedra:150`) |
+| 18 | Aliança e pedido de recursos | `#/alianca`, `#/pedido?reino=<id>` |
+| 19 | Precisa de você | `#/agora` (resumo no topo de Meu reino) |
+| 20 | Ferraria e eras | `#/ferraria` (em Tropas, Construção, Mais e na folha da ferraria) |
+| 21 | Comércio e diplomacia | `#/comercio`, `#/troca` (`?reino=<id>`), `#/pacto` (`?reino=<id>`) |
+| 22 | Mensagens | `#/mensagens`, `#/mensagem` (`?para=<reino>`, `?local=<id>`) |
 | — | Tropas (em campo, guarnição, ordens) | `#/tropas` |
 
 Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolher no mapa o local de uma construção nova (vila, posto, rota).
@@ -80,14 +79,13 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 5. **Fauna:** tocar num bando (Vista) ou no ícone (Mapa) → nível de perigo, regras e Caçar. Em áreas exploradas aparece a placa de perigo com a idade da informação.
 6. **Rota segura:** Mapa → Camadas → Perigo: pinta as áreas com fauna; o explorador a cavalo mostra alerta de risco por passar por área de lobos.
 7. **Do reino ao mundo:** Meu reino → tocar numa construção da Vista ou num card → detalhes → Ver no mapa.
-8. **Regência:** Mais → Retorno após regência → o que o regente fez, o que foi perdido → Retomar o reino.
-9. **Construir:** Reino → Construir (ou Melhorar num local) → escolher no catálogo → custo sai dos recursos e a obra entra na fila → na Vista aparecem andaimes, um construtor e o tempo da obra.
-10. **Recrutar:** Tropas → Recrutar → quantidade por unidade (−/+, +5, +10, Máx.) → resumo com custo, população e tempo → fila; na Vista, arqueiros treinam no quartel enquanto há recrutamento.
-11. **Explorar:** tocar num hexágono → Enviar explorador (ou Tropas → Exploradores) → tipo, ordem, destino e caminho (curto x seguro, escolta opcional, risco de fauna) → enviar → a Vista mostra o explorador saindo do castelo.
-12. **Espionar:** local de outro reino → Espionar → Exploradores com batedor de elite. A Mina Rubra mostra o resultado: dono e defesa revelados por espionagem.
-13. **Caçar:** animal no mapa → Caçar (ou Tropas → Caça) → alvo, rendimento estimado, grupo de caça com força x perigo, caminho → os caçadores saem do castelo na Vista.
-14. **Extrair:** jazida no mapa → Extrair (ou Tropas → Extração) → grupo (uma unidade já basta), posto opcional, gráfico de rendimento por cenário, duração da jazida e caminho → os trabalhadores aparecem na Vista (exemplo ativo: Jazida de prata, com posto).
-15. **Atacar:** local de outro reino → Atacar este local → tipo de ataque, tropas, **objetivos** (em ordem de prioridade, com quantidade e o que a espionagem sabe do alvo), **tática**, estandarte (com prévia do que o defensor verá) e caminho → confirmação com os objetivos e "quando param" → o ataque sai do castelo. Escudo de novato só é descoberto ao chegar; saque repetido avisa do rendimento menor.
+8. **Construir:** Reino → Construir (ou Melhorar num local) → escolher no catálogo → custo sai dos recursos e a obra entra na fila → na Vista aparecem andaimes, um construtor e o tempo da obra.
+9. **Recrutar:** Tropas → Recrutar → quantidade por unidade (−/+, +5, +10, Máx.) → resumo com custo, população e tempo → fila; na Vista, arqueiros treinam no quartel enquanto há recrutamento.
+10. **Explorar:** tocar num hexágono → Enviar explorador (ou Tropas → Exploradores) → tipo, ordem, destino e caminho (curto x seguro, escolta opcional, risco de fauna) → enviar → a Vista mostra o explorador saindo do castelo.
+11. **Espionar:** local de outro reino → Espionar → Exploradores com batedor de elite. A Mina Rubra mostra o resultado: dono e defesa revelados por espionagem.
+12. **Caçar:** animal no mapa → Caçar (ou Tropas → Caça) → alvo, rendimento estimado, grupo de caça com força x perigo, caminho → os caçadores saem do castelo na Vista.
+13. **Extrair:** jazida no mapa → Extrair (ou Tropas → Extração) → grupo (uma unidade já basta), posto opcional, gráfico de rendimento por cenário, duração da jazida e caminho → os trabalhadores aparecem na Vista (exemplo ativo: Jazida de prata, com posto).
+14. **Atacar:** local de outro reino → Atacar este local → tipo de ataque, tropas, **objetivos** (em ordem de prioridade, com quantidade e o que a espionagem sabe do alvo), **tática**, estandarte (com prévia do que o defensor verá) e caminho → confirmação com os objetivos e "quando param" → o ataque sai do castelo. Escudo de novato só é descoberto ao chegar; saque repetido avisa do rendimento menor.
     - Exemplo: Mina Rubra → objetivos "Lâmina do Rei Antigo" e "10.000 de madeira" (adicionar, +5k duas vezes) → a carga de 10 lanceiros (500) não cabe e a tela avisa → tática Cautelosa → "Quando param" mostra as três condições.
     - O relatório do saque à Mina Rubra mostra cada objetivo (cumprido, parcial ou falhou), o que foi obtido e por que as tropas voltaram.
 16. **Defender:** faixa "Batalha em andamento" → Batalha: Vista do combate, força dos lados, gráfico ao longo do tempo (toque mostra os valores; também há tabela), acontecimentos → Enviar reforços (a curva muda quando chegam) ou Recuar.
@@ -144,7 +142,6 @@ Todas as telas da lista estão prototipadas. Único passo só ilustrado: escolhe
 **Reinos controlados por IA**
 - **Nunca são identificados como IA.** Mesmos marcadores, nomes, brasões e cores dos jogadores.
 - Locais sem dono aparecem como **Ruína** ou **Terra livre**, sem dizer a causa.
-- Tela de **Retorno após regência**, com regente conservador: defendeu e produziu, sem expandir.
 
 ---
 
@@ -163,12 +160,12 @@ prototipo/
     icones.js         sprite SVG de ícones e símbolos do mapa tático (arte própria)
     brasao.js         gerador de brasão
     hex.js            geometria hexagonal e terreno fixo
-    dados.js          dados fictícios (reinos, locais, jazidas, marchas, fauna, ruínas, regência)
+    dados.js          dados fictícios (reinos, locais, jazidas, marchas, fauna, ruínas)
     nucleo.js         rotas de tela, gestos, folha, modal, avisos, timers, barra de recursos
     mundo.js          modelo do mundo: névoa, marchas no tempo, fauna e perigo
     cena.js           Vista imersiva 2.5D (Canvas 2D)
     mapa.js           tela do mundo: Mapa tático, alternância de visão, folhas de detalhe, minimapa
-    telas.js          entrada, criação, meu reino, regência e telas-guia
+    telas.js          entrada, criação, meu reino e telas-guia
     acoes.js          caminhos, tropas, construção, recrutamento, exploradores e caça
     militar.js        extração e escavação, envio de ataque, posturas e batalha
     social.js         relatórios, notificações, bandeiras e ranking

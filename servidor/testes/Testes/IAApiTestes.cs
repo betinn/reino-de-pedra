@@ -5,32 +5,28 @@ using ReinoDePedra.Jogo.Reinos;
 
 namespace ReinoDePedra.Testes;
 
-/// <summary>O que o cliente recebe: regência no GET /reino e nenhum campo que diferencie um reino de IA.</summary>
+/// <summary>O que o cliente recebe: nenhum campo que diferencie um reino de IA, e o reino do jogador ausente segue dele.</summary>
 public class IAApiTestes
 {
     [Fact]
-    public async Task Get_reino_traz_a_regencia_e_o_jogador_que_volta_retoma_o_reino()
+    public async Task Jogador_que_volta_depois_de_dias_encontra_o_reino_sem_ninguem_no_governo()
     {
         await using var s = await ServidorTeste.Iniciar();
         using var a = s.NovoCliente();
         await a.ContaComReino("ana@exemplo.com", "Pedralva");
-        var (_, r0) = await a.Get("reino");
-        Assert.Equal(JsonValueKind.Null, r0.GetProperty("regencia").ValueKind);
-        await s.Avancar(TimeSpan.FromHours(72));   // 48 h sem entrar + um dia de regência
-        var emRegencia = await s.Motor.Executar(m => m.Reinos.First(x => x.Ativo && !x.EhIA).EmRegencia);
-        Assert.True(emRegencia);
-        var (_, r1) = await a.Get("reino");
-        var g = r1.GetProperty("regencia");
-        Assert.True(g.GetProperty("ativaDesde").GetInt64() > 0);
-        Assert.Equal(r1.GetProperty("agora").GetInt64(), g.GetProperty("terminouEm").GetInt64());   // o GET encerrou a regência
-        Assert.Equal(JsonValueKind.Array, g.GetProperty("acoes").ValueKind);
-        Assert.NotEmpty(g.GetProperty("acoes").EnumerateArray());
-        Assert.Equal(JsonValueKind.Array, g.GetProperty("perdas").ValueKind);
-        Assert.All(g.GetProperty("acoes").EnumerateArray(), x => Assert.Equal(JsonValueKind.String, x.ValueKind));
-        Assert.False(await s.Motor.Executar(m => m.Reinos.First(x => x.Ativo && !x.EhIA).EmRegencia));
+        await s.Avancar(TimeSpan.FromHours(96));
+        var governado = await s.Motor.Executar(m =>
+        {
+            var r = m.Reinos.First(x => x.Ativo && !x.EhIA);
+            return Sessoes.De(m, r) != null || r.SessaoIAEventoId != null;
+        });
+        Assert.False(governado);
+        var (st, r1) = await a.Get("reino");
+        Assert.Equal(System.Net.HttpStatusCode.OK, st);
+        Assert.Equal("Pedralva", r1.GetProperty("nome").GetString());
     }
 
-    private static readonly string[] Proibidos = ["perfil", "habilidade", "contaid", "ehia", "regencia", "sessao", "\"ia\""];
+    private static readonly string[] Proibidos = ["perfil", "habilidade", "contaid", "ehia", "sessao", "\"ia\""];
 
     private static HashSet<string> Chaves(JsonElement e, string prefixo = "")
     {
@@ -72,7 +68,7 @@ public class IAApiTestes
         var chavesB = lB.Select(o => string.Join(",", Chaves(o).OrderBy(x => x))).ToHashSet();
         Assert.Equal(chavesB.OrderBy(x => x), chavesIA.OrderBy(x => x));
         Assert.Equal(lB.Select(o => o.GetProperty("dono").GetString()).Distinct(), lIA.Select(o => o.GetProperty("dono").GetString()).Distinct());
-        // nada no que A recebe fala de IA (o GET /reino de A pode ter "regencia": é o dele)
+        // nada no que A recebe fala de IA
         foreach (var url in new[] { "comercio", "mapa", "alianca", "mensagens" })
         {
             var (_, j) = await a.Get(url);

@@ -169,7 +169,6 @@
   },
   "escudoNovatoH": 72,
   "escudoExilioH": 24,
-  "regenciaH": 48,
   "legado": {
    "relMin": 0.01,
    "relMax": 0.02,
@@ -913,20 +912,6 @@
    "comercio": {
     "margemOutros": 2,
     "reserva": 0.5
-   },
-   "regencia": {
-    "sessoes": [
-     9,
-     21
-    ],
-    "militar": 0.2,
-    "mantemTrab": 1,
-    "fracTropas": 0.3,
-    "horizonte": 12,
-    "horizonteNoite": 12,
-    "acerto": 1,
-    "arqueiros": 0.25,
-    "linhas": 30
    }
   },
   "vida": {
