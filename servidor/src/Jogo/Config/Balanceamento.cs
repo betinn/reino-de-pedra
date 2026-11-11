@@ -130,7 +130,6 @@ public sealed class ParametrosP
     public ReliquiaP Reliquia { get; init; } = new();
     public double EscudoNovatoH { get; init; }
     public double EscudoExilioH { get; init; }
-    public double RegenciaH { get; init; }
     public LegadoP Legado { get; init; } = new();
     public Dictionary<string, double> Fauna { get; init; } = new();
     public Dictionary<string, double> AtaqueFauna { get; init; } = new();
@@ -192,7 +191,7 @@ public sealed class ParametrosP
     // ---------- temporada, legado, ranking e "precisa de você" (servidor) ----------
     public TemporadaServP TemporadaServ { get; init; } = new();
     public AgoraServP AgoraServ { get; init; } = new();
-    // ---------- reinos de IA, meta de ocupação, regência e IA comerciante (servidor) ----------
+    // ---------- reinos de IA, meta de ocupação e IA comerciante (servidor) ----------
     public IAP IA { get; init; } = new();
     // ---------- vida das pessoas e fauna como dano (servidor) ----------
     public VidaP Vida { get; init; } = new();
@@ -516,7 +515,7 @@ public sealed class Unidade
 
 public sealed class Veiculo { public double Carga { get; init; } public string Vel { get; init; } = ""; public Dictionary<string, double> Custo { get; init; } = new(); }
 
-// ---------- reinos de IA, meta de ocupação, regência e IA comerciante (servidor) ----------
+// ---------- reinos de IA, meta de ocupação e IA comerciante (servidor) ----------
 public sealed class IAP
 {
     /// <summary>Reinos de IA no começo da temporada.</summary>
@@ -544,7 +543,6 @@ public sealed class IAP
     public ExtracaoIAP Extracao { get; init; } = new();
     public DefesaIAP Defesa { get; init; } = new();
     public ComercioIAP Comercio { get; init; } = new();
-    public CondutaIAP Regencia { get; init; } = new();
 }
 /// <summary>Regras de decisão de uma sessão (as da simulação do modelo).</summary>
 public sealed class CondutaIAP
@@ -559,8 +557,6 @@ public sealed class CondutaIAP
     public int LocaisMax { get; init; }
     public double Acerto { get; init; }
     public double Arqueiros { get; init; }
-    /// <summary>Regência: linhas guardadas no relatório (ações e perdas).</summary>
-    public int Linhas { get; init; }
 }
 public sealed class PerfilIAP
 {

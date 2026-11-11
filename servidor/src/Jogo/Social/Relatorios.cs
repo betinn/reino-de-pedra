@@ -47,7 +47,7 @@ namespace ReinoDePedra.Jogo.Social
             ["tropas"] = "Tropas, recrutamento e marchas", ["exploracao"] = "Exploração, fauna e caça", ["recursos"] = "Recursos, extração e caravanas",
             ["reliquias"] = "Relíquias", ["alianca"] = "Aliança (convites, cargos, menções)", ["conversa"] = "Conversa da aliança (fala nova)",
             ["comercio"] = "Comércio e diplomacia", ["mensagens"] = "Mensagens",
-            ["reino"] = "Reino (população, escudo, regência)", ["temporada"] = "Temporada e legado",
+            ["reino"] = "Reino (população, escudo)", ["temporada"] = "Temporada e legado",
         };
 
         public static Relatorio Relatar(Mundo m, long reinoId, string tipo, string titulo, JsonObject? dados = null, string? categoria = null, string? notificacao = null, string? tamanho = null)

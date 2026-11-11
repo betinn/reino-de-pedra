@@ -22,7 +22,7 @@ namespace ReinoDePedra.Jogo.Temporada
     {
         public const string Urgente = "urgente", Oportunidade = "oportunidade", NoReino = "reino";
 
-        /// <summary>Itens de outros sistemas (IA, regência...).</summary>
+        /// <summary>Itens de outros sistemas (IA...).</summary>
         public static List<Func<Mundo, Reino, IEnumerable<ItemAgora>>> Extras { get; } = new();
 
         public static List<ItemAgora> Listar(Mundo m, Reino r)

@@ -37,7 +37,7 @@ public class CargaIATestes(ITestOutputHelper saida)
         Assert.Equal(m.P.Reinos, Ocupacao.Ativos(m).Count());
         // jogadores simulados: entram nas horas do jogador médio e jogam pelos mesmos serviços (dois saqueadores, três construtores)
         var med = m.P.IA.Habilidades["medio"];
-        var condutas = jogadores.Select((j, i) => new Conduta(med, m.P.IA.Perfis[i < 2 ? "saqueador" : "expansionista"], false)).ToList();
+        var condutas = jogadores.Select((j, i) => new Conduta(med, m.P.IA.Perfis[i < 2 ? "saqueador" : "expansionista"])).ToList();
         var proximaJogada = Sessoes.Proxima(m, med, m.Agora);
 
         var fim = m.Agora + dias * T.Dia;

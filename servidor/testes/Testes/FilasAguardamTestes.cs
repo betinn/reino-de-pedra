@@ -497,6 +497,48 @@ public class FilasAguardamTestes
     }
 
     [Fact]
+    public void Mundo_gravado_com_a_IA_governando_um_jogador_volta_ao_dono_ao_carregar()
+    {
+        // decisão 0039: saves de antes guardam o registro antigo no reino, a verificação dele e sessões de IA marcadas
+        ComBanco(arq =>
+        {
+            var t = MundoIA.Novo(criar: false);
+            var j = MundoIA.Jogador(t, 0);
+            Zerar(t, j);
+            var it = Item(t, j, Obras.Fila, Custo(("ouro", 10)));
+            j.SessaoIAEventoId = t.M.Agendar(new SessaoIAEvento { ReinoId = j.Id, Quando = t.M.Agora + T.Hora }).Id;
+            j.SessaoIA2EventoId = t.M.Agendar(new SessaoIAEvento { ReinoId = j.Id, Etapa = 1, Quando = t.M.Agora + T.Hora }).Id;
+            t.M.Sujar(j);
+            using (var db = new Banco(arq))
+            {
+                db.Salvar(t.M);
+                var json = db.Escalar<string>("SELECT dados FROM docs WHERE colecao=$c AND id=$i", ("$c", t.M.Reinos.Nome), ("$i", j.Id))!;
+                var antigo = json.TrimEnd('}') + ",\"RegenciaEventoId\":999999,\"Regencia\":{\"AtivaDesde\":1,\"Acoes\":[{\"Chave\":\"moradia\",\"Texto\":\"Moradias\",\"Quando\":1,\"Qtd\":1}],\"Perdas\":[]}}";
+                db.Exec("UPDATE docs SET dados=$d WHERE colecao=$c AND id=$i", ("$d", antigo), ("$c", t.M.Reinos.Nome), ("$i", j.Id));
+                db.Exec("INSERT INTO docs(colecao,id,tipo,dados) VALUES($c,999999,'VerificarRegenciaEvento',$d)",
+                    ("$c", t.M.Eventos.Nome), ("$d", "{\"ReinoId\":" + j.Id + ",\"Quando\":" + (t.M.Agora + T.Hora) + "}"));
+            }
+            var m2 = Recarregar(arq, t);
+            m2.IA.Ativa = true;
+            Sistemas.IniciarTodos(m2);
+            var j2 = m2.Reinos[j.Id];
+            Assert.Null(j2.SessaoIAEventoId);
+            Assert.Null(j2.SessaoIA2EventoId);
+            Assert.DoesNotContain(m2.Eventos.OfType<SessaoIAEvento>(), e => e.ReinoId == j.Id);
+            Assert.Null(Sessoes.De(m2, j2));
+            // o mundo segue para ele como para um jogador offline: o item que ele deixou começa sozinho
+            var it2 = Assert.Single(j2.Fila(Obras.Fila).Itens);
+            Assert.Equal(it.Id, it2.Id);
+            m2.Locais[j2.CasteloId].Estoque.Somar("ouro", 10);
+            t.Relogio.Agora += T.DeHoras(48);
+            m2.ProcessarAte(t.Relogio.Agora);
+            Assert.False(it2.Aguardando);
+            Assert.Null(j2.SessaoIAEventoId);
+            Assert.DoesNotContain(j2.Filas.Values.SelectMany(f => f.Itens), i => i.Id != it.Id);   // ninguém pôs nada na fila por ele
+        });
+    }
+
+    [Fact]
     public void Queda_do_servidor_depois_da_reserva_nao_gravada_nao_paga_duas_vezes()
     {
         // grava com o item aguardando e o ouro no estoque; reserva na memória e "cai" antes de gravar
@@ -916,7 +958,7 @@ public class FilasAguardamTestes
         Assert.DoesNotContain(PrecisaDeVoce.Listar(t.M, r), x => x.Titulo.StartsWith("Fila parada"));
     }
 
-    // ---------------------------------------------------------------- IA e regência
+    // ---------------------------------------------------------------- IA e jogador ausente
 
     [Fact]
     public void IA_sem_recurso_nao_enche_a_fila()
@@ -966,19 +1008,19 @@ public class FilasAguardamTestes
     }
 
     [Fact]
-    public void Regencia_mantem_o_que_o_jogador_deixou_e_nao_pede_o_que_nao_paga()
+    public void Jogador_ausente_mantem_a_fila_e_o_item_comeca_sozinho()
     {
         var t = MundoIA.Novo(criar: false);
         var j = MundoIA.Jogador(t, 0);
         Zerar(t, j);
         var it = Item(t, j, Obras.Fila, Custo(("ouro", 10)));
-        Regencia.Comecar(t.M, j);
-        Governo.Sessao(t.M, j, MundoIA.Conduta(t, j));
-        Governo.Sessao(t.M, j, MundoIA.Conduta(t, j));
-        Assert.Equal(it.Id, j.Fila(Obras.Fila).Itens[0].Id);   // nem cancela o do jogador nem passa à frente dele
+        t.AvancarHoras(96);   // quatro dias sem entrar, com a IA ligada no mundo
+        AjustesTeste.FalharSeErro();
+        Assert.Null(Sessoes.De(t.M, j));                        // ninguém governa o reino de um jogador
+        Assert.Null(j.SessaoIAEventoId);
+        var fila = j.Fila(Obras.Fila).Itens;
+        Assert.Equal(it.Id, fila[0].Id);                        // o item do jogador continua lá, na frente
         Assert.True(it.Aguardando);
-        t.M.Em(t.M.Agora + T.Dia * 3, () => Governo.Sessao(t.M, j, MundoIA.Conduta(t, j)));
-        Assert.Contains(j.Fila(Obras.Fila).Itens, i => i.Id == it.Id);
         t.DarRecursos(j, 10, "ouro");
         Filas.Avaliar(t.M, j);
         Assert.False(it.Aguardando);                           // começa sozinho, com o jogador fora

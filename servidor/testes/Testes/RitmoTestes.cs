@@ -46,7 +46,7 @@ public class RitmoTestes
     {
         var p = B.P;
         Assert.Equal(70, p.TemporadaDias);
-        Assert.Equal(72, p.EscudoNovatoH); Assert.Equal(24, p.EscudoExilioH); Assert.Equal(48, p.RegenciaH);
+        Assert.Equal(72, p.EscudoNovatoH); Assert.Equal(24, p.EscudoExilioH);
         Assert.Equal(24, p.ResgateH); Assert.Equal(24, p.TreguaSaidaH); Assert.Equal(24, p.Feridos.EsperaH);
         Assert.Equal(24, p.Social.PropostaH); Assert.Equal(10, p.AvistamentoH);
         Assert.Equal(1, p.Pacto.DiasMin); Assert.Equal(7, p.Pacto.DiasMax);

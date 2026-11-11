@@ -260,6 +260,6 @@ public sealed class CheckpointReinoEvento : Evento
         foreach (var f in AoCheckpoint) f(m, r);
         m.Agendar(new CheckpointReinoEvento { ReinoId = ReinoId, Quando = m.Agora + T.Hora });
     }
-    /// <summary>Sistemas que querem rodar de hora em hora por reino (IA, regência...).</summary>
+    /// <summary>Sistemas que querem rodar de hora em hora por reino (IA...).</summary>
     public static List<Action<Mundo, Reino>> AoCheckpoint { get; } = new();
 }

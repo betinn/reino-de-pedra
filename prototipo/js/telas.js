@@ -424,7 +424,6 @@
         ['bandeira', 'Bandeiras', 'Sinais que você colocou e os de perto', '#/bandeiras'],
         ['sino', 'Notificações', 'Avisos recentes e o que chega no celular', '#/notificacoes'],
         ['escudo', 'Posturas', 'Como cada guarnição reage sem você', '#/posturas'],
-        ['coroa', 'Retorno após regência', 'O que o regente fez enquanto você esteve fora (exemplo)', '#/regencia'],
         ['escombros', 'Exílio', 'Recomeço após perder todos os locais (exemplo)', '#/exilio']
       ]) +
         '<div class="conteudo-tela pilha" style="padding-top:0"><div class="secao-titulo">Protótipo</div>' +
@@ -442,32 +441,4 @@
           }).join('') + '</div>';
       })();
   }
-
-  /* ================================================================ retorno após regência */
-  RP.registrarTela('regencia', {
-    montar: function (el) {
-      var r = D.regencia, rec = D.recursos;
-      el.innerHTML =
-        '<header class="topo"><a class="btn btn-fantasma btn-icone" href="#/mais" aria-label="Voltar">' + RP.icone('voltar') + '</a><h1>Retorno ao reino</h1></header>' +
-        '<div class="conteudo-tela pilha-4">' +
-        '<div class="card card-moldura regencia-topo">' + RP.brasao(RP.estado.brasao, { tamanho: 64 }) +
-        '<div><h2>Bem-vindo de volta</h2><p class="suave">Você ficou <b>' + r.diasFora + ' dias</b> fora. Nesse período, um regente governou ' + RP.esc(RP.estado.nome) + ' em seu nome.</p></div></div>' +
-        '<div class="card pilha"><div class="card-titulo" style="margin:0">' + RP.icone('coroa') + '<h3>Como foi a regência</h3></div>' +
-        '<p class="suave" style="font-size:var(--fs-2)">O regente é conservador: defende e produz, sem expandir nem atacar. Abandonar o reino nunca rende mais do que jogar.</p>' +
-        '<div class="regencia-numeros">' +
-        '<div><span class="fraco">Ataques sofridos</span><b>' + r.ataques.total + '</b><small>' + r.ataques.repelidos + ' repelidos</small></div>' +
-        '<div><span class="fraco">Locais</span><b>' + r.restou.locais + '</b><small>' + r.perdas.length + ' perdido</small></div>' +
-        '<div><span class="fraco">População</span><b>' + RP.num(r.restou.populacao) + '</b><small>de ' + RP.num(D.populacao.teto) + '</small></div>' +
-        '</div></div>' +
-        '<div class="card pilha"><div class="card-titulo" style="margin:0">' + RP.icone('martelo') + '<h3>Produzido</h3></div>' +
-        '<div class="regencia-recursos">' + Object.keys(r.producao).map(function (kk) {
-          return '<span class="selo selo-g">' + RP.icone(kk, 'r-' + kk) + rec[kk].nome + ' <b class="num">+' + RP.num(r.producao[kk]) + '</b></span>';
-        }).join('') + '</div></div>' +
-        r.perdas.map(function (pp) { return '<div class="faixa-alerta">' + RP.icone('alerta') + '<span class="txt"><b>' + RP.esc(pp.local) + '</b><br>' + RP.esc(pp.como) + '</span></div>'; }).join('') +
-        '<div class="card"><div class="card-titulo">' + RP.icone('relatorios') + '<h3>Diário do regente</h3></div><ol class="diario">' +
-        r.acoes.map(function (a) { return '<li><span class="selo">Dia ' + a.dia + '</span><span>' + RP.esc(a.txt) + '</span></li>'; }).join('') + '</ol></div>' +
-        '</div>' +
-        '<div class="rodape-acao"><a class="btn btn-primario btn-bloco btn-grande" href="#/reino">' + RP.icone('castelo') + 'Retomar o reino</a></div>';
-    }
-  });
 })();

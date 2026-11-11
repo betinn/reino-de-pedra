@@ -106,7 +106,7 @@ Portões do castelo: 100 de estrutura por nível (nível 3: 300, 8 aríetes ou 4
 - Fauna (força = soma de (ataque + defesa)/2): baixo 50, médio 110, alto 180. Com o dobro do limite, o grupo passa ileso. 4 lanceiros = 130 (ilesos no baixo); 12 arqueiros = 360 (ilesos em qualquer nível); 1 explorador a cavalo = 15.
 - Saque repetido ao mesmo alvo em 24 h: −20% por saque, até restar 20%.
 - Relíquias: ataque +15%, produção +15%, resistência +20%. Produção +15% num local de nível 6 = +5/h, perto de meio nível (10/h). Escavação: 4 h com 1 unidade, mínimo 1 h 20 min.
-- Escudo de novato 72 h; escudo de exílio 24 h; regência após 48 h sem entrar. Relíquias da temporada (legado): +1% a +2% cada, até 3 equipadas, teto somado de 5%. Aliança: até 5 reinos.
+- Escudo de novato 72 h; escudo de exílio 24 h. Relíquias da temporada (legado): +1% a +2% cada, até 3 equipadas, teto somado de 5%. Aliança: até 5 reinos.
 
 ## Simulação de uma temporada (70 dias)
 

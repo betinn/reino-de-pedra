@@ -26,6 +26,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Referências de gênero: Travian, Tribal Wars, Stronghold Kingdoms, Rise of Kingdoms.
 - Diferencial: **exploração real** de um mapa grande, com recursos valiosos escondidos que precisam ser descobertos.
 - O mundo continua funcionando com o jogador offline: construções terminam, tropas marcham e defesas reagem.
+- **Nenhuma IA governa o reino de um jogador.** Quem fica dias sem entrar encontra o reino como deixou: as filas andam, as tropas marcham e as guarnições defendem pela postura, mas ninguém decide por ele.
 - **Multiplayer desde o início**: todos os jogadores no mesmo mapa.
 - **Um único mundo**, por enquanto, com **entrada só por convite** (ver Site público e convites). Com o mundo cheio e sem reino de IA para dar lugar, ninguém mais entra até a próxima temporada. Não há ajuda especial para quem entra tarde.
 - Uma vaga com local de outro reino em algum dos seus hexágonos não recebe reino novo; ruína ou terra livre sem dono dá lugar, salvo se guarda relíquia ou equipamento lendário.
@@ -40,7 +41,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Princípio: o site mostra só o que todo jogador vê.** Qualquer jogador pode abrir o site em outra aba, então ele não dá vantagem: o servidor monta o feed e o mapa de outros reinos pela mesma regra (`RegraPublica`), e nunca envia o segredo para o cliente esconder.
 - **Público**: terreno, rotas, castelos, locais, torres e ruínas com dono e nível; nome, brasão e imagem de cada reino; marchas com dono e posição, ao vivo; batalhas ao vivo; mortos com nome; bandeiras; alianças; pactos; ranking; marcha com baú e local com relíquia, sem o tipo.
 - O mapa ao vivo se atualiza **a cada 3 segundos** (marchas, batalhas, construções e painel) enquanto a aba estiver visível.
-- **Secreto, nem o jogador recebe**: tamanho das tropas em marcha (nem aproximado), destino e objetivos da marcha, guarnição exata e civis de cada local, estoque, jazidas valiosas e lendárias até serem descobertas, conteúdo das ruínas, mensagens, propostas, conversa da aliança, escudo de novato, regência, última entrada e quais reinos são de IA.
+- **Secreto, nem o jogador recebe**: tamanho das tropas em marcha (nem aproximado), destino e objetivos da marcha, guarnição exata e civis de cada local, estoque, jazidas valiosas e lendárias até serem descobertas, conteúdo das ruínas, mensagens, propostas, conversa da aliança, escudo de novato, última entrada e quais reinos são de IA.
 - De uma marcha de outro reino se vê o hexágono em que ela está e o próximo, o bastante para animar o passo. Vale para todos, inclusive aliados e o reino para onde ela vai: ninguém sabe se ela vem para cá até ela chegar.
 - **Mensagens globais do servidor**, no site e no jogo, anunciadas no centro da tela: batalha começou, "Reino X perdeu N tropas na batalha em Y" com os nomes dos mortos, explorador capturado, castelo caído. Nunca dizem o tamanho de uma força, o tipo do ataque ou os objetivos.
 - **Pedir convite**: o visitante deixa um e-mail, que entra numa fila no servidor. A resposta é sempre a mesma (não diz se já estava na fila), com limite por origem. E-mail é dado pessoal: nunca em log, repositório ou feed.
@@ -199,7 +200,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Deslocamento não deve demorar excessivamente.** Viagens de muitas horas, sem outras ações para o jogador cuidar enquanto espera, afastam o jogador e quebram a imersão.
 - **Ritmo 3×.** O jogo anda como se estivesse acelerado em 3×, pelo próprio balanceamento (não por uma variável de aceleração):
   - **3× mais rápido**: obras, recrutamento, ferraria, eras, cura, escavação, caça, rotas, veículos e todo deslocamento; produção por hora, nascimentos, extração e coleta rendem 3×. O que o mundo leva para se refazer também: fauna que volta, hexágono de coleta que enche, vida que volta.
-  - **Em tempo real**, porque é a vida de quem joga: temporada de 70 dias, escudos, regência, tréguas, convites, prazos de 24 h (feridos sem ervas, resgate, decisão sobre preso), pactos em dias, "visto há X horas" e a janela do saque repetido. Cada local continua guardando 10 h da própria produção (a noite de quem joga).
+  - **Em tempo real**, porque é a vida de quem joga: temporada de 70 dias, escudos, tréguas, convites, prazos de 24 h (feridos sem ervas, resgate, decisão sobre preso), pactos em dias, "visto há X horas" e a janela do saque repetido. Cada local continua guardando 10 h da própria produção (a noite de quem joga).
   - **Nível máximo 11** para castelo e locais. Sem guerra, o jogador ativo fecha a economia perto do dia 20 e o médio perto do dia 26; o resto da temporada é disputa.
 
 ---
@@ -349,18 +350,15 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Indistinguíveis**: reinos de IA não são identificados como tal para os jogadores.
 - **Mesmas regras dos jogadores**: timers, recursos, população e limites idênticos, sem trapaça. Perfis variados (expansionista, defensivo, saqueador, comerciante) e níveis de habilidade diferentes.
 - Respeitam o escudo de novato e calibram a agressividade pelo porte do alvo.
-- Proteções: escudo de novato de **72 h**; escudo de exílio de **24 h**; regência depois de **48 h** sem entrar.
+- Proteções: escudo de novato de **72 h**; escudo de exílio de **24 h**.
 - **Saída gradual**: conforme jogadores entram, não são criados novos reinos de IA; reinos de IA destruídos não renascem, e excedentes podem abdicar, com seus locais virando ruínas ou terra livre.
-- **Entrada quando jogadores saem**:
-  - **Regência**: após um período de inatividade, o reino do jogador ausente passa a ser governado por IA. Se o jogador voltar, retoma o controle do que restou.
-  - A regência é **conservadora** (defende e produz, sem expansão agressiva), para que abandonar nunca seja vantajoso.
-  - Se a ocupação cair abaixo da meta, novos reinos de IA surgem em regiões com pouca atividade.
+- **Entrada quando jogadores saem**: se a ocupação cair abaixo da meta, novos reinos de IA surgem em regiões com pouca atividade. O reino de um jogador ausente continua dele e conta como ativo; a IA nunca o governa.
 - Cada temporada começa com mais reinos de IA, que vão saindo conforme a base de jogadores cresce.
 - Valores atuais: a temporada começa com 25 reinos de IA e o mundo nunca fica com menos de 20 reinos ativos; o reino de IA novo surge na vaga livre mais longe dos jogadores.
 - Abdica o reino de IA de menor porte: o castelo vira ruína e os outros locais, terra livre. Reino de IA que perde o último local não vai ao exílio: sai do mundo.
 - A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h, estimando a milícia pelo que é público (famílias do reino por local). Caça enquanto tem pouco couro, para treinar os batedores. Usa os mesmos serviços por quantidade; a atribuição automática cuida das vagas dela.
-- A regência não funda, não ataca, não espiona e não negocia. O jogador que volta vê o que ela fez e o que se perdeu. O que o jogador deixou na fila continua lá e começa sozinho quando houver recursos.
-- Reinos de IA e regência só põem na fila o que podem pagar agora, descontado o que os itens aguardando vão pedir. O reino de IA desiste do item da vez parado há cerca de um dia (o paciente espera mais; o impaciente, menos).
+- O que o jogador deixou na fila continua lá e começa sozinho quando houver recursos, mesmo com ele fora por dias.
+- Reinos de IA só põem na fila o que podem pagar agora, descontado o que os itens aguardando vão pedir. O reino de IA desiste do item da vez parado há cerca de um dia (o paciente espera mais; o impaciente, menos).
 - **Cada reino de IA tem uma persona**: quem governa tem nome, uma história curta, inspirações, objetivos (riqueza, território, relíquias, segurança, glória, amizades, vingança), temperamento e traços (agressividade, passividade, paciência, ganância, lealdade, rancor, sociabilidade, cautela, orgulho, curiosidade), nível de atenção (uns melhores, outros piores), horário de jogo e jeito de escrever. **A persona é segredo**: fica só no servidor e nunca vai ao cliente, ao feed ou a log.
 - **A persona dá o jeito de gente**, sempre dentro das mesmas regras:
   - **Horário próprio**: as sessões se deslocam pelo costume dela (madrugadora ou noturna). Às vezes falta a uma sessão, mais ou menos no fim de semana conforme o costume; nunca a três seguidas.
@@ -395,7 +393,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Cargos**: líder (convida, expulsa, promove e pode **passar a liderança** a outro membro, virando conselheiro), até 2 conselheiros (convidam, aceitam pedidos de entrada e expulsam membros, nunca outro conselheiro nem o líder) e membros (indicam um reino na conversa, para o líder ou um conselheiro convidar).
 - **Saída**: qualquer membro sai quando quiser; o líder e os conselheiros podem expulsar. Ao sair ou ser expulso, vale uma **trégua de 24 h** entre o reino e a aliança, garantida pelo jogo, e o reino só entra em outra aliança depois de 24 h.
 - **Traição**: não há ataque surpresa entre membros. Quem quer atacar um aliado precisa sair e esperar a trégua.
-- Se o líder entra em regência ou sai, a liderança passa ao conselheiro mais antigo na aliança, ou ao membro mais antigo.
+- Se o líder sai, a liderança passa ao conselheiro mais antigo na aliança, ou ao membro mais antigo.
 - Qualquer reino pode ser convidado, e qualquer aliança pode receber pedido de entrada. Convites e pedidos valem 24 h.
 - **Criar e entrar com pouco atrito**: fundar pede só o nome (o brasão é sorteado). A aliança é **por convite** (padrão) ou **aberta**, e o líder troca quando quiser: na aberta, quem pede entra na hora, se há vaga. Convite e pedido de entrada se respondem **no próprio aviso**, sem abrir tela. Pelo mapa, o botão direito no local de outro reino convida, indica ou pede entrada. A janela lista primeiro os reinos e as alianças mais perto.
 - O reforço de um aliado defende com a guarnição, mas o dono do local não o usa; divide as perdas da defesa e volta para casa se a defesa recuar ou a aliança entre os dois acabar.
@@ -449,7 +447,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
   - Ferraria e eras: ao ter a primeira ferraria (fundada ou ocupada).
 - A câmera da Vista **inclina e gira** em volta do ponto olhado: botão direito ou do meio do mouse arrastando (para cima e para baixo inclina, para os lados gira: arrastar para a direita gira o mundo no sentido anti-horário). O mapa anda com W A S D ou as setas, a roda dá zoom, Espaço centra no castelo, M troca Vista e Mapa tático e Home põe a câmera no padrão. Afastar além do limite da Vista leva ao Mapa tático; aproximar além do limite do Mapa volta à Vista.
 - **Avisos no centro da tela**: um pouco acima do meio, em faixa escura, um por vez, numa fila. O que aconteceu vem em **dois tamanhos**, no mesmo lugar:
-  - **Grande**, com letra grande, para não passar despercebido: ataque e ameaça (exército à vista, batalha no seu local), batalha e relatório de combate, captura e execução de explorador, castelo caído, mortes (feridos sem ervas, mortos pela fauna), relíquia encontrada, jazida descoberta, regência e temporada. Das mensagens globais: castelo caído e batalha com 10 mortos ou mais.
+  - **Grande**, com letra grande, para não passar despercebido: ataque e ameaça (exército à vista, batalha no seu local), batalha e relatório de combate, captura e execução de explorador, castelo caído, mortes (feridos sem ervas, mortos pela fauna), relíquia encontrada, jazida descoberta e temporada. Das mensagens globais: castelo caído e batalha com 10 mortos ou mais.
   - **Pequeno**, menor, mais discreto e mais curto: obra pronta, treino pronto, explorador no destino, carga, coleta ou extração entregue, caravana, comércio, pactos, mensagens, aliança, escavação em andamento, espião visto, forças que voltaram sem combate e sistema novo. Das mensagens globais: começo de batalha entre outros reinos, batalha com poucas perdas e explorador capturado (para quem perdeu ou capturou, o aviso é grande).
   - Ordem da fila: perigo na frente, depois os grandes, depois os pequenos; no empate, o mais antigo. O servidor classifica cada notícia: a categoria dá o padrão e a notícia pode fugir dele.
   - A resposta a um gesto (confirmação, erro, dica) é menor, logo abaixo, na hora. Só o aviso com link pega o clique. As mensagens globais se relêem em Notificações, onde o anúncio delas liga e desliga, no aparelho.

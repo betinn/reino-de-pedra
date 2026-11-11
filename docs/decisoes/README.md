@@ -23,7 +23,7 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0018](0018-ferraria.md) | Ferraria: fila própria, eras por `ReqCumprido`, bônus por família ponderado pela força, lendário preso a um grupo; sistemas revelados aos poucos |
 | [0019](0019-social.md) | Social: aliança como documento, reforço na guarnição com reserva, cargas entre reinos, propostas, pactos, mensageiros e bandeiras |
 | [0020](0020-temporada.md) | Temporada: fim como evento, reset dentro do motor (limpa coleções, mundo novo, apaga e grava o banco), legado por conta em tabela própria, ranking por ganchos de batalha, "precisa de você" sob demanda |
-| [0021](0021-ia.md) | IA: uma sessão agendada por reino, só os serviços da API e a informação de um jogador; meta de ocupação com abdicação; ids sorteados de uma reserva; regência por evento no último acesso; margens da IA comerciante |
+| [0021](0021-ia.md) | IA: uma sessão agendada por reino, só os serviços da API e a informação de um jogador; meta de ocupação com abdicação; ids sorteados de uma reserva; margens da IA comerciante |
 | [0022](0022-velocidade-e-mapa-maior.md) | Tropas 5× mais rápidas num mapa de 104 × 80; visão por unidade e revelação da névoa ao vivo por eventos; alcances da IA na mesma escala |
 | [0023](0023-concha-jogo-sempre-visivel.md) | Concha do cliente: mundo sempre à vista como tela de fundo, painel baixo/coluna, folha sem véu com até 3 ações, navegação por destinos, câmera inclinável, formatação de tempo segura |
 | [0024](0024-pessoas.md) | Pessoas no mapa e números menores: escala ÷10 nos recursos e 25× nas pessoas, pessoa como documento com nome e ofício, vagas por local, contagens derivadas, carregadores e milícia como pessoas, marchas com ids |
@@ -41,5 +41,6 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0036](0036-mapa-publico-e-convites.md) | Mapa público ao vivo, entrada por convite com link de uso único, feed filtrado no servidor e fim do anonimato. Substitui a 0035 |
 | [0037](0037-filas-aguardam-recursos.md) | Filas aceitam item sem recurso: enfileirar não gasta, o item da vez reserva numa passagem única (`EstadoItem`), o mais antigo tem direito primeiro e o reino reavalia sozinho. Muda a 0010 |
 | [0038](0038-ritmo-3x-persona-e-aliancas.md) | Ritmo 3× pelo balanceamento (o que acelera e o que fica em tempo real), nível máximo 11, batalha sem tempo fixo, posição desenhada das marchas, IA com persona e alianças com vida |
+| [0039](0039-ia-nao-governa-jogador.md) | A IA não governa mais o reino do jogador ausente: ele fica como o dono deixou; saves antigos voltam ao dono ao carregar. Muda a 0021 |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

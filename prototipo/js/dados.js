@@ -190,23 +190,6 @@
       { id: 'ru-livre', tipo: 'livre', nome: 'Terra livre', c: 7, l: 9, terreno: 'planicie' }
     ],
 
-    /* Exemplo de retorno após regência (jogador ausente) */
-    regencia: {
-      diasFora: 12,
-      producao: { madeira: 18400, pedra: 9600, comida: 11200, ferro: 4100 },
-      ataques: { total: 4, repelidos: 3 },
-      perdas: [{ local: 'Mina de Pedra Alta', como: 'Ocupada por forças desconhecidas' }],
-      acoes: [
-        { dia: 2, txt: 'Recrutou 30 milicianos para reforçar o Pasto das Éguas.' },
-        { dia: 4, txt: 'Repeliu um saque na Vila do Moinho.' },
-        { dia: 6, txt: 'Construiu uma moradia na Vila do Vau.' },
-        { dia: 8, txt: 'Perdeu a Mina de Pedra Alta para uma ocupação.' },
-        { dia: 9, txt: 'Repeliu um ataque à Serraria do Bosque.' },
-        { dia: 11, txt: 'Reforçou os portões do castelo para o nível 4.' }
-      ],
-      restou: { locais: '9 de 10', populacao: 1020 }
-    },
-
     /* Áreas já exploradas: informação envelhece ("horas" desde a última visão) */
     explorado: [
       { c: 5, l: 10, raio: 2, horas: 40 },

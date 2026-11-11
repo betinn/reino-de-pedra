@@ -43,7 +43,7 @@ namespace ReinoDePedra.Api
             var b = Balanceamento.Carregar(Balanceamento.Localizar());
             var banco = new Banco(Path.Combine(cfg.Dados, "reino.db"));
             var mundo = new Mundo(b, relogio ?? new RelogioReal(cfg.Aceleracao));
-            mundo.IA.Ativa = true; mundo.IA.CriarReinos = cfg.IA;   // sessões da IA e regência; REINO_IA=0 não cria reinos de IA
+            mundo.IA.Ativa = true; mundo.IA.CriarReinos = cfg.IA;   // sessões da IA; REINO_IA=0 não cria reinos de IA
             var canal = new CanalSse();
             mundo.Avisos = canal;
             mundo.Banco = banco;   // legado por conta e reset da temporada

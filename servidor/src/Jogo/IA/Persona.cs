@@ -119,8 +119,8 @@ namespace ReinoDePedra.Jogo.IA
             ["o Calvo", "o Justo", "o Velho", "o Moço", "o Ruivo", "o Manso", "o Bravo", "o Quieto", "o Coxo", "o Alto", "o Sábio", "o Teimoso", "Mão de Ferro", "Barba Negra", "o Bom"];
         private static readonly string[] EpitetosF =
             ["a Justa", "a Velha", "a Moça", "a Ruiva", "a Brava", "a Quieta", "a Alta", "a Sábia", "a Teimosa", "Mão de Ferro", "a Serena", "a Boa", "Olhos de Corvo", "a Viúva", "a Andarilha"];
-        private static readonly string[] Titulos = ["Rei", "Duque", "Conde", "Senhor", "Barão", "Regente", "Capitão", "Mestre"];
-        private static readonly string[] TitulosF = ["Rainha", "Duquesa", "Condessa", "Senhora", "Baronesa", "Regente", "Capitã", "Mestra"];
+        private static readonly string[] Titulos = ["Rei", "Duque", "Conde", "Senhor", "Barão", "Marquês", "Capitão", "Mestre"];
+        private static readonly string[] TitulosF = ["Rainha", "Duquesa", "Condessa", "Senhora", "Baronesa", "Marquesa", "Capitã", "Mestra"];
         private static readonly Dictionary<string, string[]> InspiracoesPorObjetivo = new()
         {
             ["riqueza"] = ["os mercadores das cidades livres", "as feiras de Champagne", "os banqueiros de Florença", "as caravanas do sal"],
@@ -147,7 +147,7 @@ namespace ReinoDePedra.Jogo.IA
         /// </summary>
         public static Persona Neutra() => new()
         {
-            Governante = "Regente", Titulo = "Regente", Idade = 40, Arquetipo = "estrategista", Temperamento = "ponderado",
+            Governante = "Governante", Titulo = "Senhor", Idade = 40, Arquetipo = "estrategista", Temperamento = "ponderado",
             Objetivos = ["seguranca"], Tom = "direto",
         };
 

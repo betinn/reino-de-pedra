@@ -1,7 +1,6 @@
-/* Reino de Pedra — Temporada e legado (#/temporada), Ranking (#/ranking), Precisa de você (#/agora) e Retorno após a regência
-   (#/regencia). Portado de prototipo/js/legado.js, agora.js, social.js (ranking) e telas.js (regência); os dados vêm do servidor:
-   GET /temporada, POST /temporada/reliquias/{id}, /temporada/titulo, /temporada/exilio, GET /ranking, GET /agora (?n=3).
-   A regência vem de GET /reino ("regencia": { ativaDesde, terminouEm, acoes: [texto], perdas: [texto] }), exposta pelo sistema de IA. */
+/* Reino de Pedra — Temporada e legado (#/temporada), Ranking (#/ranking) e Precisa de você (#/agora).
+   Portado de prototipo/js/legado.js, agora.js e social.js (ranking); os dados vêm do servidor:
+   GET /temporada, POST /temporada/reliquias/{id}, /temporada/titulo, /temporada/exilio, GET /ranking, GET /agora (?n=3). */
 (function () {
   'use strict';
   var RP = window.RP;
@@ -195,43 +194,9 @@
   }
   RP.ouvir('reino', function () { resumo.em = 0; });
   RP.extrasReino = RP.extrasReino || [];
-  RP.extrasReino.push(function (r) {
-    var g = r.regencia, faixa = '';
-    if (g && g.terminouEm && RP.pref('regencia-vista') !== String(g.terminouEm))
-      faixa = '<a class="card faixa-alerta faixa-regencia" href="#/regencia">' + RP.icone('coroa') + '<div><b>Bem-vindo de volta</b><br><span class="suave">Um regente governou o reino enquanto você esteve fora. Veja o que ele fez.</span></div></a>';
+  RP.extrasReino.push(function () {
     setTimeout(buscarResumo, 0);
-    return faixa + '<div class="agora-resumo" data-agora-resumo>' + resumo.html + '</div>';
-  });
-
-  /* ================================================================ Retorno após a regência */
-  RP.registrarTela('regencia', {
-    secao: 'reino',
-    montar: function () { /* desenhada a cada entrada */ },
-    entrar: function (el) {
-      var r = RP.reino, g = r && r.regencia;
-      if (!g) {
-        el.innerHTML = topo('Retorno ao reino', 'mais') + '<div class="conteudo-tela pilha-4"><div class="card pilha"><h2>Nenhuma regência</h2><p class="suave">Seu reino não passou por uma regência. Depois de ' +
-          'um tempo sem entrar, um regente cuida do reino de forma conservadora: defende e produz, sem expandir nem atacar.</p></div></div>';
-        return;
-      }
-      var fim = g.terminouEm || RP.agora(), dias = Math.max(1, Math.round((fim - g.ativaDesde) / 86400000));
-      el.innerHTML = topo('Retorno ao reino', 'reino') + '<div class="conteudo-tela pilha-4">' +
-        '<div class="card card-moldura regencia-topo">' + RP.iconeReino(r, 64) +
-        '<div><h2>Bem-vindo de volta</h2><p class="suave">Você ficou <b>' + dias + (dias === 1 ? ' dia' : ' dias') + '</b> fora. Nesse período, um regente governou o Reino de ' + RP.esc(r.nome) + ' em seu nome.</p></div></div>' +
-        '<div class="card pilha"><div class="card-titulo" style="margin:0">' + RP.icone('coroa') + '<h3>Como foi a regência</h3></div>' +
-        '<p class="suave" style="font-size:var(--fs-2)">O regente é conservador: defende e produz, sem expandir nem atacar. Abandonar o reino nunca rende mais do que jogar.</p>' +
-        '<div class="regencia-numeros">' +
-        '<div><span class="fraco">Desde</span><b class="num">' + new Date(g.ativaDesde).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) + '</b><small>' + (g.terminouEm ? 'até ' + new Date(g.terminouEm).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : 'ainda ativa') + '</small></div>' +
-        '<div><span class="fraco">Locais</span><b class="num">' + r.locais.length + '</b><small>' + (g.perdas.length ? g.perdas.length + (g.perdas.length > 1 ? ' perdas' : ' perda') : 'nenhuma perda') + '</small></div>' +
-        '<div><span class="fraco">População</span><b class="num">' + RP.num(r.pop) + '</b><small>de ' + RP.num(r.teto) + ' moradores</small></div>' +
-        '</div></div>' +
-        g.perdas.map(function (p) { return '<div class="faixa-alerta">' + RP.icone('alerta') + '<span class="txt">' + RP.esc(p) + '</span></div>'; }).join('') +
-        '<div class="card"><div class="card-titulo">' + RP.icone('relatorios') + '<h3>Diário do regente</h3></div>' +
-        (g.acoes.length ? '<ol class="diario">' + g.acoes.map(function (a) { return '<li><span>' + RP.esc(a) + '</span></li>'; }).join('') + '</ol>' : '<p class="fraco">O regente só defendeu e produziu.</p>') + '</div>' +
-        '</div>' +
-        '<div class="rodape-acao"><button type="button" class="btn btn-primario btn-bloco btn-grande" data-retomar>' + RP.icone('castelo') + 'Retomar o reino</button></div>';
-      RP.$('[data-retomar]', el).addEventListener('click', function () { RP.pref('regencia-vista', String(g.terminouEm || '')); RP.ir('reino'); });
-    }
+    return '<div class="agora-resumo" data-agora-resumo>' + resumo.html + '</div>';
   });
 
   /* ================================================================ entradas em Mais e fim da temporada */

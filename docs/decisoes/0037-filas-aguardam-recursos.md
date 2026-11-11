@@ -43,8 +43,8 @@ A avaliação roda ao enfileirar, ao concluir, logo depois de cancelar, ao abrir
 - **Requisitos não são conferidos de novo na vez do item**, além dos acima. Um quartel sabotado abaixo do nível da unidade não cancela o treino que já estava na fila: é a regra de antes, e a validação é a do envio.
 - **Custo fixado ao enfileirar.** O preço do próximo local ou da próxima moradia conta os que estão na fila, como antes, e não muda enquanto o item aguarda.
 
-## IA e regência
+## IA e jogador ausente
 
 A IA usa os mesmos serviços, mas sem cuidado encheria a fila com 10 itens impagáveis e prenderia os recursos dos mais antigos. Durante a sessão, `Mundo.ExigirRecursos` faz `Filas.Enfileirar` recusar o que o reino não pode pagar agora, descontado o que os itens que aguardam vão pedir (`Filas.LivreParaNovos`). É uma decisão dela, como a de um jogador cuidadoso; os caminhos de `Talvez` e `Tentar` no `Governo` continuaram iguais, e a economia da IA fica com o ritmo aprovado no balanceamento.
 
-Se o material sumir depois (saque, comércio), o item aguarda como qualquer outro. O reino de IA cancela o item da vez parado há mais de um dia, para ele não segurar a fila. A regência não faz isso: ela não mexe no que o jogador deixou, e o item do jogador começa sozinho enquanto ele está fora.
+Se o material sumir depois (saque, comércio), o item aguarda como qualquer outro. O reino de IA cancela o item da vez parado há mais de um dia, para ele não segurar a fila. Ninguém mexe no que o jogador deixou: o item dele começa sozinho enquanto ele está fora.

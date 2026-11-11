@@ -1,4 +1,4 @@
-/* Reino de Pedra — temporada, legado, ranking, "precisa de você" e regência. Só tokens (prototipo/design-system.md). */
+/* Reino de Pedra — temporada, legado, ranking, e "precisa de você". Só tokens (prototipo/design-system.md). */
 
 /* tinturas e moldura liberadas pela linhagem (cores fixas da heráldica, como as outras tinturas) */
 :root {
@@ -23,5 +23,3 @@
 /* brasão bloqueado na criação: aparece com cadeado */
 .amostra.bloqueada, .opcao.bloqueada { opacity: .4; cursor: not-allowed; }
 
-/* faixa de retorno após a regência */
-.faixa-regencia { text-decoration: none; color: inherit; }

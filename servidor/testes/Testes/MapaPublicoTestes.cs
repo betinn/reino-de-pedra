@@ -20,7 +20,7 @@ public class MapaPublicoTestes
     [
         "tropas", "tamanho", "resumo", "pessoas", "pessoaIds", "destino", "destinoNome", "alvo", "alvoId", "ordem", "plano", "objetivos", "carga", "cargaMax", "cargaUsada",
         "estado", "chegada", "retornando", "paraMim", "estoque", "guarnicao", "civis", "milicia", "soldados", "jazida", "recurso", "restante", "esgotada",
-        "escudo", "escudoAte", "regencia", "ultimoAcesso", "ehIA", "ia", "perfil", "email", "contaId", "mensagem", "proposta", "conversa", "convites",
+        "escudo", "escudoAte", "ultimoAcesso", "ehIA", "ia", "perfil", "email", "contaId", "mensagem", "proposta", "conversa", "convites",
         "pagamento", "tiposReliquia", "cargo", "postura", "bonus", "forca",
     ];
 
@@ -117,7 +117,7 @@ public class MapaPublicoTestes
     }
 
     [Fact]
-    public async Task Regencia_escudo_e_ia_nao_mudam_o_feed()
+    public async Task Escudo_e_ia_nao_mudam_o_feed()
     {
         await using var s = await ServidorTeste.Iniciar();
         using var a = s.NovoCliente();

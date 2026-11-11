@@ -98,9 +98,6 @@ namespace ReinoDePedra.Jogo.Social
         [GeneratedRegex(@"^[\p{L}\p{N}][\p{L}\p{M}\p{N} '\-]*[\p{L}\p{M}\p{N}]$")]
         private static partial Regex NomeValido();
 
-        /// <summary>Quem está em regência não assume a liderança (a regência registra aqui).</summary>
-        public static Func<Mundo, Reino, bool>? EmRegencia { get; set; }
-
         public static Alianca? De(Mundo m, Reino? r) => r?.AliancaId is long id ? m.Aliancas.Obter(id) : null;
         public static Alianca? De(Mundo m, long reinoId) => De(m, m.Reinos.Obter(reinoId));
 
@@ -437,14 +434,13 @@ namespace ReinoDePedra.Jogo.Social
             Evento(m, a, "cargo", (m.Reinos.Obter(alvoId)?.Nome ?? "") + " voltou a ser membro.", r.Id, alvoId: alvoId);
         }
 
-        /// <summary>A liderança passa ao conselheiro mais antigo, ou ao membro mais antigo (quem está em regência fica de fora, se houver outro).</summary>
+        /// <summary>A liderança passa ao conselheiro mais antigo, ou ao membro mais antigo.</summary>
         private static void Sucessao(Mundo m, Alianca a, long? exceto = null)
         {
             var antigo = a.Lider;
             var cands = a.Membros.Where(x => x.ReinoId != exceto && x.Cargo != Lider)
                 .OrderBy(x => x.Cargo == Conselheiro ? 0 : 1).ThenBy(x => x.Desde).ThenBy(x => x.ReinoId).ToList();
-            var ativos = cands.Where(x => m.Reinos.Obter(x.ReinoId) is { } q && !(EmRegencia?.Invoke(m, q) ?? false)).ToList();
-            var novo = ativos.FirstOrDefault() ?? cands.FirstOrDefault();
+            var novo = cands.FirstOrDefault();
             if (novo == null) return;
             if (antigo != null) antigo.Cargo = Membro;
             novo.Cargo = Lider;
@@ -452,14 +448,6 @@ namespace ReinoDePedra.Jogo.Social
             var nome = m.Reinos.Obter(novo.ReinoId)?.Nome ?? "";
             NotificarMembros(m, a, nome + " lidera a aliança", null);
             Evento(m, a, "lider", nome + " agora lidera a aliança.", novo.ReinoId);
-        }
-
-        /// <summary>Chamado pela regência quando o reino passa a ser governado pela IA: se era o líder, a liderança passa adiante.</summary>
-        public static void AoEntrarEmRegencia(Mundo m, Reino r)
-        {
-            var a = De(m, r);
-            if (a?.Membro(r.Id) is not { Cargo: Lider }) return;
-            Sucessao(m, a, r.Id);
         }
 
         // ---------------------------------------------------------------- conversa

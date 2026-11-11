@@ -27,12 +27,11 @@ O item 17 (vida e fauna) e o 18 (coleta e começo mais rápido) do teste a 6× f
 
 ## Regras ainda incompletas
 
-1. **IA dos reinos** (`servidor/src/Jogo/IA/`, decisão 0021). Já cura feridos (também na regência) e decide o destino de exploradores capturados (`Governo.Curar`, `Governo.Prisioneiros`). A IA ainda não:
+1. **IA dos reinos** (`servidor/src/Jogo/IA/`, decisão 0021). Já cura feridos e decide o destino de exploradores capturados (`Governo.Curar`, `Governo.Prisioneiros`). A IA ainda não:
    - pesquisa eras nem usa a ferraria (armas, armaduras, lendário);
    - forma alianças nem responde a convites (eles expiram);
    - paga resgates (o explorador dela é solto no prazo);
-   - propõe trocas por conta própria (só responde);
-   - na regência, recua de batalhas só no início da sessão, não no meio.
+   - propõe trocas por conta própria (só responde).
 2. **Batedor de elite espionando exércitos em campo.** O `CLAUDE.md` diz que o batedor "espiona exércitos e reinos inimigos"; hoje só espiona locais (decisão 0015). Falta a ordem de espionar uma marcha visível, com relatório de tropas, carga, relíquia e equipamento lendário.
 3. ~~Equipamento lendário perdido sem batalha.~~ **Feito:** volta à guarnição do castelo do dono (regra no `CLAUDE.md`; `Lendarios.Recolher`). Só se perde quando o dono não tem castelo.
 4. ~~Atacar um local conhecido que sumiu.~~ **Feito:** fora da vista, o ataque é planejado contra a foto da névoa (local fantasma, `Ataques.Alvo`) e as tropas descobrem na chegada ("O alvo não existe mais"). Ainda vale o local real quando o mesmo local mudou de dono ou virou ruína: a prévia mostra os tipos de ataque do estado atual, o que pode revelar a mudança; avaliar planejar sempre pela foto.

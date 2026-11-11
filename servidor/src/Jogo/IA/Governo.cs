@@ -37,7 +37,7 @@ public static class Governo
     {
         var castelo = m.Locais.Obter(r.CasteloId);
         if (castelo == null || castelo.Ruina || castelo.ReinoId != r.Id) return;
-        // a fila aceita item sem recurso, mas a IA (e a regência) só pede o que pode pagar: nada de fila cheia de item parado
+        // a fila aceita item sem recurso, mas a IA só pede o que pode pagar: nada de fila cheia de item parado
         var antes = m.ExigirRecursos;
         m.ExigirRecursos = true;
         try { Decidir(m, r, c, castelo, etapa); }
@@ -72,13 +72,13 @@ public static class Governo
             if (r.EhIA) { Personas.Envelhecer(m, r); DesistirDoParado(m, r, c.Espera); }
             Nevoas.VisiveisAgora(m, r.Id);   // olha o mapa, como o jogador ao abrir o jogo
             if (Lembra("defender")) { Tentar(() => Defender(m, r, c)); if (r.EhIA) Tentar(() => ConvivioAlianca.AoSerAtacada(m, r)); }
-            if (!c.Regencia && Lembra("comercio")) Tentar(() => Comerciante.Responder(m, r, c));
+            if (Lembra("comercio")) Tentar(() => Comerciante.Responder(m, r, c));
             if (Lembra("construir")) Tentar(() => Construir(m, r, c, castelo));
-            if (Lembra("exploradores")) Tentar(() => ExploradoresParados(m, r, castelo, c.Regencia));
+            if (Lembra("exploradores")) Tentar(() => ExploradoresParados(m, r, castelo));
             if (Lembra("recrutar")) Tentar(() => Recrutar(m, r, c, castelo));
-            if (Lembra("curar")) Tentar(() => Curar(m, r));   // a regência também cura: guarda o reino para quem volta
+            if (Lembra("curar")) Tentar(() => Curar(m, r));
         }
-        if (c.Regencia || etapa == 0) return;
+        if (etapa == 0) return;
         if (Lembra("prisioneiros")) Tentar(() => Prisioneiros(m, r));
         if (Lembra("explorar")) Tentar(() => Explorar(m, r, castelo));
         if (Lembra("cacar")) Tentar(() => Cacar(m, r, castelo));
@@ -101,7 +101,7 @@ public static class Governo
 
     /// <summary>
     /// Item da vez que perdeu o material (saque, comércio) há mais de um dia: a IA desiste, como um jogador faria, para ele não
-    /// segurar a fila e os recursos. Só o reino de IA: a regência não mexe no que o jogador deixou na fila.
+    /// segurar a fila e os recursos. Só o reino de IA.
     /// </summary>
     public static void DesistirDoParado(Mundo m, Reino r, double espera = 1)
     {
@@ -192,10 +192,10 @@ public static class Governo
             if (r.Pop < trab * pm.Trabalhadores && r.Pop + tropas > teto * pm.Teto && fila.Itens.All(i => i.Tipo != ObraMoradia.Id))
             {
                 var it = Talvez(() => Obras.Moradia(m, r, castelo.Id));
-                if (it != null) { Regencia.Acao(m, r, "moradia", "Moradias construídas", 1); continue; }
+                if (it != null) continue;
             }
-            // 2) novo local no ritmo do perfil (a regência não expande)
-            if (!c.Regencia && !tentouFundar && Producao(m, r).Count() < LocaisAte(m, c, dia) && fila.Itens.All(i => i.Tipo != ObraFundar.Id))
+            // 2) novo local no ritmo do perfil
+            if (!tentouFundar && Producao(m, r).Count() < LocaisAte(m, c, dia) && fila.Itens.All(i => i.Tipo != ObraFundar.Id))
             {
                 tentouFundar = true;
                 if (Fundar(m, r, castelo) != null) continue;
@@ -211,7 +211,7 @@ public static class Governo
                 && fila.Itens.All(i => !(i.Tipo == ObraNivel.Id && i.LocalId == castelo.Id)))
             {
                 var it = Talvez(() => Obras.Melhorar(m, r, castelo.Id));
-                if (it != null) { Regencia.Acao(m, r, "nivel:" + castelo.Id, castelo.Nome + " sobe ao nível " + it.NivelAlvo, 0); continue; }
+                if (it != null) continue;
             }
             // 4) melhor retorno entre os locais (o acerto da habilidade decide se acha o melhor)
             var naFila = fila.Itens.Where(i => i.Tipo == ObraNivel.Id && i.LocalId != null).Select(i => i.LocalId!.Value).ToHashSet();
@@ -222,7 +222,6 @@ public static class Governo
             var alvo = m.Sorte.Chance(c.C.Acerto) ? cands[0] : cands[m.Sorte.Int(0, cands.Count)];
             var item = Talvez(() => Obras.Melhorar(m, r, alvo.Id));
             if (item == null) break;
-            Regencia.Acao(m, r, "nivel:" + alvo.Id, alvo.Nome + " sobe ao nível " + item.NivelAlvo, 0);
         }
     }
 
@@ -247,11 +246,8 @@ public static class Governo
         var a = m.LocaisDe(r.Id).Where(l => l.Tipo == TipoLocal.Armazem && !l.Ruina && l.Nivel < castelo.Nivel).OrderBy(l => l.Nivel).ThenBy(l => l.Id).FirstOrDefault();
         if (a != null)
         {
-            var it = Talvez(() => Obras.Melhorar(m, r, a.Id));
-            if (it != null) Regencia.Acao(m, r, "nivel:" + a.Id, a.Nome + " sobe ao nível " + it.NivelAlvo, 0);
-            return it;
+            return Talvez(() => Obras.Melhorar(m, r, a.Id));
         }
-        if (c.Regencia) return null;   // a regência não funda locais
         return FundarTipo(m, r, castelo, "armazem");
     }
 
@@ -279,9 +275,7 @@ public static class Governo
         foreach (var h in area)
         {
             if (Obras.MotivoNaoFundar(m, r, tipo, h) != null) continue;
-            var it = Talvez(() => Obras.Fundar(m, r, tipo, h));
-            if (it != null) Regencia.Acao(m, r, "fundar:" + h, "Fundou " + Obras.Fundaveis[tipo].tipo.NomeGenerico().ToLowerInvariant(), 0);
-            return it;
+            return Talvez(() => Obras.Fundar(m, r, tipo, h));
         }
         return null;
     }
@@ -314,12 +308,9 @@ public static class Governo
         if (couroArq > 0) nArq = Math.Min(nArq, (int)Math.Floor(total.Qtd("couro") / couroArq));
         foreach (var k in arq.Custo.Keys) if (arq.Custo[k] > 0) nArq = Math.Min(nArq, (int)Math.Floor(total.Qtd(k) / arq.Custo[k]));
         nArq = Math.Max(0, nArq);
-        if (nArq > 0 && Talvez(() => Recrutamento.Recrutar(m, r, castelo.Id, "arqueiro", nArq)) != null)
-            Regencia.Acao(m, r, "recrutar:arqueiro", "Arqueiros recrutados", nArq);
-        else nArq = 0;
+        if (!(nArq > 0 && Talvez(() => Recrutamento.Recrutar(m, r, castelo.Id, "arqueiro", nArq)) != null)) nArq = 0;
         var nLan = n - nArq;
-        if (nLan > 0 && Talvez(() => Recrutamento.Recrutar(m, r, castelo.Id, "lanceiro", nLan)) != null)
-            Regencia.Acao(m, r, "recrutar:lanceiro", "Lanceiros recrutados", nLan);
+        if (nLan > 0) Talvez(() => Recrutamento.Recrutar(m, r, castelo.Id, "lanceiro", nLan));
     }
 
     /// <summary>Tropas de ataque (sem milícia) que o castelo pode usar.</summary>
@@ -345,7 +336,7 @@ public static class Governo
         foreach (var b in Batalhas.DoReino(m, r.Id).Where(b => !b.Encerrada && b.DefensorId == r.Id).ToList())
         {
             var (fa, fd) = Batalhas.ForcaAgora(b, m.Agora);
-            if (fa > 0 && fd < fa * d.Recuo) { Batalhas.Recuar(m, r, b.Id); Regencia.Acao(m, r, "recuo:" + b.Id, "Recuou de uma batalha perdida", 0); continue; }
+            if (fa > 0 && fd < fa * d.Recuo) { Batalhas.Recuar(m, r, b.Id); continue; }
             var castelo = m.Locais.Obter(r.CasteloId);
             var l = m.Locais.Obter(b.LocalId);
             if (castelo == null || l == null || l.Id == castelo.Id) continue;
@@ -355,7 +346,6 @@ public static class Governo
             var rota = Caminhos.Calcular(m, castelo.Hex, l.Hex, GT.Velocidade(m, grupo));
             if (m.Agora + (long)Math.Round(rota.TotalMin * T.Min) >= b.Fim) continue;   // não chegaria a tempo
             Exercitos.Enviar(m, r, castelo.Id, grupo, l.Hex, OrdemReforcar.Id);
-            Regencia.Acao(m, r, "reforco:" + b.Id, "Mandou reforço para " + l.Nome, 0);
         }
     }
 
@@ -382,15 +372,15 @@ public static class Governo
     /// <summary>Um explorador a pé: treina se não tem; se está livre, explora um hexágono ainda não visto.</summary>
     /// <summary>
     /// Exploradores parados no destino (eles esperam nova ordem): a IA manda o explorador a pé a outro lugar ainda não visto
-    /// e traz os outros para casa; a regência só os traz para casa.
+    /// e traz os outros para casa.
     /// </summary>
-    public static void ExploradoresParados(Mundo m, Reino r, Local castelo, bool regencia)
+    public static void ExploradoresParados(Mundo m, Reino r, Local castelo)
     {
         foreach (var e in Exploradores.De(m, r.Id).Where(x => x.Ordem == Exploradores.Aguardar).ToList())
         {
             try
             {
-                if (!regencia && e.TipoExp == Exploradores.Pe && AlvoExploracao(m, r, castelo) is int alvo && alvo != e.HexEm(m.Agora))
+                if (e.TipoExp == Exploradores.Pe && AlvoExploracao(m, r, castelo) is int alvo && alvo != e.HexEm(m.Agora))
                     Exploradores.DarOrdem(m, r, e.Id, Exploradores.Explorar, alvo, null, true);
                 else Exploradores.DarOrdem(m, r, e.Id, Exploradores.Retornar, null);
             }
