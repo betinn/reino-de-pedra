@@ -53,6 +53,11 @@ public sealed partial class Mundo
     /// <summary>Instante atual do jogo. Dentro de um evento, é o instante do evento.</summary>
     public long Agora => _agoraFixo ?? Relogio.Agora;
 
+    /// <summary>Memória de trabalho das buscas de caminho (<see cref="Caminhos"/>); não é gravada.</summary>
+    internal Caminhos.Rascunho? RascunhoDeCaminho;
+    /// <summary>Hexágonos visitados pelas buscas de caminho desde a subida: a medida do trabalho delas, igual em qualquer máquina (teste de carga).</summary>
+    public long HexesBuscados { get; internal set; }
+
     internal readonly HashSet<Documento> Sujos = new(ReferenceEqualityComparer.Instance);
     internal readonly List<(string colecao, long id)> Removidos = new();
 

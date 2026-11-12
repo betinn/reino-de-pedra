@@ -74,10 +74,13 @@ public static class Logistica
 
     private static void EnviarDosProximos(Mundo m, Reino r, ItemFila item, string nomeFila, Dictionary<string, double> faltam, Local? destinoLocal)
     {
-        var vel = m.P.Carregador.Vel;
-        var tempos = Caminhos.MinutosAte(m, item.Hex, vel);
-        var origens = m.LocaisDe(r.Id).Where(l => l.Id != destinoLocal?.Id && !l.Ruina)
-            .OrderBy(l => tempos[l.Hex]).ToList();
+        // só entra na conta quem tem o que falta: com uma origem só não há o que ordenar, e a busca para na mais distante delas
+        var origens = m.LocaisDe(r.Id).Where(l => l.Id != destinoLocal?.Id && !l.Ruina && faltam.Keys.Any(k => l.Estoque.Qtd(k) > 0)).ToList();
+        if (origens.Count > 1)
+        {
+            var tempos = Caminhos.MinutosAte(m, item.Hex, m.P.Carregador.Vel, origens.Select(l => l.Hex));
+            origens = origens.OrderBy(l => tempos[l.Hex]).ToList();
+        }
         foreach (var o in origens)
         {
             if (faltam.Count == 0) break;

@@ -43,5 +43,6 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0038](0038-ritmo-3x-persona-e-aliancas.md) | Ritmo 3× pelo balanceamento (o que acelera e o que fica em tempo real), nível máximo 11, batalha sem tempo fixo, posição desenhada das marchas, IA com persona e alianças com vida |
 | [0039](0039-ia-nao-governa-jogador.md) | A IA não governa mais o reino do jogador ausente: ele fica como o dono deixou; saves antigos voltam ao dono ao carregar. Muda a 0021 |
 | [0040](0040-servidor-native-aot.md) | Servidor publicado em Native AOT, JSON gerado na compilação (records por formato, save e API iguais), registros explícitos no lugar da reflexão e GC para pouca memória embutido. Muda a 0001 |
+| [0041](0041-cpu-do-motor.md) | CPU do motor com o mundo cheio: a CPU alta era atraso de um save antigo; buscas de caminho sem varrer nem zerar a grade, motor em fatias quando recupera atraso, relógio acelerado que retoma do save e teste de carga com o servidor de verdade. Corrige a CPU da 0040 |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

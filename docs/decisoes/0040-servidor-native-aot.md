@@ -51,7 +51,7 @@ Medido no Windows (sem WSL nem Docker nesta máquina), com o mesmo save de 30 re
 | Working set, pico | 187 MB | 120 MB |
 | Tamanho do executável | 105 MB | 34 MB |
 
-O AOT gasta mais CPU que o JIT, porque perde a otimização guiada por perfil. Com o mundo cheio, os dois usam de 0,4 a 1 núcleo em qualquer ritmo de jogo, por causa do motor ocupado nas filas e na IA. Isso não depende do AOT e fica para investigar à parte. Os números completos (720×, 60× e as variantes do GC) estão em [desempenho.md](../desempenho.md#native-aot).
+O AOT gasta mais CPU que o JIT, porque perde a otimização guiada por perfil. Com o mundo cheio, os dois usaram de 0,4 a 1 núcleo em qualquer ritmo de jogo nesta medida. A [0041](0041-cpu-do-motor.md) achou o motivo: o save era de meses antes e o servidor estava recuperando o atraso, não em regime. Em regime, o mundo cheio custa perto de 0,2% de um núcleo. Os números completos (720×, 60× e as variantes do GC) estão em [desempenho.md](../desempenho.md#native-aot).
 
 Com esses números, o servidor cabe com folga num orçamento de 200 MB, sem trocar de linguagem.
 

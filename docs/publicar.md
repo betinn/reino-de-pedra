@@ -21,6 +21,7 @@ O Native AOT compila para o sistema em que roda: o pacote Linux sai de uma máqu
    - `DOTNET_GCHeapHardLimit=10000000`: teto do heap gerenciado (aqui 256 MB). Não ponha abaixo de `8000000` (128 MB): o pico medido com o mundo cheio é 64 MB, e já se viu 116 MB.
    - `DOTNET_GCConserveMemory=7`: de 0 a 9, quanto o GC se esforça para devolver memória (0 desliga).
    - `DOTNET_gcConcurrent=0` e `DOTNET_gcServer=0` já são o padrão embutido. `DOTNET_TieredPGO` não faz efeito: o binário nativo não tem JIT.
+5. CPU: em dia, o mundo cheio usa menos de 1% de um núcleo (medidas em `docs/desempenho.md`). Depois de um tempo fora do ar, o servidor executa os eventos atrasados (perto de 2 s de CPU por dia parado) e continua respondendo enquanto isso. Se a recuperação passa de 2 s, o log avisa: `motor atrasado: ... h de jogo para recuperar` e, no fim, `motor em dia: N eventos em S s`.
 
 ## 3. Serviço (systemd, exemplo)
 

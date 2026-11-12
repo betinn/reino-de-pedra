@@ -36,8 +36,12 @@ public static class VisaoSocial
         var agora = m.Agora;
         var a = Aliancas.De(m, r);
         var castelo = m.Locais.Obter(r.CasteloId);
-        double[]? tempos = castelo != null ? Caminhos.MinutosAte(m, castelo.Hex, m.P.Carregador.Vel) : null;
-        double? Minutos(Reino? q) => q != null && m.Locais.Obter(q.CasteloId) is { } cq && tempos != null && !double.IsInfinity(tempos[cq.Hex]) ? Math.Round(tempos[cq.Hex]) : null;
+        // só os castelos interessam: a busca para no mais distante, em vez de cobrir o mapa
+        var tempos = castelo != null
+            ? Caminhos.MinutosAte(m, castelo.Hex, m.P.Carregador.Vel, m.Reinos.Select(q => m.Locais.Obter(q.CasteloId)).OfType<Local>().Select(l => l.Hex))
+            : null;
+        double Tempo(int hex) => tempos != null && tempos.TryGetValue(hex, out var t) ? t : double.PositiveInfinity;
+        double? Minutos(Reino? q) => q != null && m.Locais.Obter(q.CasteloId) is { } cq && !double.IsInfinity(Tempo(cq.Hex)) ? Math.Round(Tempo(cq.Hex)) : null;
         object? dados = null;
         if (a != null)
         {
@@ -55,7 +59,7 @@ public static class VisaoSocial
                         reino: Id(m, x.ReinoId), x.Cargo, x.Desde, eu: x.ReinoId == r.Id,
                         escudo: q != null && q.SobEscudo(agora),
                         novatoRestante: q != null && q.SobEscudo(agora) ? Math.Floor(Comercio.NovatoRestante(m, q)) : (double?)null,
-                        minutos: x.ReinoId != r.Id && c != null && tempos != null && !double.IsInfinity(tempos[c.Hex]) ? Math.Round(tempos[c.Hex]) : (double?)null,
+                        minutos: x.ReinoId != r.Id && c != null && !double.IsInfinity(Tempo(c.Hex)) ? Math.Round(Tempo(c.Hex)) : (double?)null,
                         castelo: c != null ? c.Hex : (int?)null
                     );
                 }).ToList(),

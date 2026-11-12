@@ -25,12 +25,13 @@ public sealed class RelogioReal(double aceleracao = 1) : IRelogio
     }
 
     /// <summary>
-    /// Com aceleração, o mundo salvo está à frente da hora real. Ao carregar, o relógio continua de onde o mundo parou;
-    /// sem isso, reiniciar o servidor voltaria o tempo e esticaria escudos, obras e marchas.
+    /// Com aceleração, o relógio do mundo não é a hora real: ao carregar, ele continua de onde o mundo parou, esteja o save à
+    /// frente da hora real (sem isso, reiniciar voltaria o tempo e esticaria escudos, obras e marchas) ou atrás dela (sem
+    /// isso, o motor correria de uma vez todo o tempo entre o save e hoje). Sem aceleração o relógio é sempre a hora real.
     /// </summary>
     public void RetomarEm(long instante)
     {
-        if (_acel == 1 || instante <= Agora) return;
+        if (_acel == 1 || instante <= 0) return;
         _inicioReal = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         _inicioJogo = instante;
     }
