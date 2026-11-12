@@ -158,6 +158,11 @@
    "alcancePorNivel": 2
   },
   "portoesEstrutura": 100,
+  "defesaCastelo": {
+   "arqPorNivel": 0.5,
+   "portoesCada": 4,
+   "fechado": 1.5
+  },
   "saqueQueda": 0.2,
   "saqueMinimo": 0.2,
   "reliquia": {
@@ -832,7 +837,8 @@
      "espiona": false,
      "torres": 0,
      "prospecta": true,
-     "comercia": false
+     "comercia": false,
+     "guarda": 1
     },
     "defensivo": {
      "peso": 0.25,
@@ -843,7 +849,8 @@
      "espiona": false,
      "torres": 2,
      "prospecta": false,
-     "comercia": false
+     "comercia": false,
+     "guarda": 1.5
     },
     "saqueador": {
      "peso": 0.25,
@@ -854,7 +861,8 @@
      "espiona": true,
      "torres": 0,
      "prospecta": false,
-     "comercia": false
+     "comercia": false,
+     "guarda": 0.7
     },
     "comerciante": {
      "peso": 0.2,
@@ -865,7 +873,8 @@
      "espiona": false,
      "torres": 1,
      "prospecta": true,
-     "comercia": true
+     "comercia": true,
+     "guarda": 1
     }
    },
    "ataque": {
@@ -912,6 +921,13 @@
    "comercio": {
     "margemOutros": 2,
     "reserva": 0.5
+   },
+   "guarda": {
+    "porNivel": 0.5,
+    "casteloPortoes": 6,
+    "portoes": 3,
+    "torres": 1,
+    "recolherAlcance": 30
    }
   },
   "vida": {
@@ -1469,7 +1485,7 @@
     }
    },
    {
-    "rot": "Cerco: 20 tropas mistas contra castelo médio (12 tropas, 2 torres nível 1, portões 3, 10 civis)",
+    "rot": "Cerco: 20 tropas mistas, sem máquinas, contra castelo médio nível 10 (12 tropas, 2 torres nível 1, portões 3, 10 civis, 5 arqueiros na menagem)",
     "atk": {
      "lanceiro": 8,
      "arqueiro": 8,
@@ -1481,26 +1497,28 @@
     },
     "extra": {
      "pop": 10,
-     "arqTorre": 4,
-     "portoes": 3
+     "arqTorre": 9,
+     "portoes": 3,
+     "nivel": 10
     },
     "limite": null,
     "res": {
      "A": 779,
-     "D": 1317,
+     "D": 2791,
      "venceA": false,
      "perdaA": 1,
-     "perdaD": 0.45526553183154994,
+     "perdaD": 0.14754234126203145,
      "recuou": false,
-     "razao": 0.5918021165628641
+     "razao": 0.27921866554381947
     }
    },
    {
-    "rot": "Mesmo cerco com 40 tropas",
+    "rot": "Mesmo castelo contra exército de cerco de 40 (10 lanceiros, 16 arqueiros, 6 cavaleiros, 8 aríetes)",
     "atk": {
-     "lanceiro": 16,
+     "lanceiro": 10,
      "arqueiro": 16,
-     "cavalaria": 8
+     "cavalaria": 6,
+     "ariete": 8
     },
     "def": {
      "lanceiro": 7,
@@ -1508,18 +1526,19 @@
     },
     "extra": {
      "pop": 10,
-     "arqTorre": 4,
-     "portoes": 3
+     "arqTorre": 9,
+     "portoes": 3,
+     "nivel": 10
     },
     "limite": null,
     "res": {
-     "A": 1558,
-     "D": 1317,
+     "A": 1380,
+     "D": 1267,
      "venceA": true,
-     "perdaA": 0.7765872131169596,
+     "perdaA": 0.8797315651578325,
      "perdaD": 1,
      "recuou": false,
-     "razao": 1.1836042331257282
+     "razao": 1.0891805651501696
     }
    },
    {
@@ -1638,6 +1657,127 @@
      "perdaD": 0.7004780282835381,
      "recuou": false,
      "razao": 0.7887323943661971
+    }
+   },
+   {
+    "rot": "Castelo nível 8 vazio (3 civis, 4 arqueiros na menagem, portões básicos 2) contra 6 tropas de reino novo (4 lanceiros, 2 arqueiros)",
+    "atk": {
+     "lanceiro": 4,
+     "arqueiro": 2
+    },
+    "def": {},
+    "extra": {
+     "pop": 3,
+     "nivel": 8,
+     "arqTorre": 4,
+     "portoes": 2
+    },
+    "limite": null,
+    "res": {
+     "A": 170,
+     "D": 673,
+     "venceA": false,
+     "perdaA": 1,
+     "perdaD": 0.1270260584614624,
+     "recuou": false,
+     "razao": 0.25269416573764397
+    }
+   },
+   {
+    "rot": "O mesmo castelo contra 10 arqueiros de reino novo",
+    "atk": {
+     "arqueiro": 10
+    },
+    "def": {},
+    "extra": {
+     "pop": 3,
+     "nivel": 8,
+     "arqTorre": 4,
+     "portoes": 2
+    },
+    "limite": null,
+    "res": {
+     "A": 350,
+     "D": 673,
+     "venceA": false,
+     "perdaA": 1,
+     "perdaD": 0.37525069638330394,
+     "recuou": false,
+     "razao": 0.5202526941657376
+    }
+   },
+   {
+    "rot": "O mesmo castelo contra 20 tropas sem máquinas de cerco (10 lanceiros, 10 arqueiros)",
+    "atk": {
+     "lanceiro": 10,
+     "arqueiro": 10
+    },
+    "def": {},
+    "extra": {
+     "pop": 3,
+     "nivel": 8,
+     "arqTorre": 4,
+     "portoes": 2
+    },
+    "limite": null,
+    "res": {
+     "A": 600,
+     "D": 673,
+     "venceA": false,
+     "perdaA": 1,
+     "perdaD": 0.8422602713933298,
+     "recuou": false,
+     "razao": 0.8918617614269787
+    }
+   },
+   {
+    "rot": "O mesmo castelo contra exército de cerco de 20 (8 lanceiros, 8 arqueiros, 4 aríetes)",
+    "atk": {
+     "lanceiro": 8,
+     "arqueiro": 8,
+     "ariete": 4
+    },
+    "def": {},
+    "extra": {
+     "pop": 3,
+     "nivel": 8,
+     "arqTorre": 4,
+     "portoes": 2
+    },
+    "limite": null,
+    "res": {
+     "A": 520,
+     "D": 411,
+     "venceA": true,
+     "perdaA": 0.701526480938291,
+     "perdaD": 1,
+     "recuou": false,
+     "razao": 1.266593593959323
+    }
+   },
+   {
+    "rot": "Castelo nível 8 com 2 lanceiros e 3 civis contra 10 cavaleiros sem máquinas",
+    "atk": {
+     "cavalaria": 10
+    },
+    "def": {
+     "lanceiro": 2
+    },
+    "extra": {
+     "pop": 3,
+     "nivel": 8,
+     "arqTorre": 4,
+     "portoes": 2
+    },
+    "limite": null,
+    "res": {
+     "A": 450,
+     "D": 907,
+     "venceA": false,
+     "perdaA": 1,
+     "perdaD": 0.3496128802364004,
+     "recuou": false,
+     "razao": 0.4962779156327543
     }
    }
   ],

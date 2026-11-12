@@ -105,10 +105,14 @@ Cada meta vem das regras do `CLAUDE.md`, do plano de pessoas no mapa ou de prát
 | M5 | Recrutar não derruba a economia do médio (eficiência ≥ 90%) | Tropas e economia em equilíbrio | 100% |
 | M5 | Sem guerra, o ativo fecha a economia perto do dia 20 (17 a 24); o médio depois dele, entre os dias 24 e 40 | Pedido do dono: quem maximiza tudo chega ao máximo no dia 20, o médio na proporção | dia 20 · dia 26 |
 | M6 | 6 cavaleiros levam pelo menos 40 min da produção de um local nível 6 | Saque que vale a viagem (agora de ≈ 2 min) | 1 h 48 min |
-| M7 | Um local defendido cai com cerca de 1,5× a força; uma torre muda o resultado; castelo médio aguenta 20 tropas e cai com cerca de 2× isso | "Destruir um reino deve ser muito difícil e caro" | ✓ |
+| M7 | Um local defendido cai com cerca de 1,5× a força; uma torre muda o resultado; castelo médio (nível 10, com guarnição) aguenta 20 tropas e cai com cerca de 2× isso num exército de cerco | "Destruir um reino deve ser muito difícil e caro" | ✓ · 0,3× / 1,1× |
+| M7d | Castelo nível 8 sem guarnição aguenta 6 a 10 tropas de reino novo sem máquinas de cerco (e 10 cavaleiros contra 2 lanceiros) | Decisão 0042: um castelo de IA nível 8 caiu para 6 tropas de um reino novo | 0,3× · 0,5× · 0,5× |
+| M7e | O mesmo castelo aguenta 20 tropas sem máquinas e cai para um exército de cerco de 20 (o dobro dos 10) | "O cerco continua possível" | 0,9× / 1,3× |
+| M7f | A defesa própria cresce com o nível e vale menos que a guarnição do médio (nível 11: 5 arqueiros na menagem, portões básicos 2) | A defesa própria é um piso, não substitui as tropas | 375 < 920 |
 | M8 | Relíquia de produção vale menos que 1 nível do local | Vantagem real, mas sem decidir a temporada | +5/h contra +10/h |
 | M9 | Tática média recua com 40% e ainda causa perdas na defesa | O recuo protege, mas o ataque não é inútil | 9% de perdas na defesa |
 | M31 | Batalha sem tempo fixo: 50 contra 1 acaba em até 30 s; 20 contra 20 leva de 3 a 6 min; nenhuma passa de 10 min | Pedido do dono: 50 contra 1 não pode demorar | 20 s · 4 min 20 s · 10 min |
+| M32 | A reserva da IA em casa (castelo × 0,5, até o perfil defensivo) cabe nas tropas do médio e ainda sobra tropa para sair | Decisão 0042: a IA guarda o reino pelas mesmas regras | 6 de 7 · 7 de 10 · 8 de 13 · 9 de 23 (dias 3, 7, 14 e 35) |
 
 ## Como os números saem
 
@@ -125,8 +129,8 @@ O custo cresce mais rápido que a produção: cada nível rende menos por recurs
 - Ataque = soma de `ataque × quantidade`. Defesa = soma de `defesa × quantidade` + milícia + arqueiros no alto.
 - **Vantagem**: uma unidade ganha ×1,5 na proporção em que o outro lado tem o tipo que ela vence (lança vence cavalaria, cavalaria vence arqueiro, arqueiro vence lanceiro).
 - **Milícia**: cada civil presente no local, com defesa 15 cada. Na derrota, 25% deles morrem na proporção das perdas.
-- **Arqueiros no alto das torres**: defesa ×3.
-- **Multiplicadores da defesa**: relíquia de resistência +20%; portões do castelo ×1,15 por nível.
+- **Arqueiros no alto das torres e da torre de menagem do castelo**: defesa ×3.
+- **Multiplicadores da defesa**: relíquia de resistência +20%; portões do castelo ×1,15 por nível, × 1,5 se fechados (ver Defesa própria do castelo).
 - **Resultado**: o lado maior vence. O vencedor perde `(menor/maior)^1,5` das tropas; o perdedor perde tudo, ou recua no limite de baixas da tática.
 - **Duração da batalha**: sem tempo fixo. `20 s + 12 s × tropas do lado mais fraco × (força menor / força maior)^1,5`, até 10 min, sem contar baixas. O tempo real é menor: o ritmo acompanha quem sobra, e uma batalha em que todos caem leva metade disso.
 
@@ -165,6 +169,39 @@ Papéis: o lanceiro é a melhor **defesa por recurso** (44 por 100 de valor); o 
 
 A torre é a defesa mais eficiente por recurso (uma torre nível 1 defende como 4 lanceiros, por 40% do custo e sem gastar gente), mas é parada e pode ser derrubada. Portões do castelo: 100 de estrutura por nível, 20 min por nível; nível 3 exige 8 aríetes ou 4 trebuchets. É o ataque mais caro do jogo, como pede a regra.
 
+## Defesa própria do castelo
+
+Decisão 0042. Um castelo de IA nível 8 caiu para 6 tropas de um reino novo: o nível não dava defesa, e a guarnição estava fora. Agora o castelo tem uma defesa que cresce com o nível e não gasta pessoas:
+
+- **Torre de menagem**: `floor(nível × 0,5)` arqueiros no alto, com a defesa ×3 das torres e fora do teto de bônus. Não são pessoas: não morrem nem ocupam o teto.
+- **Portões básicos**: o castelo já vem com portões no nível `floor(nível / 4)` (castelo 4: 1; castelo 8: 2). A obra de portões sobe a partir do maior entre o básico e o construído. O cerco só derruba os construídos.
+- **Portões fechados**: sem máquinas de cerco, o multiplicador dos portões vale × 1,5. Aríetes e trebuchets arrombam os portões durante a batalha, na proporção `Σ cerco das máquinas / (nível × 100)`, até 1. Arrombados por inteiro, os portões não contam; em parte, contam em parte.
+
+| Castelo | Arqueiros na menagem | Portões básicos | Defesa contra força sem máquinas | Com os portões arrombados | Aríetes para arrombar |
+|---|---|---|---|---|---|
+| 2 | 1 | 0 | 75 | 75 | — |
+| 4 | 2 | 1 | 259 | 150 | 3 |
+| 6 | 3 | 1 | 388 | 225 | 3 |
+| 8 | 4 | 2 | 585 | 300 | 5 |
+| 10 | 5 | 2 | 731 | 375 | 5 |
+| 11 | 5 | 2 | 731 | 375 | 5 |
+
+Sem guarnição e sem civis. A milícia e as torres somam, e os portões multiplicam tudo.
+
+Por que assim:
+- **A força pequena sem máquinas não toma o castelo**, nem com o dono fora. 10 arqueiros contra o castelo 8 vazio ficam em 0,5× da defesa; 20 tropas sem máquinas, em 0,9×.
+- **O cerco de verdade toma**: 20 tropas com 4 aríetes vencem o mesmo castelo com 1,3×. Os aríetes custam tempo (20 min cada) e andam devagar: o cerco é uma decisão, não um saque de passagem.
+- **A defesa própria é um piso**. No nível 11, a menagem vale 375 de defesa, menos que metade dos 23 soldados do médio no dia 35. Quem guarda tropas continua mais forte.
+- **O castelo guarnecido continua caindo para o dobro**. O castelo médio nível 10 da M7 resiste a 20 tropas sem máquinas e cai para 40 com 8 aríetes (1,1×). Antes, os 40 iam sem máquinas e venciam com 1,2×.
+
+## Guarda do reino de IA
+
+Decisão 0042. A IA guarda o reino pelas mesmas regras do jogador:
+
+- **Reserva em casa**: `ceil(nível do castelo × 0,5 × perfil × persona)` tropas ficam no castelo. Nada sai abaixo disso: ataque, caça, extração, ocupação, coleta e reforço. Perfil: defensivo 1,5; expansionista e comerciante 1; saqueador 0,7. Persona: o cauteloso guarda mais e o agressivo menos (até ±25% cada traço).
+- **Obras de defesa em todos os perfis**: portões construídos até o nível 3 a partir do castelo 6, e pelo menos 1 torre perto do castelo a partir do castelo 3. O defensivo continua com 2 torres; o comerciante, com 1. Vêm antes das obras da economia e só se dá para pagar.
+- **Exército à vista**: quando um exército de outro reino entra na visão, ela recebe o mesmo aviso do jogador. Se está acordada e vê, entra com o tempo de reação dela e traz de volta as tropas em campo a até 30 hexágonos do castelo (caçando, extraindo, coletando, paradas ou reconhecendo). Usa só o que é público: o dono e o passo da marcha, sem tamanho nem destino.
+
 ## Combates de referência
 
 | Situação | Resultado |
@@ -174,8 +211,11 @@ A torre é a defesa mais eficiente por recurso (uma torre nível 1 defende como 
 | Os mesmos 8 arqueiros, com torre nível 2 na mina | **defesa vence** (a torre muda o resultado) |
 | 6 cavaleiros contra vila com 3 arqueiros e 4 civis | atacante vence com 19% de baixas: saque lucrativo contra alvo fraco |
 | 6 cavaleiros contra vila com 2 lanceiros e 4 civis | atacante vence, mas com 54% de baixas: saque que não compensa |
-| 20 tropas contra castelo médio (12 tropas, 2 torres, portões 3, 10 civis) | defesa vence |
-| 40 tropas contra o mesmo castelo | atacante vence com 78% de baixas |
+| 20 tropas sem máquinas contra castelo médio nível 10 (12 tropas, 2 torres, portões 3, 10 civis) | defesa vence |
+| 40 tropas com 8 aríetes contra o mesmo castelo | atacante vence com 88% de baixas |
+| 6 tropas de reino novo contra castelo nível 8 vazio (3 civis) | defesa vence |
+| 20 tropas sem máquinas contra o mesmo castelo | defesa vence |
+| 20 tropas com 4 aríetes contra o mesmo castelo | atacante vence com 70% de baixas |
 | Ataque perdido com tática média | recua com 40% de baixas, a defesa perde 9% |
 
 ## Saque, relíquias, fauna e proteções

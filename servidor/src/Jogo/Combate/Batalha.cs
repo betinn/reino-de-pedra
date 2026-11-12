@@ -244,7 +244,7 @@ namespace ReinoDePedra.Jogo.Combate
                 ArqTorre = dono ? Defesas.ArqueirosNoAlto(m, l!) : 0,
                 BonusD = dono ? Bonus.SomaDefesa(m, l!) : 0,
                 BonusA = bonusA,
-                Portoes = dono && l!.Tipo == TipoLocal.Castelo ? Math.Clamp(l.Portoes, 0, Defesas.PortoesMax(m)) : 0,
+                Portoes = dono ? Defesas.PortoesEfetivos(m, l!) : 0,   // com os básicos do nível; as máquinas de cerco os arrombam (Formulas.MultPortoes)
             };
             var parte = 1.0;
             if (todos.Count > exs.Count)

@@ -103,6 +103,17 @@ const P = {
   /* torres: 2 arqueiros no alto por nível (uma torre nível 1 defende como 4 lanceiros) */
   torre: { custoN1: 150, custoCresc: 1.8, tempoN1: 800, arqPorNivel: 2, bonusAlto: 3.0, alcance: n => 2 * (n + 1), nivelMax: 3, estrutura: 80 },
   portoesEstrutura: 100,                                   /* pontos de estrutura por nível de portão */
+  /* defesa própria do castelo (decisão 0042): cresce com o nível e não gasta pessoas.
+     - Torre de menagem: floor(nível × arqPorNivel) arqueiros no alto, com a mesma defesa ×torre.bonusAlto das torres e fora
+       do teto de bônus (castelo 8: 4 arqueiros, como uma torre nível 2).
+     - Portões básicos: o castelo já vem com portões no nível floor(nível / portoesCada) (castelo 4: 1; castelo 8: 2). A obra de
+       portões sobe a partir do maior entre o básico e o construído; o dano de cerco só derruba os construídos.
+     - Portões fechados: com portões (básicos ou construídos), quem ataca o castelo sem máquinas de cerco enfrenta o
+       multiplicador dos portões × fechado. Aríetes e trebuchets arrombam os portões durante a batalha: a fração aberta é a
+       soma de U.cerco das máquinas sobre a estrutura dos portões (nível × portoesEstrutura), até 1. Com eles abertos, os
+       portões não contam; em parte, contam em parte. Uma força pequena sem máquinas não toma o castelo; um exército de cerco
+       de verdade toma. */
+  defesaCastelo: { arqPorNivel: 0.5, portoesCada: 4, fechado: 1.5 },
   /* saque */
   saqueQueda: 0.20, saqueMinimo: 0.20,
   /* relíquias */
@@ -340,10 +351,10 @@ const P = {
        vista), espiona (batedor de elite), torres (quantas perto do castelo), prospecta (prospector e extração), comercia
        (margem P.comercio.margemIA; os outros perfis exigem margemOutros × essa margem) */
     perfis: {
-      expansionista: { peso: 0.3, locais: 1.25, militar: 0.9, ataca: false, ocupa: true, espiona: false, torres: 0, prospecta: true, comercia: false },
-      defensivo: { peso: 0.25, locais: 0.9, militar: 1.1, ataca: false, ocupa: false, espiona: false, torres: 2, prospecta: false, comercia: false },
-      saqueador: { peso: 0.25, locais: 0.9, militar: 1.25, ataca: true, ocupa: false, espiona: true, torres: 0, prospecta: false, comercia: false },
-      comerciante: { peso: 0.2, locais: 1.0, militar: 0.85, ataca: false, ocupa: false, espiona: false, torres: 1, prospecta: true, comercia: true }
+      expansionista: { peso: 0.3, locais: 1.25, militar: 0.9, ataca: false, ocupa: true, espiona: false, torres: 0, prospecta: true, comercia: false, guarda: 1.0 },
+      defensivo: { peso: 0.25, locais: 0.9, militar: 1.1, ataca: false, ocupa: false, espiona: false, torres: 2, prospecta: false, comercia: false, guarda: 1.5 },
+      saqueador: { peso: 0.25, locais: 0.9, militar: 1.25, ataca: true, ocupa: false, espiona: true, torres: 0, prospecta: false, comercia: false, guarda: 0.7 },
+      comerciante: { peso: 0.2, locais: 1.0, militar: 0.85, ataca: false, ocupa: false, espiona: false, torres: 1, prospecta: true, comercia: true, guarda: 1.0 }
     },
     /* ataque: só com castelo 3+, contra local espionado há até 24 h, a até 28 hexágonos (os alcances em hexágonos da IA cresceram
        ×1,75 com o mapa de 104 × 80, a mesma escala linear: ver docs/decisoes/0022), cujo dono não está sob escudo e não é
@@ -366,7 +377,15 @@ const P = {
        dela cair abaixo de metade da do ataque */
     defesa: { reforco: 0.5, recuo: 0.5 },
     /* comércio: os perfis não comerciantes pedem margemOutros × P.comercio.margemIA; ninguém troca mais que metade do que guarda */
-    comercio: { margemOutros: 2, reserva: 0.5 }
+    comercio: { margemOutros: 2, reserva: 0.5 },
+    /* guarda do reino (decisão 0042), pelas mesmas regras de um jogador:
+       - reserva em casa: ceil(nível do castelo × porNivel × perfil.guarda × persona) tropas ficam no castelo; nada sai abaixo
+         disso (ataque, caça, extração, ocupação, coleta, reforço). A persona mexe: o agressivo guarda menos, o cauteloso mais.
+       - obras de defesa, em todos os perfis: a partir do castelo casteloPortoes, portões construídos até o nível portoes; a
+         partir do castelo ia.ataque.castelo, pelo menos torres torre(s) perto do castelo (o perfil pode pedir mais).
+       - exército de outro reino entrando na visão: se ela está acordada e vê, entra com o tempo de reação dela e traz de volta
+         as tropas em campo a até recolherAlcance hexágonos do castelo. Usa só o público: dono e posição, sem tamanho nem destino. */
+    guarda: { porNivel: 0.5, casteloPortoes: 6, portoes: 3, torres: 1, recolherAlcance: 30 }
   },
   /* ---------- vida das pessoas e fauna como dano (servidor) ---------- */
   /* Cada pessoa tem vida (máximo por ofício; civis usam "civil", o resto sem entrada usa "padrao") que volta inteira em
@@ -472,10 +491,23 @@ function valorDefesa(grupo, ataqueGrupo, extra) {
     return s + n * u.def * (1 + (P.vantagem - 1) * frac);
   }, 0);
   v += (extra.pop || 0) * P.miliciaPorPop * P.defMilicia;                     /* civis presentes como milícia */
-  v += (extra.arqTorre || 0) * U.arqueiro.def * P.torre.bonusAlto;             /* arqueiros no alto */
-  v *= bonusCom((extra.reliquia || 0) + (extra.bonusD || 0)) * (extra.portoes ? P.portoes[extra.portoes] : 1);
+  v += (extra.arqTorre || 0) * U.arqueiro.def * P.torre.bonusAlto;             /* arqueiros no alto (torres e menagem) */
+  v *= bonusCom((extra.reliquia || 0) + (extra.bonusD || 0)) * multPortoes(extra.portoes, ataqueGrupo);
   return v;
 }
+/* defesa própria do castelo no nível L */
+const menagem = L => Math.floor(L * P.defesaCastelo.arqPorNivel);
+const portoesBasicos = L => Math.min(P.portoes.length - 1, Math.floor(L / P.defesaCastelo.portoesCada));
+/* multiplicador dos portões (nível efetivo n) contra este ataque: fechados valem × fechado; as máquinas de cerco os arrombam */
+function multPortoes(n, ataqueGrupo) {
+  if (!n) return 1;
+  const cerco = Object.entries(ataqueGrupo).reduce((s, [k, q]) => s + q * (U[k].cerco || 0), 0);
+  const aberta = Math.min(1, cerco / (n * P.portoesEstrutura));
+  return 1 + (P.portoes[n] * P.defesaCastelo.fechado - 1) * (1 - aberta);
+}
+/* extra da defesa de um castelo no nível L: soma a menagem aos arqueiros no alto e usa o maior entre os portões construídos e os básicos
+   (nivel só informa os testes do servidor, que montam o castelo naquele nível) */
+const extraCastelo = (L, x) => Object.assign({}, x, { nivel: L, arqTorre: (x.arqTorre || 0) + menagem(L), portoes: Math.max(x.portoes || 0, portoesBasicos(L)) });
 function batalha(atk, def, extra, limiteBaixas) {
   const A = valorAtaque(atk, def, extra.bonusA), Dv = valorDefesa(def, atk, extra);
   const venceA = A > Dv, menor = Math.min(A, Dv), maior = Math.max(A, Dv);
@@ -693,13 +725,19 @@ const casos = [
   ['6 cavaleiros (saque) contra vila com 2 lanceiros e 4 civis', { cavalaria: 6 }, { lanceiro: 2 }, { pop: 4 }],
   ['6 cavaleiros contra vila com 3 arqueiros e 4 civis', { cavalaria: 6 }, { arqueiro: 3 }, { pop: 4 }],
   ['Mina Rubra (4 lanceiros, torre 1, relíquia de resistência, 2 civis) contra 8 arqueiros', { arqueiro: 8 }, { lanceiro: 4 }, { pop: 2, arqTorre: P.torre.arqPorNivel, reliquia: 0.20 }],
-  ['Cerco: 20 tropas mistas contra castelo médio (12 tropas, 2 torres nível 1, portões 3, 10 civis)', { lanceiro: 8, arqueiro: 8, cavalaria: 4 }, { lanceiro: 7, arqueiro: 5 }, { pop: 10, arqTorre: 2 * P.torre.arqPorNivel, portoes: 3 }],
-  ['Mesmo cerco com 40 tropas', { lanceiro: 16, arqueiro: 16, cavalaria: 8 }, { lanceiro: 7, arqueiro: 5 }, { pop: 10, arqTorre: 2 * P.torre.arqPorNivel, portoes: 3 }],
+  ['Cerco: 20 tropas mistas, sem máquinas, contra castelo médio nível 10 (12 tropas, 2 torres nível 1, portões 3, 10 civis, ' + menagem(10) + ' arqueiros na menagem)', { lanceiro: 8, arqueiro: 8, cavalaria: 4 }, { lanceiro: 7, arqueiro: 5 }, extraCastelo(10, { pop: 10, arqTorre: 2 * P.torre.arqPorNivel, portoes: 3 })],
+  ['Mesmo castelo contra exército de cerco de 40 (10 lanceiros, 16 arqueiros, 6 cavaleiros, 8 aríetes)', { lanceiro: 10, arqueiro: 16, cavalaria: 6, ariete: 8 }, { lanceiro: 7, arqueiro: 5 }, extraCastelo(10, { pop: 10, arqTorre: 2 * P.torre.arqPorNivel, portoes: 3 })],
   ['Ataque perdido com tática média (recua com 40%)', { lanceiro: 3 }, { lanceiro: 4 }, { pop: 3 }, 0.40],
   ['8 arqueiros contra mina com 4 lanceiros, torre 1 e 3 civis, sem bônus', { arqueiro: 8 }, { lanceiro: 4 }, { pop: 3, arqTorre: P.torre.arqPorNivel }],
   ['Os mesmos 8 arqueiros com armas nível 3 (+' + r0(BONUS.armas * 100) + '%)', { arqueiro: 8 }, { lanceiro: 4 }, { pop: 3, arqTorre: P.torre.arqPorNivel, bonusA: BONUS.armas }],
   ['Os mesmos 8 arqueiros com todos os bônus de ataque (+' + r0(BONUS.maxAtk * 100) + '%, limitado a +' + P.tetoBonus * 100 + '%)', { arqueiro: 8 }, { lanceiro: 4 }, { pop: 3, arqTorre: P.torre.arqPorNivel, bonusA: BONUS.maxAtk }],
-  ['A mesma mina com todos os bônus de defesa (+' + r0(BONUS.maxDef * 100) + '%, limitado a +' + P.tetoBonus * 100 + '%) contra os 8 arqueiros sem bônus', { arqueiro: 8 }, { lanceiro: 4 }, { pop: 3, arqTorre: P.torre.arqPorNivel, reliquia: P.reliquia.resistencia, bonusD: BONUS.maxDef - P.reliquia.resistencia }]
+  ['A mesma mina com todos os bônus de defesa (+' + r0(BONUS.maxDef * 100) + '%, limitado a +' + P.tetoBonus * 100 + '%) contra os 8 arqueiros sem bônus', { arqueiro: 8 }, { lanceiro: 4 }, { pop: 3, arqTorre: P.torre.arqPorNivel, reliquia: P.reliquia.resistencia, bonusD: BONUS.maxDef - P.reliquia.resistencia }],
+  /* defesa própria do castelo: castelo nível 8 sem guarnição, só com os 3 civis sem trabalho (os outros trabalham nos locais) */
+  ['Castelo nível 8 vazio (3 civis, ' + menagem(8) + ' arqueiros na menagem, portões básicos ' + portoesBasicos(8) + ') contra 6 tropas de reino novo (4 lanceiros, 2 arqueiros)', { lanceiro: 4, arqueiro: 2 }, {}, extraCastelo(8, { pop: 3 })],
+  ['O mesmo castelo contra 10 arqueiros de reino novo', { arqueiro: 10 }, {}, extraCastelo(8, { pop: 3 })],
+  ['O mesmo castelo contra 20 tropas sem máquinas de cerco (10 lanceiros, 10 arqueiros)', { lanceiro: 10, arqueiro: 10 }, {}, extraCastelo(8, { pop: 3 })],
+  ['O mesmo castelo contra exército de cerco de 20 (8 lanceiros, 8 arqueiros, 4 aríetes)', { lanceiro: 8, arqueiro: 8, ariete: 4 }, {}, extraCastelo(8, { pop: 3 })],
+  ['Castelo nível 8 com 2 lanceiros e 3 civis contra 10 cavaleiros sem máquinas', { cavalaria: 10 }, { lanceiro: 2 }, extraCastelo(8, { pop: 3 })]
 ];
 const resCasos = casos.map(([rot, a, d, x, lim]) => {
   const b = batalha(a, d, x, lim);
@@ -725,6 +763,18 @@ for (let n = 1; n <= P.torre.nivelMax; n++) {
     n * P.torre.estrutura + ' (' + Math.ceil(n * P.torre.estrutura / U.ariete.cerco) + ' aríetes) |');
 }
 out('\nPortões do castelo: ' + P.portoesEstrutura + ' de estrutura por nível (nível 3: ' + 3 * P.portoesEstrutura + ', ' + Math.ceil(3 * P.portoesEstrutura / U.ariete.cerco) + ' aríetes ou ' + Math.ceil(3 * P.portoesEstrutura / U.trebuchet.cerco) + ' trebuchets). Aríetes batem por combate; o trebuchet bate à distância, sem entrar no alcance dos arqueiros.\n');
+
+out('## Defesa própria do castelo\n');
+out('Cresce com o nível e não gasta pessoas: arqueiros no alto da torre de menagem (defesa ×' + P.torre.bonusAlto + ', fora do teto de bônus) e portões básicos. Sem máquinas de cerco, os portões fechados valem o multiplicador × ' + String(P.defesaCastelo.fechado).replace('.', ',') + '; aríetes e trebuchets os arrombam na proporção da estrutura (' + P.portoesEstrutura + ' por nível). A obra de portões sobe a partir do básico. Defesa sem guarnição e sem civis:\n');
+out('| Castelo | Arqueiros na menagem | Portões básicos | Defesa contra força sem máquinas | Com os portões arrombados | Aríetes para arrombar |');
+out('|---|---|---|---|---|---|');
+for (let L = 1; L <= P.nivelMax; L++) {
+  const n = portoesBasicos(L), base = menagem(L) * U.arqueiro.def * P.torre.bonusAlto;
+  out('| ' + L + ' | ' + menagem(L) + ' | ' + n + ' | ' + r0(base * multPortoes(n, {})) + ' | ' + r0(base) + ' | ' + (n ? Math.ceil(n * P.portoesEstrutura / U.ariete.cerco) : '—') + ' |');
+}
+out('');
+/* reserva da IA em casa: castelo × porNivel × perfil (a persona ainda mexe, ±) */
+const reservaIA = (L, guarda) => Math.ceil(L * P.ia.guarda.porNivel * (guarda == null ? 1 : guarda));
 
 out('## Fauna, saque, relíquias e proteções\n');
 out('- Fauna (força = soma de (ataque + defesa)/2): baixo ' + P.fauna.baixo + ', médio ' + P.fauna.medio + ', alto ' + P.fauna.alto + '. Com o dobro do limite, o grupo passa ileso. 4 lanceiros = ' + forcaFauna({ lanceiro: 4 }) + ' (ilesos no baixo); 12 arqueiros = ' + forcaFauna({ arqueiro: 12 }) + ' (ilesos em qualquer nível); 1 explorador a cavalo = ' + P.exploradores.cavalo.forca + '.');
@@ -926,7 +976,17 @@ const metas = [
   ['M6', '6 cavaleiros levam pelo menos 40 min de produção de um local nível 6 (o saque vale a viagem de ≈ 2 min)', fmtT(6 * U.cavalaria.carga / prod(6) * 3600), 6 * U.cavalaria.carga / prod(6) >= 2 / 3],
   ['M7a', 'Local defendido cai com cerca de 1,5× a força (arqueiros contra lanceiros)', r1(resCasos[1].razao) + '×', resCasos[1].venceA && resCasos[1].perdaA <= 0.6],
   ['M7b', 'Torre muda o resultado do mesmo ataque', resCasos[2].venceA ? 'não muda' : 'defesa vence', !resCasos[2].venceA],
-  ['M7c', 'Castelo médio resiste a 20 tropas e cai com cerca de 2× isso', (resCasos[6].venceA ? 'cai' : 'resiste') + ' / ' + (resCasos[7].venceA ? 'cai' : 'resiste'), !resCasos[6].venceA && resCasos[7].venceA],
+  ['M7c', 'Castelo médio (nível 10, com guarnição) resiste a 20 tropas e cai com cerca de 2× isso num exército de cerco', (resCasos[6].venceA ? 'cai' : 'resiste') + ' (' + r1(resCasos[6].razao) + '×) / ' + (resCasos[7].venceA ? 'cai' : 'resiste') + ' (' + r1(resCasos[7].razao) + '×)',
+    !resCasos[6].venceA && resCasos[7].venceA && resCasos[7].razao <= 1.5],
+  ['M7d', 'Castelo nível 8 sem guarnição aguenta 6 a 10 tropas de reino novo sem máquinas de cerco (e 10 cavaleiros contra 2 lanceiros)',
+    [13, 14, 17].map(i => r1(resCasos[i].razao) + '×').join(' · '), [13, 14, 17].every(i => !resCasos[i].venceA)],
+  ['M7e', 'O mesmo castelo aguenta 20 tropas sem máquinas e cai para um exército de cerco de 20 (o dobro dos 10)',
+    (resCasos[15].venceA ? 'cai' : 'resiste') + ' (' + r1(resCasos[15].razao) + '×) / ' + (resCasos[16].venceA ? 'cai' : 'resiste') + ' (' + r1(resCasos[16].razao) + '×)',
+    !resCasos[15].venceA && resCasos[16].venceA],
+  ['M7f', 'A defesa própria do castelo cresce com o nível e vale menos que a guarnição do médio: no nível ' + P.nivelMax + ', ' + menagem(P.nivelMax) + ' arqueiros na menagem e portões básicos ' + portoesBasicos(P.nivelMax),
+    r0(menagem(P.nivelMax) * U.arqueiro.def * P.torre.bonusAlto) + ' < ' + r0(sims.medio.log[35].tropas * U.lanceiro.def),
+    Array.from({ length: P.nivelMax }, (_, i) => i + 1).every(L => L === 1 || menagem(L) >= menagem(L - 1) && portoesBasicos(L) >= portoesBasicos(L - 1))
+      && menagem(P.nivelMax) * U.arqueiro.def * P.torre.bonusAlto < sims.medio.log[35].tropas * U.lanceiro.def],
   ['M8', 'Relíquia de produção vale menos que 1 nível do local (nível 6)', r1(prod(6) * 0.15) + ' < ' + r1(prod(7) - prod(6)), prod(6) * 0.15 < prod(7) - prod(6)],
   ['M9', 'Tática média recua com 40% e ainda causa perdas na defesa', r0(resCasos[8].perdaD * 100) + '% na defesa', resCasos[8].recuou && resCasos[8].perdaD > 0.05],
   ['M10', 'Bônus somados ficam no teto de +' + P.tetoBonus * 100 + '% (sem teto: +' + r0(BONUS.maxAtk * 100) + '% / +' + r0(BONUS.maxDef * 100) + '%)', r0(100 * (resCasos[11].A / resCasos[9].A - 1)) + '%', BONUS.maxAtk > P.tetoBonus && Math.abs(resCasos[11].A / resCasos[9].A - (1 + P.tetoBonus)) < 0.01],
@@ -960,7 +1020,10 @@ const metas = [
     P.vida.recuperaH >= 4 / 3 && P.vida.recuperaH <= 8 / 3 && golpeMax('alto') < vidaMax('lanceiro')],
   ['M31', 'Batalha sem tempo fixo: 50 contra 1 acaba em até 30 s; 20 contra 20 leva de 3 a 6 min; nenhuma passa de 10 min',
     fmtS(duracaoBatalha(1, 0.02)) + ' · ' + fmtS(duracaoBatalha(20, 1)) + ' · ' + fmtS(duracaoBatalha(500, 1)),
-    duracaoBatalha(1, 0.02) <= 30 && duracaoBatalha(20, 1) >= 180 && duracaoBatalha(20, 1) <= 360 && duracaoBatalha(500, 1) <= 600]
+    duracaoBatalha(1, 0.02) <= 30 && duracaoBatalha(20, 1) >= 180 && duracaoBatalha(20, 1) <= 360 && duracaoBatalha(500, 1) <= 600],
+  ['M32', 'A reserva da IA em casa (castelo × ' + String(P.ia.guarda.porNivel).replace('.', ',') + ', até o perfil defensivo) cabe nas tropas do médio e ainda sobra tropa para sair (dias 3, 7, 14 e 35)',
+    [3, 7, 14, 35].map(d => reservaIA(sims.medio.log[d].castelo, P.ia.perfis.defensivo.guarda) + ' de ' + sims.medio.log[d].tropas).join(' · '),
+    [3, 7, 14, 35].every(d => reservaIA(sims.medio.log[d].castelo, P.ia.perfis.defensivo.guarda) < sims.medio.log[d].tropas)]
 ];
 out('## Metas verificadas\n');
 out('| | Meta | Resultado | |');

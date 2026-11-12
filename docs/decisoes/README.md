@@ -44,5 +44,6 @@ Cada decisão em poucas linhas: o que foi decidido e por quê. Regras de jogo fi
 | [0039](0039-ia-nao-governa-jogador.md) | A IA não governa mais o reino do jogador ausente: ele fica como o dono deixou; saves antigos voltam ao dono ao carregar. Muda a 0021 |
 | [0040](0040-servidor-native-aot.md) | Servidor publicado em Native AOT, JSON gerado na compilação (records por formato, save e API iguais), registros explícitos no lugar da reflexão e GC para pouca memória embutido. Muda a 0001 |
 | [0041](0041-cpu-do-motor.md) | CPU do motor com o mundo cheio: a CPU alta era atraso de um save antigo; buscas de caminho sem varrer nem zerar a grade, motor em fatias quando recupera atraso, relógio acelerado que retoma do save e teste de carga com o servidor de verdade. Corrige a CPU da 0040 |
+| [0042](0042-castelo-defesa-propria-e-guarda-da-ia.md) | Defesa própria do castelo pelo nível (torre de menagem, portões básicos, portões fechados sem máquinas de cerco) e a IA que guarda o reino (reserva em casa pelo castelo, portões e torre em todos os perfis, tropas que voltam ao ver um exército). Completa a 0013 e a 0038 |
 
 (A 0014 não existe: o número ficou reservado para a parte 2 do combate, que entrou na 0013.)

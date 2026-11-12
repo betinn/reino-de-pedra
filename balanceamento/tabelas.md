@@ -70,13 +70,18 @@ Valor de ataque contra valor de defesa; o vencedor perde (menor/maior)^1.5 das t
 | 6 cavaleiros (saque) contra vila com 2 lanceiros e 4 civis | 270 | 180 | 1.5 | atacante vence | 54% | 100% |
 | 6 cavaleiros contra vila com 3 arqueiros e 4 civis | 405 | 135 | 3 | atacante vence | 19% | 100% |
 | Mina Rubra (4 lanceiros, torre 1, relíquia de resistência, 2 civis) contra 8 arqueiros | 420 | 408 | 1 | atacante vence | 96% | 100% |
-| Cerco: 20 tropas mistas contra castelo médio (12 tropas, 2 torres nível 1, portões 3, 10 civis) | 779 | 1317 | 0.6 | defesa vence | 100% | 46% |
-| Mesmo cerco com 40 tropas | 1558 | 1317 | 1.2 | atacante vence | 78% | 100% |
+| Cerco: 20 tropas mistas, sem máquinas, contra castelo médio nível 10 (12 tropas, 2 torres nível 1, portões 3, 10 civis, 5 arqueiros na menagem) | 779 | 2791 | 0.3 | defesa vence | 100% | 15% |
+| Mesmo castelo contra exército de cerco de 40 (10 lanceiros, 16 arqueiros, 6 cavaleiros, 8 aríetes) | 1380 | 1267 | 1.1 | atacante vence | 88% | 100% |
 | Ataque perdido com tática média (recua com 40%) | 75 | 205 | 0.4 | recuou | 40% | 9% |
 | 8 arqueiros contra mina com 4 lanceiros, torre 1 e 3 civis, sem bônus | 420 | 355 | 1.2 | atacante vence | 78% | 100% |
 | Os mesmos 8 arqueiros com armas nível 3 (+24%) | 521 | 355 | 1.5 | atacante vence | 56% | 100% |
 | Os mesmos 8 arqueiros com todos os bônus de ataque (+84%, limitado a +50%) | 630 | 355 | 1.8 | atacante vence | 42% | 100% |
 | A mesma mina com todos os bônus de defesa (+89%, limitado a +50%) contra os 8 arqueiros sem bônus | 420 | 533 | 0.8 | defesa vence | 100% | 70% |
+| Castelo nível 8 vazio (3 civis, 4 arqueiros na menagem, portões básicos 2) contra 6 tropas de reino novo (4 lanceiros, 2 arqueiros) | 170 | 673 | 0.3 | defesa vence | 100% | 13% |
+| O mesmo castelo contra 10 arqueiros de reino novo | 350 | 673 | 0.5 | defesa vence | 100% | 38% |
+| O mesmo castelo contra 20 tropas sem máquinas de cerco (10 lanceiros, 10 arqueiros) | 600 | 673 | 0.9 | defesa vence | 100% | 84% |
+| O mesmo castelo contra exército de cerco de 20 (8 lanceiros, 8 arqueiros, 4 aríetes) | 520 | 411 | 1.3 | atacante vence | 70% | 100% |
+| Castelo nível 8 com 2 lanceiros e 3 civis contra 10 cavaleiros sem máquinas | 450 | 907 | 0.5 | defesa vence | 100% | 35% |
 
 ## Duração da batalha
 
@@ -100,6 +105,24 @@ Sem tempo fixo: 20 s + 12 s × tropas do lado mais fraco × (força menor / for�
 | 3 | 8 hex. | 6 | 450 | 340 pedra, 146 madeira | 40 min | 240 (6 aríetes) |
 
 Portões do castelo: 100 de estrutura por nível (nível 3: 300, 8 aríetes ou 4 trebuchets). Aríetes batem por combate; o trebuchet bate à distância, sem entrar no alcance dos arqueiros.
+
+## Defesa própria do castelo
+
+Cresce com o nível e não gasta pessoas: arqueiros no alto da torre de menagem (defesa ×3, fora do teto de bônus) e portões básicos. Sem máquinas de cerco, os portões fechados valem o multiplicador × 1,5; aríetes e trebuchets os arrombam na proporção da estrutura (100 por nível). A obra de portões sobe a partir do básico. Defesa sem guarnição e sem civis:
+
+| Castelo | Arqueiros na menagem | Portões básicos | Defesa contra força sem máquinas | Com os portões arrombados | Aríetes para arrombar |
+|---|---|---|---|---|---|
+| 1 | 0 | 0 | 0 | 0 | — |
+| 2 | 1 | 0 | 75 | 75 | — |
+| 3 | 1 | 0 | 75 | 75 | — |
+| 4 | 2 | 1 | 259 | 150 | 3 |
+| 5 | 2 | 1 | 259 | 150 | 3 |
+| 6 | 3 | 1 | 388 | 225 | 3 |
+| 7 | 3 | 1 | 388 | 225 | 3 |
+| 8 | 4 | 2 | 585 | 300 | 5 |
+| 9 | 4 | 2 | 585 | 300 | 5 |
+| 10 | 5 | 2 | 731 | 375 | 5 |
+| 11 | 5 | 2 | 731 | 375 | 5 |
 
 ## Fauna, saque, relíquias e proteções
 
@@ -345,7 +368,10 @@ Castelo nível 5: sem coleta depois de 4 h; com coleta em 2 h 11 min. Os primeir
 | M6 | 6 cavaleiros levam pelo menos 40 min de produção de um local nível 6 (o saque vale a viagem de ≈ 2 min) | 1 h 48 min | ✓ |
 | M7a | Local defendido cai com cerca de 1,5× a força (arqueiros contra lanceiros) | 2× | ✓ |
 | M7b | Torre muda o resultado do mesmo ataque | defesa vence | ✓ |
-| M7c | Castelo médio resiste a 20 tropas e cai com cerca de 2× isso | resiste / cai | ✓ |
+| M7c | Castelo médio (nível 10, com guarnição) resiste a 20 tropas e cai com cerca de 2× isso num exército de cerco | resiste (0.3×) / cai (1.1×) | ✓ |
+| M7d | Castelo nível 8 sem guarnição aguenta 6 a 10 tropas de reino novo sem máquinas de cerco (e 10 cavaleiros contra 2 lanceiros) | 0.3× · 0.5× · 0.5× | ✓ |
+| M7e | O mesmo castelo aguenta 20 tropas sem máquinas e cai para um exército de cerco de 20 (o dobro dos 10) | resiste (0.9×) / cai (1.3×) | ✓ |
+| M7f | A defesa própria do castelo cresce com o nível e vale menos que a guarnição do médio: no nível 11, 5 arqueiros na menagem e portões básicos 2 | 375 < 920 | ✓ |
 | M8 | Relíquia de produção vale menos que 1 nível do local (nível 6) | 5 < 10 | ✓ |
 | M9 | Tática média recua com 40% e ainda causa perdas na defesa | 9% na defesa | ✓ |
 | M10 | Bônus somados ficam no teto de +50% (sem teto: +84% / +89%) | 50% | ✓ |
@@ -370,5 +396,6 @@ Castelo nível 5: sem coleta depois de 4 h; com coleta em 2 h 11 min. Os primeir
 | M29 | Um hexágono com 4 coletores se esgota em 1 h a 2 h 40 e se recupera inteiro em 4 a 12 h | 2 h 5 min · 8 h | ✓ |
 | M30 | A vida volta inteira em 1 h 20 a 2 h 40; um ataque do perigo alto não mata ninguém de um grupo de lanceiros | 2 h · golpe até 105 < 110 | ✓ |
 | M31 | Batalha sem tempo fixo: 50 contra 1 acaba em até 30 s; 20 contra 20 leva de 3 a 6 min; nenhuma passa de 10 min | 20 s · 4 min 20 s · 10 min | ✓ |
+| M32 | A reserva da IA em casa (castelo × 0,5, até o perfil defensivo) cabe nas tropas do médio e ainda sobra tropa para sair (dias 3, 7, 14 e 35) | 6 de 7 · 7 de 10 · 8 de 13 · 9 de 23 | ✓ |
 
 Todas as metas no alvo.

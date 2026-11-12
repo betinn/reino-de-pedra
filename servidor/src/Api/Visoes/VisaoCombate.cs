@@ -238,11 +238,13 @@ public static class VisaoCombate
         object? castelo = null;
         if (c != null && c.ReinoId == r.Id)
         {
-            var alvo = Defesas.NivelAlvoPortoes(r, c);
+            var alvo = Defesas.NivelAlvoPortoes(m, r, c);
+            var efetivos = Defesas.PortoesEfetivos(m, c);
             castelo = new CombateCasteloJson(
-                c.Id, c.Nome, c.Hex, portoes: c.Portoes, estrutura: c.EstruturaPortoes, estruturaMax: c.Portoes * m.P.PortoesEstrutura,
-                max: Defesas.PortoesMax(m), multiplicador: c.Portoes > 0 ? m.P.Portoes[Math.Min(c.Portoes, Defesas.PortoesMax(m))] : 1,
+                c.Id, c.Nome, c.Hex, portoes: efetivos, estrutura: c.EstruturaPortoes, estruturaMax: c.Portoes * m.P.PortoesEstrutura,
+                max: Defesas.PortoesMax(m), multiplicador: efetivos > 0 ? m.P.Portoes[efetivos] : 1,
                 torres: Defesas.NoAlcance(m, c).Count, arqueirosNoAlto: Defesas.ArqueirosNoAlto(m, c),
+                basicos: Defesas.PortoesBasicos(m, c), construidos: c.Portoes, menagem: Defesas.ArqueirosMenagem(m, c), fechado: m.P.DefesaCastelo.Fechado,
                 proximo: alvo > Defesas.PortoesMax(m) ? null : new CombateCasteloProximoJson(
                     nivel: alvo, custo: Defesas.CustoPortoes(m, alvo), seg: Defesas.TempoPortoes(m, alvo),
                     multiplicador: m.P.Portoes[alvo], bloqueio: Defesas.BloqueioPortoes(m, r, alvo)
@@ -295,7 +297,9 @@ public sealed record CombateBatalha2MeuJson(Dictionary<string, int> tropas, doub
 public sealed record CombateBatalha2ElesJson(string nome, JsonNode? atacante, Dictionary<string, int> tropas, double milicia, double arqueirosNoAlto, int portoes, string? direcao);
 public sealed record CombateBatalha2SerieJson(long t, double meu, double eles, bool proj);
 public sealed record CombateBatalha2DiarioJson(long t, string? txt, string? lado);
-public sealed record CombateCasteloJson(long Id, string Nome, int Hex, int portoes, double estrutura, double estruturaMax, int max, double multiplicador, int torres, int arqueirosNoAlto, CombateCasteloProximoJson? proximo);
+/// <summary>Castelo nas defesas: <c>portoes</c> é o nível efetivo (o maior entre os <c>construidos</c> e os <c>basicos</c> do nível); <c>menagem</c>, os arqueiros da torre de menagem; <c>fechado</c>, o fator dos portões contra quem vem sem máquinas de cerco.</summary>
+public sealed record CombateCasteloJson(long Id, string Nome, int Hex, int portoes, double estrutura, double estruturaMax, int max, double multiplicador, int torres, int arqueirosNoAlto,
+    int basicos, int construidos, int menagem, double fechado, CombateCasteloProximoJson? proximo);
 public sealed record CombateCasteloProximoJson(int nivel, Dictionary<string, double> custo, double seg, double multiplicador, string? bloqueio);
 public sealed record CombateTorresJson(long Id, int Hex, int c, int l, int Nivel, int alcance, int arqueiros, double Estrutura, double estruturaMax, IEnumerable<Endpoints.ContaReinoJson> protege, CombateTorresProximoJson? proximo);
 public sealed record CombateTorresProximoJson(int nivel, Dictionary<string, double> custo, double seg, int alcance, int arqueiros);

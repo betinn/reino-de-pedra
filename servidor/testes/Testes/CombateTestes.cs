@@ -36,15 +36,18 @@ public class CombateTestes
         var esperado = c.GetProperty("res");
 
         var s = new CombateCenario();
-        var castelo = X("portoes") > 0;
-        var alvo = s.Alvo(castelo ? TipoLocal.Castelo : TipoLocal.Mina, def, X("pop"));
+        // castelo no nível do caso: a defesa própria (menagem e portões básicos) vem do nível; o caso traz o nível efetivo dos portões
+        var castelo = X("nivel") > 0 || X("portoes") > 0;
+        var nivel = Math.Max(1, (int)X("nivel"));
+        var alvo = s.Alvo(castelo ? TipoLocal.Castelo : TipoLocal.Mina, def, X("pop"), nivel: nivel);
         if (castelo) { alvo.Portoes = (int)X("portoes"); alvo.EstruturaPortoes = alvo.Portoes * s.M.P.PortoesEstrutura; }
-        // arqueiros no alto: torres do mesmo dono no alcance (nível 2 = 12; quatro de nível 1 = 24...)
-        var arq = (int)X("arqTorre");
+        Assert.Equal((int)X("portoes"), castelo ? Defesas.PortoesEfetivos(s.M, alvo) : 0);
+        // arqueiros no alto: os da menagem e torres do mesmo dono no alcance (nível 2 = 12; quatro de nível 1 = 24...)
+        var arq = (int)X("arqTorre") - Defesas.ArqueirosMenagem(s.M, alvo);
         var porNivel = s.M.P.Torre.ArqPorNivel;
         if (arq == 2 * porNivel) s.Torre(alvo, 2);
         else for (var k = 0; k < arq / porNivel; k++) s.Torre(alvo, 1, k);
-        Assert.Equal(arq, Defesas.ArqueirosNoAlto(s.M, alvo));
+        Assert.Equal((int)X("arqTorre"), Defesas.ArqueirosNoAlto(s.M, alvo));
         var aj = AjustesTeste.De(s.M);
         aj.BonusA = X("bonusA");
         aj.BonusD[alvo.Id] = X("reliquia") + X("bonusD");

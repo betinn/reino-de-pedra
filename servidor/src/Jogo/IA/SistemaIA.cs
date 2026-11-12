@@ -53,6 +53,16 @@ public static class SistemaIA
                 def.ReacaoIAEventoId = mm.Agendar(new ReacaoIAEvento { ReinoId = def.Id, Quando = mm.Agora + Personas.TempoDeReacao(mm, def, "ataque") }).Id;
                 mm.Sujar(def);
             };
+            // exército de outro reino à vista, fora da sessão: se a pessoa está acordada e vê o aviso, entra com o atraso de quem
+            // reage e traz de volta as tropas que estão perto (Governo.Reagir → Recolher). Só o público: dono e posição.
+            AvistamentoAtaqueEvento.AoAvistar += (mm, w, ex, _) =>
+            {
+                if (!mm.IA.Ativa || w is not { EhIA: true, Persona: { Reflexo: > 0 } quem }) return;
+                if (w.ReacaoIAEventoId != null || Sessoes.De(mm, w) is not { } c || !Personas.Acordada(mm, w, c.C)) return;
+                if (!Personas.Sorte(mm, w, "viu-exercito").Chance(0.25 + 0.5 * quem.Disciplina)) return;
+                w.ReacaoIAEventoId = mm.Agendar(new ReacaoIAEvento { ReinoId = w.Id, Quando = mm.Agora + Personas.TempoDeReacao(mm, w, "vista") }).Id;
+                mm.Sujar(w);
+            };
             // temporada nova: reserva de ids nova e a leva inicial de IA (o estado da IA foi apagado com o mundo)
             Temporada.Temporadas.AoReiniciar += mm =>
             {

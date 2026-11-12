@@ -35,7 +35,10 @@ namespace ReinoDePedra.Jogo.Reinos
 {
     public sealed partial class Local
     {
-        /// <summary>Nível dos portões (só no castelo). Multiplica a defesa do castelo por P.portoes[nível].</summary>
+        /// <summary>
+        /// Nível dos portões construídos (só no castelo). Na batalha vale o maior entre ele e os portões básicos do nível do
+        /// castelo (<see cref="Combate.Defesas.PortoesEfetivos"/>), com o multiplicador P.portoes[nível].
+        /// </summary>
         public int Portoes { get; set; }
         /// <summary>Estrutura atual dos portões (nível × P.portoesEstrutura quando inteiros).</summary>
         public double EstruturaPortoes { get; set; }
@@ -44,7 +47,10 @@ namespace ReinoDePedra.Jogo.Reinos
 
 namespace ReinoDePedra.Jogo.Combate
 {
-    /// <summary>Torres de arqueiros e portões do castelo: obras, alcance, quem protegem e dano de cerco.</summary>
+    /// <summary>
+    /// Torres de arqueiros e portões do castelo: obras, alcance, quem protegem e dano de cerco. O castelo tem ainda a defesa
+    /// própria do nível (decisão 0042): arqueiros na torre de menagem e portões básicos, que não gastam pessoas.
+    /// </summary>
     public static class Defesas
     {
         /// <summary>Bloqueios extras para subir os portões a um nível (reino, nível alvo) → motivo ou null.</summary>
@@ -64,8 +70,19 @@ namespace ReinoDePedra.Jogo.Combate
                 : m.Torres.Where(t => t.ReinoId == l.ReinoId && m.G.Distancia(t.Hex, l.Hex) <= Alcance(m, t))
                     .OrderBy(t => m.G.Distancia(t.Hex, l.Hex)).ThenBy(t => t.Id).ToList();
 
-        /// <summary>Arqueiros no alto que defendem o local.</summary>
-        public static int ArqueirosNoAlto(Mundo m, Local l) => NoAlcance(m, l).Sum(t => Arqueiros(m, t));
+        /// <summary>Arqueiros no alto que defendem o local: os das torres no alcance e os da torre de menagem, no castelo.</summary>
+        public static int ArqueirosNoAlto(Mundo m, Local l) => NoAlcance(m, l).Sum(t => Arqueiros(m, t)) + ArqueirosMenagem(m, l);
+
+        private static bool CasteloComDono(Local l) => l.Tipo == TipoLocal.Castelo && !l.Ruina && l.ReinoId != 0;
+
+        /// <summary>Arqueiros na torre de menagem do castelo (pelo nível; não são pessoas, não morrem). Público como o nível.</summary>
+        public static int ArqueirosMenagem(Mundo m, Local l) => CasteloComDono(l) ? m.F.Menagem(l.Nivel) : 0;
+
+        /// <summary>Portões que o castelo já tem pelo nível, sem obra.</summary>
+        public static int PortoesBasicos(Mundo m, Local l) => CasteloComDono(l) ? m.F.PortoesBasicos(l.Nivel) : 0;
+
+        /// <summary>Nível dos portões na batalha: o maior entre os construídos e os básicos (0 fora do castelo).</summary>
+        public static int PortoesEfetivos(Mundo m, Local l) => CasteloComDono(l) ? Math.Clamp(Math.Max(l.Portoes, m.F.PortoesBasicos(l.Nivel)), 0, PortoesMax(m)) : 0;
 
         /// <summary>Locais do dono que a torre protege.</summary>
         public static List<Local> Protege(Mundo m, Torre t) =>
@@ -126,8 +143,9 @@ namespace ReinoDePedra.Jogo.Combate
         }
         public static double TempoPortoes(Mundo m, int nivel) => m.P.Combate.Portao.TempoN1 * nivel;
 
-        public static int NivelAlvoPortoes(Reino r, Local castelo) =>
-            castelo.Portoes + r.Fila(Obras.Fila).Itens.Count(i => i.Tipo == ObraPortoes.Id) + 1;
+        /// <summary>Nível da próxima obra de portões: sobe a partir do maior entre os construídos e os básicos, mais os já na fila.</summary>
+        public static int NivelAlvoPortoes(Mundo m, Reino r, Local castelo) =>
+            Math.Max(castelo.Portoes, PortoesBasicos(m, castelo)) + r.Fila(Obras.Fila).Itens.Count(i => i.Tipo == ObraPortoes.Id) + 1;
 
         /// <summary>Motivo que impede subir os portões ao nível, ou null.</summary>
         public static string? BloqueioPortoes(Mundo m, Reino r, int nivel)
@@ -146,7 +164,7 @@ namespace ReinoDePedra.Jogo.Combate
         {
             var c = m.Locais.Obter(r.CasteloId);
             if (c == null || c.ReinoId != r.Id || c.Ruina) throw new RegraException("Seu reino não tem castelo.");
-            var alvo = NivelAlvoPortoes(r, c);
+            var alvo = NivelAlvoPortoes(m, r, c);
             var b = BloqueioPortoes(m, r, alvo);
             if (b != null) throw new RegraException(b);
             return Filas.Enfileirar(m, r, Obras.Fila, new ItemFila
@@ -168,7 +186,7 @@ namespace ReinoDePedra.Jogo.Combate
             return false;
         }
 
-        /// <summary>Dano nos portões do castelo; devolve quantos níveis caíram.</summary>
+        /// <summary>Dano nos portões construídos do castelo; devolve quantos níveis caíram. Os básicos vêm com o nível e não caem.</summary>
         public static int DanificarPortoes(Mundo m, Local c, double dano)
         {
             if (c.Portoes <= 0) return 0;

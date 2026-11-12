@@ -46,10 +46,12 @@ public static class Reconhecimentos
     {
         vis ??= Nevoas.VisiveisAgora(m, r.Id);
         var torres = TorresConhecidas(m, alvo);
-        var arqTorre = torres.Sum(t => t.Nivel * m.P.Torre.ArqPorNivel);
+        // a defesa própria do castelo é pública como o nível: arqueiros na menagem e portões básicos
+        var menagem = Defesas.ArqueirosMenagem(m, alvo);
+        var arqTorre = torres.Sum(t => t.Nivel * m.P.Torre.ArqPorNivel) + menagem;
         var j = new JsonObject
         {
-            ["torres"] = torres.Count, ["arqueirosNoAlto"] = arqTorre,
+            ["torres"] = torres.Count, ["arqueirosNoAlto"] = arqTorre, ["menagem"] = menagem,
         };
         if (Ataques.SemDono(m, alvo))
         {
@@ -61,7 +63,7 @@ public static class Reconhecimentos
         var aoVivo = vis.Contains(alvo.Hex);
         var esp = r.LocaisEspionados.GetValueOrDefault(alvo.Id);
         var civis = Publico.RegraPublica.CivisEstimados(m, alvo);
-        var portoes = alvo.Tipo == TipoLocal.Castelo ? Math.Clamp(alvo.Portoes, 0, Defesas.PortoesMax(m)) : 0;
+        var portoes = Defesas.PortoesEfetivos(m, alvo);
         Dictionary<string, int> guarnicao; string fonte;
         if (esp != null)
         {
@@ -90,6 +92,7 @@ public static class Reconhecimentos
         j["fonte"] = fonte;
         j["milicia"] = Math.Floor(civis * m.P.MiliciaPorPop + 1e-9);
         j["portoes"] = portoes;
+        if (portoes > 0) j["portoesAbertos"] = Math.Round(m.F.PortoesAbertos(portoes, grupo), 2);
         const double bonusD = 0;   // os bônus de defesa não aparecem em nenhuma fonte
         if (GT.Total(grupo) == 0) return j;
         var x = new ExtraDefesa { Pop = civis, ArqTorre = arqTorre, BonusD = bonusD, BonusA = bonusA, Portoes = portoes };
@@ -107,8 +110,20 @@ public static class Reconhecimentos
         j["perdasDeles"] = Math.Round(res.PerdaD, 3);
         j["baixasMinhas"] = Combates.Perdas(grupo, res.PerdaA).Values.Sum();
         j["veredito"] = !res.VenceA ? "desvantagem" : razao >= 1.5 ? "vantagem" : "apertado";
-        j["texto"] = Veredito(res, razao, fonte);
+        j["texto"] = Veredito(res, razao, fonte) + Portoes(m, portoes, grupo);
         return j;
+    }
+
+    /// <summary>Aviso dos portões do castelo: fechados sem máquinas de cerco, arrombados em parte ou por inteiro com elas.</summary>
+    private static string Portoes(Mundo m, int portoes, IReadOnlyDictionary<string, int> grupo)
+    {
+        if (portoes <= 0) return "";
+        var aberta = m.F.PortoesAbertos(portoes, grupo);
+        if (aberta >= 1) return " As máquinas de cerco arrombam os portões.";
+        var mult = m.F.MultPortoes(portoes, grupo);
+        return aberta <= 0
+            ? " Sem aríetes nem trebuchets, os portões fechados (nível " + portoes + ") multiplicam a defesa por " + Math.Round(mult, 2) + "."
+            : " As máquinas de cerco arrombam " + Math.Round(aberta * 100) + "% dos portões: eles ainda multiplicam a defesa por " + Math.Round(mult, 2) + ".";
     }
 
     private static string Veredito(ResultadoBatalha res, double razao, string fonte)
@@ -134,7 +149,10 @@ public static class Reconhecimentos
         }
         if (e["tropasAprox"] is JsonNode ap) l.Add((JsonNode?)Fauna.Linha("Guarnição", ap.GetValue<string>()));
         if (e["milicia"] is JsonNode mil) l.Add((JsonNode?)Fauna.Linha("Milícia estimada", "≈ " + mil.GetValue<double>()));
-        l.Add((JsonNode?)Fauna.Linha("Torres no alcance", e["torres"]!.GetValue<int>() + (e["arqueirosNoAlto"]!.GetValue<int>() > 0 ? " · " + e["arqueirosNoAlto"]!.GetValue<int>() + " arqueiros no alto" : "")));
+        var menagem = e["menagem"] is JsonNode mg ? mg.GetValue<int>() : 0;
+        var noAlto = e["arqueirosNoAlto"]!.GetValue<int>() - menagem;
+        l.Add((JsonNode?)Fauna.Linha("Torres no alcance", e["torres"]!.GetValue<int>() + (noAlto > 0 ? " · " + noAlto + " arqueiros no alto" : "")));
+        if (menagem > 0) l.Add((JsonNode?)Fauna.Linha("Torre de menagem", menagem + " arqueiros no alto"));
         if (e["portoes"] is JsonNode po && po.GetValue<int>() > 0) l.Add((JsonNode?)Fauna.Linha("Portões", "nível " + po.GetValue<int>()));
         if (e["ataque"] is JsonNode a) l.Add((JsonNode?)Fauna.Linha("Força", a.GetValue<double>() + " das suas tropas contra " + e["defesa"]!.GetValue<double>() + " da defesa"));
         return l;

@@ -44,12 +44,21 @@ public static class Governo
         finally { m.ExigirRecursos = antes; }
     }
 
-    /// <summary>Entrou só para defender (viu a notificação do ataque): manda reforço ou recua, e nada mais.</summary>
+    /// <summary>
+    /// Entrou só para defender (viu a notificação do ataque ou de um exército à vista): manda reforço ou recua, traz de volta as
+    /// tropas que estão perto se um exército de outro reino vem chegando, e nada mais.
+    /// </summary>
     public static void Reagir(Mundo m, Reino r, Conduta c)
     {
         var antes = m.ExigirRecursos;
         m.ExigirRecursos = true;
-        try { Economia.Atualizar(m, r); Tentar(() => Defender(m, r, c)); Tentar(() => ConvivioAlianca.AoSerAtacada(m, r)); }
+        try
+        {
+            Economia.Atualizar(m, r);
+            Tentar(() => Defender(m, r, c));
+            Tentar(() => Recolher(m, r, c));
+            Tentar(() => ConvivioAlianca.AoSerAtacada(m, r));
+        }
         finally { m.ExigirRecursos = antes; }
     }
 
@@ -71,8 +80,15 @@ public static class Governo
         {
             if (r.EhIA) { Personas.Envelhecer(m, r); DesistirDoParado(m, r, c.Espera); }
             Nevoas.VisiveisAgora(m, r.Id);   // olha o mapa, como o jogador ao abrir o jogo
-            if (Lembra("defender")) { Tentar(() => Defender(m, r, c)); if (r.EhIA) Tentar(() => ConvivioAlianca.AoSerAtacada(m, r)); }
+            if (Lembra("defender"))
+            {
+                Tentar(() => Defender(m, r, c));
+                Tentar(() => Recolher(m, r, c));
+                if (r.EhIA) Tentar(() => ConvivioAlianca.AoSerAtacada(m, r));
+            }
             if (Lembra("comercio")) Tentar(() => Comerciante.Responder(m, r, c));
+            // a defesa do castelo vem antes da economia: portões e pelo menos uma torre, em todos os perfis
+            if (Lembra("defesas")) Tentar(() => DefesasDoCastelo(m, r, c, castelo));
             if (Lembra("construir")) Tentar(() => Construir(m, r, c, castelo));
             if (Lembra("exploradores")) Tentar(() => ExploradoresParados(m, r, castelo));
             if (Lembra("recrutar")) Tentar(() => Recrutar(m, r, c, castelo));
@@ -81,13 +97,12 @@ public static class Governo
         if (etapa == 0) return;
         if (Lembra("prisioneiros")) Tentar(() => Prisioneiros(m, r));
         if (Lembra("explorar")) Tentar(() => Explorar(m, r, castelo));
-        if (Lembra("cacar")) Tentar(() => Cacar(m, r, castelo));
-        if (Lembra("coletar")) Tentar(() => Coletar(m, r, castelo));
+        if (Lembra("cacar")) Tentar(() => Cacar(m, r, castelo, c));
+        if (Lembra("coletar")) Tentar(() => Coletar(m, r, castelo, c));
         if (c.Perfil is { } p)
         {
-            if (p.Torres > 0 && Lembra("torres")) Tentar(() => Torres(m, r, p, castelo));
-            if (p.Prospecta && Lembra("extrair")) Tentar(() => Extrair(m, r, castelo));
-            if (p.Ocupa && Lembra("ocupar")) Tentar(() => Ocupar(m, r, castelo));
+            if (p.Prospecta && Lembra("extrair")) Tentar(() => Extrair(m, r, castelo, c));
+            if (p.Ocupa && Lembra("ocupar")) Tentar(() => Ocupar(m, r, castelo, c));
             // rancor: quem foi atacado e não esquece vai atrás de quem atacou, mesmo sem ser saqueador (só dele)
             var desafeto = c.Persona is { Rancor: >= 0.55, Agressividade: >= 0.3 } ? Personas.Desafeto(r) : null;
             if ((p.Espiona || desafeto != null) && Lembra("espionar")) Tentar(() => Espionar(m, r, castelo, p.Espiona ? null : desafeto, desafeto));
@@ -318,6 +333,64 @@ public static class Governo
         GT.GuarnicaoLivre(m, l).Where(kv => m.B.U.TryGetValue(kv.Key, out var u) && u.So != "defesa" && u.Fam != "cerco")
             .ToDictionary(kv => kv.Key, kv => kv.Value);
 
+    // ---------------------------------------------------------------- guarda do reino (decisão 0042)
+
+    /// <summary>
+    /// Tropas que ficam em casa: o nível do castelo × P.ia.guarda.porNivel, × o perfil (o defensivo guarda mais, o saqueador
+    /// menos) e × a persona (o cauteloso guarda mais, o agressivo menos). Nada sai do castelo abaixo disso.
+    /// </summary>
+    public static int Reserva(Mundo m, Local castelo, Conduta? c)
+    {
+        var g = m.P.IA.Guarda;
+        var mult = (c?.Perfil?.Guarda ?? 1) * (c?.Guarda ?? 1);
+        return (int)Math.Ceiling(castelo.Nivel * g.PorNivel * mult - 1e-9);
+    }
+
+    /// <summary>Quantas tropas podem sair do castelo sem furar a reserva (a milícia conta como gente em casa, mas não sai).</summary>
+    public static int Disponiveis(Mundo m, Local castelo, Conduta? c)
+    {
+        var emCasa = GT.Total(GT.GuarnicaoLivre(m, castelo));
+        return Math.Max(0, Math.Min(GT.Total(TropasDeAtaque(m, castelo)), emCasa - Reserva(m, castelo, c)));
+    }
+
+    /// <summary>
+    /// Obras de defesa do castelo, em todos os perfis: portões construídos até P.ia.guarda.portoes a partir do castelo
+    /// casteloPortoes, e pelo menos P.ia.guarda.torres torre(s) perto dele (o perfil pode pedir mais). Só o que dá para pagar.
+    /// </summary>
+    public static void DefesasDoCastelo(Mundo m, Reino r, Conduta c, Local castelo)
+    {
+        var g = m.P.IA.Guarda;
+        var fila = r.Fila(Obras.Fila);
+        var alvo = Defesas.NivelAlvoPortoes(m, r, castelo);
+        if (castelo.Nivel >= g.CasteloPortoes && fila.Itens.Count < Fila.Maximo && fila.Itens.All(i => i.Tipo != ObraPortoes.Id)
+            && alvo <= g.Portoes && Defesas.BloqueioPortoes(m, r, alvo) == null)
+            Talvez(() => Defesas.SubirPortoes(m, r));
+        Torres(m, r, Math.Max(g.Torres, c.Perfil?.Torres ?? 0), castelo);
+    }
+
+    /// <summary>
+    /// Exército de outro reino vindo (dono e passo, como o jogador vê; sem tamanho nem destino): as tropas em campo a até
+    /// P.ia.guarda.recolherAlcance do castelo, caçando, extraindo, coletando, paradas ou reconhecendo, voltam para casa. Quem
+    /// ataca, ocupa, reforça um aliado ou está em batalha segue o que fazia. Devolve quantos grupos voltaram.
+    /// </summary>
+    public static int Recolher(Mundo m, Reino r, Conduta? c)
+    {
+        var castelo = m.Locais.Obter(r.CasteloId);
+        if (castelo == null || castelo.Ruina || castelo.ReinoId != r.Id || !MarchaVindo(m, r)) return 0;
+        var alcance = m.P.IA.Guarda.RecolherAlcance;
+        var n = 0;
+        foreach (var ex in Exercitos.De(m, r.Id).ToList())
+        {
+            if (ex.Retornando || ex.BatalhaId != null || !Recolhivel(ex.Ordem)) continue;
+            if (m.G.Distancia(ex.HexEm(m.Agora), castelo.Hex) > alcance) continue;
+            try { Exercitos.DarOrdem(m, r, ex.Id, OrdemRetornar.Id, null); n++; } catch (RegraException) { }
+        }
+        return n;
+    }
+
+    private static bool Recolhivel(string ordem) =>
+        ordem is OrdemCacar.Id or Extracoes.OrdemExtrair or Coletas.OrdemColetarId or OrdemMover.Id or OrdemReconhecer.Id;
+
     /// <summary>Tira <paramref name="n"/> tropas do grupo, das mais numerosas para as menos.</summary>
     private static Dictionary<string, int> Parte(IReadOnlyDictionary<string, int> g, int n)
     {
@@ -341,7 +414,7 @@ public static class Governo
             var l = m.Locais.Obter(b.LocalId);
             if (castelo == null || l == null || l.Id == castelo.Id) continue;
             var livres = TropasDeAtaque(m, castelo);
-            var grupo = Parte(livres, (int)Math.Floor(GT.Total(livres) * d.Reforco));
+            var grupo = Parte(livres, Math.Min((int)Math.Floor(GT.Total(livres) * d.Reforco), Disponiveis(m, castelo, c)));
             if (GT.Total(grupo) == 0) continue;
             var rota = Caminhos.Calcular(m, castelo.Hex, l.Hex, GT.Velocidade(m, grupo));
             if (m.Agora + (long)Math.Round(rota.TotalMin * T.Min) >= b.Fim) continue;   // não chegaria a tempo
@@ -420,12 +493,12 @@ public static class Governo
     }
 
     /// <summary>Caça quando falta couro: lanceiros numa região de fauna conhecida perto do castelo, só se passam ilesos.</summary>
-    public static void Cacar(Mundo m, Reino r, Local castelo)
+    public static void Cacar(Mundo m, Reino r, Local castelo, Conduta? c = null)
     {
         var p = m.P.IA.Caca;
         if (Economia.TotalGuardado(m, r).Qtd("couro") >= p.CouroMin) return;
         if (Exercitos.De(m, r.Id).Any(e => e.Ordem == OrdemCacar.Id)) return;
-        var n = Math.Min(p.Tropas, GT.Livres(m, castelo, "lanceiro"));
+        var n = Math.Min(Math.Min(p.Tropas, GT.Livres(m, castelo, "lanceiro")), Disponiveis(m, castelo, c));
         if (n < 1) return;
         var grupo = new Dictionary<string, int> { ["lanceiro"] = n };
         var forca = GT.ForcaFauna(m, grupo);
@@ -452,7 +525,7 @@ public static class Governo
     /// vão a um hexágono do recurso sem fauna conhecida perto do castelo e trazem uma carga (sem repetir: na próxima sessão a IA
     /// decide de novo, e os civis voltam a ficar livres para as vagas).
     /// </summary>
-    public static void Coletar(Mundo m, Reino r, Local castelo)
+    public static void Coletar(Mundo m, Reino r, Local castelo, Conduta? c = null)
     {
         var p = m.P.Coleta;
         if (Exercitos.De(m, r.Id).Any(e => e.Ordem is Coletas.OrdemColetarId or Coletas.OrdemEntregarId || e.ColetaPontoId != null)) return;
@@ -466,7 +539,7 @@ public static class Governo
         var tropas = new Dictionary<string, int>();
         if (civis == 0)
         {
-            var n = Math.Min(p.Ia.Tropas, GT.Livres(m, castelo, "lanceiro"));
+            var n = Math.Min(Math.Min(p.Ia.Tropas, GT.Livres(m, castelo, "lanceiro")), Disponiveis(m, castelo, c));
             if (n < 1) return;
             tropas["lanceiro"] = n;
         }
@@ -480,7 +553,7 @@ public static class Governo
     }
 
     /// <summary>Prospector e extração: descobre jazidas valiosas e manda lanceiros extrair a mais perto conhecida.</summary>
-    public static void Extrair(Mundo m, Reino r, Local castelo)
+    public static void Extrair(Mundo m, Reino r, Local castelo, Conduta? c = null)
     {
         var p = m.P.IA.Extracao;
         if (castelo.Nivel < p.Castelo) return;
@@ -488,7 +561,7 @@ public static class Governo
         if (r.ExploradoresLivres.GetValueOrDefault(Exploradores.Prospector) >= 1 && NaoVisto(m, r, castelo) is int h)
             Exploradores.Enviar(m, r, Exploradores.Prospector, Exploradores.Explorar, h, seguro: true);
         if (Exercitos.De(m, r.Id).Any(e => e.Ordem is Extracoes.OrdemExtrair or Extracoes.OrdemEntregar || e.ExtraiJazidaId != null)) return;
-        var n = Math.Min(p.Tropas, GT.Livres(m, castelo, "lanceiro"));
+        var n = Math.Min(Math.Min(p.Tropas, GT.Livres(m, castelo, "lanceiro")), Disponiveis(m, castelo, c));
         if (n < 1) return;
         var j = m.Jazidas.Where(x => x.DescobertaPor.Contains(r.Id) && x.Restante > 1e-6 && m.G.Distancia(x.Hex, castelo.Hex) <= p.Alcance
                                     && !Extracoes.OcupadoPorOutro(m, r.Id, x.Hex))
@@ -497,13 +570,13 @@ public static class Governo
         Extracoes.Enviar(m, r, castelo.Id, new Dictionary<string, int> { ["lanceiro"] = n }, j.Hex, Extracoes.OrdemExtrair, true, new JsonObject { ["repetir"] = true });
     }
 
-    /// <summary>Perfil defensivo: torres perto do castelo a partir do castelo 3 (até as do perfil).</summary>
-    public static void Torres(Mundo m, Reino r, PerfilIAP p, Local castelo)
+    /// <summary>Torres perto do castelo a partir do castelo 3, até <paramref name="quantas"/> (P.ia.guarda.torres, ou as do perfil).</summary>
+    public static void Torres(Mundo m, Reino r, int quantas, Local castelo)
     {
         if (castelo.Nivel < m.P.IA.Ataque.Castelo) return;
         var fila = r.Fila(Obras.Fila);
         if (fila.Itens.Count >= Fila.Maximo || fila.Itens.Any(i => i.Tipo == ObraTorre.Id)) return;
-        if (Defesas.DoReino(m, r.Id).Count() >= p.Torres) return;
+        if (Defesas.DoReino(m, r.Id).Count() >= quantas) return;
         foreach (var h in m.G.Area(castelo.Hex, m.F.AlcanceTorre(1)).OrderBy(h => m.G.Distancia(h, castelo.Hex)).ThenBy(h => h))
         {
             if (h == castelo.Hex || Defesas.MotivoTorre(m, r, h) != null) continue;
@@ -519,11 +592,11 @@ public static class Governo
         m.Locais.Where(l => l.ReinoId != r.Id).Select(l => (l.Hex, l.Id, Ataques.SemDono(m, l)));
 
     /// <summary>Perfil expansionista: ocupa uma ruína ou terra livre perto do castelo.</summary>
-    public static void Ocupar(Mundo m, Reino r, Local castelo)
+    public static void Ocupar(Mundo m, Reino r, Local castelo, Conduta? c = null)
     {
         var p = m.P.IA.Ocupacao;
         if (Exercitos.De(m, r.Id).Any(e => e.Ordem == OrdemOcupar.Id)) return;
-        var n = Math.Min(p.Tropas, GT.Livres(m, castelo, "lanceiro"));
+        var n = Math.Min(Math.Min(p.Tropas, GT.Livres(m, castelo, "lanceiro")), Disponiveis(m, castelo, c));
         if (n < p.Tropas) return;
         var alvo = LocaisConhecidos(m, r).Where(x => x.livre && m.G.Distancia(x.hex, castelo.Hex) <= p.Alcance)
             .OrderBy(x => m.G.Distancia(x.hex, castelo.Hex)).ThenBy(x => x.hex).Select(x => (int?)x.hex).FirstOrDefault();
@@ -551,12 +624,18 @@ public static class Governo
         if (alvo is int h) Exploradores.Enviar(m, r, Exploradores.Batedor, Exploradores.Espionar, h, seguro: true);
     }
 
-    /// <summary>Defesa estimada de um local espionado: guarnição (como lanceiros), arqueiros das torres e a milícia estimada pelo que é público (famílias do reino por local).</summary>
-    public static double DefesaEstimada(Mundo m, LocalEspionado e, Local l)
+    /// <summary>
+    /// Defesa estimada de um local espionado: guarnição (como lanceiros), arqueiros das torres e a milícia estimada pelo que é
+    /// público (famílias do reino por local). No castelo, também a defesa própria, pública como o nível: os arqueiros da torre
+    /// de menagem e os portões (básicos ou construídos), fechados contra <paramref name="ataque"/> sem máquinas de cerco.
+    /// </summary>
+    public static double DefesaEstimada(Mundo m, LocalEspionado e, Local l, IReadOnlyDictionary<string, int>? ataque = null)
     {
         var lan = m.B.U["lanceiro"]; var arq = m.B.U["arqueiro"];
         var milicia = Publico.RegraPublica.CivisEstimados(m, l) * m.P.MiliciaPorPop * m.P.DefMilicia;
-        return e.Tropas * lan.Def + e.Torres * m.P.Torre.ArqPorNivel * arq.Def * m.P.Torre.BonusAlto + milicia;
+        var noAlto = e.Torres * m.P.Torre.ArqPorNivel + Defesas.ArqueirosMenagem(m, l);
+        var v = e.Tropas * lan.Def + noAlto * arq.Def * m.P.Torre.BonusAlto + milicia;
+        return v * m.F.MultPortoes(Defesas.PortoesEfetivos(m, l), ataque ?? new Dictionary<string, int>());
     }
 
     /// <summary>
@@ -574,7 +653,7 @@ public static class Governo
         if (Exercitos.De(m, r.Id).Any(e => e.Ordem == OrdemAtacar.Id || e.BatalhaId != null)) return;
         if (MarchaVindo(m, r)) return;   // exército vindo para cá: não esvazia a defesa
         var livres = TropasDeAtaque(m, castelo);
-        var envio = Parte(livres, Math.Min((int)Math.Floor(GT.Total(livres) * p.FracTropas), GT.Total(livres) - p.Reserva));
+        var envio = Parte(livres, Math.Min(Math.Min((int)Math.Floor(GT.Total(livres) * p.FracTropas), GT.Total(livres) - p.Reserva), Disponiveis(m, castelo, c)));
         if (GT.Total(envio) == 0) return;
         var ataque = envio.Sum(kv => kv.Value * m.B.U[kv.Key].Atk);
         var desde = m.Agora - T.DeHoras(p.EspionagemH);
@@ -594,7 +673,7 @@ public static class Governo
             if (m.G.Distancia(l.Hex, castelo.Hex) > p.Alcance) continue;
             if (Ataques.SaquesRecentes(m, r, l.Id) > 0) continue;
             if (Permissoes.MotivoEnvio(m, r, dono, l) != null) continue;
-            if (ataque < DefesaEstimada(m, e, l) * folga) continue;
+            if (ataque < DefesaEstimada(m, e, l, envio) * folga) continue;
             var plano = new PlanoAtaque { Tipo = Ataques.Saque, Tatica = p.Tatica };
             Exercitos.Enviar(m, r, castelo.Id, envio, l.Hex, OrdemAtacar.Id, seguro: true, plano.ParaJson());
             return;

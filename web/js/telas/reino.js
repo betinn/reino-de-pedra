@@ -153,7 +153,9 @@
       : e.tipo === 'producaoBasicos' ? 'Produção de cada básico'
       : e.tipo === 'guarda' ? (e.rec === '*' ? 'Guarda de cada recurso' : e.rec === 'basicos' ? 'Guarda de cada básico' : 'Guarda de ' + RP.nomeRecurso(e.rec))
       : e.tipo === 'vagas' ? 'Vagas de trabalho'
-      : e.tipo === 'nivelLocais' ? 'Nível máximo dos outros locais' : e.tipo;
+      : e.tipo === 'nivelLocais' ? 'Nível máximo dos outros locais'
+      : e.tipo === 'menagem' ? 'Arqueiros na torre de menagem'
+      : e.tipo === 'portoesBasicos' ? 'Portões básicos (nível)' : e.tipo;
     var u = e.tipo === 'producao' || e.tipo === 'producaoBasicos' ? '/h' : '', d = e.para - e.de;
     return '<span class="dica-efeito">' + nome + ': ' + numDica(e.de) + u + ' → <strong>' + numDica(e.para) + u + '</strong> <em>(' + (d > 0 ? '+' : '') + numDica(d) + ')</em></span>';
   }

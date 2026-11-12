@@ -125,7 +125,11 @@ public static class Efeitos
                 case "portoes":
                 {
                     var q = (int)o.Q;
-                    if (l.Tipo != TipoLocal.Castelo || l.Portoes <= 0) { r.Objetivos.Add(new(txt, "falhou", "o castelo não tem portões")); break; }
+                    if (l.Tipo != TipoLocal.Castelo || l.Portoes <= 0)
+                    {
+                        r.Objetivos.Add(new(txt, "falhou", Defesas.PortoesBasicos(m, l) > 0 ? "os portões básicos vêm com o nível do castelo e não caem" : "o castelo não tem portões"));
+                        break;
+                    }
                     var alvo = Math.Max(0, l.Portoes - q);
                     var precisa = Math.Max(0, l.EstruturaPortoes - alvo * m.P.PortoesEstrutura);
                     var usa = Math.Min(precisa, danoResta);
