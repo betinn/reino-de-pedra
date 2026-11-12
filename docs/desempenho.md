@@ -4,7 +4,7 @@ O servidor precisa caber num servidor pequeno: o orçamento de projeto é ≈ 12
 
 ## Teste de carga
 
-`servidor/testes/Testes/CargaIATestes.cs` (traço `Categoria=carga`, roda junto com `dotnet test`): 30 reinos (25 de IA e 5 jogadores simulados), com fauna, por dias de jogo, avançando o relógio falso evento a evento. `REINO_CARGA_DIAS` muda a duração (padrão 10). Para rodar só ele:
+`servidor/testes/Testes/CargaIATestes.cs` (traço `Categoria=carga`, roda junto com `dotnet test`): 30 reinos (25 de IA e 5 jogadores simulados), com fauna, por dias de jogo, avançando o relógio falso evento a evento. `REINO_CARGA_DIAS` muda a duração (padrão 10). Depois da simulação, o mesmo save sobe num servidor de verdade (Kestrel, motor, gravação) com relógio de parede: no ritmo real, 720× mais rápido e com um dia de jogo de atraso ([CPU do motor com o mundo cheio](#cpu-do-motor-com-o-mundo-cheio)). Para rodar só ele:
 
 ```
 cd servidor && REINO_CARGA_DIAS=35 dotnet test --filter "Categoria=carga" --logger "console;verbosity=detailed"
@@ -53,7 +53,7 @@ Os eventos a mais são os deslocamentos de pessoas (nascimentos, trocas de vaga,
 
 Com a vida das pessoas e a coleta de madeira e pedra ([0028](decisoes/0028-vida-e-coleta.md)), 10 dias, 30 reinos (25 de IA): 4 786 eventos por dia de jogo (+16%: viagens de coleta da IA e civis voltando para casa), 1,33 s de CPU por dia (278 µs por evento), sessão de IA de 4,8 ms, 0,0015% de um núcleo, pico de 33,8 MB, 9 865 documentos e banco de 4,6 MB. A vida não cria eventos (é calculada quando alguém olha). Castelo médio da IA no dia 10: 8,0.
 
-Limites afirmados no teste: menos de 43 s de CPU por dia de jogo (0,05% de um núcleo), pico de memória gerenciada abaixo de 400 MB e banco abaixo de 64 MB.
+Limites afirmados no teste nessa época: menos de 43 s de CPU por dia de jogo (0,05% de um núcleo), pico de memória gerenciada abaixo de 400 MB e banco abaixo de 64 MB. Os de hoje são mais apertados e estão em [CPU do motor com o mundo cheio](#cpu-do-motor-com-o-mundo-cheio).
 
 Com o mapa de 312 × 240, hexágonos menores e construções em vários hexágonos ([0026](decisoes/0026-mapa-maior-e-bonecos-3d.md)), medido de novo em 10 dias (mesma máquina, testes em Debug):
 
@@ -75,7 +75,9 @@ Com tudo junto (mapa de 312 × 240, vida e coleta da [0028](decisoes/0028-vida-e
 
 O servidor publicado passou de JIT (self-contained, arquivo único) para Native AOT, com JSON gerado na compilação e o GC para pouca memória embutido ([0040](decisoes/0040-servidor-native-aot.md)). As medidas são do processo publicado em Release, servindo de verdade, com o save do teste de carga: 30 reinos (25 de IA), 10 dias de jogo, 8 486 documentos e 6 MB de banco. As medidas foram feitas no Windows, na máquina de desenvolvimento (x86-64 de 2,1 GHz), porque não há WSL nem Docker nela; no Linux os números absolutos mudam, mas a comparação vale.
 
-Como repetir: `REINO_CARGA_BANCO=<arquivo>` faz o teste de carga guardar uma cópia do banco. Suba o binário com `REINO_DADOS` numa pasta com essa cópia como `reino.db`. A memória é amostrada a cada 5 s: a privada e o working set, o que o sistema conta para o processo. Com `REINO_ACELERACAO` diferente de 1, o relógio retoma do instante do save. Com 1 exato, o relógio é o de hoje e o servidor primeiro corre o atraso desde a data do save (meses de jogo), por isso o ritmo real foi medido com 1,0001.
+Como repetir: `REINO_CARGA_BANCO=<arquivo>` faz o teste de carga guardar uma cópia do banco. Suba o binário com `REINO_DADOS` numa pasta com essa cópia como `reino.db`. A memória é amostrada a cada 5 s: a privada e o working set, o que o sistema conta para o processo. O ritmo real foi medido com `REINO_ACELERACAO=1.0001`.
+
+**As linhas de CPU desta seção são de um servidor recuperando atraso, não em regime.** Na época, o relógio acelerado só retomava de um save à frente da hora real, e o save do teste de carga é de janeiro de 2026: em todas as medidas o servidor subiu na hora de hoje e passou o tempo executando meses de eventos. A memória foi medida sob essa mesma carga. A comparação entre JIT e AOT vale; o valor absoluto de CPU, não. A medida certa está em [CPU do motor com o mundo cheio](#cpu-do-motor-com-o-mundo-cheio): em regime, o servidor AOT com este save usa 0,03% de um núcleo, com 68 MB de memória privada e 87 MB de working set.
 
 **Antes e depois**, com o jogo 720× mais rápido, por 8 minutos:
 
@@ -109,7 +111,57 @@ O que os números dizem:
 - **Memória.** O AOT tira cerca de 20 MB de memória privada e 60 MB de working set. O JIT, os metadados de reflexão e o código compilado em tempo de execução saem do processo. O `ConserveMemory` 7 tira mais 15 a 20 MB de privada e corta o pico da carga do save, de 165 para 120 MB. No ritmo real, o servidor como publicado fica em 56 MB de privada e 76 MB de working set, contra 92 e 157 MB do JIT.
 - **Partida.** Cai de 1,5 s para 0,55 s, quase só a leitura do save.
 - **CPU.** O AOT gasta mais que o JIT: de 7% a mais (720×) a 35% a mais (1×). Ele perde a otimização guiada por perfil do JIT. O `ConserveMemory` 7 compacta mais vezes e, sob carga, soma CPU: a 60×, de 50% para 76%. No ritmo real a diferença ficou dentro do ruído.
-- **A CPU não é desprezível com o mundo cheio.** Com este save, o processo usa de 0,4 a 1 núcleo em qualquer ritmo de jogo, no JIT e no AOT. Uma amostragem do processo JIT (`dotnet-trace`, 25 s) mostra a thread do motor ocupada o tempo todo em `Filas.Avaliar → Filas.Reservar → Logistica.EnviarDosProximos` e nas sessões de IA (`Governo.Decidir`, `Caminhos.Calcular`). Isso não depende do AOT e vale investigar à parte. O teste de carga, que avança o relógio de evento em evento, mede 5 s de CPU por dia de jogo; a diferença ainda não tem explicação. Um efeito visível: logo depois da subida (a 60×), os primeiros pedidos do feed esperaram de 4 a 13 s na fila do motor.
+- **A CPU alta era atraso.** Com este save, o processo usou de 0,4 a 1 núcleo em qualquer ritmo de jogo, no JIT e no AOT, e uma amostragem do processo JIT (`dotnet-trace`, 25 s) mostrou a thread do motor ocupada o tempo todo em `Filas.Avaliar → Filas.Reservar → Logistica.EnviarDosProximos` e nas sessões de IA (`Governo.Decidir`, `Caminhos.Calcular`). O motor estava executando meses de eventos atrasados; logo depois da subida (a 60×), os primeiros pedidos do feed esperaram de 4 a 13 s na fila dele. A explicação e a correção estão na seção seguinte.
+
+## CPU do motor com o mundo cheio
+
+A medida do Native AOT acima deu de 0,4 a 1 núcleo com o save de 30 reinos, contra 5 s de CPU por dia de jogo no teste de carga. A [0041](decisoes/0041-cpu-do-motor.md) explica a diferença e corta o custo que havia.
+
+As medidas são da mesma máquina (x86-64 de 2,1 GHz, Windows) e do mesmo save: 30 reinos (25 de IA), 10 dias de jogo, 8 615 documentos, 6 MB de banco. O processo é o servidor em Release com JIT, salvo onde diz AOT. A CPU é o tempo de processador do processo dividido pelo tempo de relógio, amostrada a cada 10 ou 20 s. Um pedido a `/saude` e um ao feed (`/publico/vivo`) a cada amostra entram na conta.
+
+**De onde vinha a CPU alta.** O save do teste de carga fica em janeiro de 2026, a data do relógio falso dos testes. O relógio só retomava de um save à frente da hora real. Com o save atrás, o servidor subia na hora de hoje, mesmo com `REINO_ACELERACAO=1.0001`, e executava dez meses de eventos de uma vez, com uma virada de temporada no meio. O binário de antes, medido como na seção anterior, por minuto de relógio:
+
+| Minuto | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| CPU (fração de um núcleo) | 106% | 97% | 99% | 100% | 98% | 94% | 95% | 56% | 0,1% | 0,1% | 0,6% | 0,0% | 0,0% |
+
+Foram 447 s de CPU para recuperar o atraso. Em dia, o processo gastou 0,5 s de CPU em 5 minutos: 0,17% de um núcleo, e 0,34 s disso foram a varredura do banco, que roda a cada 5 minutos. O teste de carga estava certo. As medidas do servidor, de 3 a 8 minutos cada, passaram o tempo todo, ou quase todo, recuperando atraso.
+
+**Antes e depois.** Nas linhas do servidor no ritmo real e a 720×, "antes" é o código anterior só com o relógio corrigido, para os dois retomarem do save. Na do save de janeiro, os dois sobem com o relógio de hoje.
+
+| | Antes | Depois |
+|---|---|---|
+| Teste de carga (10 dias, Release): CPU por dia de jogo | 5,13 s | 1,44 s |
+| Teste de carga: CPU por evento (sessões de IA incluídas) | 634 µs | 179 µs |
+| Teste de carga: sessão de IA | 6,97 ms | 1,97 ms |
+| Teste de carga: pico de memória gerenciada | 63,5 MB | 31,1 MB |
+| Servidor no ritmo real, 5 min: CPU | 0,26% | 0,35% |
+| Servidor a 720×, 4 min: CPU | 6,1% | 1,65% |
+| Servidor a 720×: pior resposta do feed | 856 ms | 63 ms |
+| Save de janeiro com o relógio de hoje (10 meses de atraso): CPU até ficar em dia | 447 s | 110 s |
+| Recuperando esse atraso: pior resposta do feed | 1 467 ms | 49 ms |
+| Servidor AOT como publicado, ritmo real, 5 min: CPU | não medido | 0,03% |
+
+Por tipo de evento, no teste de carga de 5 dias (Release):
+
+| | Vezes | Antes | Depois |
+|---|---|---|---|
+| Fim de item de fila (com a requisição do próximo) | 1 450 | 9,3 ms | 0,9 ms |
+| Sessão de IA | 1 060 | 7,3 ms | 2,7 ms |
+| Chegada de marcha | 8 000 | 408 µs | 227 µs |
+| Coletas completas do GC (geração 2) no teste | | 639 | 9 |
+| Hexágonos visitados pelas buscas, por dia de jogo | | mais de 16 milhões | 0,6 milhão |
+
+O que os números dizem:
+
+- **No ritmo real, o mundo cheio já custava quase nada, e continua assim.** 0,26% e 0,35% são a mesma coisa: quase tudo é a medição (dois pedidos a cada 10 s) e a varredura do banco. O binário AOT como publicado, sem JIT, ficou em 0,03% de um núcleo (0,08 s de CPU em 4,5 minutos), com 68 MB de memória privada e 87 MB de working set. O orçamento é 12,5%.
+- **O custo que existia era por evento.** 68% da CPU do teste de carga estava num Dijkstra do mapa inteiro (16 ms) a cada requisição de material, e cada busca de caminho alocava 900 KB. Isso pesa quando há muito evento para executar de uma vez: jogo acelerado, ou servidor que ficou fora do ar. O teste de carga caiu de 5,13 para 1,44 s por dia de jogo, o servidor a 720× de 6,1% para 1,65% e os dez meses de atraso de 447 para 110 s.
+- **Recuperando atraso, o servidor agora responde.** O motor executa eventos vencidos por 25 ms e atende os comandos. Com dez meses de atraso, o pior pedido do feed esperou 49 ms (antes, 1,5 s; na medida do AOT, de 4 a 13 s logo depois da subida).
+- **Um dia de servidor fora do ar** custa perto de 1 s de CPU para recuperar (o teste de carga mede: 7 600 eventos em 0,8 s, pior resposta a um comando de 27 ms).
+
+Como repetir: `REINO_CARGA_BANCO=<arquivo>` faz o teste de carga guardar uma cópia do banco. Suba o binário com `REINO_DADOS` numa pasta com essa cópia como `reino.db` e `REINO_ACELERACAO=1.0001`: o relógio retoma do instante do save e o jogo anda no ritmo real. Com `REINO_ACELERACAO=1` exato, o relógio é o de hoje e o servidor primeiro recupera o tempo desde o save; o log diz quanto (`motor atrasado: ... h de jogo para recuperar`) e quando acabou (`motor em dia: N eventos em S s`). Meça a CPU depois disso.
+
+Limites afirmados no teste de carga: menos de 3 milhões de hexágonos visitados pelas buscas de caminho por dia de jogo (igual em qualquer máquina, em Debug ou em Release), menos de 8 s de CPU por dia de jogo (o medido é 1,4 s em Release e 2,7 s em Debug), pico de memória gerenciada abaixo de 400 MB e banco abaixo de 64 MB. Com o servidor de verdade no mesmo save: motor menos de 5% ocupado no ritmo real e processo dentro do orçamento, motor em dia e dentro do orçamento a 720×, e um dia de jogo de atraso recuperado em menos de 30 s sem nenhum comando esperar mais de 0,4 s.
 
 ## Cliente: a Vista com muita gente
 

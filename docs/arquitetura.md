@@ -28,6 +28,8 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 - Produção e população são calculadas sob demanda (`Economia.Atualizar(m, reino)` antes de ler ou mexer em estoques). Um `CheckpointReinoEvento` por reino por hora mantém tudo em dia. A produção de cada local usa a eficiência dele (quem está produzindo / vagas); o crescimento guarda a fração e faz nascer pessoas inteiras.
 - **Pessoas** ([0024](decisoes/0024-pessoas.md)): cada civil, soldado, explorador e mensageiro é um documento `Pessoa` (`Jogo/Pessoas/`), com índices por reino e por local no `Mundo` (`m.PessoasDe`, `m.PessoasNoLocal`). `Reino.Pop`, `Local.Guarnicao`, `Marcha.Tropas`, `Reino.ExploradoresLivres` e `MensageirosLivres` continuam existindo como contagens, mas só `Pessoas` escreve nelas: tire e ponha gente por `Pessoas` (`Sair`, `Embarcar`, `Desembarcar`, `Baixas`, `Enterrar`, `Curadas`, `TreinoPronto`...) ou por `Reinos.Tropas.Retirar/Devolver`, nunca mexendo nos dicionários. `Pessoas.Conferir(m)` diz se alguma contagem não bate com as pessoas (um teste roda dois dias de IA conferindo a cada hora).
 - Sorteios de jogo: `m.Sorte` (não use `Random`). O mapa usa `Rng` com semente (determinístico).
+- **Buscas de caminho** (`Marchas.Caminhos`, [0041](decisoes/0041-cpu-do-motor.md)): `Calcular` (A*) e `MinutosAte` (minutos de alguns alvos até um destino) usam a memória de trabalho do mundo e só visitam o que precisam. Não escreva busca que percorra a grade inteira dentro de um evento: `Mundo.HexesBuscados` conta os hexágonos visitados, e o teste de carga tem limite por dia de jogo.
+- Com eventos atrasados (o servidor ficou fora do ar), o motor trabalha em fatias de 25 ms e atende os comandos entre elas. O log diz quanto atraso há (`motor atrasado`) e quando acabou (`motor em dia`).
 
 ## Documentos e persistência
 
@@ -198,7 +200,7 @@ Valem para toda tela nova ou refeita (ver [decisão 0023](decisoes/0023-concha-j
 - `cd servidor && dotnet test`. `MundoTeste` cria um mundo com relógio falso: `t.NovoReino()`, `t.AvancarMin(5)`, `t.DarRecursos(r)`.
 - Cada regra nova ganha teste. Fórmulas são conferidas contra o modelo.
 - `MundoTeste` e `ServidorTeste` sobem **sem fauna** (sorteios); passe `fauna: true` para ter a fauna do mundo. Para um sorteio de `m.Sorte` com resultado conhecido, troque `m.Sorte` por um `Rng` com semente escolhida (ver `ExploracaoTestes.Sorte`).
-- Teste de carga (`CargaIATestes`, `Categoria=carga`): 30 reinos (jogadores e IA) por dias de jogo simulados, medindo tempo de CPU por evento e memória; números em [`desempenho.md`](desempenho.md).
+- Teste de carga (`CargaIATestes`, `Categoria=carga`): 30 reinos (jogadores e IA) por dias de jogo simulados, medindo tempo de CPU por evento, hexágonos visitados pelas buscas de caminho e memória; depois o mesmo save sobe num servidor de verdade, com relógio de parede, no ritmo real, 720× mais rápido e com um dia de atraso. Números em [`desempenho.md`](desempenho.md).
 - Cenários que escrevem contagens direto (`l.Guarnicao["lanceiro"] = 4`, `CombateCenario.Alvo`) funcionam porque `Pessoas.Sincronizar` faz as pessoas que faltam nascerem na primeira operação; para pessoas específicas use `Pessoas.CriarSoldados`, `Pessoas.Povoar`, `Pessoas.Nascer` e `Pessoas.RemoverCivis`.
 
 ## Segurança e repositório público

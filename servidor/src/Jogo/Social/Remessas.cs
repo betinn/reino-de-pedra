@@ -99,8 +99,9 @@ namespace ReinoDePedra.Jogo.Social
             Conferir(m, de, carga);
             var destino = paraLocal ?? m.Locais.Obter(para.CasteloId) ?? throw new RegraException("O outro reino não tem castelo.");
             var vel = m.P.Carregador.Vel;
-            var tempos = Caminhos.MinutosAte(m, destino.Hex, vel);
-            var origens = m.LocaisDe(de.Id).Where(l => !l.Ruina && !double.IsInfinity(tempos[l.Hex])).OrderBy(l => tempos[l.Hex]).ToList();
+            var proprios = m.LocaisDe(de.Id).Where(l => !l.Ruina).ToList();
+            var tempos = Caminhos.MinutosAte(m, destino.Hex, vel, proprios.Select(l => l.Hex));
+            var origens = proprios.Where(l => !double.IsInfinity(tempos[l.Hex])).OrderBy(l => tempos[l.Hex]).ToList();
             var faltam = carga.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
             var disponivel = new Recursos();
             foreach (var o in origens) disponivel.Somar(o.Estoque);

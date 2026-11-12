@@ -30,6 +30,19 @@ public sealed class Grade(int cols, int lins)
         }
     }
 
+    /// <summary>Os vizinhos de <paramref name="h"/> em <paramref name="saida"/> (6 posições), na mesma ordem de <see cref="Vizinhos(int)"/>, sem alocar. Devolve quantos são.</summary>
+    public int Vizinhos(int h, int[] saida)
+    {
+        int c = C(h), l = L(h), n = 0;
+        var d = (l & 1) == 0 ? ParPar : ParImpar;
+        for (var i = 0; i < d.Length; i++)
+        {
+            int nc = c + d[i].dc, nl = l + d[i].dl;
+            if (Dentro(nc, nl)) saida[n++] = Indice(nc, nl);
+        }
+        return n;
+    }
+
     public static (int x, int y, int z) Cubo(int c, int l)
     {
         var x = c - (l - (l & 1)) / 2;
