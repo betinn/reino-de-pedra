@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace ReinoDePedra.Jogo.Nucleo;
@@ -26,6 +25,8 @@ public interface IColecao : IEnumerable
     bool ContemId(long id);
     /// <summary>Esvazia a coleção na memória, sem marcar remoções (reset de temporada: o banco é apagado à parte).</summary>
     void Limpar();
+    /// <summary>Liga a coleção ao mundo dono (ids novos e sujos).</summary>
+    internal void Vincular(Mundo m);
 }
 
 /// <summary>Coleção de documentos de um tipo (ou de subtipos dele), indexada por id.</summary>
@@ -61,6 +62,7 @@ public sealed class Colecao<T>(string nome) : IColecao, IEnumerable<T> where T :
     }
     public bool Remover(T d) => Remover(d.Id);
     public void Limpar() { foreach (var d in _itens.Values) d.Dona = null; _itens.Clear(); }
+    void IColecao.Vincular(Mundo m) => Mundo = m;
     public IEnumerator<T> GetEnumerator() => _itens.Values.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
@@ -78,9 +80,8 @@ public static class RegistroTipos
         lock (_trava)
         {
             if (_pronto) return;
-            foreach (var t in typeof(Documento).Assembly.GetTypes())
-                if (!t.IsAbstract && typeof(Documento).IsAssignableFrom(t))
-                    _porNome[t.Name] = t;
+            foreach (var t in Persistencia.JsonJogo.Documentos)
+                _porNome[t.Name] = t;
             _pronto = true;
         }
     }
@@ -96,12 +97,26 @@ public static class RegistroTipos
     }
     public static string Nome(Type t) => t.Name;
 
-    /// <summary>Instâncias de todas as classes concretas que implementam a interface (registro por convenção).</summary>
-    public static List<TI> Implementacoes<TI>()
-    {
-        return typeof(Documento).Assembly.GetTypes()
-            .Where(t => !t.IsAbstract && !t.IsInterface && typeof(TI).IsAssignableFrom(t) && t.GetConstructor(Type.EmptyTypes) != null)
-            .Select(t => (TI)Activator.CreateInstance(t)!)
-            .ToList();
-    }
+    /// <summary>
+    /// Instâncias de todas as classes concretas que implementam a interface (ordens de exército e tipos de item de fila).
+    /// A lista é explícita (o Native AOT não enumera tipos); o teste RegistrosTestes confere contra a reflection.
+    /// </summary>
+    public static List<TI> Implementacoes<TI>() => Fabricas.Select(f => f()).OfType<TI>().ToList();
+
+    public static readonly Func<object>[] Fabricas =
+    [
+        // IOrdemExercito
+        () => new Combate.OrdemAtacar(), () => new Valiosos.OrdemBuscarReliquia(), () => new Marchas.OrdemCacar(),
+        () => new Valiosos.OrdemColetar(), () => new Social.OrdemDerrubarBandeira(), () => new Valiosos.OrdemEntregarColeta(),
+        () => new Valiosos.OrdemEntregarExtracao(), () => new Valiosos.OrdemEscavarRuina(), () => new Valiosos.OrdemExtrairJazida(),
+        () => new Combate.OrdemInterceptar(), () => new Marchas.OrdemJuntar(), () => new Marchas.OrdemMover(),
+        () => new Combate.OrdemOcupar(), () => new Marchas.OrdemPatrulhar(), () => new Marchas.OrdemPercorrer(),
+        () => new Combate.OrdemReconhecer(), () => new Marchas.OrdemReforcar(), () => new Marchas.OrdemRetornar(),
+        // ITipoItemFila
+        () => new Combate.ItemCurar(), () => new Forja.ItemEra(), () => new Exploracao.ItemExplorador(), () => new Forja.ItemForja(),
+        () => new Forja.ItemLendario(), () => new Social.ItemMensageiro(), () => new Reinos.ItemRecrutar(), () => new Reinos.ObraFundar(),
+        () => new Reinos.ObraMoradia(), () => new Reinos.ObraNivel(), () => new Combate.ObraPortoes(), () => new Valiosos.ObraPosto(),
+        () => new Exploracao.ObraRota(), () => new Valiosos.ObraSalgadeira(), () => new Combate.ObraTorre(),
+        () => new Combate.ObraTorreNivel(), () => new Valiosos.ObraVeiculo(),
+    ];
 }

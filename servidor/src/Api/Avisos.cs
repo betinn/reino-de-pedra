@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Threading.Channels;
+using ReinoDePedra.Jogo.Persistencia;
 using ReinoDePedra.Jogo;
 
 namespace ReinoDePedra.Api;
@@ -55,17 +56,46 @@ public sealed class CanalSse : ICanalAvisos
     public void Avisar(long reinoId, string tipo, object? dados)
     {
         if (!_porReino.TryGetValue(reinoId, out var d) || d.IsEmpty) return;
-        var linha = "event: " + tipo + "\ndata: " + (dados == null ? "{}" : JsonSerializer.Serialize(dados, Json.Web)) + "\n\n";
+        var linha = "event: " + tipo + "\ndata: " + (dados == null ? "{}" : JsonSerializer.Serialize(dados, Json.Web.GetTypeInfo(dados.GetType()))) + "\n\n";
         foreach (var c in d.Values) c.canal.Writer.TryWrite(linha);
     }
 }
 
+/// <summary>
+/// Opções de JSON da API. Os metadados vêm só do código gerado (<see cref="JsonApi"/> e <see cref="JsonJogo"/>): sem reflection.
+/// </summary>
 public static class Json
 {
-    public static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web)
+    /// <summary>Respostas da API e avisos do SSE: camelCase, acentos sem escape, nulos omitidos, enums em camelCase.</summary>
+    public static readonly JsonSerializerOptions Web = Configurar(new(JsonSerializerDefaults.Web)
     {
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All),
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
-    };
+    });
+
+    /// <summary>
+    /// As do ASP.NET (pedidos e respostas sem opções explícitas): as mesmas, mas nulos escritos. <see cref="Servidor"/>
+    /// aplica o mesmo <see cref="Configurar"/> em <c>ConfigureHttpJsonOptions</c>.
+    /// </summary>
+    public static readonly JsonSerializerOptions Http = Configurar(new(JsonSerializerDefaults.Web));
+
+    public static JsonSerializerOptions Configurar(JsonSerializerOptions o)
+    {
+        o.PropertyNameCaseInsensitive = true;
+        o.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+        o.Com(JsonNamingPolicy.CamelCase);
+        o.TypeInfoResolverChain.Clear();
+        o.TypeInfoResolverChain.Add(JsonApi.Default);
+        o.TypeInfoResolverChain.Add(JsonJogo.Default);
+        return o;
+    }
+
+    /// <summary>
+    /// <c>Results.Json</c> pelo tipo de verdade do valor, com os metadados gerados (o <c>Results.Json</c> com opções usa
+    /// reflection). Sem opções, valem as do ASP.NET (<see cref="Http"/>), como antes.
+    /// </summary>
+    public static IResult Resposta(object? dados, JsonSerializerOptions? opcoes = null, string? contentType = null, int? statusCode = null) =>
+        Results.Json(dados, (opcoes ?? Http).GetTypeInfo(dados?.GetType() ?? typeof(object)), contentType, statusCode);
+
+    /// <summary>Escreve o valor na resposta, pelo tipo de verdade, com as opções do ASP.NET.</summary>
+    public static Task Escrever(HttpResponse r, object dados) => r.WriteAsJsonAsync(dados, Http.GetTypeInfo(dados.GetType()));
 }

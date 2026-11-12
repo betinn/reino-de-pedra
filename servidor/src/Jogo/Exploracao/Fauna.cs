@@ -279,8 +279,8 @@ namespace ReinoDePedra.Jogo.Exploracao
             var animal = NomeAnimal.GetValueOrDefault(rg.Animal, rg.Animal).ToLowerInvariant();
             var linhas = new JsonArray
             {
-                Linha("Onde", "hexágono " + m.G.C(hex) + ", " + m.G.L(hex)),
-                Linha("Perigo", NomeNivel[nome] + " · " + animal),
+                (JsonNode?)Linha("Onde", "hexágono " + m.G.C(hex) + ", " + m.G.L(hex)),
+                (JsonNode?)Linha("Perigo", NomeNivel[nome] + " · " + animal),
             };
             if (exp != null && GT.Total(exp.Tropas) == 0 && m.P.Vida.Fuga.TryGetValue(exp.TipoExp, out var fuga) && m.Sorte.Chance(fuga))
             {
@@ -316,8 +316,8 @@ namespace ReinoDePedra.Jogo.Exploracao
                 if (a.Acabou) resumo += " Ninguém sobrou.";
                 else if (a.Feridos.Count > 0) resumo += " Os feridos seguem andando; a vida volta com o tempo.";
             }
-            if (a.Mortos.Count > 0) linhas.Add(Linha("Mortos", (a.MortosPorUnidade.Count > 0 ? Reinos.Tropas.Partes(m, a.MortosPorUnidade) + ": " : "") + Pessoas.Pessoas.Nomear(a.Mortos)));
-            if (a.Feridos.Count > 0) linhas.Add(Linha("Feridos", string.Join(", ", a.Feridos)));
+            if (a.Mortos.Count > 0) linhas.Add((JsonNode?)Linha("Mortos", (a.MortosPorUnidade.Count > 0 ? Reinos.Tropas.Partes(m, a.MortosPorUnidade) + ": " : "") + Pessoas.Pessoas.Nomear(a.Mortos)));
+            if (a.Feridos.Count > 0) linhas.Add((JsonNode?)Linha("Feridos", string.Join(", ", a.Feridos)));
             if (mc is Carregadores c && r != null && c.ItemId is long item && a.Carga.Count > 0)
                 Logistica.Repor(m, r, c.Fila, item, a.Carga);
             if (a.Acabou) mc.Encerrar(m);

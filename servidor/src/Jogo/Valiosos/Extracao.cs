@@ -163,7 +163,7 @@ namespace ReinoDePedra.Jogo.Valiosos
             Registros.Relatar(m, ex.ReinoId, "extracao", titulo, new JsonObject
             {
                 ["resumo"] = motivo,
-                ["linhas"] = new JsonArray { new JsonObject { ["rotulo"] = "Tropas", ["valor"] = GT.Partes(m, ex.Tropas) } },
+                ["linhas"] = new JsonArray { (JsonNode?)new JsonObject { ["rotulo"] = "Tropas", ["valor"] = GT.Partes(m, ex.Tropas) } },
                 ["hex"] = ex.Destino,
             }, "recursos", titulo);
 
@@ -303,9 +303,9 @@ namespace ReinoDePedra.Jogo.Valiosos
                     ["resumo"] = GT.Partes(m, ex.Tropas) + " trouxeram " + txt + " para " + l.Nome + ".",
                     ["linhas"] = new JsonArray
                     {
-                        new JsonObject { ["rotulo"] = "Carga", ["valor"] = txt },
-                        new JsonObject { ["rotulo"] = "Entregue em", ["valor"] = l.Nome },
-                        new JsonObject { ["rotulo"] = "Jazida", ["valor"] = j == null ? "—" : j.Restante <= 1e-6 ? "esgotada" : Math.Floor(j.Restante) + " restantes" },
+                        (JsonNode?)new JsonObject { ["rotulo"] = "Carga", ["valor"] = txt },
+                        (JsonNode?)new JsonObject { ["rotulo"] = "Entregue em", ["valor"] = l.Nome },
+                        (JsonNode?)new JsonObject { ["rotulo"] = "Jazida", ["valor"] = j == null ? "—" : j.Restante <= 1e-6 ? "esgotada" : Math.Floor(j.Restante) + " restantes" },
                     },
                     ["hex"] = j?.Hex ?? l.Hex,
                 }, "recursos", "Extração: " + txt + " em " + l.Nome);

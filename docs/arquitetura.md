@@ -38,6 +38,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
   Toda propriedade pública `Colecao<T>` do `Mundo` é registrada e gravada sozinha.
 - `Reino`, `Local`, `Marcha`, `Jazida`, `Ruina`, `Nevoa`, `Mundo` são `partial`: acrescente campos em **arquivo próprio do sistema** (ex.: `Reinos/Reino.Alianca.cs`), não no arquivo central.
 - Propriedades públicas com get/set são gravadas em JSON. Get-only não. Use `[JsonIgnore]` para caches.
+- O JSON é gerado na compilação, sem reflection (o servidor publicado é Native AOT, [0040](decisoes/0040-servidor-native-aot.md)). **Um documento novo** entra em `Persistencia/JsonJogo.cs`: um `[JsonSerializable(typeof(...))]` e uma linha em `JsonJogo.Documentos`. **Um enum novo** que vá para o JSON entra em `ConversoresEnum.Todos`. Os testes rodam com a reflection do System.Text.Json desligada e o `RegistrosTestes` confere as listas: um tipo esquecido quebra um teste, não a produção.
 - **Depois de mudar um documento, chame `m.Sujar(doc)`.** O motor grava os sujos a cada 3 s numa transação (SQLite em WAL). A cada 5 min uma varredura grava o que mudou sem `Sujar` e registra aviso no log: isso é bug, corrija.
 - Subtipos (eventos, marchas) são gravados com o nome da classe: **não renomeie classes de documento** sem migrar o banco.
 
@@ -45,11 +46,11 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 
 | Onde | Para quê |
 |---|---|
-| `[Sistema]` + `public static void AoIniciar(Mundo m)` | Rodar na subida do servidor (e em `Sistemas.IniciarTodos` nos testes). Ganchos em listas estáticas: dentro de `Sistemas.UmaVez("chave", () => ...)`. |
-| `ITipoItemFila` | Novo tipo de item de fila (obra, recrutamento, forja...). Classe com construtor vazio; achada por reflexão. `Revisar` desiste do item que aguarda e deixou de fazer sentido; `AoReservar` toma o que ele usa além do material. |
+| `[Sistema]` + `public static void AoIniciar(Mundo m)` | Rodar na subida do servidor (e em `Sistemas.IniciarTodos` nos testes). Ganchos em listas estáticas: dentro de `Sistemas.UmaVez("chave", () => ...)`. O `AoIniciar` entra também na lista explícita: `Sistemas.Todos` (jogo) ou `RegistroApi.Sistemas` (API). |
+| `ITipoItemFila` | Novo tipo de item de fila (obra, recrutamento, forja...). Classe com construtor vazio, registrada em `RegistroTipos.Fabricas` (como as ordens de exército, `IOrdemExercito`). `Revisar` desiste do item que aguarda e deixou de fazer sentido; `AoReservar` toma o que ele usa além do material. |
 | `Filas.Avaliar`, `Filas.Acordar`, `Filas.Situacoes`, `ItemFila.Estado` | Passagem única de Aguardando para Reservado, por ordem de entrada entre as filas (ver decisão 0037); pedir uma avaliação depois do comando em curso; o que falta a cada item da vez, só para ler. |
 | `Marcha` (subclasse) | Novo tipo de marcha; implemente `Tipo`, `Chegou`, e se preciso `PopOcupada`, `RaioVisao`. |
-| `IModuloApi` (Api) | Novo grupo de rotas em `/api/v1`. Classe com construtor vazio; achada por reflexão. |
+| `IModuloApi` (Api) | Novo grupo de rotas em `/api/v1`. Classe com construtor vazio, registrada em `RegistroApi.Modulos`. |
 | `Economia.ModificadoresProducao`, `HorasDeEstoque`, `OcupantesExtras`, `TetoExtra` | Relíquias, salgadeira, feridos... |
 | `Marcha.AoPartir` | Rodar a cada partida de marcha (fauna no caminho, encontros, avistamentos). |
 | `Combate.Bonus.Ataque/Defesa/DefesaExercito` | Bônus de combate (armas, veterania, relíquia, lendário, legado); o combate soma e aplica o teto. |
@@ -158,6 +159,7 @@ Guia para quem mexe no código (pessoas e agentes). As decisões e o porquê de 
 ## API
 
 - JSON em `/api/v1`, nomes em camelCase, enums em camelCase. Erros: status 4xx e `{ "erro": "mensagem para o jogador" }` (lance `RegraException`).
+- **Sem tipo anônimo no JSON**: o gerador do System.Text.Json não os aceita. Cada formato de resposta é um `record ...Json` (os nomes, a ordem e o tipo dos membros são o formato) com um `[JsonSerializable]` em `Api/JsonApi.cs`; o mesmo vale para os pedidos (`Pedido*`) e os avisos do SSE. Responda com `Json.Resposta(valor, Json.Web)`, não com `Results.Json`, que usa reflection. Valor guardado em `object` vai pelo tipo de verdade: registre também `List<...Json>`, `Dictionary<string, ...Json>` e afins, e materialize (`ToList()`) o que for enumerável preguiçoso.
 - Autenticação: cookie HttpOnly `rp_sessao` (web) ou `Authorization: Bearer <token>` (app: `"app": true` no login devolve o token). Escritas com cookie exigem o cabeçalho `X-Reino: 1`.
 - Avisos em tempo real: `GET /api/v1/eventos` (SSE). O servidor manda avisos curtos (`reino`, `marchas`, `mapa`, `relatorio`, `notificacao`...) e o cliente busca só o que mudou. `m.Avisar(reinoId, "tipo", dados?)`.
 - Mesma API para o futuro app de celular.

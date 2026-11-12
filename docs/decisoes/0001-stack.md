@@ -6,4 +6,4 @@
 - É a linguagem principal de quem vai manter o jogo.
 - Kestrel é rápido e leve; o processo fica na casa de 60–100 MB com GC de estação de trabalho, sem concorrência (`ServerGarbageCollection=false`, `ConcurrentGarbageCollection=false`), o que cabe com folga em 1 GB.
 - Um processo só: nada de fila externa, cache externo ou banco servidor para operar num servidor pequeno (orçamento de ≈ 12,5% de um núcleo).
-- Sem trimming/AOT por enquanto: o código usa reflexão (registro de sistemas, JSON polimórfico). A publicação é self-contained em arquivo único, sem precisar instalar o .NET no servidor.
+- Sem trimming/AOT por enquanto: o código usa reflexão (registro de sistemas, JSON polimórfico). A publicação é self-contained em arquivo único, sem precisar instalar o .NET no servidor. (Mudou: a [0040](0040-servidor-native-aot.md) publica em Native AOT.)

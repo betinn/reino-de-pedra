@@ -76,14 +76,14 @@ namespace ReinoDePedra.Jogo.Exploracao
             var g = new JsonObject();
             foreach (var (k, v) in l.Guarnicao.Where(kv => kv.Value > 0)) g[k] = v;
             var reliquias = new JsonArray();
-            foreach (var rel in Reliquias.NoLocal(m, l.Id)) reliquias.Add(new JsonObject { ["id"] = rel.Id, ["nome"] = rel.Nome, ["tipo"] = rel.Tipo });
+            foreach (var rel in Reliquias.NoLocal(m, l.Id)) reliquias.Add((JsonNode?)new JsonObject { ["id"] = rel.Id, ["nome"] = rel.Nome, ["tipo"] = rel.Tipo });
             var estoque = Capturas.Json(l.Estoque);
             var linhas = new JsonArray
             {
-                Fauna.Linha("Local", l.Nome + " · " + dono.Nome),
-                Fauna.Linha("Guarnição", l.TropasNaGuarnicao > 0 ? Reinos.Tropas.Partes(m, l.Guarnicao) : "nenhuma"),
-                Fauna.Linha("Estoque", l.Estoque.Arredondado().Count > 0 ? string.Join(", ", l.Estoque.Arredondado().Select(kv => kv.Value + " " + Logistica.NomeRecurso(kv.Key))) : "vazio"),
-                Fauna.Linha("Relíquias", reliquias.Count > 0 ? string.Join(", ", Reliquias.NoLocal(m, l.Id).Select(x => x.Nome)) : "nenhuma"),
+                (JsonNode?)Fauna.Linha("Local", l.Nome + " · " + dono.Nome),
+                (JsonNode?)Fauna.Linha("Guarnição", l.TropasNaGuarnicao > 0 ? Reinos.Tropas.Partes(m, l.Guarnicao) : "nenhuma"),
+                (JsonNode?)Fauna.Linha("Estoque", l.Estoque.Arredondado().Count > 0 ? string.Join(", ", l.Estoque.Arredondado().Select(kv => kv.Value + " " + Logistica.NomeRecurso(kv.Key))) : "vazio"),
+                (JsonNode?)Fauna.Linha("Relíquias", reliquias.Count > 0 ? string.Join(", ", Reliquias.NoLocal(m, l.Id).Select(x => x.Nome)) : "nenhuma"),
             };
             var dados = new JsonObject
             {

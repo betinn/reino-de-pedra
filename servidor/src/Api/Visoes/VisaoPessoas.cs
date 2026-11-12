@@ -13,39 +13,35 @@ public static class VisaoPessoas
     public static object Lista(Mundo m, Reino r)
     {
         Economia.Atualizar(m, r);
-        return new
-        {
-            agora = m.Agora, pop = (int)r.Pop, teto = Economia.Teto(m, r), tropas = Economia.Tropas(m, r),
-            pessoas = m.PessoasDe(r.Id).OrderBy(p => p.Id).Select(p => Pessoa(m, r, p)).ToList(),
-            locais = m.LocaisDe(r.Id).Where(l => !l.Ruina).OrderBy(l => l.Id).Select(l => LocalVagas(m, l)).ToList(),
-        };
+        return new PessoasListaJson(
+            agora: m.Agora, pop: (int)r.Pop, teto: Economia.Teto(m, r), tropas: Economia.Tropas(m, r),
+            pessoas: m.PessoasDe(r.Id).OrderBy(p => p.Id).Select(p => Pessoa(m, r, p)).ToList(),
+            locais: m.LocaisDe(r.Id).Where(l => !l.Ruina).OrderBy(l => l.Id).Select(l => LocalVagas(m, l)).ToList()
+        );
     }
 
     public static object LocalVagas(Mundo m, Local l)
     {
         var of = Oficios.DoLocal(l);
-        return new
-        {
-            id = l.Id, nome = l.Nome, tipo = l.Tipo.Chave(), hex = l.Hex, oficio = of, oficioNome = of != null ? NomeOficio(of, false) : null,
-            vagas = PS.Vagas(m, l), ocupadas = PS.Trabalhando(m, l), livres = PS.VagasLivres(m, l), presentes = PS.Presentes(m, l).Count(),
-        };
+        return new PessoasLocalVagasJson(
+            id: l.Id, nome: l.Nome, tipo: l.Tipo.Chave(), hex: l.Hex, oficio: of, oficioNome: of != null ? NomeOficio(of, false) : null,
+            vagas: PS.Vagas(m, l), ocupadas: PS.Trabalhando(m, l), livres: PS.VagasLivres(m, l), presentes: PS.Presentes(m, l).Count()
+        );
     }
 
     /// <summary>A folha da pessoa: tudo da lista mais as opções de trabalho (da vaga mais necessária à menos) e as ações.</summary>
     public static object Folha(Mundo m, Reino r, Pessoa p)
     {
         Economia.Atualizar(m, r);
-        var opcoes = PS.Opcoes(m, r, p).Select(o => new
-        {
-            localId = o.local.Id, nome = o.local.Nome, hex = o.local.Hex, oficio = o.oficio, oficioNome = NomeOficio(o.oficio, p.Feminina),
-            livres = o.livres, vagas = o.vagas, atual = p.LocalId == o.local.Id && p.Oficio == o.oficio,
-        }).ToList();
+        var opcoes = PS.Opcoes(m, r, p).Select(o => new PessoasOpcoesJson(
+            localId: o.local.Id, nome: o.local.Nome, hex: o.local.Hex, oficio: o.oficio, oficioNome: NomeOficio(o.oficio, p.Feminina),
+            livres: o.livres, vagas: o.vagas, atual: p.LocalId == o.local.Id && p.Oficio == o.oficio
+        )).ToList();
         var podeMudar = p.EhCivil && p.Estado is not (Estados.Carregando or Estados.Treinando);
-        return new
-        {
-            pessoa = Pessoa(m, r, p), trabalhos = opcoes,
-            acoes = podeMudar ? new[] { "trabalho", "mover" } : Array.Empty<string>(),
-        };
+        return new PessoasFolhaJson(
+            pessoa: Pessoa(m, r, p), trabalhos: opcoes,
+            acoes: podeMudar ? new[] { "trabalho", "mover" } : Array.Empty<string>()
+        );
     }
 
     public static object Pessoa(Mundo m, Reino r, Pessoa p)
@@ -66,15 +62,14 @@ public static class VisaoPessoas
                 if (pronta != null && item.Inicio is long ini) treinoInicio = n <= 1 ? ini : item.FimDaUnidade(n - 1);
             }
         }
-        return new
-        {
-            id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, oficioNome = Oficios.Nome(p), estado = p.Estado,
-            civil = p.EhCivil, localId = p.LocalId, local = l?.Nome, hex, c = hex >= 0 ? m.G.C(hex) : (int?)null, l = hex >= 0 ? m.G.L(hex) : (int?)null,
-            grupoId = p.GrupoId, chegada = mc != null && mc.EventoId != null ? mc.Chegada : (long?)null, pronta,
-            partida = mc != null && mc.EventoId != null ? mc.Partida : (long?)null, treinoInicio,   // inícios das barras de tempo
-            texto = Texto(m, r, p, l, mc), marcas = Math.Round(p.Marcas, 2), nasceuEm = p.NasceuEm,
-            vida = Math.Round(Vidas.Atual(m, p), 1), vidaMax = Vidas.Max(m, p), vidaH = Math.Round(Vidas.PorHora(m, p), 2), vidaCheiaEm = Vidas.CheiaEm(m, p),
-        };
+        return new PessoasPessoaJson(
+            id: p.Id, nome: p.Nome, feminina: p.Feminina, oficio: p.Oficio, oficioNome: Oficios.Nome(p), estado: p.Estado,
+            civil: p.EhCivil, localId: p.LocalId, local: l?.Nome, hex, c: hex >= 0 ? m.G.C(hex) : (int?)null, l: hex >= 0 ? m.G.L(hex) : (int?)null,
+            grupoId: p.GrupoId, chegada: mc != null && mc.EventoId != null ? mc.Chegada : (long?)null, pronta,
+            partida: mc != null && mc.EventoId != null ? mc.Partida : (long?)null, treinoInicio,   // inícios das barras de tempo
+            texto: Texto(m, r, p, l, mc), marcas: Math.Round(p.Marcas, 2), nasceuEm: p.NasceuEm,
+            vida: Math.Round(Vidas.Atual(m, p), 1), vidaMax: Vidas.Max(m, p), vidaH: Math.Round(Vidas.PorHora(m, p), 2), vidaCheiaEm: Vidas.CheiaEm(m, p)
+        );
     }
 
     /// <summary>"Cortando madeira na Serraria do Vale · 3 madeira/h". O tempo que falta (chegada, pronta) vai à parte, para o cliente contar.</summary>
@@ -117,7 +112,15 @@ public static class VisaoPessoas
     }
 
     /// <summary>Resumo de uma pessoa dentro de uma guarnição ou exército.</summary>
-    public static object Curta(Mundo m, Pessoa p) => new { id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, oficioNome = Oficios.Nome(p), estado = p.Estado, marcas = Math.Round(p.Marcas, 2), vida = Math.Round(Vidas.Atual(m, p), 1), vidaMax = Vidas.Max(m, p) };
+    public static object Curta(Mundo m, Pessoa p) => new PessoasCurtaJson(id: p.Id, nome: p.Nome, feminina: p.Feminina, oficio: p.Oficio, oficioNome: Oficios.Nome(p), estado: p.Estado, marcas: Math.Round(p.Marcas, 2), vida: Math.Round(Vidas.Atual(m, p), 1), vidaMax: Vidas.Max(m, p));
 
     public static string NomeOficio(string oficio, bool feminina) => Oficios.Nome(new Pessoa { Oficio = oficio, Feminina = feminina });
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PessoasListaJson(long agora, int pop, int teto, int tropas, List<object> pessoas, List<object> locais);
+public sealed record PessoasLocalVagasJson(long id, string nome, string tipo, int hex, string? oficio, string? oficioNome, int vagas, int ocupadas, int livres, int presentes);
+public sealed record PessoasOpcoesJson(long localId, string nome, int hex, string oficio, string oficioNome, int livres, int vagas, bool atual);
+public sealed record PessoasFolhaJson(object pessoa, List<PessoasOpcoesJson> trabalhos, string[] acoes);
+public sealed record PessoasPessoaJson(long id, string nome, bool feminina, string oficio, string oficioNome, string estado, bool civil, long? localId, string? local, int hex, int? c, int? l, long? grupoId, long? chegada, long? pronta, long? partida, long? treinoInicio, string texto, double marcas, long nasceuEm, double vida, double vidaMax, double vidaH, long? vidaCheiaEm);
+public sealed record PessoasCurtaJson(long id, string nome, bool feminina, string oficio, string oficioNome, string estado, double marcas, double vida, double vidaMax);

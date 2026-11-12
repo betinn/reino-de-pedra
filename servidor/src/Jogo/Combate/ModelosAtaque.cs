@@ -98,7 +98,7 @@ namespace ReinoDePedra.Jogo.Combate
                 var j = new JsonObject { ["k"] = o.K };
                 if (o.R != null) j["r"] = o.R;
                 if (o.Q > 0) j["q"] = o.Q;
-                objs.Add(j);
+                objs.Add((JsonNode?)j);
             }
             var tropas = new JsonObject();
             foreach (var (k, n) in md.Tropas) tropas[k] = n;

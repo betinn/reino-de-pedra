@@ -77,7 +77,7 @@ public static class Escavacoes
         Registros.Relatar(m, ex.ReinoId, "reliquia", titulo, new JsonObject
         {
             ["resumo"] = motivo,
-            ["linhas"] = new JsonArray { new JsonObject { ["rotulo"] = "Tropas", ["valor"] = GT.Partes(m, ex.Tropas) } },
+            ["linhas"] = new JsonArray { (JsonNode?)new JsonObject { ["rotulo"] = "Tropas", ["valor"] = GT.Partes(m, ex.Tropas) } },
             ["hex"] = ex.Destino,
         }, "reliquias", titulo);
         ex.Retornar(m);
@@ -144,10 +144,10 @@ public static class Escavacoes
                          (dest != null ? " para " + dest.Nome : "") + "; no caminho, pode ser roubada.",
             ["linhas"] = new JsonArray
             {
-                new JsonObject { ["rotulo"] = "Relíquia", ["valor"] = rel.Nome },
-                new JsonObject { ["rotulo"] = "Tipo", ["valor"] = ReliquiasLendarias.NomeTipo(rel.Tipo) },
-                new JsonObject { ["rotulo"] = "Efeito", ["valor"] = ReliquiasLendarias.Efeito(m, rel.Tipo) },
-                new JsonObject { ["rotulo"] = "Destino", ["valor"] = dest?.Nome ?? "—" },
+                (JsonNode?)new JsonObject { ["rotulo"] = "Relíquia", ["valor"] = rel.Nome },
+                (JsonNode?)new JsonObject { ["rotulo"] = "Tipo", ["valor"] = ReliquiasLendarias.NomeTipo(rel.Tipo) },
+                (JsonNode?)new JsonObject { ["rotulo"] = "Efeito", ["valor"] = ReliquiasLendarias.Efeito(m, rel.Tipo) },
+                (JsonNode?)new JsonObject { ["rotulo"] = "Destino", ["valor"] = dest?.Nome ?? "—" },
             },
             ["hex"] = ru.Hex,
         }, "reliquias", "Relíquia encontrada: " + rel.Nome, TamanhoAviso.Grande);

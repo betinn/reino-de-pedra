@@ -329,8 +329,8 @@ namespace ReinoDePedra.Jogo.Combate
 
         private static void AvisarLados(Mundo m, Batalha b)
         {
-            m.Avisar(b.AtacanteId, "batalha", new { id = b.Id });
-            m.Avisar(b.DefensorId, "batalha", new { id = b.Id });
+            m.Avisar(b.AtacanteId, "batalha", new AvisoBatalhaJson(id: b.Id));
+            m.Avisar(b.DefensorId, "batalha", new AvisoBatalhaJson(id: b.Id));
         }
 
         // ---------------------------------------------------------------- recuo
@@ -612,4 +612,6 @@ namespace ReinoDePedra.Jogo
     {
         public Colecao<Combate.Batalha> Batalhas { get; } = new("batalhas");
     }
+    // Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+    public sealed record AvisoBatalhaJson(long id);
 }

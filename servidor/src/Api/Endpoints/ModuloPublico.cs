@@ -27,33 +27,33 @@ public sealed class ModuloPublico : IModuloApi
         // sempre a mesma resposta: não diz se o e-mail já está na fila ou se já tem conta
         publico.MapPost("/convites/pedir", (PedidoDeConvite p, ServicoConvites convites) =>
         {
-            if (!string.IsNullOrEmpty(p.Site)) return Results.Json(new { ok = true }, Json.Web, statusCode: 202);   // campo que só robô preenche
-            if (!convites.Pedir(p.Email)) return Results.Json(new { erro = "E-mail inválido." }, statusCode: 400);
-            return Results.Json(new { ok = true }, Json.Web, statusCode: 202);
+            if (!string.IsNullOrEmpty(p.Site)) return Json.Resposta(new PostConvitesPedirJson(ok: true), Json.Web, statusCode: 202);   // campo que só robô preenche
+            if (!convites.Pedir(p.Email)) return Json.Resposta(new ErroJson(erro: "E-mail inválido."), statusCode: 400);
+            return Json.Resposta(new PostConvitesPedirJson(ok: true), Json.Web, statusCode: 202);
         }).RequireRateLimiting("convite");
 
         publico.MapPost("/convites/validar", (PedidoToken p, ServicoConvites convites) =>
         {
             var email = convites.EmailDoLink(p.Token);
             return email == null
-                ? Results.Json(new { erro = LinkInvalido }, statusCode: 410)
-                : Results.Json(new { email = ServicoConvites.Mascarar(email) }, Json.Web);
+                ? Json.Resposta(new ErroJson(erro: LinkInvalido), statusCode: 410)
+                : Json.Resposta(new PostConvitesValidarJson(email: ServicoConvites.Mascarar(email)), Json.Web);
         }).RequireRateLimiting("auth");
 
         publico.MapPost("/convites/fundar", async (PedidoFundar p, HttpContext ctx, ServicoConvites convites, ServicoContas contas, Motor motor, Configuracao cfg) =>
         {
             var email = convites.EmailDoLink(p.Token);
-            if (email == null) return Results.Json(new { erro = LinkInvalido }, statusCode: 410);
+            if (email == null) return Json.Resposta(new ErroJson(erro: LinkInvalido), statusCode: 410);
             var fraca = ServicoContas.MotivoSenhaFraca(p.Senha, email);
-            if (fraca != null) return Results.Json(new { erro = fraca }, statusCode: 400);
+            if (fraca != null) return Json.Resposta(new ErroJson(erro: fraca), statusCode: 400);
             var hash = await Senhas.Hash(p.Senha!, contas.Fila);
             // daqui para a frente, só quem consumiu segue: duas aberturas simultâneas não fundam dois reinos
-            if (!convites.Consumir(p.Token!)) return Results.Json(new { erro = LinkInvalido }, statusCode: 410);
+            if (!convites.Consumir(p.Token!)) return Json.Resposta(new ErroJson(erro: LinkInvalido), statusCode: 410);
             var c = contas.Inserir(email, hash);
             if (c == null)
             {
                 convites.Devolver(p.Token!);
-                return Results.Json(new { erro = "Este e-mail já tem conta. Entre com ela." }, statusCode: 409);
+                return Json.Resposta(new ErroJson(erro: "Este e-mail já tem conta. Entre com ela."), statusCode: 409);
             }
             try
             {
@@ -91,23 +91,28 @@ public static class ModuloAdmin
             var auth = fctx.HttpContext.Request.Headers.Authorization.ToString();
             var dado = auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? auth[7..].Trim() : "";
             if (!CryptographicOperations.FixedTimeEquals(SHA256.HashData(Encoding.UTF8.GetBytes(dado)), SHA256.HashData(Encoding.UTF8.GetBytes(certo))))
-                return Results.Json(new { erro = "Credencial inválida." }, statusCode: 401);
+                return Json.Resposta(new ErroJson(erro: "Credencial inválida."), statusCode: 401);
             return await next(fctx);
         });
-        admin.MapGet("/convites", (string? estado, ServicoConvites convites) => Results.Json(convites.Listar(estado), Json.Web));
+        admin.MapGet("/convites", (string? estado, ServicoConvites convites) => Json.Resposta(convites.Listar(estado), Json.Web));
         admin.MapPost("/convites/{id:long}/link", (long id, HttpContext ctx, ServicoConvites convites, ServicoContas contas) =>
         {
             var c = convites.Obter(id);
-            if (c == null) return Results.Json(new { erro = "Pedido não encontrado." }, statusCode: 404);
-            if (contas.TemConta(c.Email)) return Results.Json(new { erro = "Este e-mail já tem conta." }, statusCode: 409);
-            if (convites.GerarLink(id) is not { } g) return Results.Json(new { erro = "Este convite já foi usado." }, statusCode: 409);
+            if (c == null) return Json.Resposta(new ErroJson(erro: "Pedido não encontrado."), statusCode: 404);
+            if (contas.TemConta(c.Email)) return Json.Resposta(new ErroJson(erro: "Este e-mail já tem conta."), statusCode: 409);
+            if (convites.GerarLink(id) is not { } g) return Json.Resposta(new ErroJson(erro: "Este convite já foi usado."), statusCode: 409);
             var origem = ctx.Request.Scheme + "://" + ctx.Request.Host;
             ctx.Response.Headers.CacheControl = "no-store";
-            return Results.Json(new { email = c.Email, link = origem + "/#/convite/" + g.token, token = g.token, expiraEm = g.expira }, Json.Web, statusCode: 201);
+            return Json.Resposta(new PostConvitesLinkJson(email: c.Email, link: origem + "/#/convite/" + g.token, token: g.token, expiraEm: g.expira), Json.Web, statusCode: 201);
         });
         admin.MapPost("/convites/{id:long}/revogar", (long id, ServicoConvites convites) =>
-            convites.Revogar(id) ? Results.NoContent() : Results.Json(new { erro = "Pedido não encontrado ou já usado." }, statusCode: 404));
+            convites.Revogar(id) ? Results.NoContent() : Json.Resposta(new ErroJson(erro: "Pedido não encontrado ou já usado."), statusCode: 404));
         admin.MapDelete("/convites/{id:long}", (long id, ServicoConvites convites) =>
-            convites.Apagar(id) ? Results.NoContent() : Results.Json(new { erro = "Pedido não encontrado." }, statusCode: 404));
+            convites.Apagar(id) ? Results.NoContent() : Json.Resposta(new ErroJson(erro: "Pedido não encontrado."), statusCode: 404));
     }
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PostConvitesPedirJson(bool ok);
+public sealed record PostConvitesValidarJson(string email);
+public sealed record PostConvitesLinkJson(string email, string link, string token, long expiraEm);

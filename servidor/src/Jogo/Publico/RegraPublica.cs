@@ -141,7 +141,7 @@ public static class RegraPublica
         foreach (var a in m.Aliancas.OrderBy(a => a.Nome, StringComparer.OrdinalIgnoreCase))
             l.Add((JsonNode)new JsonObject
             {
-                ["id"] = a.Id, ["nome"] = a.Nome, ["brasao"] = System.Text.Json.JsonSerializer.SerializeToNode(a.Brasao),
+                ["id"] = a.Id, ["nome"] = a.Nome, ["brasao"] = System.Text.Json.JsonSerializer.SerializeToNode(a.Brasao, Persistencia.JsonJogo.Padrao.GetTypeInfo(typeof(Brasao))),
                 ["membros"] = new JsonArray(a.Membros.Select(x => x.ReinoId).OrderBy(x => x).Select(x => (JsonNode)x).ToArray()),
             });
         return l;

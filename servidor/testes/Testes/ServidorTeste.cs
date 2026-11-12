@@ -73,7 +73,11 @@ public sealed class ServidorTeste : IAsyncDisposable
 public sealed class Cliente : IDisposable
 {
     public HttpClient Http { get; }
-    public static readonly JsonSerializerOptions J = new(JsonSerializerDefaults.Web);
+    /// <summary>
+    /// Opções do lado do cliente de teste (corpos dos pedidos, montados com tipos anônimos): reflection pedida de propósito.
+    /// O servidor não usa reflection (Directory.Build.props a desliga por padrão), e o teste não pode depender dela por engano.
+    /// </summary>
+    public static readonly JsonSerializerOptions J = new(JsonSerializerDefaults.Web) { TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() };
     private readonly ServicoContas? _contas;
     public Cliente(string b, ServicoContas? contas = null)
     {

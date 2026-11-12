@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Reflection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
@@ -21,6 +20,15 @@ namespace ReinoDePedra.Api
     {
         /// <summary>Ganchos de inicialização dos sistemas do jogo (registram modificadores, visões, IA...).</summary>
         public static List<Action<Mundo>> AoIniciarMundo { get; } = new();
+
+        /// <summary>As opções do GC em vigor (embutidas no binário ou de variáveis DOTNET_*), para o log da subida.</summary>
+        private static string ConfiguracaoGc()
+        {
+            var v = GC.GetConfigurationVariables();
+            string Le(string k) => v.TryGetValue(k, out var x) ? x?.ToString() ?? "" : "";
+            var teto = long.TryParse(Le("GCHeapHardLimit"), out var t) && t > 0 ? (t / (1024 * 1024)) + " MB" : "sem";
+            return $"teto {teto}, conserve {Le("GCConserveMem")}, concorrente {Le("ConcurrentGC")}, servidor {Le("ServerGC")}";
+        }
 
         public static WebApplication Construir(string[] args, Configuracao cfg, IRelogio? relogio = null, Action<WebApplicationBuilder>? ajustar = null)
         {
@@ -63,12 +71,9 @@ namespace ReinoDePedra.Api
                 mundo.CriarNovo(semente);
                 banco.Salvar(mundo);
             }
-            foreach (var t in typeof(Servidor).Assembly.GetTypes().Concat(typeof(Mundo).Assembly.GetTypes()))
-            {
-                // sistemas com "public static void AoIniciar(Mundo m)" numa classe marcada com [Sistema] se registram aqui
-                if (t.GetCustomAttribute<SistemaAttribute>() == null) continue;
-                t.GetMethod("AoIniciar", BindingFlags.Public | BindingFlags.Static)?.Invoke(null, [mundo]);
-            }
+            // sistemas com "public static void AoIniciar(Mundo m)" numa classe marcada com [Sistema]: os da API, depois os do jogo
+            foreach (var s in RegistroApi.Sistemas) s(mundo);
+            Sistemas.IniciarTodos(mundo);
             foreach (var f in AoIniciarMundo) f(mundo);
             ReinoDePedra.Jogo.IA.Ocupacao.Completar(mundo);   // meta de ocupação, depois de todos os sistemas prontos
             var log = LoggerFactory.Create(l => l.AddSimpleConsole(o => o.SingleLine = true)).CreateLogger("ReinoDePedra");
@@ -84,12 +89,8 @@ namespace ReinoDePedra.Api
             builder.Services.AddSingleton(new ServicoContas(banco));
             builder.Services.AddSingleton(new ServicoConvites(banco));
             builder.Services.AddSingleton(new ReinoDePedra.Api.Publico.FeedPublico(motor, cfg));
-            builder.Services.ConfigureHttpJsonOptions(o =>
-            {
-                o.SerializerOptions.PropertyNameCaseInsensitive = true;
-                o.SerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
-                o.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
-            });
+            // as mesmas opções de Json.Http: camelCase, acentos sem escape, enums em camelCase e só metadados gerados
+            builder.Services.ConfigureHttpJsonOptions(o => Json.Configurar(o.SerializerOptions));
             builder.Services.AddResponseCompression(o =>
             {
                 o.EnableForHttps = true;
@@ -126,12 +127,12 @@ namespace ReinoDePedra.Api
                 {
                     ctx.Response.StatusCode = e.Status;
                     if (e.Status is 429 or 503) ctx.Response.Headers.RetryAfter = "2";
-                    await ctx.Response.WriteAsJsonAsync(new { erro = e.Message });
+                    await Json.Escrever(ctx.Response, new ErroJson(erro: e.Message));
                 }
                 catch (BadHttpRequestException) when (!ctx.Response.HasStarted)
                 {
                     ctx.Response.StatusCode = 400;
-                    await ctx.Response.WriteAsJsonAsync(new { erro = "Pedido inválido." });
+                    await Json.Escrever(ctx.Response, new ErroJson(erro: "Pedido inválido."));
                 }
             });
             app.UseResponseCompression();
@@ -154,16 +155,14 @@ namespace ReinoDePedra.Api
 
             var api = app.MapGroup("/api/v1");
             var conta = app.MapGroup("/api/v1").ExigirConta();
-            foreach (var t in typeof(Servidor).Assembly.GetTypes().Where(t => !t.IsAbstract && typeof(IModuloApi).IsAssignableFrom(t)))
-                ((IModuloApi)Activator.CreateInstance(t)!).Mapear(api, conta);
+            foreach (var modulo in RegistroApi.Modulos()) modulo.Mapear(api, conta);
             ModuloAdmin.Mapear(api, cfg);
-            api.MapGet("/saude", (Motor m, CanalSse c) => Results.Json(new
-            {
-                ok = true, eventos = m.Mundo.Agenda.Count, conexoes = c.Conexoes,
-                memoriaMb = Environment.WorkingSet / (1024 * 1024),
-            }));
+            api.MapGet("/saude", (Motor m, CanalSse c) => Json.Resposta(new SaudeJson(
+                ok: true, eventos: m.Mundo.Agenda.Count, conexoes: c.Conexoes,
+                memoriaMb: Environment.WorkingSet / (1024 * 1024)
+            )));
 
-            app.Lifetime.ApplicationStarted.Register(() => { motor.Iniciar(); log.LogInformation("Reino de Pedra no ar em {Urls} (web: {Web})", cfg.Urls, web); });
+            app.Lifetime.ApplicationStarted.Register(() => { motor.Iniciar(); log.LogInformation("Reino de Pedra no ar em {Urls} (web: {Web}; GC: {Gc})", cfg.Urls, web, ConfiguracaoGc()); });
             app.Lifetime.ApplicationStopping.Register(() => motor.DisposeAsync().AsTask().GetAwaiter().GetResult());
             app.Lifetime.ApplicationStopping.Register(canal.FecharTodas);   // roda antes da gravação (ordem inversa do registro)
             app.Lifetime.ApplicationStopped.Register(banco.Dispose);
@@ -172,4 +171,7 @@ namespace ReinoDePedra.Api
             return app;
         }
     }
+    // Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+    public sealed record ErroJson(string? erro);
+    public sealed record SaudeJson(bool ok, int eventos, int conexoes, long memoriaMb);
 }

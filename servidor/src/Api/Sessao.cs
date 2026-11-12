@@ -42,10 +42,10 @@ public static class Sessao
             var ctx = fctx.HttpContext;
             var contas = ctx.RequestServices.GetRequiredService<ServicoContas>();
             var id = contas.ValidarSessao(Token(ctx));
-            if (id == null) return Results.Json(new { erro = "Entre na sua conta." }, statusCode: 401);
+            if (id == null) return Json.Resposta(new ErroJson(erro: "Entre na sua conta."), statusCode: 401);
             if (!HttpMethods.IsGet(ctx.Request.Method) && !HttpMethods.IsHead(ctx.Request.Method) && PorCookie(ctx)
                 && ctx.Request.Headers[CabecalhoCsrf] != "1")
-                return Results.Json(new { erro = "Requisição recusada." }, statusCode: 403);
+                return Json.Resposta(new ErroJson(erro: "Requisição recusada."), statusCode: 403);
             ctx.Items["conta"] = id.Value;
             return await next(fctx);
         });

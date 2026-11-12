@@ -15,13 +15,14 @@ public sealed class Banco : IDisposable
     private readonly SqliteConnection _con;
     private readonly object _trava = new();
 
-    public static readonly JsonSerializerOptions Json = new()
+    /// <summary>Opções do save: nomes como estão nas classes, nulos omitidos, enums como texto, metadados gerados (<see cref="JsonJogo"/>).</summary>
+    public static readonly JsonSerializerOptions Json = new JsonSerializerOptions
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter() },
         IncludeFields = false,
         IgnoreReadOnlyProperties = true,
-    };
+        TypeInfoResolver = JsonJogo.Default,
+    }.Com();
 
     /// <summary>Hash do último JSON gravado de cada documento (rede de segurança contra Sujar esquecido).</summary>
     private readonly Dictionary<(string, long), ulong> _hashes = new();
@@ -120,7 +121,7 @@ public sealed class Banco : IDisposable
         {
             if (!porNome.TryGetValue(col, out var c)) continue;   // coleção que não existe mais
             if (RegistroTipos.TipoOuNulo(tipo) is not { } classe) continue;   // classe que não existe mais (evento de um sistema retirado)
-            var d = (Documento)JsonSerializer.Deserialize(dados, classe, Json)!;
+            var d = (Documento)JsonSerializer.Deserialize(dados, Json.GetTypeInfo(classe))!;
             d.Id = id;
             c.AdicionarCarregado(d);
             _hashes[(col, id)] = Fnv(dados);
@@ -146,7 +147,7 @@ public sealed class Banco : IDisposable
         foreach (var c in m.Colecoes)
             foreach (var d in c.Todos)
             {
-                var j = JsonSerializer.Serialize(d, d.GetType(), Json);
+                var j = JsonSerializer.Serialize(d, Json.GetTypeInfo(d.GetType()));
                 if (!_hashes.TryGetValue((c.Nome, d.Id), out var h) || h != Fnv(j)) esquecidos.Add(d);
             }
         if (esquecidos.Count > 0)
@@ -165,7 +166,7 @@ public sealed class Banco : IDisposable
         foreach (var d in sujos)
         {
             if (d.Dona == null) continue;   // removido depois de sujo
-            linhas.Add((d.Dona.Nome, d.Id, RegistroTipos.Nome(d.GetType()), JsonSerializer.Serialize(d, d.GetType(), Json)));
+            linhas.Add((d.Dona.Nome, d.Id, RegistroTipos.Nome(d.GetType()), JsonSerializer.Serialize(d, Json.GetTypeInfo(d.GetType()))));
         }
         try { Transacao(removidos, linhas); }
         catch

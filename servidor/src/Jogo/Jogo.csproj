@@ -2,6 +2,8 @@
   <PropertyGroup>
     <RootNamespace>ReinoDePedra.Jogo</RootNamespace>
     <AssemblyName>ReinoDePedra.Jogo</AssemblyName>
+    <!-- vai dentro do binário Native AOT da Api: analisadores de trim e AOT ligados também aqui -->
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />

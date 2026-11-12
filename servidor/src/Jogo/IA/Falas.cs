@@ -85,8 +85,8 @@ public static class Falas
     /// </summary>
     public static JsonObject Pedido(Persona p, ContextoFala c) => new()
     {
-        ["persona"] = JsonSerializer.SerializeToNode(p),
-        ["contexto"] = JsonSerializer.SerializeToNode(c),
+        ["persona"] = JsonSerializer.SerializeToNode(p, Persistencia.JsonJogo.Padrao.GetTypeInfo(typeof(Persona))),
+        ["contexto"] = JsonSerializer.SerializeToNode(c, Persistencia.JsonJogo.Padrao.GetTypeInfo(typeof(ContextoFala))),
         ["instrucao"] = "Escreva uma única fala curta, em português, na voz desta pessoa, para o canal e a situação dados. " +
                         "No máximo " + c.MaxCaracteres + " caracteres. Não diga que é uma IA.",
     };

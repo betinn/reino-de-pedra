@@ -20,8 +20,7 @@ public class VisibilidadeTestes
     private static MundoTeste ComApi()
     {
         var t = new MundoTeste();
-        foreach (var ty in typeof(Servidor).Assembly.GetTypes().Where(x => x.IsDefined(typeof(SistemaAttribute), false)))
-            ty.GetMethod("AoIniciar", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.Invoke(null, [t.M]);
+        foreach (var s in RegistroApi.Sistemas) s(t.M);
         return t;
     }
 

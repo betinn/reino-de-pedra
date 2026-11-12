@@ -19,13 +19,13 @@ public sealed class ModuloFerraria : IModuloApi
         conta.MapGet("/ferraria", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoFerraria.Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoFerraria.Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/ferraria/eras", async (PedidoEra p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Ferrarias.PesquisarEra(m, r, p.Era ?? ""));
@@ -35,7 +35,7 @@ public sealed class ModuloFerraria : IModuloApi
         conta.MapPost("/ferraria/forjar", async (PedidoForja p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Ferrarias.Forjar(m, r, p.Familia ?? "", p.Linha ?? ""));
@@ -45,7 +45,7 @@ public sealed class ModuloFerraria : IModuloApi
         conta.MapPost("/ferraria/lendario", async (PedidoLendario p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Ferrarias.ForjarLendario(m, r, p.Tipo ?? ""));
@@ -55,7 +55,7 @@ public sealed class ModuloFerraria : IModuloApi
         conta.MapPost("/ferraria/lendario/{eid:long}/levar", async (long eid, PedidoLevar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 Lendarios.MarcarLevar(m, r, eid, p.Levar);
@@ -73,20 +73,23 @@ public static class ExtrasFerraria
     {
         VisaoReino.Extras.Add((mm, r, d) =>
         {
-            d["ferraria"] = new
-            {
-                era = Ferrarias.EraAtual(mm, r),
-                eraNome = mm.P.Eras.TryGetValue(Ferrarias.EraAtual(mm, r), out var e) ? e.Nome : null,
-                eras = r.Eras.Keys.ToList(),
-                forja = r.Forja,
-                bonusNivel = mm.P.Ferraria.BonusNivel,
-                lendarios = VisaoFerraria.Meus(mm, r),
-            };
+            d["ferraria"] = new ExtrasFerrariaFerrariaJson(
+                era: Ferrarias.EraAtual(mm, r),
+                eraNome: mm.P.Eras.TryGetValue(Ferrarias.EraAtual(mm, r), out var e) ? e.Nome : null,
+                eras: r.Eras.Keys.ToList(),
+                forja: r.Forja,
+                bonusNivel: mm.P.Ferraria.BonusNivel,
+                lendarios: VisaoFerraria.Meus(mm, r)
+            );
         });
         VisaoReino.ExtrasLocal.Add((mm, r, l, d) =>
         {
-            var eqs = Lendarios.NoLocal(mm, l).Where(e => e.DonoId == r.Id).Select(e => new { e.Id, e.Nome, e.Tipo, e.Levar }).ToList();
+            var eqs = Lendarios.NoLocal(mm, l).Where(e => e.DonoId == r.Id).Select(e => new ExtrasFerrariaEqsJson(e.Id, e.Nome, e.Tipo, e.Levar)).ToList();
             if (eqs.Count > 0) d["lendarios"] = eqs;
         });
     });
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record ExtrasFerrariaFerrariaJson(string era, string? eraNome, List<string> eras, Dictionary<string, int> forja, double bonusNivel, List<object> lendarios);
+public sealed record ExtrasFerrariaEqsJson(long Id, string Nome, string Tipo, bool Levar);

@@ -72,7 +72,7 @@ public sealed class FeedPublico(Motor motor, Configuracao cfg)
     private async Task<Foto> Montar(Parte p)
     {
         var no = await motor.Executar(p.Montar);
-        var json = JsonSerializer.SerializeToUtf8Bytes(no);
+        var json = JsonSerializer.SerializeToUtf8Bytes(no, ReinoDePedra.Jogo.Persistencia.JsonJogo.Padrao.GetTypeInfo(typeof(JsonNode)));
         var etag = "\"" + Convert.ToHexString(SHA256.HashData(json).AsSpan(0, 12)) + "\"";
         var velha = p.Atual;
         var f = velha != null && velha.Etag == etag

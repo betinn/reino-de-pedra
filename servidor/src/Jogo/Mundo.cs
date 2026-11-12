@@ -63,8 +63,7 @@ public sealed partial class Mundo
             .Where(pr => typeof(IColecao).IsAssignableFrom(pr.PropertyType))
             .Select(pr => (IColecao)pr.GetValue(this)!)
             .ToList();
-        foreach (var c in Colecoes)
-            c.GetType().GetProperty("Mundo", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(c, this);
+        foreach (var c in Colecoes) c.Vincular(this);
     }
 
     public long NovoId() { Sujar(Estado); return ++Estado.UltimoId; }

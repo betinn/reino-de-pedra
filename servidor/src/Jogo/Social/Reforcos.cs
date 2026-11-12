@@ -189,7 +189,7 @@ namespace ReinoDePedra.Jogo.Social
                     l.ReforcosAliados.Remove(e);
                     if (r == null || grupo.Count == 0) continue;
                     PS.Transferir(m, fuga!, grupo, e.ReinoId);
-                    m.Sujar(fuga);
+                    m.Sujar(fuga!);
                     Sair(m, r, l, grupo, e.OrigemLocalId);
                     Registros.Notificar(m, r.Id, "tropas", "Reforço recuou", GT.Partes(m, grupo) + " deixaram " + l.Nome + " com a defesa e voltam para casa.", "tropas");
                 }

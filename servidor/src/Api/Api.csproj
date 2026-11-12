@@ -2,11 +2,41 @@
   <PropertyGroup>
     <RootNamespace>ReinoDePedra.Api</RootNamespace>
     <AssemblyName>ReinoDePedra</AssemblyName>
+    <!-- Native AOT (docs/decisoes/0040-servidor-native-aot.md): binário nativo, sem JIT, com trimming. O build e os testes
+         seguem com JIT, mas com os mesmos analisadores (avisos de trim e AOT) e o gerador de rotas do AOT. -->
+    <PublishAot>true</PublishAot>
+    <TrimMode>full</TrimMode>
+    <!-- avisos de trim e AOT viram erro: o publish tem de sair limpo -->
+    <WarningsAsErrors>$(WarningsAsErrors);IL2026;IL2046;IL2057;IL2060;IL2062;IL2065;IL2067;IL2070;IL2072;IL2075;IL2077;IL2080;IL2087;IL2090;IL2091;IL2104;IL3050;IL3051;IL3053;IL3058</WarningsAsErrors>
+    <!-- GC de estação, sem modo concorrente: menos threads e menos memória num servidor pequeno -->
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
-    <TieredPGO>true</TieredPGO>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
   </PropertyGroup>
+  <!-- GC para pouca memória, embutido no binário (o Native AOT não lê runtimeconfig.json). As variáveis de ambiente
+       DOTNET_GCConserveMemory e DOTNET_GCHeapHardLimit (hexadecimal sem 0x: 10000000 = 256 MB) sobrepõem estes
+       valores; veja docs/publicar.md.
+       - ConserveMemory 7: o GC compacta mais cedo para devolver memória (medido: -18% de memória privada, CPU igual).
+       - HeapHardLimit 256 MB: teto do heap gerenciado, com folga sobre o pico medido (64 MB com o mundo cheio; 116 MB no
+         pior caso registrado). Não reduz a memória; impede que um vazamento leve a máquina inteira. -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="7" />
+    <RuntimeHostConfigurationOption Include="System.GC.HeapHardLimit" Value="268435456" />
+  </ItemGroup>
+  <!-- Runtime que vai dentro do pacote publicado (AOT ou self-contained): no mínimo 10.0.14, que corrige a CVE-2026-111497
+       (decodificador Brotli). O SDK 10.0.401 traz a 10.0.12; com SDK mais novo, isto pode subir junto. Os testes usam o
+       runtime instalado e não mudam. -->
+  <PropertyGroup>
+    <RuntimeDoPacote>10.0.14</RuntimeDoPacote>
+  </PropertyGroup>
+  <ItemGroup>
+    <KnownFrameworkReference Update="Microsoft.NETCore.App;Microsoft.AspNetCore.App">
+      <LatestRuntimeFrameworkVersion Condition="'%(TargetFramework)' == 'net10.0'">$(RuntimeDoPacote)</LatestRuntimeFrameworkVersion>
+    </KnownFrameworkReference>
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler">
+      <ILCompilerPackVersion Condition="'%(TargetFramework)' == 'net10.0'">$(RuntimeDoPacote)</ILCompilerPackVersion>
+    </KnownILCompilerPack>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Jogo/Jogo.csproj" />
   </ItemGroup>

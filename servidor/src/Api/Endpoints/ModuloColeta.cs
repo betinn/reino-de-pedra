@@ -23,13 +23,13 @@ public sealed class ModuloColeta : IModuloApi
         conta.MapGet("/coleta", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/coleta/previa", async (PedidoColeta p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var hex = ModuloTropas.Hex(m, p.Hex, p.C, p.L);
@@ -39,21 +39,20 @@ public sealed class ModuloColeta : IModuloApi
                 if (tropas.Count > 0) tropas = GT.Validar(m, l, tropas);
                 var civis = Math.Max(0, p.Civis ?? 0);
                 var pv = Coletas.Previa(m, r, l, tropas, civis, hex);
-                return new
-                {
-                    hex, motivo = Coletas.Motivo(m, r, hex), pv.recurso, disponivel = Math.Floor(pv.disponivel), estoque = m.P.Coleta.Estoque,
-                    ritmo = Math.Round(pv.ritmo, 2), cargaMax = pv.cargaMax, pessoas = pv.pessoas, maxPessoas = m.P.Coleta.MaxPessoas, jaNoHex = pv.jaNoHex,
-                    deposito = pv.deposito, horasCarga = pv.ritmo > 0 ? Math.Round(pv.cargaMax / pv.ritmo, 2) : (double?)null,
-                    ociosos = PS.OciososPresentes(m, l).Count(),
-                    viagem = pv.pessoas > 0 ? VisaoTropas.Previa(m, r, l.Hex, hex, tropas) : null,
-                };
+                return new PostColetaPreviaJson(
+                    hex, motivo: Coletas.Motivo(m, r, hex), pv.recurso, disponivel: Math.Floor(pv.disponivel), estoque: m.P.Coleta.Estoque,
+                    ritmo: Math.Round(pv.ritmo, 2), cargaMax: pv.cargaMax, pessoas: pv.pessoas, maxPessoas: m.P.Coleta.MaxPessoas, jaNoHex: pv.jaNoHex,
+                    deposito: pv.deposito, horasCarga: pv.ritmo > 0 ? Math.Round(pv.cargaMax / pv.ritmo, 2) : (double?)null,
+                    ociosos: PS.OciososPresentes(m, l).Count(),
+                    viagem: pv.pessoas > 0 ? VisaoTropas.Previa(m, r, l.Hex, hex, tropas) : null
+                );
             }), Json.Web);
         });
 
         conta.MapPost("/coleta", async (PedidoColeta p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var hex = ModuloTropas.Hex(m, p.Hex, p.C, p.L);
@@ -71,15 +70,19 @@ public sealed class ModuloColeta : IModuloApi
         Economia.Atualizar(m, r);
         var grupos = Exercitos.De(m, r.Id).Where(e => e.Ordem is Coletas.OrdemColetarId or Coletas.OrdemEntregarId || e.ColetaPontoId != null)
             .OrderBy(e => e.Id).Select(e => VisaoTropas.Exercito(m, e)).ToList();
-        var locais = m.LocaisDe(r.Id).Where(l => !l.Ruina).OrderBy(l => l.Tipo).ThenBy(l => l.Id).Select(l => new
-        {
-            l.Id, l.Nome, tipo = l.Tipo.Chave(), l.Hex, guarnicao = GT.GuarnicaoLivre(m, l), ociosos = PS.OciososPresentes(m, l).Count(),
-        }).Where(x => x.ociosos > 0 || x.guarnicao.Count > 0).ToList();
+        var locais = m.LocaisDe(r.Id).Where(l => !l.Ruina).OrderBy(l => l.Tipo).ThenBy(l => l.Id).Select(l => new ColetaLocaisJson(
+            l.Id, l.Nome, tipo: l.Tipo.Chave(), l.Hex, guarnicao: GT.GuarnicaoLivre(m, l), ociosos: PS.OciososPresentes(m, l).Count()
+        )).Where(x => x.ociosos > 0 || x.guarnicao.Count > 0).ToList();
         var c = m.P.Coleta;
-        return new
-        {
-            agora = m.Agora, grupos, locais,
-            regras = new { c.Terrenos, c.Taxa, c.ExpPessoas, c.MaxPessoas, c.CargaCivil, c.Estoque, c.RecuperaH, c.Vizinhos, c.Minimo },
-        };
+        return new ColetaMontarJson(
+            agora: m.Agora, grupos, locais,
+            regras: new ColetaMontarRegrasJson(c.Terrenos, c.Taxa, c.ExpPessoas, c.MaxPessoas, c.CargaCivil, c.Estoque, c.RecuperaH, c.Vizinhos, c.Minimo)
+        );
     }
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PostColetaPreviaJson(int hex, string? motivo, string recurso, double disponivel, double estoque, double ritmo, double cargaMax, int pessoas, int maxPessoas, int jaNoHex, string? deposito, double? horasCarga, int ociosos, object? viagem);
+public sealed record ColetaLocaisJson(long Id, string Nome, string tipo, int Hex, Dictionary<string, int> guarnicao, int ociosos);
+public sealed record ColetaMontarJson(long agora, List<object> grupos, List<ColetaLocaisJson> locais, ColetaMontarRegrasJson regras);
+public sealed record ColetaMontarRegrasJson(Dictionary<string, string> Terrenos, double Taxa, double ExpPessoas, int MaxPessoas, double CargaCivil, double Estoque, double RecuperaH, int Vizinhos, double Minimo);

@@ -18,38 +18,34 @@ public static class VisaoTropas
     {
         Economia.Atualizar(m, r);
         var agora = m.Agora;
-        var locais = m.LocaisDe(r.Id).OrderBy(l => l.Tipo).ThenBy(l => l.Id).Select(l => new
-        {
-            l.Id, tipo = l.Tipo.Chave(), l.Produz, l.Nome, l.Nivel, l.Hex, c = m.G.C(l.Hex), lin = m.G.L(l.Hex),
-            guarnicao = GT.GuarnicaoLivre(m, l), l.Postura, l.Ruina,   // sem o reforço de aliados (é deles)
-            pessoas = PS.Guarnicao(m, l).Where(p => p.ReinoId == r.Id).OrderBy(p => p.Oficio).ThenByDescending(p => p.Marcas).ThenBy(p => p.Id).Select(p => VisaoPessoas.Curta(m, p)).ToList(),
-            marcas = Math.Round(Veterania.DoLocal(m, l), 2),
-            recruta = Recrutamento.Recruta(l),
-            unidades = Recrutamento.Recruta(l) ? m.B.U.Keys.Where(u => Recrutamento.RecrutaNoLocal(m, l, u)).ToList() : [],
-        }).ToList();
-        var emTreino = Recrutamento.Itens(r).Select(i => new
-        {
-            i.Id, unidade = i.Param, i.Qtd, i.LocalId, local = i.LocalId is long id ? m.Locais.Obter(id)?.Nome : null,
-            i.Rotulo, i.Inicio, i.Fim, duracao = i.DuracaoSeg, materialCompleto = i.MaterialCompleto,
-            prontos = i.Prontos, proximoFim = i.Restantes > 0 ? i.FimDaUnidade(i.Prontos + 1) : null,
-            materialChegaEm = i.MaterialCompleto ? null : MaterialChegaEm(m, i),
-            materialPartida = i.MaterialCompleto ? null : MaterialPartida(m, i),
-        }).ToList();
-        var unidades = m.B.U.Values.Select(u => new
-        {
-            u.Id, u.Nome, plural = GT.Plural(u), u.Fam, u.Atk, u.Def, u.Vel, u.Carga, u.Custo, u.Tempo, u.Pop, u.Vence, u.So, u.Req,
-            forcaFauna = (u.Atk + u.Def) / 2,
-            bloqueio = Recrutamento.Bloqueio(m, r, u),
-            castelo = m.P.RecrutaCastelo.Contains(u.Id),
-        }).ToList();
-        return new
-        {
-            agora, pop = Math.Floor(r.Pop), teto = Economia.Teto(m, r), ocupando = Economia.Tropas(m, r),
-            emTreinoPop = Recrutamento.EmTreino(m, r),
-            locais, exercitos = Exercitos.De(m, r.Id).OrderBy(e => e.Id).Select(e => Exercito(m, e)).ToList(),
+        var locais = m.LocaisDe(r.Id).OrderBy(l => l.Tipo).ThenBy(l => l.Id).Select(l => new TropasLocaisJson(
+            l.Id, tipo: l.Tipo.Chave(), l.Produz, l.Nome, l.Nivel, l.Hex, c: m.G.C(l.Hex), lin: m.G.L(l.Hex),
+            guarnicao: GT.GuarnicaoLivre(m, l), l.Postura, l.Ruina,   // sem o reforço de aliados (é deles)
+            pessoas: PS.Guarnicao(m, l).Where(p => p.ReinoId == r.Id).OrderBy(p => p.Oficio).ThenByDescending(p => p.Marcas).ThenBy(p => p.Id).Select(p => VisaoPessoas.Curta(m, p)).ToList(),
+            marcas: Math.Round(Veterania.DoLocal(m, l), 2),
+            recruta: Recrutamento.Recruta(l),
+            unidades: Recrutamento.Recruta(l) ? m.B.U.Keys.Where(u => Recrutamento.RecrutaNoLocal(m, l, u)).ToList() : []
+        )).ToList();
+        var emTreino = Recrutamento.Itens(r).Select(i => new TropasEmTreinoJson(
+            i.Id, unidade: i.Param, i.Qtd, i.LocalId, local: i.LocalId is long id ? m.Locais.Obter(id)?.Nome : null,
+            i.Rotulo, i.Inicio, i.Fim, duracao: i.DuracaoSeg, materialCompleto: i.MaterialCompleto,
+            prontos: i.Prontos, proximoFim: i.Restantes > 0 ? i.FimDaUnidade(i.Prontos + 1) : null,
+            materialChegaEm: i.MaterialCompleto ? null : MaterialChegaEm(m, i),
+            materialPartida: i.MaterialCompleto ? null : MaterialPartida(m, i)
+        )).ToList();
+        var unidades = m.B.U.Values.Select(u => new TropasUnidadesJson(
+            u.Id, u.Nome, plural: GT.Plural(u), u.Fam, u.Atk, u.Def, u.Vel, u.Carga, u.Custo, u.Tempo, u.Pop, u.Vence, u.So, u.Req,
+            forcaFauna: (u.Atk + u.Def) / 2,
+            bloqueio: Recrutamento.Bloqueio(m, r, u),
+            castelo: m.P.RecrutaCastelo.Contains(u.Id)
+        )).ToList();
+        return new TropasMontarJson(
+            agora, pop: Math.Floor(r.Pop), teto: Economia.Teto(m, r), ocupando: Economia.Tropas(m, r),
+            emTreinoPop: Recrutamento.EmTreino(m, r),
+            locais, exercitos: Exercitos.De(m, r.Id).OrderBy(e => e.Id).Select(e => Exercito(m, e)).ToList(),
             emTreino, unidades,
-            ordens = Exercitos.Ordens.Values.Where(o => o.NoEnvio).Select(o => o.Ordem).ToList(), maxLinha = m.P.Patrulha.MaxHexes,
-        };
+            ordens: Exercitos.Ordens.Values.Where(o => o.NoEnvio).Select(o => o.Ordem).ToList(), maxLinha: m.P.Patrulha.MaxHexes
+        );
     }
 
     private static long? MaterialChegaEm(Mundo m, ItemFila i)
@@ -76,21 +72,20 @@ public static class VisaoTropas
         var agora = m.Agora;
         var trabalho = Trabalho(m, r, e);
         var bloqueio = Exercitos.Bloqueio(m, e);
-        return new
-        {
-            e.Id, e.Ordem, estado = Estado(m, e, trabalho), trabalho,
-            podeOrdem = bloqueio == null, bloqueio,   // o painel da marcha mostra o motivo (ex.: em batalha) em vez de deixar a ordem falhar
-            batalhaId = e.BatalhaId is long bid && m.Batalhas.Obter(bid) is { Encerrada: false } ? bid : (long?)null,   // abre a tela da batalha pela tropa
-            tropas = e.Tropas, total = GT.Total(e.Tropas), resumo = GT.Partes(m, e.Tropas), civis = PS.CivisColetando(m, e),   // civis sem trabalho que coletam com o grupo
-            pessoas = PS.SoldadosDaMarcha(m, e).OrderBy(p => p.Oficio).ThenBy(p => p.Id).Select(p => VisaoPessoas.Curta(m, p)).ToList(),
-            marcas = Math.Round(Veterania.DaMarcha(m, e), 2),
-            carga = e.Carga.Arredondado(), cargaMax = e.CargaMax(m), cargaUsada = Math.Floor(e.Carga.Total), e.Vel, e.Postura, e.Seguro,
-            e.OrigemLocalId, origem = NomeLocal(m, r, e.OrigemLocalId),
-            e.AlvoLocalId, alvo = NomeLocal(m, r, e.AlvoLocalId),
-            hex = e.HexEm(agora), e.Destino, destinoC = m.G.C(e.Destino), destinoL = m.G.L(e.Destino),
-            e.Partida, e.Chegada, e.Caminho, e.Tempos, reliquias = e.Reliquias.Count,
-            dados = e.Dados.Count > 0 ? e.Dados : null,
-        };
+        return new TropasExercitoJson(
+            e.Id, e.Ordem, estado: Estado(m, e, trabalho), trabalho,
+            podeOrdem: bloqueio == null, bloqueio,   // o painel da marcha mostra o motivo (ex.: em batalha) em vez de deixar a ordem falhar
+            batalhaId: e.BatalhaId is long bid && m.Batalhas.Obter(bid) is { Encerrada: false } ? bid : (long?)null,   // abre a tela da batalha pela tropa
+            tropas: e.Tropas, total: GT.Total(e.Tropas), resumo: GT.Partes(m, e.Tropas), civis: PS.CivisColetando(m, e),   // civis sem trabalho que coletam com o grupo
+            pessoas: PS.SoldadosDaMarcha(m, e).OrderBy(p => p.Oficio).ThenBy(p => p.Id).Select(p => VisaoPessoas.Curta(m, p)).ToList(),
+            marcas: Math.Round(Veterania.DaMarcha(m, e), 2),
+            carga: e.Carga.Arredondado(), cargaMax: e.CargaMax(m), cargaUsada: Math.Floor(e.Carga.Total), e.Vel, e.Postura, e.Seguro,
+            e.OrigemLocalId, origem: NomeLocal(m, r, e.OrigemLocalId),
+            e.AlvoLocalId, alvo: NomeLocal(m, r, e.AlvoLocalId),
+            hex: e.HexEm(agora), e.Destino, destinoC: m.G.C(e.Destino), destinoL: m.G.L(e.Destino),
+            e.Partida, e.Chegada, e.Caminho, e.Tempos, reliquias: e.Reliquias.Count,
+            dados: e.Dados.Count > 0 ? e.Dados : null
+        );
     }
 
     /// <summary>"marchando", "parado", "retornando" ou "trabalhando" (caçando, extraindo, escavando ou espionando), para qualquer marcha própria.</summary>
@@ -116,7 +111,7 @@ public static class VisaoTropas
             var op = new OpcoesCaminho { Seguro = e.Seguro, Forca = GT.ForcaFauna(m, e.Tropas), ReinoId = e.ReinoId };
             var dep = Extracoes.Deposito(m, e.ReinoId, e.HexEm(m.Agora), e.Vel, op);
             var fim = e.ExtraiEventoId is long ev ? m.Eventos.Obter(ev)?.Quando : null;
-            return new { tipo = "extracao", recurso = j?.Recurso, coletado = e.Carga.Arredondado(), destino = dep?.local.Nome, inicio = InicioExtracao(m, e, j), fim };
+            return new TropasTrabalhoJson(tipo: "extracao", recurso: j?.Recurso, coletado: e.Carga.Arredondado(), destino: dep?.local.Nome, inicio: InicioExtracao(m, e, j), fim);
         }
         if (e.ColetaPontoId is long pid)
         {
@@ -124,20 +119,20 @@ public static class VisaoTropas
             if (pc != null) Coletas.Liquidar(m, pc);   // a carga do grupo fica em dia (a coleta não tem tique)
             var dep = pc == null ? null : Coletas.Deposito(m, e.ReinoId, pc.Hex, e.Vel, pc.Recurso, new OpcoesCaminho { ReinoId = e.ReinoId });
             var fim = e.ColetaEventoId is long ev ? m.Eventos.Obter(ev)?.Quando : null;
-            return new { tipo = "coleta", recurso = pc?.Recurso, coletado = e.Carga.Arredondado(), destino = dep?.local.Nome, fim };
+            return new TropasTrabalho2Json(tipo: "coleta", recurso: pc?.Recurso, coletado: e.Carga.Arredondado(), destino: dep?.local.Nome, fim);
         }
         if (e.EscavaRuinaId != null)
         {
             var did = e.Dados["destinoLocalId"]?.GetValue<long>();
             var dest = did is long d ? m.Locais.Obter(d) : null;
             if (!Exercitos.LocalProprio(dest, e.ReinoId)) dest = r != null ? m.Locais.Obter(r.CasteloId) : null;
-            return new { tipo = "escavacao", recurso = (string?)null, coletado = e.Carga.Arredondado(), destino = dest?.Nome, inicio = e.EscavaInicio, fim = e.EscavaFim };
+            return new TropasTrabalhoJson(tipo: "escavacao", recurso: (string?)null, coletado: e.Carga.Arredondado(), destino: dest?.Nome, inicio: e.EscavaInicio, fim: e.EscavaFim);
         }
         if (e.Ordem == OrdemCacar.Id && e.Parado && e.Dados["cacaAte"] is JsonValue v && v.TryGetValue<long>(out var ate))
         {
             var origem = m.Locais.Obter(e.OrigemLocalId);
             var inicio = ate - T.DeHoras(m.P.CacaMin / 60);   // Caca.Chegou: cacaAte = chegada + P.cacaMin
-            return new { tipo = "caca", recurso = (string?)null, coletado = e.Carga.Arredondado(), destino = Exercitos.LocalProprio(origem, e.ReinoId) ? origem!.Nome : null, inicio = (long?)inicio, fim = (long?)ate };
+            return new TropasTrabalhoJson(tipo: "caca", recurso: (string?)null, coletado: e.Carga.Arredondado(), destino: Exercitos.LocalProprio(origem, e.ReinoId) ? origem!.Nome : null, inicio: (long?)inicio, fim: (long?)ate);
         }
         return null;
     }
@@ -180,7 +175,7 @@ public static class VisaoTropas
         var perda = forca >= 2 * limite ? 0 : forca >= limite ? m.P.PerdaFauna.Acima : m.P.PerdaFauna.Abaixo;   // a regra de Fauna.Atacar e Caca.Lutar
         var baixas = perda <= 0 || total == 0 ? 0 : Math.Min(total, Math.Max(1, (int)Math.Round(total * perda, MidpointRounding.AwayFromZero)));
         var veredito = perda <= 0 ? "ileso" : baixas >= total ? "perde" : forca >= limite ? "venceComPerdas" : "perdeParte";
-        return new { animal, qtd, nivel = nome, forca = limite, ileso = 2 * limite, vistoHaMin = Math.Max(0, (m.Agora - visto) / T.Min), veredito, perda, baixas };
+        return new TropasFaunaNoDestinoJson(animal, qtd, nivel: nome, forca: limite, ileso: 2 * limite, vistoHaMin: Math.Max(0, (m.Agora - visto) / T.Min), veredito, perda, baixas);
     }
 
     /// <summary>Tempos de viagem do grupo pela rota curta e pela segura, sem enviar nada; com a fauna conhecida no destino.</summary>
@@ -192,10 +187,10 @@ public static class VisaoTropas
         {
             var rota = Caminhos.Calcular(m, de, para, vel, new OpcoesCaminho { Seguro = seguro, Forca = forca, ReinoId = r.Id });
             var ok = rota.Hexes[^1] == para;
-            return new { ok, min = ok ? Math.Round(rota.TotalMin, 1) : (double?)null, hexes = ok ? rota.Hexes.Count : 0, caminho = ok ? rota.Hexes : null };
+            return new CombateOpJson(ok, min: ok ? Math.Round(rota.TotalMin, 1) : (double?)null, hexes: ok ? rota.Hexes.Count : 0, caminho: ok ? rota.Hexes : null);
         }
-        return new { vel, carga = GT.Carga(m, grupo), forcaFauna = forca, visao = GT.Visao(m, grupo), pop = GT.Pop(m, grupo), curta = Op(false), segura = Op(true), fauna = FaunaNoDestino(m, r, para, grupo, forca),
-            forcaInimiga = bonusA is double b ? ForcaInimiga(m, r, para, grupo, b) : null };
+        return new TropasPreviaJson(vel, carga: GT.Carga(m, grupo), forcaFauna: forca, visao: GT.Visao(m, grupo), pop: GT.Pop(m, grupo), curta: Op(false), segura: Op(true), fauna: FaunaNoDestino(m, r, para, grupo, forca),
+            forcaInimiga: bonusA is double b ? ForcaInimiga(m, r, para, grupo, b) : null);
     }
 
     /// <summary>Destino num local alheio que o reino conhece: a força inimiga estimada contra este grupo (tática padrão).</summary>
@@ -208,3 +203,14 @@ public static class VisaoTropas
         catch (RegraException) { return null; }
     }
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record TropasLocaisJson(long Id, string tipo, string? Produz, string Nome, int Nivel, int Hex, int c, int lin, Dictionary<string, int> guarnicao, Postura Postura, bool Ruina, List<object> pessoas, double marcas, bool recruta, List<string> unidades);
+public sealed record TropasEmTreinoJson(long Id, string? unidade, int Qtd, long? LocalId, string? local, string Rotulo, long? Inicio, long? Fim, double duracao, bool materialCompleto, int prontos, long? proximoFim, long? materialChegaEm, long? materialPartida);
+public sealed record TropasUnidadesJson(string Id, string Nome, string plural, string Fam, double Atk, double Def, string Vel, double Carga, Dictionary<string, double> Custo, double Tempo, int Pop, string? Vence, string? So, string? Req, double forcaFauna, string? bloqueio, bool castelo);
+public sealed record TropasMontarJson(long agora, double pop, int teto, int ocupando, int emTreinoPop, List<TropasLocaisJson> locais, List<object> exercitos, List<TropasEmTreinoJson> emTreino, List<TropasUnidadesJson> unidades, List<string> ordens, int maxLinha);
+public sealed record TropasExercitoJson(long Id, string Ordem, string estado, object? trabalho, bool podeOrdem, string? bloqueio, long? batalhaId, Dictionary<string, int> tropas, int total, string resumo, int civis, List<object> pessoas, double marcas, Dictionary<string, long> carga, double cargaMax, double cargaUsada, string Vel, Postura Postura, bool Seguro, long OrigemLocalId, string? origem, long? AlvoLocalId, string? alvo, int hex, int Destino, int destinoC, int destinoL, long Partida, long Chegada, List<int> Caminho, List<long> Tempos, int reliquias, JsonObject? dados);
+public sealed record TropasTrabalhoJson(string tipo, string? recurso, Dictionary<string, long> coletado, string? destino, long? inicio, long? fim);
+public sealed record TropasTrabalho2Json(string tipo, string? recurso, Dictionary<string, long> coletado, string? destino, long? fim);
+public sealed record TropasFaunaNoDestinoJson(string? animal, int? qtd, string nivel, double forca, double ileso, long vistoHaMin, string veredito, double perda, int baixas);
+public sealed record TropasPreviaJson(string vel, double carga, double forcaFauna, int visao, int pop, object curta, object segura, object? fauna, JsonObject? forcaInimiga);

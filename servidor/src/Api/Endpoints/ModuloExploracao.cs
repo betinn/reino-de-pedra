@@ -27,13 +27,13 @@ public sealed class ModuloExploracao : IModuloApi
         conta.MapGet("/exploracao", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoExploracao.Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoExploracao.Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/exploradores/treinar", async (PedidoTreinarExplorador p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Exploradores.Treinar(m, r, p.Tipo ?? "", p.Qtd));
@@ -43,7 +43,7 @@ public sealed class ModuloExploracao : IModuloApi
         conta.MapPost("/exploradores/enviar", async (PedidoEnviarExplorador p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var e = Exploradores.Enviar(m, r, p.Tipo ?? "", p.Ordem ?? Exploradores.Explorar, HexOuNulo(m, p.DestinoHex, p.C, p.L), p.Pontos, p.Seguro ?? true, p.Escolta, p.Circuito, p.PessoaId);
@@ -54,18 +54,18 @@ public sealed class ModuloExploracao : IModuloApi
         conta.MapPost("/exploradores/{marchaId:long}/ordem", async (long marchaId, PedidoOrdemExplorador p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 Exploradores.DarOrdem(m, r, marchaId, p.Ordem ?? "", HexOuNulo(m, p.DestinoHex, p.C, p.L), p.Pontos, p.Seguro, p.Circuito);
-                return m.Marchas.Obter(marchaId) is Explorador e ? VisaoExploracao.Explorador(m, e) : new { id = marchaId, encerrado = true };
+                return m.Marchas.Obter(marchaId) is Explorador e ? VisaoExploracao.Explorador(m, e) : new PostExploradoresOrdemJson(id: marchaId, encerrado: true);
             }), Json.Web);
         });
 
         conta.MapPost("/exploracao/previa", async (PedidoPreviaExploracao p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var pontos = p.Pontos is { Count: > 0 } ? p.Pontos : null;   // rota desenhada: o caminho real, ponto a ponto
@@ -108,20 +108,20 @@ public sealed class ModuloExploracao : IModuloApi
         conta.MapGet("/rotas/previa", async (int hex, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 if (!m.G.Valido(hex)) throw new RegraException("Hexágono fora do mapa.");
                 var motivo = Rotas.Motivo(m, r, hex);
                 var (custo, seg, ponte) = Rotas.Custo(m, hex);   // o terreno é público
-                return new { hex, motivo, ponte, custo, seg, terreno = Jogo.Mapa.TerrenoExt.Chave(m.Mapa.Terrenos[hex]), rio = m.Mapa.Rio[hex] };
+                return new RotasPreviaJson(hex, motivo, ponte, custo, seg, terreno: Jogo.Mapa.TerrenoExt.Chave(m.Mapa.Terrenos[hex]), rio: m.Mapa.Rio[hex]);
             }), Json.Web);
         });
 
         conta.MapPost("/rotas", async (PedidoRota p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var hex = HexOuNulo(m, p.Hex, p.C, p.L) ?? throw new RegraException("Escolha o hexágono.");
@@ -139,18 +139,23 @@ public static class ExtrasExploracao
     {
         VisaoMapa.Extras.Add(VisaoExploracao.Mapa);
         VisaoMarcha.ExtrasPropria.Add((mm, x) => x is Explorador e
-            ? new { e.TipoExp, nome = e.NomeTipo(mm), e.Ordem, e.Alvo, e.Pontos, e.EspionandoAte, escolta = e.Tropas }
+            ? new ExtrasExploracaoAoIniciarJson(e.TipoExp, nome: e.NomeTipo(mm), e.Ordem, e.Alvo, e.Pontos, e.EspionandoAte, escolta: e.Tropas)
             : null);
         VisaoReino.Extras.Add((mm, r, d) =>
         {
-            d["exploracao"] = new
-            {
-                livres = r.ExploradoresLivres.Values.Sum(),
-                emCampo = Exploradores.De(mm, r.Id).Count(),
-                emTreino = Exploradores.EmTreino(r).Sum(i => i.Restantes),
-                presos = Capturas.PresosPor(mm, r.Id).Count(),
-                capturados = Capturas.PresosDe(mm, r.Id).Count(),
-            };
+            d["exploracao"] = new ExtrasExploracaoExploracaoJson(
+                livres: r.ExploradoresLivres.Values.Sum(),
+                emCampo: Exploradores.De(mm, r.Id).Count(),
+                emTreino: Exploradores.EmTreino(r).Sum(i => i.Restantes),
+                presos: Capturas.PresosPor(mm, r.Id).Count(),
+                capturados: Capturas.PresosDe(mm, r.Id).Count()
+            );
         });
     });
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PostExploradoresOrdemJson(long id, bool encerrado);
+public sealed record RotasPreviaJson(int hex, string? motivo, bool ponte, Recursos custo, double seg, string terreno, bool rio);
+public sealed record ExtrasExploracaoAoIniciarJson(string TipoExp, string nome, string Ordem, int Alvo, List<int> Pontos, long? EspionandoAte, Dictionary<string, int> escolta);
+public sealed record ExtrasExploracaoExploracaoJson(int livres, int emCampo, int emTreino, int presos, int capturados);

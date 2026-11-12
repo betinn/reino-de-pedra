@@ -99,8 +99,8 @@ namespace ReinoDePedra.Jogo.Exploracao
                 ["prisioneiro"] = p.Id, ["ate"] = p.Ate, ["hex"] = hex,
                 ["linhas"] = new JsonArray
                 {
-                    Fauna.Linha("Reino de origem", dono?.Nome ?? "desconhecido"), Fauna.Linha("Onde", onde),
-                    Fauna.Linha("Preso em", cela?.Nome ?? "—"),
+                    (JsonNode?)Fauna.Linha("Reino de origem", dono?.Nome ?? "desconhecido"), (JsonNode?)Fauna.Linha("Onde", onde),
+                    (JsonNode?)Fauna.Linha("Preso em", cela?.Nome ?? "—"),
                 },
             }, "exploracao", "Explorador capturado · " + (dono?.Nome ?? ""), TamanhoAviso.Grande);
             if (dono != null)
@@ -110,7 +110,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                     ["resumo"] = "Perdemos " + (p.Nome.Length > 0 ? p.Nome : "o explorador") + " perto do " + onde + ": " + captor.Nome + " o capturou" + (cela != null ? " e o prende em " + cela.Nome : "") + ". " +
                                  captor.Nome + " tem " + m.P.ResgateH + " h para decidir; sem decisão, volta. Você pode oferecer um pagamento ou resgatá-lo à força: vencer uma batalha no local onde ele está o liberta.",
                     ["hex"] = hex, ["nome"] = p.Nome, ["prisioneiro"] = p.Id, ["ate"] = p.Ate, ["dono"] = true, ["origem"] = Espionagem.Identidade(captor),
-                    ["linhas"] = new JsonArray { Fauna.Linha("Onde", onde), Fauna.Linha("Capturado por", captor.Nome), Fauna.Linha("Preso em", cela?.Nome ?? "—") },
+                    ["linhas"] = new JsonArray { (JsonNode?)Fauna.Linha("Onde", onde), (JsonNode?)Fauna.Linha("Capturado por", captor.Nome), (JsonNode?)Fauna.Linha("Preso em", cela?.Nome ?? "—") },
                 }, "exploracao", tamanho: TamanhoAviso.Grande);
             }
             m.Avisar(captor.Id, "reino");
@@ -165,7 +165,7 @@ namespace ReinoDePedra.Jogo.Exploracao
                     ["resumo"] = captor.Nome + " tem seu " + Exploradores.NomeTipo(m, p.TipoExp).ToLowerInvariant() + (contra ? " e responde à sua oferta pedindo outro valor." : " e pede resgate.") +
                                  " Pague, ofereça outro valor ou resgate-o à força. Sem pagamento até o prazo, ele é libertado.",
                     ["origem"] = Espionagem.Identidade(captor), ["resgate"] = Json(valor), ["ate"] = p.Ate, ["hex"] = p.Hex, ["prisioneiro"] = p.Id, ["dono"] = true,
-                    ["linhas"] = new JsonArray { Fauna.Linha("Pede", Remessas.Texto(valor)) },
+                    ["linhas"] = new JsonArray { (JsonNode?)Fauna.Linha("Pede", Remessas.Texto(valor)) },
                 }, "comercio");
             }
             AoPedirResgate?.Invoke(m, p);
