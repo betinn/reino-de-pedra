@@ -57,7 +57,7 @@ public sealed class PlanoAtaque
             var j = new JsonObject { ["k"] = o.K };
             if (o.R != null) j["r"] = o.R;
             if (o.Q > 0) j["q"] = o.Q;
-            arr.Add(j);
+            arr.Add((JsonNode?)j);
         }
         return new JsonObject { ["tipo"] = Tipo, ["objetivos"] = arr, ["tatica"] = Tatica, ["completar"] = Completar, ["divisao"] = Divisao, ["recuarVazio"] = RecuarVazio };
     }

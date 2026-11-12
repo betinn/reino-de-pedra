@@ -20,7 +20,7 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapPost("/ataques/previa", async (PedidoAtaque p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoCombate.Previa(m, r, p, ModuloTropas.Hex(m, p.DestinoHex, p.C, p.L));
@@ -30,7 +30,7 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapPost("/ataques", async (PedidoAtaque p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var hex = ModuloTropas.Hex(m, p.DestinoHex, p.C, p.L);
@@ -51,7 +51,7 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapGet("/batalhas", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return Batalhas.DoReino(m, r.Id).OrderBy(b => b.Encerrada).ThenByDescending(b => b.Inicio).Select(b => VisaoCombate.Resumo(m, r, b)).ToList();
@@ -61,7 +61,7 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapGet("/batalhas/{bid:long}", async (long bid, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var b = m.Batalhas.Obter(bid);
@@ -73,7 +73,7 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapPost("/batalhas/{bid:long}/recuar", async (long bid, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 Batalhas.Recuar(m, r, bid);
@@ -84,19 +84,19 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapGet("/defesas", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoCombate.Defesas_(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoCombate.Defesas_(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapGet("/defesas/torre/motivo", async (int hex, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => { var r = Sessao.ReinoDa(m, id); Nevoas.VisiveisAgora(m, r.Id); return new { motivo = Defesas.MotivoTorre(m, r, hex) }; }), Json.Web);
+            return Json.Resposta(await motor.Executar(m => { var r = Sessao.ReinoDa(m, id); Nevoas.VisiveisAgora(m, r.Id); return new DefesasTorreMotivoJson(motivo: Defesas.MotivoTorre(m, r, hex)); }), Json.Web);
         });
 
         conta.MapPost("/defesas/torres", async (PedidoTorre p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var hex = p.Hex ?? (p.C is int c && p.L is int l && m.G.Dentro(c, l) ? m.G.Indice(c, l) : -1);
@@ -107,7 +107,7 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapPost("/defesas/torres/{tid:long}/nivel", async (long tid, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Defesas.SubirTorre(m, r, tid));
@@ -117,7 +117,7 @@ public sealed class ModuloCombate : IModuloApi
         conta.MapPost("/defesas/portoes", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Defesas.SubirPortoes(m, r));
@@ -135,16 +135,15 @@ public static class ExtrasCombate
         VisaoReino.Extras.Add((mm, r, d) =>
         {
             d["batalhas"] = Batalhas.DoReino(mm, r.Id).Where(b => !b.Encerrada).Select(b => VisaoCombate.Resumo(mm, r, b)).ToList();
-            d["combate"] = new { taticas = mm.P.Combate.Taticas, taticaPadrao = mm.P.Combate.TaticaPadrao };
+            d["combate"] = new ExtrasCombateCombateJson(taticas: mm.P.Combate.Taticas, taticaPadrao: mm.P.Combate.TaticaPadrao);
         });
         VisaoReino.ExtrasLocal.Add((mm, r, l, d) =>
         {
-            d["defesa"] = new
-            {
-                torres = Defesas.NoAlcance(mm, l).Count, arqueirosNoAlto = Defesas.ArqueirosNoAlto(mm, l),
-                portoes = l.Tipo == TipoLocal.Castelo ? l.Portoes : (int?)null,
-                batalhaId = Batalhas.Ativa(mm, l.Id)?.Id,
-            };
+            d["defesa"] = new ExtrasCombateDefesaJson(
+                torres: Defesas.NoAlcance(mm, l).Count, arqueirosNoAlto: Defesas.ArqueirosNoAlto(mm, l),
+                portoes: l.Tipo == TipoLocal.Castelo ? l.Portoes : (int?)null,
+                batalhaId: Batalhas.Ativa(mm, l.Id)?.Id
+            );
         });
         VisaoMapa.Extras.Add((mm, r, vis) =>
         {
@@ -163,13 +162,18 @@ public static class ExtrasCombate
                 var minhas = g.Where(b => b.AtacanteId == r.Id || b.DefensorId == r.Id).OrderBy(b => b.Id).ToList();
                 var b0 = minhas.FirstOrDefault() ?? g.First();
                 var papel = minhas.Count > 0 ? VisaoCombate.Papel(b0, r) : null;
-                lista.Add(new
-                {
-                    tipo = "batalha", id = minhas.Count > 0 ? b0.Id : (long?)null, hex = b0.Hex, inicio = g.Min(b => b.Inicio), fim = g.Max(b => b.FimPrevisto), papel, frentes = g.Count(),
-                    vivos = minhas.Select(b => VisaoCombate.Vivo(Batalhas.PlacarDe(mm, b, mm.Agora), papel!)).ToList(),
-                });
+                lista.Add(new ExtrasCombateAoIniciarJson(
+                    tipo: "batalha", id: minhas.Count > 0 ? b0.Id : (long?)null, hex: b0.Hex, inicio: g.Min(b => b.Inicio), fim: g.Max(b => b.FimPrevisto), papel, frentes: g.Count(),
+                    vivos: minhas.Select(b => VisaoCombate.Vivo(Batalhas.PlacarDe(mm, b, mm.Agora), papel!)).ToList()
+                ));
             }
             return lista;
         });
     });
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record DefesasTorreMotivoJson(string? motivo);
+public sealed record ExtrasCombateCombateJson(Dictionary<string, double?> taticas, string taticaPadrao);
+public sealed record ExtrasCombateDefesaJson(int torres, int arqueirosNoAlto, int? portoes, long? batalhaId);
+public sealed record ExtrasCombateAoIniciarJson(string tipo, long? id, int hex, long inicio, long fim, string? papel, int frentes, List<object> vivos);

@@ -192,7 +192,7 @@ public class MapaPublicoTestes
         {
             var eu = m.Reinos.Single(r => r.Nome == "Pedralva");
             var castelo = m.Locais[c];
-            var linha = JsonSerializer.SerializeToElement(ReinoDePedra.Api.Visoes.VisaoMapa.PessoasOutras(m, eu, new HashSet<int> { castelo.Hex }), Cliente.J).EnumerateArray().Single();
+            var linha = JsonTeste.Elemento(ReinoDePedra.Api.Visoes.VisaoMapa.PessoasOutras(m, eu, new HashSet<int> { castelo.Hex })).EnumerateArray().Single();
             var civis = ReinoDePedra.Jogo.Pessoas.Pessoas.Presentes(m, castelo).Count();
             var soldados = ReinoDePedra.Jogo.Pessoas.Pessoas.Guarnicao(m, castelo).Count();
             Assert.True(soldados > 0);

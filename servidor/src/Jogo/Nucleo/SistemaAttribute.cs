@@ -23,10 +23,19 @@ public static partial class Sistemas
     /// <summary>Chama AoIniciar de todos os sistemas do assembly do jogo.</summary>
     public static void IniciarTodos(Mundo m)
     {
-        foreach (var t in typeof(Sistemas).Assembly.GetTypes())
-        {
-            if (!t.IsDefined(typeof(SistemaAttribute), false)) continue;
-            t.GetMethod("AoIniciar", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.Invoke(null, [m]);
-        }
+        foreach (var s in Todos) s(m);
     }
+
+    /// <summary>
+    /// O AoIniciar de cada classe marcada com [Sistema] no jogo, na ordem em que a reflection as listava. A lista é explícita
+    /// (o Native AOT não enumera tipos); o teste RegistrosTestes confere contra a reflection.
+    /// </summary>
+    public static readonly Action<Mundo>[] Todos =
+    [
+        Valiosos.Apresentacao.AoIniciar, Valiosos.Coletas.AoIniciar, Valiosos.Extracoes.AoIniciar, Valiosos.ReliquiasLendarias.AoIniciar,
+        Valiosos.Salgadeiras.AoIniciar, Temporada.Temporadas.AoIniciar, Social.NotificacoesDoReino.AoIniciar, Social.SistemaSocial.AoIniciar,
+        Publico.MensagensGlobais.AoIniciar, Pessoas.Pessoas.AoIniciar, IA.SistemaIA.AoIniciar, Forja.SistemaFerraria.AoIniciar,
+        Exploracao.Exploradores.AoIniciar, Exploracao.Fauna.AoIniciar, Reinos.Recrutamento.AoIniciar, Combate.SistemaCombate.AoIniciar,
+        Combate.SistemaGuerra.AoIniciar,
+    ];
 }

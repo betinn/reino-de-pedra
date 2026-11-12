@@ -30,7 +30,7 @@ public sealed class ModuloSocial : IModuloApi
         {
             var id = ctx.ContaId();
             var r = await motor.Executar(m => f(m, Sessao.ReinoDa(m, id)));
-            return r == null ? Results.NoContent() : Results.Json(r, Json.Web, statusCode: status);
+            return r == null ? Results.NoContent() : Json.Resposta(r, Json.Web, statusCode: status);
         }
 
         // ---------------------------------------------------------------- aliança
@@ -44,7 +44,7 @@ public sealed class ModuloSocial : IModuloApi
         conta.MapPost("/alianca/indicar", (PedidoReinoAlvo p, HttpContext ctx, Motor motor) =>
             Com(ctx, motor, (m, r) => { Aliancas.Indicar(m, r, p.ReinoId); return null; }));
         conta.MapPost("/alianca/reforco", (PedidoLocal p, HttpContext ctx, Motor motor) =>
-            Com(ctx, motor, (m, r) => { var f = Aliancas.PedirReforco(m, r, p.LocalId); return new { f.Id }; }, 201));
+            Com(ctx, motor, (m, r) => { var f = Aliancas.PedirReforco(m, r, p.LocalId); return new PostAliancaReforcoJson(f.Id); }, 201));
         conta.MapPost("/alianca/conversa/lida", (HttpContext ctx, Motor motor) =>
             Com(ctx, motor, (m, r) => { Aliancas.MarcarLida(m, r); return null; }));
         conta.MapPost("/alianca/convidar", (PedidoReinoAlvo p, HttpContext ctx, Motor motor) =>
@@ -82,11 +82,11 @@ public sealed class ModuloSocial : IModuloApi
             }));
         conta.MapPost("/alianca/sair", (HttpContext ctx, Motor motor) => Com(ctx, motor, (m, r) => { Aliancas.Sair(m, r); return null; }));
         conta.MapPost("/alianca/conversa", (PedidoFalaAlianca p, HttpContext ctx, Motor motor) =>
-            Com(ctx, motor, (m, r) => { var f = Aliancas.Falar(m, r, p.Texto, p.Hex); return new { f.Id, f.Texto, f.Quando }; }, 201));
+            Com(ctx, motor, (m, r) => { var f = Aliancas.Falar(m, r, p.Texto, p.Hex); return new PostAliancaConversaJson(f.Id, f.Texto, f.Quando); }, 201));
         conta.MapPost("/alianca/pedidos", (PedidoRecursos p, HttpContext ctx, Motor motor) =>
             Com(ctx, motor, (m, r) => VisaoSocial.Proposta(m, r, Comercio.PedirRecursos(m, r, p.AliadoId, p.Recursos, p.LocalId, p.Recado)), 201));
         conta.MapPost("/alianca/reforcos/{localId:long}/retornar", (long localId, HttpContext ctx, Motor motor) =>
-            Com(ctx, motor, (m, r) => { var ex = Reforcos.Retornar(m, r, localId); return new { ex.Id, ex.Chegada, ex.Tropas }; }));
+            Com(ctx, motor, (m, r) => { var ex = Reforcos.Retornar(m, r, localId); return new PostAliancaReforcosRetornarJson(ex.Id, ex.Chegada, ex.Tropas); }));
 
         // ---------------------------------------------------------------- propostas (troca, pacto, pedido de recursos)
         conta.MapPost("/propostas/{pid:long}/{acao}", (long pid, string acao, HttpContext ctx, Motor motor) =>
@@ -128,9 +128,9 @@ public sealed class ModuloSocial : IModuloApi
             Com(ctx, motor, (m, r) =>
             {
                 var x = Mensageiros.Enviar(m, r, p.Texto, p.ReinoId, p.LocalId, p.RespondeA);
-                return new { x.Id, chegada = x.MarchaId is long mid ? m.Marchas.Obter(mid)?.Chegada : null };
+                return new PostMensagensJson(x.Id, chegada: x.MarchaId is long mid ? m.Marchas.Obter(mid)?.Chegada : null);
             }, 201));
-        conta.MapPost("/mensagens/lidas", (HttpContext ctx, Motor motor) => Com(ctx, motor, (m, r) => new { lidas = Mensageiros.LerTodas(m, r) }));
+        conta.MapPost("/mensagens/lidas", (HttpContext ctx, Motor motor) => Com(ctx, motor, (m, r) => new PostMensagensLidasJson(lidas: Mensageiros.LerTodas(m, r))));
         conta.MapPost("/mensageiros/treinar", (PedidoTreinarMensageiro p, HttpContext ctx, Motor motor) =>
             Com(ctx, motor, (m, r) => VisaoReino.Item(m, r, Mensageiros.Treinar(m, r, p.Qtd)), 201));
 
@@ -141,7 +141,7 @@ public sealed class ModuloSocial : IModuloApi
             {
                 var hex = p.Hex ?? (p.C is int c && p.L is int l && m.G.Dentro(c, l) ? m.G.Indice(c, l) : throw new RegraException("Escolha o hexágono."));
                 var b = Bandeiras.Colocar(m, r, hex, p.Tipo, p.Recado);
-                return new { b.Id, b.Hex, b.Tipo, b.Recado, b.Quando };
+                return new PostBandeirasJson(b.Id, b.Hex, b.Tipo, b.Recado, b.Quando);
             }, 201));
         conta.MapDelete("/bandeiras/{bid:long}", (long bid, HttpContext ctx, Motor motor) =>
             Com(ctx, motor, (m, r) => { Bandeiras.Remover(m, r, bid); return null; }));
@@ -162,34 +162,46 @@ public static class ExtrasSocial
             var a = Aliancas.De(mm, r);
             var cargo = a?.Membro(r.Id)?.Cargo;
             var agora = mm.Agora;
-            d["social"] = new
-            {
-                alianca = a == null ? null : new { a.Id, a.Nome, a.Brasao, cargo, membros = a.Membros.Count, naoLidas = Aliancas.NaoLidas(a, r.Id), a.Aberta },
-                convites = Aliancas.ConvitesPara(mm, r.Id).Count(),
-                pedidosEntrada = a != null && cargo != Aliancas.Membro ? a.Pedidos.Count(c => c.Ate > agora) : 0,
-                pedidosRecursos = Comercio.Abertas(mm, r.Id).Count(p => p.Tipo == Comercio.Pedido),
-                propostas = Comercio.Abertas(mm, r.Id).Count(p => p.Tipo != Comercio.Pedido),
-                pactos = Comercio.PactosDe(mm, r.Id).Count(),
-                resgates = Capturas.PresosDe(mm, r.Id).Count(p => p.Estado == Capturas.ResgatePedido && !r.ResgatesRecusados.Contains(p.Id)),
-                mensagensNovas = Mensageiros.Recebidas(mm, r.Id).Count(x => !x.Lida),
-                mensageiros = new { livres = r.MensageirosLivres, emCampo = Mensageiros.EmCampo(mm, r.Id).Count(), emTreino = Mensageiros.EmTreino(r).Sum(i => i.Restantes) },
-                bandeiras = Bandeiras.De(mm, r.Id).Count(),
-            };
+            d["social"] = new ExtrasSocialSocialJson(
+                alianca: a == null ? null : new ExtrasSocialSocialAliancaJson(a.Id, a.Nome, a.Brasao, cargo, membros: a.Membros.Count, naoLidas: Aliancas.NaoLidas(a, r.Id), a.Aberta),
+                convites: Aliancas.ConvitesPara(mm, r.Id).Count(),
+                pedidosEntrada: a != null && cargo != Aliancas.Membro ? a.Pedidos.Count(c => c.Ate > agora) : 0,
+                pedidosRecursos: Comercio.Abertas(mm, r.Id).Count(p => p.Tipo == Comercio.Pedido),
+                propostas: Comercio.Abertas(mm, r.Id).Count(p => p.Tipo != Comercio.Pedido),
+                pactos: Comercio.PactosDe(mm, r.Id).Count(),
+                resgates: Capturas.PresosDe(mm, r.Id).Count(p => p.Estado == Capturas.ResgatePedido && !r.ResgatesRecusados.Contains(p.Id)),
+                mensagensNovas: Mensageiros.Recebidas(mm, r.Id).Count(x => !x.Lida),
+                mensageiros: new ExtrasSocialSocialMensageirosJson(livres: r.MensageirosLivres, emCampo: Mensageiros.EmCampo(mm, r.Id).Count(), emTreino: Mensageiros.EmTreino(r).Sum(i => i.Restantes)),
+                bandeiras: Bandeiras.De(mm, r.Id).Count()
+            );
         });
         VisaoReino.ExtrasLocal.Add((mm, r, l, d) =>
         {
             if (l.ReforcosAliados.Count == 0) return;
-            d["reforcosAliados"] = l.ReforcosAliados.Select(e => new { reino = mm.Reinos.Obter(e.ReinoId) is { } q ? Espionagem.Identidade(q) : null, e.Tropas, e.Desde }).ToList();
+            d["reforcosAliados"] = l.ReforcosAliados.Select(e => new ExtrasSocialReforcosAliadosJson(reino: mm.Reinos.Obter(e.ReinoId) is { } q ? Espionagem.Identidade(q) : null, e.Tropas, e.Desde)).ToList();
         });
         VisaoMarcha.ExtrasPropria.Add((mm, x) => x switch
         {
-            Mensageiro mc => new
-            {
-                para = mm.Mensagens.Obter(mc.MensagemId) is { } msg && msg.PorReino ? mm.Reinos.Obter(msg.ParaId)?.Nome : null,
-                retornando = mc.Retornando,
-            },
-            Remessa rm => new { para = mm.Reinos.Obter(rm.ParaReinoId)?.Nome, motivo = rm.Motivo, pessoas = rm.Pessoas },
+            Mensageiro mc => new ExtrasSocialAoIniciarJson(
+                para: mm.Mensagens.Obter(mc.MensagemId) is { } msg && msg.PorReino ? mm.Reinos.Obter(msg.ParaId)?.Nome : null,
+                retornando: mc.Retornando
+            ),
+            Remessa rm => new ExtrasSocialAoIniciar2Json(para: mm.Reinos.Obter(rm.ParaReinoId)?.Nome, motivo: rm.Motivo, pessoas: rm.Pessoas),
             _ => null,
         });
     });
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PostAliancaReforcoJson(long Id);
+public sealed record PostAliancaConversaJson(long Id, string Texto, long Quando);
+public sealed record PostAliancaReforcosRetornarJson(long Id, long Chegada, Dictionary<string, int> Tropas);
+public sealed record PostMensagensJson(long Id, long? chegada);
+public sealed record PostMensagensLidasJson(int lidas);
+public sealed record PostBandeirasJson(long Id, int Hex, string Tipo, string Recado, long Quando);
+public sealed record ExtrasSocialSocialJson(ExtrasSocialSocialAliancaJson? alianca, int convites, int pedidosEntrada, int pedidosRecursos, int propostas, int pactos, int resgates, int mensagensNovas, ExtrasSocialSocialMensageirosJson mensageiros, int bandeiras);
+public sealed record ExtrasSocialSocialAliancaJson(long Id, string Nome, Brasao Brasao, string? cargo, int membros, int naoLidas, bool Aberta);
+public sealed record ExtrasSocialSocialMensageirosJson(int livres, int emCampo, int emTreino);
+public sealed record ExtrasSocialReforcosAliadosJson(System.Text.Json.Nodes.JsonObject? reino, Dictionary<string, int> Tropas, long Desde);
+public sealed record ExtrasSocialAoIniciarJson(string? para, bool retornando);
+public sealed record ExtrasSocialAoIniciar2Json(string? para, string motivo, int pessoas);

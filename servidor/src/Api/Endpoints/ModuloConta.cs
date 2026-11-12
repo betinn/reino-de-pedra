@@ -17,7 +17,7 @@ public sealed class ModuloConta : IModuloApi
             if (c == null)
             {
                 if (esperar > 0) ctx.Response.Headers.RetryAfter = esperar.ToString();
-                return Results.Json(new { erro }, statusCode: esperar > 0 ? 429 : 401);
+                return Json.Resposta(new ErroJson(erro), statusCode: esperar > 0 ? 429 : 401);
             }
             return AbrirSessao(ctx, contas, cfg, c, p.App, 200);
         }).RequireRateLimiting("auth");
@@ -33,17 +33,17 @@ public sealed class ModuloConta : IModuloApi
         {
             var id = ctx.ContaId();
             var c = contas.Obter(id);
-            var reino = await motor.Executar(m => Sessao.ReinoOuNulo(m, id) is { } r ? new { r.Id, r.Nome } : null);
-            return Results.Json(new { email = c?.Email, reino }, Json.Web);
+            var reino = await motor.Executar(m => Sessao.ReinoOuNulo(m, id) is { } r ? new ContaReinoJson(r.Id, r.Nome) : null);
+            return Json.Resposta(new ContaJson(email: c?.Email, reino), Json.Web);
         });
 
         conta.MapPost("/conta/senha", async (PedidoTrocaSenha p, HttpContext ctx, ServicoContas contas, Configuracao cfg) =>
         {
             var erro = await contas.TrocarSenha(ctx.ContaId(), p.Atual, p.Nova);
-            if (erro != null) return Results.Json(new { erro }, statusCode: 400);
+            if (erro != null) return Json.Resposta(new ErroJson(erro), statusCode: 400);
             var token = contas.CriarSessao(ctx.ContaId());
             if (Sessao.PorCookie(ctx)) Sessao.GravarCookie(ctx, token, cfg.CookieSeguro);
-            return Results.Json(new { ok = true, token = Sessao.PorCookie(ctx) ? null : token }, Json.Web);
+            return Json.Resposta(new PostContaSenhaJson(ok: true, token: Sessao.PorCookie(ctx) ? null : token), Json.Web);
         }).RequireRateLimiting("auth");
     }
 
@@ -52,6 +52,12 @@ public sealed class ModuloConta : IModuloApi
         var token = contas.CriarSessao(c.Id);
         // web: só cookie HttpOnly (o script não enxerga o token); app: token no corpo, para o cabeçalho Bearer
         if (!app) Sessao.GravarCookie(ctx, token, cfg.CookieSeguro);
-        return Results.Json(new { email = c.Email, token = app ? token : null }, Json.Web, statusCode: status);
+        return Json.Resposta(new ContaAbrirSessaoJson(email: c.Email, token: app ? token : null), Json.Web, statusCode: status);
     }
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record ContaReinoJson(long Id, string Nome);
+public sealed record ContaJson(string? email, ContaReinoJson? reino);
+public sealed record PostContaSenhaJson(bool ok, string? token);
+public sealed record ContaAbrirSessaoJson(string email, string? token);

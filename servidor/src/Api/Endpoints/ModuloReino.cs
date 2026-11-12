@@ -24,20 +24,20 @@ public sealed class ModuloReino : IModuloApi
         {
             var rng = new Rng((ulong)System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue) * 2654435761UL);
             var lista = Enumerable.Range(0, Math.Clamp(n ?? 8, 1, 24)).Select(_ => Brasao.Aleatorio(rng)).ToList();
-            return Results.Json(lista, Json.Web);
+            return Json.Resposta(lista, Json.Web);
         });
 
         conta.MapPost("/reino", async (PedidoCriarReino p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
             var r = await motor.Executar(m => VisaoReino.Montar(m, CriacaoReino.CriarNaRegiao(m, id, p.Nome, p.Brasao ?? new Brasao(), string.IsNullOrWhiteSpace(p.Regiao) ? null : p.Regiao)));
-            return Results.Json(r, Json.Web, statusCode: 201);
+            return Json.Resposta(r, Json.Web, statusCode: 201);
         });
 
         conta.MapGet("/reino", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 if (m.Agora - r.UltimoAcesso > T.Min) { r.UltimoAcesso = m.Agora; m.Sujar(r); }
@@ -83,7 +83,7 @@ public sealed class ModuloReino : IModuloApi
             });
             banco.Exec("INSERT INTO icones(reino_id, tipo, dados, versao) VALUES($r,$t,$d,$v) ON CONFLICT(reino_id) DO UPDATE SET tipo=excluded.tipo, dados=excluded.dados, versao=excluded.versao",
                 ("$r", versao.Id), ("$t", tipo), ("$d", dados), ("$v", versao.IconeVersao));
-            return Results.Json(new { versao = versao.IconeVersao }, Json.Web);
+            return Json.Resposta(new PutReinoIconeJson(versao: versao.IconeVersao), Json.Web);
         });
 
         conta.MapDelete("/reino/icone", async (HttpContext ctx, Motor motor, Banco banco) =>
@@ -107,7 +107,7 @@ public sealed class ModuloReino : IModuloApi
         conta.MapPost("/obras", async (PedidoObra p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var hex = p.Hex ?? (p.C is int c && p.L is int l && m.G.Dentro(c, l) ? m.G.Indice(c, l) : -1);
@@ -132,14 +132,14 @@ public sealed class ModuloReino : IModuloApi
         conta.MapGet("/mapa", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoMapa.Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoMapa.Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapGet("/fundar/motivo", async (string tipo, int hex, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
             // a foto da névoa em dia com o que o reino vê agora (o motivo usa só o que ele sabe)
-            return Results.Json(await motor.Executar(m => { var r = Sessao.ReinoDa(m, id); ReinoDePedra.Jogo.Exploracao.Nevoas.VisiveisAgora(m, r.Id); return new { motivo = Obras.MotivoNaoFundar(m, r, tipo, hex) }; }), Json.Web);
+            return Json.Resposta(await motor.Executar(m => { var r = Sessao.ReinoDa(m, id); ReinoDePedra.Jogo.Exploracao.Nevoas.VisiveisAgora(m, r.Id); return new DefesasTorreMotivoJson(motivo: Obras.MotivoNaoFundar(m, r, tipo, hex)); }), Json.Web);
         });
     }
 }
@@ -187,3 +187,6 @@ public static class Imagens
     }
     private static int BE(byte[] d, int i) => d[i] << 24 | d[i + 1] << 16 | d[i + 2] << 8 | d[i + 3];
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PutReinoIconeJson(int versao);

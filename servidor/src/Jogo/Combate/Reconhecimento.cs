@@ -130,13 +130,13 @@ public static class Reconhecimentos
         if (e["guarnicao"] is JsonObject g)
         {
             var d = g.ToDictionary(kv => kv.Key, kv => kv.Value!.GetValue<int>());
-            l.Add(Fauna.Linha("Guarnição", d.Count > 0 ? GT.Partes(m, d) : "nenhuma à vista"));
+            l.Add((JsonNode?)Fauna.Linha("Guarnição", d.Count > 0 ? GT.Partes(m, d) : "nenhuma à vista"));
         }
-        if (e["tropasAprox"] is JsonNode ap) l.Add(Fauna.Linha("Guarnição", ap.GetValue<string>()));
-        if (e["milicia"] is JsonNode mil) l.Add(Fauna.Linha("Milícia estimada", "≈ " + mil.GetValue<double>()));
-        l.Add(Fauna.Linha("Torres no alcance", e["torres"]!.GetValue<int>() + (e["arqueirosNoAlto"]!.GetValue<int>() > 0 ? " · " + e["arqueirosNoAlto"]!.GetValue<int>() + " arqueiros no alto" : "")));
-        if (e["portoes"] is JsonNode po && po.GetValue<int>() > 0) l.Add(Fauna.Linha("Portões", "nível " + po.GetValue<int>()));
-        if (e["ataque"] is JsonNode a) l.Add(Fauna.Linha("Força", a.GetValue<double>() + " das suas tropas contra " + e["defesa"]!.GetValue<double>() + " da defesa"));
+        if (e["tropasAprox"] is JsonNode ap) l.Add((JsonNode?)Fauna.Linha("Guarnição", ap.GetValue<string>()));
+        if (e["milicia"] is JsonNode mil) l.Add((JsonNode?)Fauna.Linha("Milícia estimada", "≈ " + mil.GetValue<double>()));
+        l.Add((JsonNode?)Fauna.Linha("Torres no alcance", e["torres"]!.GetValue<int>() + (e["arqueirosNoAlto"]!.GetValue<int>() > 0 ? " · " + e["arqueirosNoAlto"]!.GetValue<int>() + " arqueiros no alto" : "")));
+        if (e["portoes"] is JsonNode po && po.GetValue<int>() > 0) l.Add((JsonNode?)Fauna.Linha("Portões", "nível " + po.GetValue<int>()));
+        if (e["ataque"] is JsonNode a) l.Add((JsonNode?)Fauna.Linha("Força", a.GetValue<double>() + " das suas tropas contra " + e["defesa"]!.GetValue<double>() + " da defesa"));
         return l;
     }
 

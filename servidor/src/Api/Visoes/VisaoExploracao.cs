@@ -21,59 +21,53 @@ public static class VisaoExploracao
         var agora = m.Agora;
         var emTreino = Exploradores.EmTreino(r).ToList();
         var castelo = m.Locais.Obter(r.CasteloId);
-        return new
-        {
+        return new ExploracaoMontarJson(
             agora,
-            tipos = m.P.Exploradores.Select(kv => new
-            {
-                id = kv.Key, nome = Exploradores.NomeTipo(m, kv.Key), curto = kv.Value.Nome, kv.Value.Custo, kv.Value.Tempo, kv.Value.Vel,
+            tipos: m.P.Exploradores.Select(kv => new ExploracaoMontarTiposJson(
+                id: kv.Key, nome: Exploradores.NomeTipo(m, kv.Key), curto: kv.Value.Nome, kv.Value.Custo, kv.Value.Tempo, kv.Value.Vel,
                 kv.Value.Visao, kv.Value.Forca, kv.Value.Jazidas,
-                livres = r.ExploradoresLivres.GetValueOrDefault(kv.Key),
-                emTreino = emTreino.Where(i => i.Param == kv.Key).Sum(i => i.Restantes),
-                emCampo = Exploradores.De(m, r.Id).Count(e => e.TipoExp == kv.Key),
-            }).ToList(),
-            exploradores = Exploradores.De(m, r.Id).OrderBy(e => e.Id).Select(e => Explorador(m, e)).ToList(),
-            emTreino = emTreino.Select(i => VisaoReino.Item(m, r, i)).ToList(),
-            castelo = castelo == null ? null : new { castelo.Id, castelo.Hex, castelo.Nome, guarnicao = castelo.Guarnicao },
-            presos = Capturas.PresosPor(m, r.Id).OrderBy(p => p.Ate).Select(p => new
-            {
-                p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), pessoa = p.Nome, p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
-                resgate = p.Resgate.Arredondado(),
-                origem = m.Reinos.Obter(p.DonoId) is { } d ? Espionagem.Identidade(d) : null,
-                oferta = p.Oferta.Count > 0 ? p.Oferta.Arredondado() : null, p.OfertaEm,
-                ofertaValor = p.Oferta.Count > 0 ? Math.Round(Jogo.Social.Remessas.Valor(m, p.Oferta)) : (double?)null,
-                resgateValor = p.Resgate.Count > 0 ? Math.Round(Jogo.Social.Remessas.Valor(m, p.Resgate)) : (double?)null,
-                pagamento = Capturas.PagamentoACaminho(m, p),
-                cela = Capturas.Onde(m, p) is { } cl ? new { cl.Id, cl.Nome, cl.Hex } : null,
-            }).ToList(),
-            capturados = Capturas.PresosDe(m, r.Id).OrderBy(p => p.Ate).Select(p => new
-            {
-                p.Id, p.TipoExp, nome = Exploradores.NomeTipo(m, p.TipoExp), pessoa = p.Nome, p.Hex, c = m.G.C(p.Hex), l = m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
-                resgate = p.Estado == Capturas.ResgatePedido ? p.Resgate.Arredondado() : null,
-                captor = m.Reinos.Obter(p.CaptorId) is { } c ? Espionagem.Identidade(c) : null,
-                oferta = p.Oferta.Count > 0 ? p.Oferta.Arredondado() : null, p.OfertaEm,
-                pagamento = Capturas.PagamentoACaminho(m, p),
-                cela = Capturas.Onde(m, p) is { } cl ? new { cl.Hex, c = m.G.C(cl.Hex), l = m.G.L(cl.Hex), nome = Jogo.Combate.Ataques.NomeAlvo(cl) } : null,
-            }).ToList(),
-            bandos = Bandos(m, r),
-            regras = new
-            {
-                limites = m.P.Fauna, ataque = m.P.AtaqueFauna, perda = m.P.PerdaFauna, voltaH = m.P.FaunaVoltaH, cacaMin = m.P.CacaMin,
-                caca = m.P.Caca, espiao = m.P.Espiao, resgateH = m.P.ResgateH, avistamentoH = m.P.AvistamentoH, maxPontos = m.P.Patrulha.MaxHexes,
-                rota = m.P.Rota, ponte = m.P.Ponte, terreno = m.P.Terreno, rotaFator = m.P.RotaFator, valor = m.P.Valor,
-            },
-        };
+                livres: r.ExploradoresLivres.GetValueOrDefault(kv.Key),
+                emTreino: emTreino.Where(i => i.Param == kv.Key).Sum(i => i.Restantes),
+                emCampo: Exploradores.De(m, r.Id).Count(e => e.TipoExp == kv.Key)
+            )).ToList(),
+            exploradores: Exploradores.De(m, r.Id).OrderBy(e => e.Id).Select(e => Explorador(m, e)).ToList(),
+            emTreino: emTreino.Select(i => VisaoReino.Item(m, r, i)).ToList(),
+            castelo: castelo == null ? null : new ExploracaoMontarCasteloJson(castelo.Id, castelo.Hex, castelo.Nome, guarnicao: castelo.Guarnicao),
+            presos: Capturas.PresosPor(m, r.Id).OrderBy(p => p.Ate).Select(p => new ExploracaoMontarPresosJson(
+                p.Id, p.TipoExp, nome: Exploradores.NomeTipo(m, p.TipoExp), pessoa: p.Nome, p.Hex, c: m.G.C(p.Hex), l: m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
+                resgate: p.Resgate.Arredondado(),
+                origem: m.Reinos.Obter(p.DonoId) is { } d ? Espionagem.Identidade(d) : null,
+                oferta: p.Oferta.Count > 0 ? p.Oferta.Arredondado() : null, p.OfertaEm,
+                ofertaValor: p.Oferta.Count > 0 ? Math.Round(Jogo.Social.Remessas.Valor(m, p.Oferta)) : (double?)null,
+                resgateValor: p.Resgate.Count > 0 ? Math.Round(Jogo.Social.Remessas.Valor(m, p.Resgate)) : (double?)null,
+                pagamento: Capturas.PagamentoACaminho(m, p),
+                cela: Capturas.Onde(m, p) is { } cl ? new ExploracaoMontarPresosCelaJson(cl.Id, cl.Nome, cl.Hex) : null
+            )).ToList(),
+            capturados: Capturas.PresosDe(m, r.Id).OrderBy(p => p.Ate).Select(p => new ExploracaoMontarCapturadosJson(
+                p.Id, p.TipoExp, nome: Exploradores.NomeTipo(m, p.TipoExp), pessoa: p.Nome, p.Hex, c: m.G.C(p.Hex), l: m.G.L(p.Hex), p.Quando, p.Ate, p.Estado,
+                resgate: p.Estado == Capturas.ResgatePedido ? p.Resgate.Arredondado() : null,
+                captor: m.Reinos.Obter(p.CaptorId) is { } c ? Espionagem.Identidade(c) : null,
+                oferta: p.Oferta.Count > 0 ? p.Oferta.Arredondado() : null, p.OfertaEm,
+                pagamento: Capturas.PagamentoACaminho(m, p),
+                cela: Capturas.Onde(m, p) is { } cl ? new ExploracaoMontarCapturadosCelaJson(cl.Hex, c: m.G.C(cl.Hex), l: m.G.L(cl.Hex), nome: Jogo.Combate.Ataques.NomeAlvo(cl)) : null
+            )).ToList(),
+            bandos: Bandos(m, r),
+            regras: new ExploracaoMontarRegrasJson(
+                limites: m.P.Fauna, ataque: m.P.AtaqueFauna, perda: m.P.PerdaFauna, voltaH: m.P.FaunaVoltaH, cacaMin: m.P.CacaMin,
+                caca: m.P.Caca, espiao: m.P.Espiao, resgateH: m.P.ResgateH, avistamentoH: m.P.AvistamentoH, maxPontos: m.P.Patrulha.MaxHexes,
+                rota: m.P.Rota, ponte: m.P.Ponte, terreno: m.P.Terreno, rotaFator: m.P.RotaFator, valor: m.P.Valor
+            )
+        );
     }
 
-    public static object Explorador(Mundo m, Explorador e) => new
-    {
-        e.Id, e.TipoExp, nome = e.NomeTipo(m), e.Ordem, e.Alvo, alvoC = m.G.C(e.Alvo), alvoL = m.G.L(e.Alvo), e.Pontos,
-        hex = e.HexEm(m.Agora), e.Destino, e.Partida, e.Chegada, e.Caminho, e.Tempos, e.Retornando, e.Seguro, e.Vel,
-        escolta = e.Tropas, e.EspionandoAte, e.HexesRevelados, e.JazidasAchadas, e.Circuito,
+    public static object Explorador(Mundo m, Explorador e) => new ExploracaoExploradorJson(
+        e.Id, e.TipoExp, nome: e.NomeTipo(m), e.Ordem, e.Alvo, alvoC: m.G.C(e.Alvo), alvoL: m.G.L(e.Alvo), e.Pontos,
+        hex: e.HexEm(m.Agora), e.Destino, e.Partida, e.Chegada, e.Caminho, e.Tempos, e.Retornando, e.Seguro, e.Vel,
+        escolta: e.Tropas, e.EspionandoAte, e.HexesRevelados, e.JazidasAchadas, e.Circuito,
         // início da espionagem (Espionagem: EspionandoAte = chegada + P.espiao.tempoNoLocal), para a barra de tempo
-        espionandoDesde = e.EspionandoAte is long ate ? ate - T.DeSegundos(m.P.Espiao.TempoNoLocal) : (long?)null,
-        estado = e.EspionandoAte != null ? "espionando" : e.Ordem == Exploradores.Aguardar ? "parado" : e.Retornando ? "retornando" : "marchando",
-    };
+        espionandoDesde: e.EspionandoAte is long ate ? ate - T.DeSegundos(m.P.Espiao.TempoNoLocal) : (long?)null,
+        estado: e.EspionandoAte != null ? "espionando" : e.Ordem == Exploradores.Aguardar ? "parado" : e.Retornando ? "retornando" : "marchando"
+    );
 
     /// <summary>Bandos que o reino conhece: à vista agora (posição real) ou pela foto da névoa (centro da região, com a idade).</summary>
     public static List<object> Bandos(Mundo m, Reino r, HashSet<int>? vis = null)
@@ -86,13 +80,13 @@ public static class VisaoExploracao
             if (!rg.Abatido && vis.Contains(rg.Hex))
             {
                 var n = Fauna.NivelEm(m, rg, rg.Hex);
-                l.Add(new { id = rg.Id, rg.Animal, nivel = Fauna.NomeDe(Math.Max(1, n)), hex = rg.Hex, vivo = true, qtd = rg.Qtd, visto = m.Agora, idadeMin = 0 });
+                l.Add(new ExploracaoBandosJson(id: rg.Id, rg.Animal, nivel: Fauna.NomeDe(Math.Max(1, n)), hex: rg.Hex, vivo: true, qtd: rg.Qtd, visto: m.Agora, idadeMin: 0));
                 continue;
             }
             var nf = Fotos.PerigoConhecido(m, r.Id, rg.Centro);
             if (nf == 0 || Fotos.AnimalConhecido(m, r.Id, rg.Centro) != rg.Animal) continue;
             var visto = Nevoas.Instante(m, nevoa.MinutoVisto(rg.Centro));
-            l.Add(new { id = rg.Id, rg.Animal, nivel = Fauna.NomeDe(nf), hex = rg.Centro, vivo = false, qtd = (int?)null, visto, idadeMin = (m.Agora - visto) / T.Min });
+            l.Add(new ExploracaoBandos2Json(id: rg.Id, rg.Animal, nivel: Fauna.NomeDe(nf), hex: rg.Centro, vivo: false, qtd: (int?)null, visto, idadeMin: (m.Agora - visto) / T.Min));
         }
         return l;
     }
@@ -112,12 +106,11 @@ public static class VisaoExploracao
             { piorRisco = risco; pior = n; animal = Fotos.AnimalConhecido(m, r.Id, caminho[i]); }
             else if (pior == 0) { pior = n; animal = Fotos.AnimalConhecido(m, r.Id, caminho[i]); }
         }
-        return new
-        {
-            nivel = Fauna.NomeDe(pior), animal, risco = piorRisco, trechos,
-            chance = piorRisco == "nenhum" ? 0 : m.P.AtaqueFauna[piorRisco],
-            limite = pior > 0 ? m.P.Fauna[Fauna.NomeDe(pior)!] : (double?)null,
-        };
+        return new ExploracaoRiscoJson(
+            nivel: Fauna.NomeDe(pior), animal, risco: piorRisco, trechos,
+            chance: piorRisco == "nenhum" ? 0 : m.P.AtaqueFauna[piorRisco],
+            limite: pior > 0 ? m.P.Fauna[Fauna.NomeDe(pior)!] : (double?)null
+        );
     }
 
     /// <summary>Prévia de caminho (curto e seguro) para um explorador (com escolta opcional) ou um grupo de tropas.</summary>
@@ -142,26 +135,24 @@ public static class VisaoExploracao
                 hexes.AddRange(rota.Hexes.Skip(1));
                 total += rota.TotalMin;
             }
-            return new
-            {
-                ok, min = ok ? Math.Round(total, 1) : (double?)null, hexes = ok ? hexes.Count : 0, caminho = ok ? hexes : null,
-                rotas = ok ? hexes.Count(h => m.Vias.Rotas.Contains(h)) : 0,
-                risco = ok ? Risco(m, r, hexes, forca) : null,
-            };
+            return new ExploracaoRotaJson(
+                ok, min: ok ? Math.Round(total, 1) : (double?)null, hexes: ok ? hexes.Count : 0, caminho: ok ? hexes : null,
+                rotas: ok ? hexes.Count(h => m.Vias.Rotas.Contains(h)) : 0,
+                risco: ok ? Risco(m, r, hexes, forca) : null
+            );
         }
         object? espiao = null;
         var l = m.LocalNoHex(para);
         if (tipo == Exploradores.Batedor && l != null && l.ReinoId != r.Id && l.ReinoId != 0)
         {
             var antigo = r.LocaisEspionados.GetValueOrDefault(l.Id);
-            espiao = new
-            {
-                localId = l.Id, nome = l.Nome,
-                estimativa = antigo != null ? Math.Round(m.F.ChanceEspiao(antigo.Torres, antigo.Tropas), 3) : (double?)null,
-                antigo = antigo == null ? null : new { antigo.Tropas, antigo.Torres, antigo.Quando },
-            };
+            espiao = new ExploracaoEspiaoJson(
+                localId: l.Id, nome: l.Nome,
+                estimativa: antigo != null ? Math.Round(m.F.ChanceEspiao(antigo.Torres, antigo.Tropas), 3) : (double?)null,
+                antigo: antigo == null ? null : new ExploracaoEspiaoAntigoJson(antigo.Tropas, antigo.Torres, antigo.Quando)
+            );
         }
-        return new { vel, forca, pop = (tipo != null ? 1 : 0) + GT.Pop(m, grupo), carga = GT.Carga(m, grupo), curta = Rota(false), segura = Rota(true), espiao };
+        return new ExploracaoPreviaJson(vel, forca, pop: (tipo != null ? 1 : 0) + GT.Pop(m, grupo), carga: GT.Carga(m, grupo), curta: Rota(false), segura: Rota(true), espiao);
     }
 
     // ---------------------------------------------------------------- mapa
@@ -179,24 +170,23 @@ public static class VisaoExploracao
         {
             if (m.Locais.Obter(lid) is not { } loc) continue;
             var dono = m.Reinos.Obter(info.DonoId);
-            l.Add(new
-            {
-                tipo = "espionado", hex = loc.Hex, localId = lid, nivel = info.Nivel, quando = info.Quando, tropas = info.Tropas, torres = info.Torres,
-                dono = dono != null ? Espionagem.Identidade(dono) : null,
-            });
+            l.Add(new ExploracaoMapaJson(
+                tipo: "espionado", hex: loc.Hex, localId: lid, nivel: info.Nivel, quando: info.Quando, tropas: info.Tropas, torres: info.Torres,
+                dono: dono != null ? Espionagem.Identidade(dono) : null
+            ));
         }
         // fauna à vista, e as placas de perigo das regiões conhecidas
         foreach (var rg in m.Faunas)
         {
             if (!rg.Abatido && vis.Contains(rg.Hex))
             {
-                l.Add(new { tipo = "fauna", id = rg.Id, hex = rg.Hex, animal = rg.Animal, nivel = Fauna.NomeDe(Math.Max(1, Fauna.NivelEm(m, rg, rg.Hex))), qtd = rg.Qtd, aoVivo = true });
+                l.Add(new ExploracaoMapa2Json(tipo: "fauna", id: rg.Id, hex: rg.Hex, animal: rg.Animal, nivel: Fauna.NomeDe(Math.Max(1, Fauna.NivelEm(m, rg, rg.Hex))), qtd: rg.Qtd, aoVivo: true));
                 continue;
             }
             var nf = Fotos.PerigoConhecido(m, r.Id, rg.Centro);
             if (nf == 0 || Fotos.AnimalConhecido(m, r.Id, rg.Centro) != rg.Animal) continue;
             var mv = nevoa.MinutoVisto(rg.Centro);
-            l.Add(new { tipo = "perigo", id = rg.Id, hex = rg.Centro, animal = rg.Animal, nivel = Fauna.NomeDe(nf), visto = Nevoas.Instante(m, mv), foto = !vis.Contains(rg.Centro), aoVivo = false });
+            l.Add(new ExploracaoMapa3Json(tipo: "perigo", id: rg.Id, hex: rg.Centro, animal: rg.Animal, nivel: Fauna.NomeDe(nf), visto: Nevoas.Instante(m, mv), foto: !vis.Contains(rg.Centro), aoVivo: false));
         }
         // camada Perigo: um caractere por hexágono (0 a 3; "?" nunca visto) e o animal (l, j, u, c)
         var g = m.G;
@@ -209,9 +199,32 @@ public static class VisaoExploracao
             var a = (b >> 2) - 1;
             animais[h] = a >= 0 && a < Fauna.Animais.Length ? Fauna.Animais[a][0] : '.';
         }
-        l.Add(new { tipo = "camada-perigo", niveis = new string(niveis), animais = new string(animais) });
+        l.Add(new ExploracaoMapa4Json(tipo: "camada-perigo", niveis: new string(niveis), animais: new string(animais)));
         foreach (var a in Avistamentos.De(m, r.Id))
-            l.Add(new { tipo = "avistamento", id = a.Id, hex = a.Hex, avistado = a.Tipo, a.Quando, a.Ate });
+            l.Add(new ExploracaoMapa5Json(tipo: "avistamento", id: a.Id, hex: a.Hex, avistado: a.Tipo, a.Quando, a.Ate));
         return l;
     }
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record ExploracaoMontarJson(long agora, List<ExploracaoMontarTiposJson> tipos, List<object> exploradores, List<object> emTreino, ExploracaoMontarCasteloJson? castelo, List<ExploracaoMontarPresosJson> presos, List<ExploracaoMontarCapturadosJson> capturados, List<object> bandos, ExploracaoMontarRegrasJson regras);
+public sealed record ExploracaoMontarTiposJson(string id, string nome, string curto, Dictionary<string, double> Custo, double Tempo, string Vel, int Visao, double Forca, int Jazidas, int livres, int emTreino, int emCampo);
+public sealed record ExploracaoMontarCasteloJson(long Id, int Hex, string Nome, Dictionary<string, int> guarnicao);
+public sealed record ExploracaoMontarPresosJson(long Id, string TipoExp, string nome, string pessoa, int Hex, int c, int l, long Quando, long Ate, string Estado, Dictionary<string, long> resgate, JsonObject? origem, Dictionary<string, long>? oferta, long? OfertaEm, double? ofertaValor, double? resgateValor, bool pagamento, ExploracaoMontarPresosCelaJson? cela);
+public sealed record ExploracaoMontarPresosCelaJson(long Id, string Nome, int Hex);
+public sealed record ExploracaoMontarCapturadosJson(long Id, string TipoExp, string nome, string pessoa, int Hex, int c, int l, long Quando, long Ate, string Estado, Dictionary<string, long>? resgate, JsonObject? captor, Dictionary<string, long>? oferta, long? OfertaEm, bool pagamento, ExploracaoMontarCapturadosCelaJson? cela);
+public sealed record ExploracaoMontarCapturadosCelaJson(int Hex, int c, int l, string nome);
+public sealed record ExploracaoMontarRegrasJson(Dictionary<string, double> limites, Dictionary<string, double> ataque, ReinoDePedra.Jogo.Config.PerdaFaunaP perda, double voltaH, double cacaMin, Dictionary<string, ReinoDePedra.Jogo.Config.CacaP> caca, ReinoDePedra.Jogo.Config.EspiaoP espiao, double resgateH, double avistamentoH, int maxPontos, ReinoDePedra.Jogo.Config.ObraP rota, ReinoDePedra.Jogo.Config.ObraP ponte, Dictionary<string, double> terreno, double rotaFator, Dictionary<string, double> valor);
+public sealed record ExploracaoExploradorJson(long Id, string TipoExp, string nome, string Ordem, int Alvo, int alvoC, int alvoL, List<int> Pontos, int hex, int Destino, long Partida, long Chegada, List<int> Caminho, List<long> Tempos, bool Retornando, bool Seguro, string Vel, Dictionary<string, int> escolta, long? EspionandoAte, int HexesRevelados, int JazidasAchadas, bool Circuito, long? espionandoDesde, string estado);
+public sealed record ExploracaoBandosJson(long id, string Animal, string? nivel, int hex, bool vivo, int qtd, long visto, int idadeMin);
+public sealed record ExploracaoBandos2Json(long id, string Animal, string? nivel, int hex, bool vivo, int? qtd, long visto, long idadeMin);
+public sealed record ExploracaoRiscoJson(string? nivel, string? animal, string risco, int trechos, double chance, double? limite);
+public sealed record ExploracaoRotaJson(bool ok, double? min, int hexes, List<int>? caminho, int rotas, object? risco);
+public sealed record ExploracaoEspiaoJson(long localId, string nome, double? estimativa, ExploracaoEspiaoAntigoJson? antigo);
+public sealed record ExploracaoEspiaoAntigoJson(int Tropas, int Torres, long Quando);
+public sealed record ExploracaoPreviaJson(string vel, double forca, int pop, double carga, object curta, object segura, object? espiao);
+public sealed record ExploracaoMapaJson(string tipo, int hex, long localId, int nivel, long quando, int tropas, int torres, JsonObject? dono);
+public sealed record ExploracaoMapa2Json(string tipo, long id, int hex, string animal, string? nivel, int qtd, bool aoVivo);
+public sealed record ExploracaoMapa3Json(string tipo, long id, int hex, string animal, string? nivel, long visto, bool foto, bool aoVivo);
+public sealed record ExploracaoMapa4Json(string tipo, string niveis, string animais);
+public sealed record ExploracaoMapa5Json(string tipo, long id, int hex, string avistado, long Quando, long Ate);

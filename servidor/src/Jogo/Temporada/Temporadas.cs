@@ -95,7 +95,7 @@ namespace ReinoDePedra.Jogo.Temporada
             var n = m.Estado.NumeroTemporada;
             Apurar(m);
             AoTerminar?.Invoke(m, n);
-            foreach (var r in m.Reinos) if (r.Ativo) m.Avisar(r.Id, "temporada", new { fim = n });
+            foreach (var r in m.Reinos) if (r.Ativo) m.Avisar(r.Id, "temporada", new AvisoTemporadaJson(fim: n));
             Reiniciar(m);
         }
 
@@ -196,4 +196,6 @@ namespace ReinoDePedra.Jogo.Temporada
             Temporadas.Encerrar(m);
         }
     }
+    // Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+    public sealed record AvisoTemporadaJson(int fim);
 }

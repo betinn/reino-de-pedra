@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace ReinoDePedra.Jogo.Config;
 
@@ -19,12 +20,13 @@ public sealed class Balanceamento
     {
         PropertyNameCaseInsensitive = true,
         NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        TypeInfoResolver = Persistencia.JsonJogo.Default,
     };
 
     public static Balanceamento Carregar(string caminho)
     {
         using var f = File.OpenRead(caminho);
-        var b = JsonSerializer.Deserialize<Balanceamento>(f, OpcoesJson)
+        var b = JsonSerializer.Deserialize(f, (JsonTypeInfo<Balanceamento>)OpcoesJson.GetTypeInfo(typeof(Balanceamento)))
                 ?? throw new InvalidDataException("config de balanceamento vazia");
         foreach (var (id, u) in b.U) u.Id = id;
         return b;

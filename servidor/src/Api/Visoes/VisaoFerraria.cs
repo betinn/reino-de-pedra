@@ -14,7 +14,7 @@ namespace ReinoDePedra.Api.Visoes;
 public static class VisaoFerraria
 {
     private static object Reqs(Mundo m, Reino r, RequisitoP req) =>
-        Ferrarias.Requisitos(m, r, req).Select(x => new { texto = x.Texto, ok = x.Ok }).ToList();
+        Ferrarias.Requisitos(m, r, req).Select(x => new FerrariaReqsJson(texto: x.Texto, ok: x.Ok)).ToList();
 
     public static object Montar(Mundo m, Reino r)
     {
@@ -23,61 +23,55 @@ public static class VisaoFerraria
         SistemaFerraria.ConferirGatilho(m, r);
         var principal = Ferrarias.Principal(m, r);
         var fila = Ferrarias.Itens(r).Select(i => VisaoReino.Item(m, r, i)).ToList();
-        var eras = m.P.Eras.Select(kv => new
-        {
-            id = kv.Key, kv.Value.Nome, kv.Value.Libera, custo = kv.Value.Custo, tempo = kv.Value.Tempo,
-            feita = Ferrarias.EraFeita(r, kv.Key), quando = r.Eras.TryGetValue(kv.Key, out var q) ? q : (long?)null,
-            emFila = Ferrarias.Itens(r).Any(i => i.Tipo == ItemEra.Id && i.Param == kv.Key),
-            req = m.P.FerrariaServ.Eras.TryGetValue(kv.Key, out var rq) ? Reqs(m, r, rq) : null,
-            bloqueio = Ferrarias.MotivoEra(m, r, kv.Key),
-        }).ToList();
-        var familias = m.P.FerrariaServ.Familias.Select(f => new
-        {
-            id = f,
-            unidades = m.B.U.Values.Where(u => u.Fam == f).Select(u => u.Id).ToList(),
-            linhas = Ferrarias.Linhas.Select(l =>
+        var eras = m.P.Eras.Select(kv => new FerrariaErasJson(
+            id: kv.Key, kv.Value.Nome, kv.Value.Libera, custo: kv.Value.Custo, tempo: kv.Value.Tempo,
+            feita: Ferrarias.EraFeita(r, kv.Key), quando: r.Eras.TryGetValue(kv.Key, out var q) ? q : (long?)null,
+            emFila: Ferrarias.Itens(r).Any(i => i.Tipo == ItemEra.Id && i.Param == kv.Key),
+            req: m.P.FerrariaServ.Eras.TryGetValue(kv.Key, out var rq) ? Reqs(m, r, rq) : null,
+            bloqueio: Ferrarias.MotivoEra(m, r, kv.Key)
+        )).ToList();
+        var familias = m.P.FerrariaServ.Familias.Select(f => new FerrariaFamiliasJson(
+            id: f,
+            unidades: m.B.U.Values.Where(u => u.Fam == f).Select(u => u.Id).ToList(),
+            linhas: Ferrarias.Linhas.Select(l =>
             {
                 var prox = Ferrarias.ProximoNivel(m, r, f, l);
                 var nv = prox is int n ? m.P.Ferraria.Niveis[n - 1] : null;
-                return new
-                {
-                    id = l, efeito = Ferrarias.Efeito(l), nivel = Ferrarias.Nivel(r, f, l), naFila = Ferrarias.NaFila(r, f, l),
-                    bonus = Ferrarias.Nivel(r, f, l) * m.P.Ferraria.BonusNivel,
-                    proximo = prox is int p ? new
-                    {
-                        nivel = p, custo = nv!.Custo, tempo = nv.Tempo, req = Reqs(m, r, m.P.FerrariaServ.Niveis[p - 1]),
-                        bloqueio = Ferrarias.MotivoForja(m, r, f, l),
-                    } : null,
-                };
-            }).ToList(),
-        }).ToList();
+                return new FerrariaFamiliasLinhasJson(
+                    id: l, efeito: Ferrarias.Efeito(l), nivel: Ferrarias.Nivel(r, f, l), naFila: Ferrarias.NaFila(r, f, l),
+                    bonus: Ferrarias.Nivel(r, f, l) * m.P.Ferraria.BonusNivel,
+                    proximo: prox is int p ? new FerrariaFamiliasLinhasProximoJson(
+                        nivel: p, custo: nv!.Custo, tempo: nv.Tempo, req: Reqs(m, r, m.P.FerrariaServ.Niveis[p - 1]),
+                        bloqueio: Ferrarias.MotivoForja(m, r, f, l)
+                    ) : null
+                );
+            }).ToList()
+        )).ToList();
         var total = Economia.TotalGuardado(m, r);
-        return new
-        {
-            agora = m.Agora,
-            ferraria = principal == null ? null : new { principal.Id, principal.Nome, principal.Nivel, principal.Hex },
-            nivelFerraria = Ferrarias.MaiorNivel(m, r, TipoLocal.Ferraria),
-            nivelQuartel = Ferrarias.MaiorNivel(m, r, TipoLocal.Quartel),
-            era = Ferrarias.EraAtual(m, r),
-            fila, vagas = Fila.Maximo,
+        return new FerrariaMontarJson(
+            agora: m.Agora,
+            ferraria: principal == null ? null : new FerrariaMontarFerrariaJson(principal.Id, principal.Nome, principal.Nivel, principal.Hex),
+            nivelFerraria: Ferrarias.MaiorNivel(m, r, TipoLocal.Ferraria),
+            nivelQuartel: Ferrarias.MaiorNivel(m, r, TipoLocal.Quartel),
+            era: Ferrarias.EraAtual(m, r),
+            fila, vagas: Fila.Maximo,
             eras, familias,
-            bonusNivel = m.P.Ferraria.BonusNivel, niveisMax = m.P.Ferraria.Niveis.Length,
-            lendario = new
-            {
-                custo = m.P.Lendario.Custo, tempo = m.P.Lendario.Tempo, bonus = m.P.Lendario.Bonus, tropas = m.P.Lendario.Tropas,
-                req = Reqs(m, r, m.P.FerrariaServ.Lendario),
-                bloqueio = Ferrarias.MotivoLendario(m, r),
-                forjados = r.LendariosForjados, porReino = m.P.FerrariaServ.LendarioPorReino,
-                emFila = Ferrarias.Itens(r).Any(i => i.Tipo == ItemLendario.Id),
-                minerio = Math.Floor(total.Qtd("minerio")),
-                jazidas = m.Jazidas.Where(j => j.Recurso == "minerio" && j.DescobertaPor.Contains(r.Id) && j.Restante > 0)
-                    .Select(j => new { j.Id, j.Hex, restante = Math.Floor(j.Restante) }).ToList(),
-                meus = Meus(m, r),
-                vistos = Vistos(m, r),
-            },
-            teto = m.P.TetoBonus,
-            exemplos = Exemplos(m, r),
-        };
+            bonusNivel: m.P.Ferraria.BonusNivel, niveisMax: m.P.Ferraria.Niveis.Length,
+            lendario: new FerrariaMontarLendarioJson(
+                custo: m.P.Lendario.Custo, tempo: m.P.Lendario.Tempo, bonus: m.P.Lendario.Bonus, tropas: m.P.Lendario.Tropas,
+                req: Reqs(m, r, m.P.FerrariaServ.Lendario),
+                bloqueio: Ferrarias.MotivoLendario(m, r),
+                forjados: r.LendariosForjados, porReino: m.P.FerrariaServ.LendarioPorReino,
+                emFila: Ferrarias.Itens(r).Any(i => i.Tipo == ItemLendario.Id),
+                minerio: Math.Floor(total.Qtd("minerio")),
+                jazidas: m.Jazidas.Where(j => j.Recurso == "minerio" && j.DescobertaPor.Contains(r.Id) && j.Restante > 0)
+                    .Select(j => new FerrariaMontarLendarioJazidasJson(j.Id, j.Hex, restante: Math.Floor(j.Restante))).ToList(),
+                meus: Meus(m, r),
+                vistos: Vistos(m, r)
+            ),
+            teto: m.P.TetoBonus,
+            exemplos: Exemplos(m, r)
+        );
     }
 
     /// <summary>Equipamentos lendários do reino e onde estão (guarnição de um local ou exército em campo).</summary>
@@ -85,21 +79,20 @@ public static class VisaoFerraria
     {
         object? onde = null;
         if (e.LocalId is long lid && m.Locais.Obter(lid) is { } l)
-            onde = new { tipo = "local", id = l.Id, nome = l.Nome, hex = l.Hex, tropas = (int)Lendarios.Defensores(m, l), fator = Lendarios.Fator(m, Lendarios.Defensores(m, l)) };
+            onde = new FerrariaOndeJson(tipo: "local", id: l.Id, nome: l.Nome, hex: l.Hex, tropas: (int)Lendarios.Defensores(m, l), fator: Lendarios.Fator(m, Lendarios.Defensores(m, l)));
         else if (e.MarchaId is long mid && m.Marchas.Obter(mid) is Exercito ex)
-            onde = new { tipo = "exercito", id = ex.Id, nome = GT.Partes(m, ex.Tropas), hex = ex.HexEm(m.Agora), tropas = GT.Total(ex.Tropas), fator = Lendarios.Fator(m, GT.Total(ex.Tropas)) };
-        return (object)new { e.Id, e.Nome, e.Tipo, e.Levar, capturado = e.ForjadoPor != r.Id, onde };
+            onde = new FerrariaOndeJson(tipo: "exercito", id: ex.Id, nome: GT.Partes(m, ex.Tropas), hex: ex.HexEm(m.Agora), tropas: GT.Total(ex.Tropas), fator: Lendarios.Fator(m, GT.Total(ex.Tropas)));
+        return (object)new FerrariaMeusJson(e.Id, e.Nome, e.Tipo, e.Levar, capturado: e.ForjadoPor != r.Id, onde);
     }).ToList();
 
     /// <summary>Equipamentos de outros reinos vistos nos relatórios de espionagem do próprio reino (o mais recente de cada).</summary>
     private static List<object> Vistos(Mundo m, Reino r) => m.Relatorios
         .Where(x => x.ReinoId == r.Id && x.Tipo == "espionagem" && x.Dados["lendario"] is JsonArray)
         .OrderByDescending(x => x.Quando)
-        .SelectMany(x => ((JsonArray)x.Dados["lendario"]!).OfType<JsonObject>().Select(o => new
-        {
-            id = (long?)o["id"] ?? 0, nome = (string?)o["nome"], tipo = (string?)o["tipo"],
-            local = (string?)x.Dados["local"]?["nome"], dono = (string?)x.Dados["dono"]?["nome"], quando = x.Quando, relatorio = x.Id,
-        }))
+        .SelectMany(x => ((JsonArray)x.Dados["lendario"]!).OfType<JsonObject>().Select(o => new FerrariaVistosJson(
+            id: (long?)o["id"] ?? 0, nome: (string?)o["nome"], tipo: (string?)o["tipo"],
+            local: (string?)x.Dados["local"]?["nome"], dono: (string?)x.Dados["dono"]?["nome"], quando: x.Quando, relatorio: x.Id
+        )))
         .GroupBy(v => v.id).Select(g => (object)g.First()).Take(10).ToList();
 
     /// <summary>
@@ -129,10 +122,25 @@ public static class VisaoFerraria
         return res;
     }
 
-    private static object Exemplo(Mundo m, string titulo, string tropas, string modo, (string nome, double v)[] partes, double soma) => new
-    {
+    private static object Exemplo(Mundo m, string titulo, string tropas, string modo, (string nome, double v)[] partes, double soma) => new FerrariaExemploJson(
         titulo, tropas, modo,
-        partes = partes.Where(p => p.v > 1e-9).Select(p => new { p.nome, v = Math.Round(p.v, 4) }).ToList(),
-        soma = Math.Round(soma, 4), total = Math.Round(Math.Min(m.P.TetoBonus, soma), 4), noTeto = soma > m.P.TetoBonus,
-    };
+        partes: partes.Where(p => p.v > 1e-9).Select(p => new FerrariaExemploPartesJson(p.nome, v: Math.Round(p.v, 4))).ToList(),
+        soma: Math.Round(soma, 4), total: Math.Round(Math.Min(m.P.TetoBonus, soma), 4), noTeto: soma > m.P.TetoBonus
+    );
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record FerrariaReqsJson(string texto, bool ok);
+public sealed record FerrariaErasJson(string id, string Nome, string Libera, Dictionary<string, double> custo, double tempo, bool feita, long? quando, bool emFila, object? req, string? bloqueio);
+public sealed record FerrariaFamiliasJson(string id, List<string> unidades, List<FerrariaFamiliasLinhasJson> linhas);
+public sealed record FerrariaFamiliasLinhasJson(string id, string efeito, int nivel, int naFila, double bonus, FerrariaFamiliasLinhasProximoJson? proximo);
+public sealed record FerrariaFamiliasLinhasProximoJson(int nivel, Dictionary<string, double> custo, double tempo, object req, string? bloqueio);
+public sealed record FerrariaMontarJson(long agora, FerrariaMontarFerrariaJson? ferraria, int nivelFerraria, int nivelQuartel, string era, List<object> fila, int vagas, List<FerrariaErasJson> eras, List<FerrariaFamiliasJson> familias, double bonusNivel, int niveisMax, FerrariaMontarLendarioJson lendario, double teto, List<object> exemplos);
+public sealed record FerrariaMontarFerrariaJson(long Id, string Nome, int Nivel, int Hex);
+public sealed record FerrariaMontarLendarioJson(Dictionary<string, double> custo, double tempo, double bonus, int tropas, object req, string? bloqueio, int forjados, int porReino, bool emFila, double minerio, List<FerrariaMontarLendarioJazidasJson> jazidas, List<object> meus, List<object> vistos);
+public sealed record FerrariaMontarLendarioJazidasJson(long Id, int Hex, double restante);
+public sealed record FerrariaOndeJson(string tipo, long id, string nome, int hex, int tropas, double fator);
+public sealed record FerrariaMeusJson(long Id, string Nome, string Tipo, bool Levar, bool capturado, object? onde);
+public sealed record FerrariaVistosJson(long id, string? nome, string? tipo, string? local, string? dono, long quando, long relatorio);
+public sealed record FerrariaExemploJson(string titulo, string tropas, string modo, List<FerrariaExemploPartesJson> partes, double soma, double total, bool noTeto);
+public sealed record FerrariaExemploPartesJson(string nome, double v);

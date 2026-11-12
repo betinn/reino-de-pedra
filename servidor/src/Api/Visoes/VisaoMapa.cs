@@ -35,7 +35,7 @@ public static class VisaoMapa
         {
             if (l.ReinoId == r.Id)
             {
-                objetos.Add(new { tipo = "local", id = l.Id, hex = l.Hex, local = l.Tipo.Chave(), ocupa = Jogo.Mapa.Pegada.DoLocal(m, l), nivel = (int?)l.Nivel, nome = l.Nome, dono = "meu", ruina = l.Ruina });
+                objetos.Add(new MapaMontarJson(tipo: "local", id: l.Id, hex: l.Hex, local: l.Tipo.Chave(), ocupa: Jogo.Mapa.Pegada.DoLocal(m, l), nivel: (int?)l.Nivel, nome: l.Nome, dono: "meu", ruina: l.Ruina));
                 continue;
             }
             var o = RegraPublica.Local(m, l, rel);
@@ -52,7 +52,7 @@ public static class VisaoMapa
         }
         foreach (var j in m.Jazidas)
             if (j.DescobertaPor.Contains(r.Id))
-                objetos.Add(new { tipo = "jazida", id = j.Id, hex = j.Hex, recurso = j.Recurso, restante = Math.Round(j.Restante / j.Inicial, 3) });
+                objetos.Add(new MapaMontar2Json(tipo: "jazida", id: j.Id, hex: j.Hex, recurso: j.Recurso, restante: Math.Round(j.Restante / j.Inicial, 3)));
         foreach (var ru in m.Ruinas)
         {
             // onde fica é público; se ainda guarda a relíquia, só para quem a viu (agora, ou como estava da última vez)
@@ -62,17 +62,16 @@ public static class VisaoMapa
         }
         foreach (var f in Extras) objetos.AddRange(f(m, r, vis));
         var vias = m.Vias;
-        return new
-        {
-            cols = g.Cols, lins = g.Lins, agora, terreno = m.Mapa.Compacto(), idade,
-            rotas = vias.Rotas, pontes = vias.Pontes,
-            reinos = m.Reinos.Where(x => x.Ativo).ToDictionary(x => x.Id.ToString(), x => Espionagem.Identidade(x)),
-            aliados = m.Reinos.Where(x => x.Ativo && Aliado(m, r, x.Id)).Select(x => x.Id).ToList(),
-            objetos, reliquiaTipos = VisaoValiosos.Tipos(m),   // o que uma ruína antiga pode render (a folha mostra antes de escavar)
+        return new MapaMontar3Json(
+            cols: g.Cols, lins: g.Lins, agora, terreno: m.Mapa.Compacto(), idade,
+            rotas: vias.Rotas, pontes: vias.Pontes,
+            reinos: m.Reinos.Where(x => x.Ativo).ToDictionary(x => x.Id.ToString(), x => Espionagem.Identidade(x)),
+            aliados: m.Reinos.Where(x => x.Ativo && Aliado(m, r, x.Id)).Select(x => x.Id).ToList(),
+            objetos, reliquiaTipos: VisaoValiosos.Tipos(m),   // o que uma ruína antiga pode render (a folha mostra antes de escavar)
             // último reconhecimento de cada local alheio (id do local → estimativa), congelado no instante em que foi feito
-            reconhecidos = r.LocaisReconhecidos.Where(kv => m.Locais.Obter(kv.Key) != null).ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
-            pessoas = Pessoas(m, r), pessoasOutras = PessoasOutras(m, r, vis),
-        };
+            reconhecidos: r.LocaisReconhecidos.Where(kv => m.Locais.Obter(kv.Key) != null).ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+            pessoas: Pessoas(m, r), pessoasOutras: PessoasOutras(m, r, vis)
+        );
     }
 
     /// <summary>Como um dono aparece para este reino: "meu", "aliado", "outro" ou "livre" (sem dono).</summary>
@@ -84,13 +83,12 @@ public static class VisaoMapa
     /// a marcha leva <c>pessoaIds</c>). A Vista desenha cada uma; a folha vem de GET /pessoas/{id}.
     /// </summary>
     public static List<object> Pessoas(Mundo m, Reino r) =>
-        m.PessoasDe(r.Id).OrderBy(p => p.Id).Select(p => (object)new
-        {
-            id = p.Id, nome = p.Nome, feminina = p.Feminina, oficio = p.Oficio, estado = p.Estado, localId = p.LocalId, grupoId = p.GrupoId,
-            marcas = Math.Round(p.Marcas, 2),
-            vida = Math.Round(ReinoDePedra.Jogo.Pessoas.Vidas.Atual(m, p), 1), vidaMax = ReinoDePedra.Jogo.Pessoas.Vidas.Max(m, p), vidaH = Math.Round(ReinoDePedra.Jogo.Pessoas.Vidas.PorHora(m, p), 2),
-            hex = p.GrupoId is long gid && gid > 0 ? (int?)null : p.LocalId is long lid && m.Locais.Obter(lid) is { } l ? l.Hex : (int?)null,
-        }).ToList();
+        m.PessoasDe(r.Id).OrderBy(p => p.Id).Select(p => (object)new MapaPessoasJson(
+            id: p.Id, nome: p.Nome, feminina: p.Feminina, oficio: p.Oficio, estado: p.Estado, localId: p.LocalId, grupoId: p.GrupoId,
+            marcas: Math.Round(p.Marcas, 2),
+            vida: Math.Round(ReinoDePedra.Jogo.Pessoas.Vidas.Atual(m, p), 1), vidaMax: ReinoDePedra.Jogo.Pessoas.Vidas.Max(m, p), vidaH: Math.Round(ReinoDePedra.Jogo.Pessoas.Vidas.PorHora(m, p), 2),
+            hex: p.GrupoId is long gid && gid > 0 ? (int?)null : p.LocalId is long lid && m.Locais.Obter(lid) is { } l ? l.Hex : (int?)null
+        )).ToList();
 
     /// <summary>Pessoas de outros reinos nos locais à vista agora, para a Vista desenhar: contagens arredondadas (o número exato é segredo), sem nome.</summary>
     public static List<object> PessoasOutras(Mundo m, Reino r, HashSet<int> vis)
@@ -101,7 +99,7 @@ public static class VisaoMapa
             if (l.ReinoId == r.Id || l.ReinoId == 0 || !vis.Contains(l.Hex)) continue;
             var civis = Jogo.Combate.Avistamentos.Arredondado(m, PS.Presentes(m, l).Count());
             var soldados = Jogo.Combate.Avistamentos.Arredondado(m, PS.Guarnicao(m, l).Count());
-            if (civis + soldados > 0) lista.Add(new { hex = l.Hex, civis, soldados });
+            if (civis + soldados > 0) lista.Add(new MapaPessoasOutrasJson(hex: l.Hex, civis, soldados));
         }
         return lista;
     }
@@ -127,19 +125,18 @@ public static class VisaoMapa
             Caravana c => c.Fase == Caravana.Buscar ? c.OrigemLocalId : c.Fase == Caravana.Levar ? c.DestinoLocalId : c.BaseLocalId,
             _ => null,
         };
-        return new
-        {
-            tipo = "marcha", id = x.Id, marcha = x.Tipo, reinoId = r.Id, dono = "meu", hex = x.HexEm(agora), caminho = x.Caminho, tempos = x.Tempos,
-            parado, chegada = parado ? (long?)null : x.Chegada, x.Retornando,
-            estado = VisaoTropas.Estado(m, x, trabalho), trabalho,
-            ordem = x switch { Exercito e => e.Ordem, Explorador ex => ex.Ordem, Caravana c => c.Fase, _ => null },
-            carga = x.Carga.Arredondado(), cargaMax, cargaUsada = Math.Floor(x.Carga.Total),
-            tropas = x.Tropas, resumo = GT.Partes(m, x.Tropas), pessoas = x is Carregadores cg ? cg.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento dp ? dp.PessoaIds.Count : (int?)null,
-            pessoaIds = x.PessoaIds,
-            alvo = VisaoTropas.NomeLocal(m, r, alvoId), destinoNome = VisaoTropas.NomeLocal(m, r, m.LocalNoHex(x.Destino)?.Id),
-            reliquias = x.Reliquias.Count,
-            recurso = x is Exercito ec && ec.Ordem is Coletas.OrdemColetarId or Coletas.OrdemEntregarId ? ec.Dados["recurso"]?.GetValue<string>() : null,   // coleta: madeira (machado) ou pedra (picareta)
-        };
+        return new MapaMarchaPropriaJson(
+            tipo: "marcha", id: x.Id, marcha: x.Tipo, reinoId: r.Id, dono: "meu", hex: x.HexEm(agora), caminho: x.Caminho, tempos: x.Tempos,
+            parado, chegada: parado ? (long?)null : x.Chegada, x.Retornando,
+            estado: VisaoTropas.Estado(m, x, trabalho), trabalho,
+            ordem: x switch { Exercito e => e.Ordem, Explorador ex => ex.Ordem, Caravana c => c.Fase, _ => null },
+            carga: x.Carga.Arredondado(), cargaMax, cargaUsada: Math.Floor(x.Carga.Total),
+            tropas: x.Tropas, resumo: GT.Partes(m, x.Tropas), pessoas: x is Carregadores cg ? cg.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento dp ? dp.PessoaIds.Count : (int?)null,
+            pessoaIds: x.PessoaIds,
+            alvo: VisaoTropas.NomeLocal(m, r, alvoId), destinoNome: VisaoTropas.NomeLocal(m, r, m.LocalNoHex(x.Destino)?.Id),
+            reliquias: x.Reliquias.Count,
+            recurso: x is Exercito ec && ec.Ordem is Coletas.OrdemColetarId or Coletas.OrdemEntregarId ? ec.Dados["recurso"]?.GetValue<string>() : null   // coleta: madeira (machado) ou pedra (picareta)
+        );
     }
 
     /// <summary>
@@ -153,3 +150,11 @@ public static class VisaoMapa
 
     public static string Aproximado(Mundo m, int n) => Jogo.Combate.Avistamentos.Aproximado(m, n);
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record MapaMontarJson(string tipo, long id, int hex, string local, IEnumerable<int> ocupa, int? nivel, string nome, string dono, bool ruina);
+public sealed record MapaMontar2Json(string tipo, long id, int hex, string recurso, double restante);
+public sealed record MapaMontar3Json(int cols, int lins, long agora, string terreno, int[] idade, HashSet<int> rotas, HashSet<int> pontes, Dictionary<string, System.Text.Json.Nodes.JsonObject> reinos, List<long> aliados, List<object> objetos, object reliquiaTipos, Dictionary<string, System.Text.Json.Nodes.JsonObject> reconhecidos, List<object> pessoas, List<object> pessoasOutras);
+public sealed record MapaPessoasJson(long id, string nome, bool feminina, string oficio, string estado, long? localId, long? grupoId, double marcas, double vida, double vidaMax, double vidaH, int? hex);
+public sealed record MapaPessoasOutrasJson(int hex, int civis, int soldados);
+public sealed record MapaMarchaPropriaJson(string tipo, long id, string marcha, long reinoId, string dono, int hex, List<int> caminho, List<long> tempos, bool parado, long? chegada, bool Retornando, string estado, object? trabalho, string? ordem, Dictionary<string, long> carga, double cargaMax, double cargaUsada, Dictionary<string, int> tropas, string resumo, int? pessoas, List<long> pessoaIds, string? alvo, string? destinoNome, int reliquias, string? recurso);

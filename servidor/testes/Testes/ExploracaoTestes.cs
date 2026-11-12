@@ -245,7 +245,7 @@ public class ExploracaoTestes
         r.ExploradoresLivres["cavalo"] = 1;
         var a = HexA(t, c.Hex, 3); var b = HexA(t, c.Hex, 6);
         var pontos = Enumerable.Range(0, 12).Select(i => i % 2 == 0 ? a : b).ToList();
-        var previa = System.Text.Json.JsonSerializer.SerializeToNode(VisaoExploracao.Previa(t.M, r, c.Hex, b, "cavalo", new Dictionary<string, int>(), pontos))!;
+        var previa = JsonTeste.No(VisaoExploracao.Previa(t.M, r, c.Hex, b, "cavalo", new Dictionary<string, int>(), pontos))!;
         var caminho = previa["curta"]!["caminho"]!.AsArray().Select(h => (int)h!).ToList();
         Assert.Equal(c.Hex, caminho[0]);
         Assert.Equal(b, caminho[^1]);

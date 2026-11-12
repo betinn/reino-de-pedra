@@ -71,6 +71,46 @@ O que cresceu: a sessão de IA (A* e Dijkstra numa grade 9× maior, e os alcance
 
 Com tudo junto (mapa de 312 × 240, vida e coleta da [0028](decisoes/0028-vida-e-coleta.md)), 10 dias, 30 reinos (25 de IA), testes em Debug: 5 665 eventos por dia de jogo, 11,1 s de CPU por dia (1 959 µs por evento), sessão de IA de 63 ms, 0,0128% de um núcleo, pico de 64 MB de memória gerenciada, 7 952 documentos e banco de 5,6 MB.
 
+## Native AOT
+
+O servidor publicado passou de JIT (self-contained, arquivo único) para Native AOT, com JSON gerado na compilação e o GC para pouca memória embutido ([0040](decisoes/0040-servidor-native-aot.md)). As medidas são do processo publicado em Release, servindo de verdade, com o save do teste de carga: 30 reinos (25 de IA), 10 dias de jogo, 8 486 documentos e 6 MB de banco. As medidas foram feitas no Windows, na máquina de desenvolvimento (x86-64 de 2,1 GHz), porque não há WSL nem Docker nela; no Linux os números absolutos mudam, mas a comparação vale.
+
+Como repetir: `REINO_CARGA_BANCO=<arquivo>` faz o teste de carga guardar uma cópia do banco. Suba o binário com `REINO_DADOS` numa pasta com essa cópia como `reino.db`. A memória é amostrada a cada 5 s: a privada e o working set, o que o sistema conta para o processo. Com `REINO_ACELERACAO` diferente de 1, o relógio retoma do instante do save. Com 1 exato, o relógio é o de hoje e o servidor primeiro corre o atraso desde a data do save (meses de jogo), por isso o ritmo real foi medido com 1,0001.
+
+**Antes e depois**, com o jogo 720× mais rápido, por 8 minutos:
+
+| | JIT (antes) | AOT, GC padrão | AOT como publicado (`ConserveMemory` 7, teto 256 MB) |
+|---|---|---|---|
+| Partida até a primeira resposta | 1,53 s | 0,56 s | 0,57 s |
+| Memória privada, média / máxima | 100 / 114 MB | 80 / 91 MB | 62 / 94 MB |
+| Working set, média / máximo | 166 / 182 MB | 100 / 111 MB | 82 / 111 MB |
+| Working set, pico | 195 MB | 165 MB | 121 MB |
+| CPU (fração de um núcleo) | 74% | 79% | 100% (saturado) |
+| Executável | 105 MB | 34 MB | 34 MB |
+
+**No ritmo real** (1,0001×, 3 minutos) e a 60× (5 minutos):
+
+| | JIT | AOT, GC padrão | AOT, `ConserveMemory` 7 | AOT, `ConserveMemory` 5 |
+|---|---|---|---|---|
+| 1×: privada, média | 92 MB | 73 MB | 56 MB | 69 MB |
+| 1×: working set, média / pico | 157 / 187 MB | 93 / 165 MB | 76 / 120 MB | 89 / 137 MB |
+| 1×: CPU | 61% | 83% | 82% | 89% |
+| 60×: privada, média | 93 MB | 78 MB | 60 MB | — |
+| 60×: working set, média / pico | 158 / 187 MB | 98 / 166 MB | 81 / 121 MB | — |
+| 60×: CPU | 42% | 50% | 76% | — |
+
+Outras variantes do binário publicado, a 720× por 4 minutos:
+
+- **Teto de 128 MB** (`DOTNET_GCHeapHardLimit=8000000`): o mundo cheio rodou sem erro e com a mesma memória (privada média 67 MB). O teto limita, não economiza.
+- **Gen0 de 4 MB** (`DOTNET_GCgen0size=400000`): a mesma média (62 MB de privada) e um pico de working set menor (107 MB contra 121 MB). Fica como ajuste opcional.
+
+O que os números dizem:
+
+- **Memória.** O AOT tira cerca de 20 MB de memória privada e 60 MB de working set. O JIT, os metadados de reflexão e o código compilado em tempo de execução saem do processo. O `ConserveMemory` 7 tira mais 15 a 20 MB de privada e corta o pico da carga do save, de 165 para 120 MB. No ritmo real, o servidor como publicado fica em 56 MB de privada e 76 MB de working set, contra 92 e 157 MB do JIT.
+- **Partida.** Cai de 1,5 s para 0,55 s, quase só a leitura do save.
+- **CPU.** O AOT gasta mais que o JIT: de 7% a mais (720×) a 35% a mais (1×). Ele perde a otimização guiada por perfil do JIT. O `ConserveMemory` 7 compacta mais vezes e, sob carga, soma CPU: a 60×, de 50% para 76%. No ritmo real a diferença ficou dentro do ruído.
+- **A CPU não é desprezível com o mundo cheio.** Com este save, o processo usa de 0,4 a 1 núcleo em qualquer ritmo de jogo, no JIT e no AOT. Uma amostragem do processo JIT (`dotnet-trace`, 25 s) mostra a thread do motor ocupada o tempo todo em `Filas.Avaliar → Filas.Reservar → Logistica.EnviarDosProximos` e nas sessões de IA (`Governo.Decidir`, `Caminhos.Calcular`). Isso não depende do AOT e vale investigar à parte. O teste de carga, que avança o relógio de evento em evento, mede 5 s de CPU por dia de jogo; a diferença ainda não tem explicação. Um efeito visível: logo depois da subida (a 60×), os primeiros pedidos do feed esperaram de 4 a 13 s na fila do motor.
+
 ## Cliente: a Vista com muita gente
 
 **Medidor na tela.** Ctrl + Shift + F liga e desliga, no canto de cima à esquerda, a taxa de quadros que o monitor está mostrando de verdade, o alvo (30 ou 60), o custo médio do quadro e quantas figuras há nele. É a forma de conferir o desempenho na máquina de quem joga: num painel de navegador oculto ou coberto o navegador segura os quadros (perto de 1 por segundo), e a medida de lá não vale.

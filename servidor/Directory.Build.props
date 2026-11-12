@@ -8,5 +8,8 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
     <Deterministic>true</Deterministic>
+    <!-- System.Text.Json sem reflection: só metadados gerados (JsonJogo, JsonApi), como no Native AOT. Vale também para os testes:
+         um tipo que falte nos contextos quebra o teste, não a produção. -->
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 </Project>

@@ -2,20 +2,25 @@
 
 Passo a passo genérico para um servidor Linux pequeno. Nenhum dado de máquina, hospedagem ou operação real aqui: só o que vale para qualquer instalação.
 
-## 1. Gerar o pacote (na sua máquina)
+## 1. Gerar o pacote (numa máquina Linux)
 
 ```bash
 scripts/publicar.sh
 ```
 
-Gera `publicar/reino-de-pedra.tar.gz`: executável `ReinoDePedra` (não precisa instalar .NET) com a biblioteca nativa do SQLite ao lado (nada é extraído na primeira execução, então o serviço não precisa de pasta pessoal), `web/`, `balanceamento/config.json` e `.env.exemplo`.
+Gera `publicar/reino-de-pedra.tar.gz`: executável nativo `ReinoDePedra` (Native AOT: não precisa instalar .NET) com a biblioteca nativa do SQLite ao lado (nada é extraído na primeira execução, então o serviço não precisa de pasta pessoal), `web/`, `balanceamento/config.json` e `.env.exemplo`.
+
+O Native AOT compila para o sistema em que roda: o pacote Linux sai de uma máquina Linux x64 (ou WSL, ou contêiner) com o SDK do .NET 10, `clang` e `zlib` (no Debian e no Ubuntu: `apt install clang zlib1g-dev`). No Windows o mesmo `dotnet publish` gera um `.exe` e pede o linker e as bibliotecas do Visual Studio (carga de trabalho "Desenvolvimento para desktop com C++"). A decisão está em [0040](decisoes/0040-servidor-native-aot.md).
 
 ## 2. Copiar e instalar (no servidor)
 
 1. Crie um usuário de sistema sem login (pode ser sem pasta pessoal) para o jogo e uma pasta para o programa e outra para os dados (fora do pacote, para sobreviver a atualizações). O usuário precisa ler a pasta do programa e escrever na de dados.
 2. Copie o `.tar.gz` para o servidor e extraia na pasta do programa.
 3. Configure as variáveis de ambiente (veja `.env.exemplo`, que vai no pacote): `REINO_DADOS` (pasta de dados), `REINO_URLS` (ex.: `http://127.0.0.1:5080` atrás de um proxy), `REINO_PROXY=1` se houver proxy reverso com HTTPS. Servindo direto, `REINO_CONEXOES_IP` limita as conexões abertas por IP (padrão 100); atrás de proxy esse limite fica desligado e deve ser posto no proxy.
-4. Variáveis recomendadas para pouca memória (ajuste ao servidor): `DOTNET_GCHeapHardLimit=0x10000000` (256 MB de teto do heap), `DOTNET_TieredPGO=0`, `DOTNET_gcConcurrent=0`.
+4. Memória: o binário já vem com o GC para pouca memória (GC de estação, sem modo concorrente, `ConserveMemory` 7 e teto de 256 MB para o heap gerenciado); o log da subida mostra o que está em vigor. Para ajustar sem recompilar, use as variáveis do .NET. Os valores são em hexadecimal **sem** `0x`: o binário nativo ignora a variável escrita com `0x`.
+   - `DOTNET_GCHeapHardLimit=10000000`: teto do heap gerenciado (aqui 256 MB). Não ponha abaixo de `8000000` (128 MB): o pico medido com o mundo cheio é 64 MB, e já se viu 116 MB.
+   - `DOTNET_GCConserveMemory=7`: de 0 a 9, quanto o GC se esforça para devolver memória (0 desliga).
+   - `DOTNET_gcConcurrent=0` e `DOTNET_gcServer=0` já são o padrão embutido. `DOTNET_TieredPGO` não faz efeito: o binário nativo não tem JIT.
 
 ## 3. Serviço (systemd, exemplo)
 

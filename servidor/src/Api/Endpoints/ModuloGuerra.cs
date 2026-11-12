@@ -25,13 +25,13 @@ public sealed class ModuloGuerra : IModuloApi
         conta.MapGet("/feridos", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoGuerra.Feridos(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoGuerra.Feridos(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/feridos/curar", async (PedidoCurar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Jogo.Combate.Feridos.Curar(m, r, p.Qtd));
@@ -41,24 +41,24 @@ public sealed class ModuloGuerra : IModuloApi
         conta.MapPost("/feridos/sacrificar", async (PedidoSacrificar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var nomes = Jogo.Combate.Feridos.Sacrificar(m, r, p.LoteId);
-                return new { mortos = nomes.Count, nomes };
+                return new PostFeridosSacrificarJson(mortos: nomes.Count, nomes);
             }), Json.Web);
         });
 
         conta.MapPost("/interceptacao/previa", async (PedidoInterceptar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoGuerra.PreviaInterceptar(m, Sessao.ReinoDa(m, id), p)), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoGuerra.PreviaInterceptar(m, Sessao.ReinoDa(m, id), p)), Json.Web);
         });
 
         conta.MapPost("/interceptacao", async (PedidoInterceptar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var alvo = Interceptacoes.Alvo(m, r, p.MarchaId);
@@ -85,13 +85,13 @@ public sealed class ModuloGuerra : IModuloApi
         conta.MapGet("/ataques/modelos", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoGuerra.Modelos(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoGuerra.Modelos(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/ataques/modelos", async (PedidoModelo p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var objs = (p.Objetivos ?? []).Select(o => new Objetivo(o.K ?? "", o.R, o.Q ?? 0));
@@ -109,7 +109,7 @@ public sealed class ModuloGuerra : IModuloApi
         conta.MapGet("/exilio", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoGuerra.Queda(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoGuerra.Queda(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/exilio/visto", async (HttpContext ctx, Motor motor) =>
@@ -133,18 +133,16 @@ public static class ExtrasGuerra
     {
         VisaoReino.Extras.Add((mm, r, d) =>
         {
-            d["feridos"] = new
-            {
-                total = Jogo.Combate.Feridos.Total(r), emCura = Jogo.Combate.Feridos.EmCura(r),
-                morreEm = r.Feridos.Count > 0 ? r.Feridos.Min(l => l.MorreEm) : (long?)null,
-            };
-            d["veterania"] = new
-            {
-                marcas = mm.P.Veterania.Marcas, bonus = mm.P.Veterania.Bonus,
-                locais = mm.LocaisDe(r.Id).ToDictionary(l => l.Id.ToString(), l => Math.Round(Veterania.DoLocal(mm, l), 2)),
-                exercitos = Exercitos.De(mm, r.Id).ToDictionary(e => e.Id.ToString(), e => Math.Round(Veterania.DaMarcha(mm, e), 2)),
-            };
-            d["queda"] = r.UltimaQueda is { Vista: false } q ? new { q.Exilio, q.Quando } : null;
+            d["feridos"] = new ExtrasGuerraFeridosJson(
+                total: Jogo.Combate.Feridos.Total(r), emCura: Jogo.Combate.Feridos.EmCura(r),
+                morreEm: r.Feridos.Count > 0 ? r.Feridos.Min(l => l.MorreEm) : (long?)null
+            );
+            d["veterania"] = new ExtrasGuerraVeteraniaJson(
+                marcas: mm.P.Veterania.Marcas, bonus: mm.P.Veterania.Bonus,
+                locais: mm.LocaisDe(r.Id).ToDictionary(l => l.Id.ToString(), l => Math.Round(Veterania.DoLocal(mm, l), 2)),
+                exercitos: Exercitos.De(mm, r.Id).ToDictionary(e => e.Id.ToString(), e => Math.Round(Veterania.DaMarcha(mm, e), 2))
+            );
+            d["queda"] = r.UltimaQueda is { Vista: false } q ? new ExtrasGuerraQuedaJson(q.Exilio, q.Quando) : null;
             d["escudoExilio"] = r.UltimaQueda is { Exilio: true } qe && qe.EscudoAte == r.EscudoAte && r.EscudoAte > mm.Agora;
             d["ultimoAtaque"] = r.UltimoAtaque is { } u ? VisaoGuerra.ResumoModelo(mm, r, u) : null;
         });
@@ -158,15 +156,14 @@ public static class VisaoGuerra
     {
         Economia.Atualizar(m, r);
         var p = m.P.Feridos;
-        return new
-        {
-            agora = m.Agora,
-            lotes = r.Feridos.OrderBy(l => l.MorreEm).Select(l => new { l.Id, unidades = l.Unidades, l.Origem, l.Desde, l.MorreEm, total = GT.Total(l.Unidades) }),
-            total = Jogo.Combate.Feridos.Total(r), emCura = Jogo.Combate.Feridos.EmCura(r),
-            cura = r.Filas.TryGetValue(Jogo.Combate.Feridos.Fila, out var f) ? f.Itens.Select(i => VisaoReino.Item(m, r, i)).ToList() : [],
-            ervas = Math.Floor(Economia.TotalGuardado(m, r).Qtd("ervas")), porFerido = p.Ervas, curaSeg = p.CuraH * 3600, esperaH = p.EsperaH, frac = p.Frac,
-            podem = Jogo.Combate.Feridos.Podem(m, r), semFila = Jogo.Combate.Feridos.SemFila(r),
-        };
+        return new GuerraFeridosJson(
+            agora: m.Agora,
+            lotes: r.Feridos.OrderBy(l => l.MorreEm).Select(l => new GuerraFeridosLotesJson(l.Id, unidades: l.Unidades, l.Origem, l.Desde, l.MorreEm, total: GT.Total(l.Unidades))),
+            total: Jogo.Combate.Feridos.Total(r), emCura: Jogo.Combate.Feridos.EmCura(r),
+            cura: r.Filas.TryGetValue(Jogo.Combate.Feridos.Fila, out var f) ? f.Itens.Select(i => VisaoReino.Item(m, r, i)).ToList() : [],
+            ervas: Math.Floor(Economia.TotalGuardado(m, r).Qtd("ervas")), porFerido: p.Ervas, curaSeg: p.CuraH * 3600, esperaH: p.EsperaH, frac: p.Frac,
+            podem: Jogo.Combate.Feridos.Podem(m, r), semFila: Jogo.Combate.Feridos.SemFila(r)
+        );
     }
 
     public static object PreviaInterceptar(Mundo m, Reino r, PedidoInterceptar p)
@@ -186,24 +183,21 @@ public static class VisaoGuerra
         var enc = grupo.Count > 0 && bloqueio == null ? Interceptacoes.Calcular(m, de, grupo, alvo) : null;
         var agora = m.Agora;
         var passo = ReinoDePedra.Jogo.Publico.RegraPublica.Passo(alvo, agora).caminho;
-        return new
-        {
+        return new GuerraPreviaInterceptarJson(
             agora,
-            alvo = new
-            {
-                id = alvo.Id, marcha = alvo.Tipo, nome = Campo.NomeMarcha(alvo.Tipo), hex = alvo.HexEm(agora), reinoId = alvo.ReinoId,
-                reino = m.Reinos.Obter(alvo.ReinoId) is { } dono ? Espionagem.Identidade(dono) : null,
-                rumo = passo.Count > 1 ? m.G.Direcao(passo[0], passo[1]) : null,
-            },
-            bloqueio, tropas = grupo, total = GT.Total(grupo), vel = GT.Velocidade(m, grupo), forca = Math.Round(m.F.ValorAtaque(grupo, new Dictionary<string, int>(), 0)),
-            carga = GT.Carga(m, grupo), folgaSeg = m.P.Guerra.Interceptacao.FolgaSeg,
-            encontro = enc == null ? null : new
-            {
-                hex = enc.Hex, c = m.G.C(enc.Hex), l = m.G.L(enc.Hex), nos = enc.Nos, eles = enc.Eles, folga = enc.Folga,
-                min = Math.Round(enc.Rota.TotalMin, 1), hexes = enc.Rota.Hexes.Count, caminho = enc.Rota.Hexes,
-            },
-            taticas = m.P.Combate.Taticas, taticaPadrao = m.P.Combate.TaticaPadrao,
-        };
+            alvo: new GuerraPreviaInterceptarAlvoJson(
+                id: alvo.Id, marcha: alvo.Tipo, nome: Campo.NomeMarcha(alvo.Tipo), hex: alvo.HexEm(agora), reinoId: alvo.ReinoId,
+                reino: m.Reinos.Obter(alvo.ReinoId) is { } dono ? Espionagem.Identidade(dono) : null,
+                rumo: passo.Count > 1 ? m.G.Direcao(passo[0], passo[1]) : null
+            ),
+            bloqueio, tropas: grupo, total: GT.Total(grupo), vel: GT.Velocidade(m, grupo), forca: Math.Round(m.F.ValorAtaque(grupo, new Dictionary<string, int>(), 0)),
+            carga: GT.Carga(m, grupo), folgaSeg: m.P.Guerra.Interceptacao.FolgaSeg,
+            encontro: enc == null ? null : new GuerraPreviaInterceptarEncontroJson(
+                hex: enc.Hex, c: m.G.C(enc.Hex), l: m.G.L(enc.Hex), nos: enc.Nos, eles: enc.Eles, folga: enc.Folga,
+                min: Math.Round(enc.Rota.TotalMin, 1), hexes: enc.Rota.Hexes.Count, caminho: enc.Rota.Hexes
+            ),
+            taticas: m.P.Combate.Taticas, taticaPadrao: m.P.Combate.TaticaPadrao
+        );
     }
 
     public static object ResumoModelo(Mundo m, Reino r, ModeloAtaque md)
@@ -216,25 +210,37 @@ public static class VisaoGuerra
         return j;
     }
 
-    public static object Modelos(Mundo m, Reino r) => new
-    {
-        ultimo = r.UltimoAtaque is { } u ? ResumoModelo(m, r, u) : null,
-        modelos = r.ModelosAtaque.Select(md => ResumoModelo(m, r, md)).ToList(),
-        max = m.P.Guerra.ModelosMax, nomeMax = m.P.Guerra.ModeloNome,
-    };
+    public static object Modelos(Mundo m, Reino r) => new GuerraModelosJson(
+        ultimo: r.UltimoAtaque is { } u ? ResumoModelo(m, r, u) : null,
+        modelos: r.ModelosAtaque.Select(md => ResumoModelo(m, r, md)).ToList(),
+        max: m.P.Guerra.ModelosMax, nomeMax: m.P.Guerra.ModeloNome
+    );
 
     public static object? Queda(Mundo m, Reino r)
     {
         var q = r.UltimaQueda;
         if (q == null) return null;
         var atk = q.AtacanteVisivel != 0 ? RelatoriosCombate.Atacante(m, q.AtacanteVisivel) : null;
-        return new
-        {
+        return new GuerraQuedaJson(
             q.Quando, q.Exilio, q.CasteloAntigo, q.NivelAntigo, q.NovoCastelo, q.NivelNovo, q.HexNovo, q.HexAntigo,
-            atacante = q.Atacante, atacanteReino = atk, recursosPerdidos = q.RecursosPerdidos.Where(kv => kv.Value >= 1).ToDictionary(kv => kv.Key, kv => Math.Floor(kv.Value)),
+            atacante: q.Atacante, atacanteReino: atk, recursosPerdidos: q.RecursosPerdidos.Where(kv => kv.Value >= 1).ToDictionary(kv => kv.Key, kv => Math.Floor(kv.Value)),
             q.PopulacaoPerdida, q.ReliquiasLevadas, q.ReliquiasMantidas, q.Kit, q.KitTropas, q.EscudoAte, q.RelatorioId, q.Vista,
-            escudoH = m.P.EscudoExilioH, dia = (int)((q.Quando - m.Estado.InicioTemporada) / T.Dia) + 1, temporada = m.Estado.NumeroTemporada,
-            regras = new { nivel = m.P.Queda.Nivel, recursos = m.P.Queda.Recursos, populacao = m.P.Queda.Populacao },
-        };
+            escudoH: m.P.EscudoExilioH, dia: (int)((q.Quando - m.Estado.InicioTemporada) / T.Dia) + 1, temporada: m.Estado.NumeroTemporada,
+            regras: new GuerraQuedaRegrasJson(nivel: m.P.Queda.Nivel, recursos: m.P.Queda.Recursos, populacao: m.P.Queda.Populacao)
+        );
     }
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PostFeridosSacrificarJson(int mortos, List<string> nomes);
+public sealed record ExtrasGuerraFeridosJson(int total, int emCura, long? morreEm);
+public sealed record ExtrasGuerraVeteraniaJson(int[] marcas, double[] bonus, Dictionary<string, double> locais, Dictionary<string, double> exercitos);
+public sealed record ExtrasGuerraQuedaJson(bool Exilio, long Quando);
+public sealed record GuerraFeridosJson(long agora, IEnumerable<GuerraFeridosLotesJson> lotes, int total, int emCura, List<object> cura, double ervas, double porFerido, double curaSeg, double esperaH, double frac, int podem, int semFila);
+public sealed record GuerraFeridosLotesJson(long Id, Dictionary<string, int> unidades, string Origem, long Desde, long MorreEm, int total);
+public sealed record GuerraPreviaInterceptarJson(long agora, GuerraPreviaInterceptarAlvoJson alvo, string? bloqueio, Dictionary<string, int> tropas, int total, string vel, double forca, double carga, double folgaSeg, GuerraPreviaInterceptarEncontroJson? encontro, Dictionary<string, double?> taticas, string taticaPadrao);
+public sealed record GuerraPreviaInterceptarAlvoJson(long id, string marcha, string nome, int hex, long reinoId, JsonObject? reino, string? rumo);
+public sealed record GuerraPreviaInterceptarEncontroJson(int hex, int c, int l, long nos, long eles, long folga, double min, int hexes, IReadOnlyList<int> caminho);
+public sealed record GuerraModelosJson(object? ultimo, List<object> modelos, int max, int nomeMax);
+public sealed record GuerraQuedaJson(long Quando, bool Exilio, string CasteloAntigo, int NivelAntigo, string NovoCastelo, int NivelNovo, int HexNovo, int HexAntigo, string atacante, JsonNode? atacanteReino, Dictionary<string, double> recursosPerdidos, double PopulacaoPerdida, List<string> ReliquiasLevadas, List<string> ReliquiasMantidas, Dictionary<string, double> Kit, Dictionary<string, int> KitTropas, long EscudoAte, long? RelatorioId, bool Vista, double escudoH, int dia, int temporada, GuerraQuedaRegrasJson regras);
+public sealed record GuerraQuedaRegrasJson(double nivel, double recursos, double populacao);

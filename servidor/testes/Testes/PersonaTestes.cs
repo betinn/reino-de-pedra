@@ -65,10 +65,10 @@ public class PersonaTestes
     [Fact]
     public void A_mesma_semente_da_a_mesma_pessoa_e_o_perfil_puxa_os_tracos()
     {
-        var a = JsonSerializer.Serialize(Personas.Gerar(1234, "saqueador", "medio"));
-        var b = JsonSerializer.Serialize(Personas.Gerar(1234, "saqueador", "medio"));
+        var a = JsonSerializer.Serialize(Personas.Gerar(1234, "saqueador", "medio"), JsonJogo.Default.Persona);
+        var b = JsonSerializer.Serialize(Personas.Gerar(1234, "saqueador", "medio"), JsonJogo.Default.Persona);
         Assert.Equal(a, b);
-        Assert.NotEqual(a, JsonSerializer.Serialize(Personas.Gerar(1235, "saqueador", "medio")));
+        Assert.NotEqual(a, JsonSerializer.Serialize(Personas.Gerar(1235, "saqueador", "medio"), JsonJogo.Default.Persona));
         // em média, o saqueador é mais agressivo que o defensivo, o comerciante mais ganancioso e sociável, o ativo mais atento
         double Media(string perfil, string hab, Func<Persona, double> f) => Enumerable.Range(1, 200).Average(i => f(Personas.Gerar((ulong)i * 7919, perfil, hab)));
         Assert.True(Media("saqueador", "medio", p => p.Agressividade) > Media("defensivo", "medio", p => p.Agressividade) + 0.3);
@@ -84,8 +84,8 @@ public class PersonaTestes
     {
         var p = Personas.Gerar(77, "comerciante", "ativo");
         p.Rancores[42] = 0.6; p.Afinidades[43] = 0.3; p.FalouEm["vizinho"] = 123;
-        var json = JsonSerializer.Serialize(p);
-        Assert.Equal(json, JsonSerializer.Serialize(JsonSerializer.Deserialize<Persona>(json)));
+        var json = JsonSerializer.Serialize(p, JsonJogo.Default.Persona);
+        Assert.Equal(json, JsonSerializer.Serialize(JsonSerializer.Deserialize(json, JsonJogo.Default.Persona), JsonJogo.Default.Persona));
 
         var dir = Path.Combine(Path.GetTempPath(), "rp-persona-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
@@ -94,13 +94,13 @@ public class PersonaTestes
             var t = MundoIA.Novo(criar: false);
             var r = Ocupacao.CriarUm(t.M)!;
             r.Persona!.Rancores[5] = 0.5; t.M.Sujar(r);
-            var antes = JsonSerializer.Serialize(r.Persona);
+            var antes = JsonSerializer.Serialize(r.Persona, JsonJogo.Default.Persona);
             var arq = Path.Combine(dir, "t.db");
             using (var db = new Banco(arq)) db.Salvar(t.M);
             using var db2 = new Banco(arq);
             var m2 = new Mundo(Balanceamento.Padrao, t.Relogio);
             db2.Carregar(m2);
-            Assert.Equal(antes, JsonSerializer.Serialize(m2.Reinos[r.Id].Persona));
+            Assert.Equal(antes, JsonSerializer.Serialize(m2.Reinos[r.Id].Persona, JsonJogo.Default.Persona));
         }
         finally { try { Directory.Delete(dir, true); } catch { /* arquivo ainda aberto no Windows */ } }
     }
@@ -110,10 +110,10 @@ public class PersonaTestes
     {
         var t = MundoIA.Novo(criar: false);
         var r = Ocupacao.CriarUm(t.M)!;
-        var primeira = JsonSerializer.Serialize(r.Persona);
+        var primeira = JsonSerializer.Serialize(r.Persona, JsonJogo.Default.Persona);
         r.Persona = null;   // como num mundo gravado antes desta regra
         SistemaIA.AoIniciar(t.M);
-        Assert.Equal(primeira, JsonSerializer.Serialize(r.Persona));
+        Assert.Equal(primeira, JsonSerializer.Serialize(r.Persona, JsonJogo.Default.Persona));
         // reino de jogador nunca tem persona
         var j = MundoIA.Jogador(t, 0);
         SistemaIA.AoIniciar(t.M);
@@ -129,8 +129,8 @@ public class PersonaTestes
         ia.Persona!.Governante = "Zzyzx Segredo"; ia.Persona.Historia = "Historia Zzyzx"; ia.Persona.Bordoes = ["bordao-zzyzx"];
         var tudo = string.Join("\n", new[]
         {
-            JsonSerializer.Serialize(VisaoMapa.Montar(t.M, j)), RegraPublica.Mundo(t.M).ToJsonString(), RegraPublica.Vivo(t.M).ToJsonString(),
-            JsonSerializer.Serialize(VisaoReino.Montar(t.M, j)), JsonSerializer.Serialize(VisaoSocial.Alianca(t.M, j)),
+            JsonTeste.Texto(VisaoMapa.Montar(t.M, j)), RegraPublica.Mundo(t.M).ToJsonString(), RegraPublica.Vivo(t.M).ToJsonString(),
+            JsonTeste.Texto(VisaoReino.Montar(t.M, j)), JsonTeste.Texto(VisaoSocial.Alianca(t.M, j)),
         });
         foreach (var proibido in new[] { "persona", "governante", "Zzyzx", "zzyzx", "temperamento", "arquetipo", "perfilIA", "habilidadeIA", "rancores", "disciplina", "assiduidade" })
             Assert.DoesNotContain(proibido, tudo, StringComparison.OrdinalIgnoreCase);

@@ -14,6 +14,9 @@
     <ProjectReference Include="../../src/Api/Api.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Amostras/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

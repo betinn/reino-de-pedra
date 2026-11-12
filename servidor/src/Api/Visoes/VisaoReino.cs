@@ -37,12 +37,11 @@ public static class VisaoReino
             ["moradias"] = Economia.Moradias(m, r),
             ["locais"] = locais, ["filas"] = filas,
             ["marchas"] = m.Marchas.Where(x => x.ReinoId == r.Id).Select(x => VisaoMarcha.Propria(m, x)).ToList(),
-            ["custos"] = new
-            {
-                moradia = m.F.Receita(m.F.CustoMoradia(n)), moradiaSeg = m.F.TempoMoradia(n), tetoPorMoradia = m.P.TetoPorMoradia,
-                novoLocal = m.F.CustoNovoLocal(f), novoLocalSeg = m.P.TempoNovoLocal,
-            },
-            ["fundaveis"] = Obras.Fundaveis.ToDictionary(kv => kv.Key, kv => new { tipo = kv.Value.tipo.Chave(), kv.Value.produz, terrenos = kv.Value.terrenos.Select(t => Jogo.Mapa.TerrenoExt.Chave(t)), ocupa = Jogo.Mapa.Pegada.Tamanho(m, kv.Value.tipo) }),
+            ["custos"] = new ReinoCustosJson(
+                moradia: m.F.Receita(m.F.CustoMoradia(n)), moradiaSeg: m.F.TempoMoradia(n), tetoPorMoradia: m.P.TetoPorMoradia,
+                novoLocal: m.F.CustoNovoLocal(f), novoLocalSeg: m.P.TempoNovoLocal
+            ),
+            ["fundaveis"] = Obras.Fundaveis.ToDictionary(kv => kv.Key, kv => new ReinoFundaveisJson(tipo: kv.Value.tipo.Chave(), kv.Value.produz, terrenos: kv.Value.terrenos.Select(t => Jogo.Mapa.TerrenoExt.Chave(t)), ocupa: Jogo.Mapa.Pegada.Tamanho(m, kv.Value.tipo))),
         };
         foreach (var x in Extras) x(m, r, dados);
         return dados;
@@ -57,12 +56,11 @@ public static class VisaoReino
         var castelo = m.Locais.Obter(r.CasteloId);
         var alvo = l.Nivel + 1 + r.Fila(Obras.Fila).Itens.Count(i => i.Tipo == ObraNivel.Id && i.LocalId == l.Id);
         var ehCastelo = l.Tipo == TipoLocal.Castelo;
-        object? melhoria = alvo > m.P.NivelMax ? null : new
-        {
-            nivel = alvo, custo = m.F.CustoNivel(alvo, ehCastelo), seg = m.F.TempoNivel(alvo, ehCastelo),
-            bloqueio = !ehCastelo && castelo != null && alvo > castelo.Nivel ? "Nenhum local passa do nível do castelo." : null,
-            efeitos = Efeitos(m, r, l, alvo),
-        };
+        object? melhoria = alvo > m.P.NivelMax ? null : new ReinoMelhoriaJson(
+            nivel: alvo, custo: m.F.CustoNivel(alvo, ehCastelo), seg: m.F.TempoNivel(alvo, ehCastelo),
+            bloqueio: !ehCastelo && castelo != null && alvo > castelo.Nivel ? "Nenhum local passa do nível do castelo." : null,
+            efeitos: Efeitos(m, r, l, alvo)
+        );
         var cap = new Dictionary<string, double>();
         foreach (var k in taxa.Keys) cap[k] = Math.Floor(Economia.Capacidade(m, l, k));
         if (l.Tipo == TipoLocal.Armazem) cap["*"] = Math.Floor(Economia.Capacidade(m, l, "madeira"));
@@ -93,7 +91,7 @@ public static class VisaoReino
         var e = new List<object>();
         void Num(string tipo, string? rec, double a, double b)
         {
-            if (Math.Abs(a - b) > 1e-9) e.Add(new { tipo, rec, de = Math.Round(a, 1), para = Math.Round(b, 1) });
+            if (Math.Abs(a - b) > 1e-9) e.Add(new ReinoNumJson(tipo, rec, de: Math.Round(a, 1), para: Math.Round(b, 1)));
         }
         var mult = 1.0;
         foreach (var f in Economia.ModificadoresProducao) mult *= f(m, l);
@@ -118,10 +116,10 @@ public static class VisaoReino
             int Pede(RequisitoP q) => l.Tipo == TipoLocal.Ferraria ? q.Ferraria : q.Quartel;
             string Com(RequisitoP q) => q.Era != null && m.P.Eras.TryGetValue(q.Era, out var x) ? " (com a " + x.Nome + ")" : "";
             foreach (var (id, q) in fs.Eras)
-                if (Pede(q) == alvo) e.Add(new { tipo = "libera", texto = "pesquisar a " + (m.P.Eras.TryGetValue(id, out var x) ? x.Nome : id) + Com(q) });
+                if (Pede(q) == alvo) e.Add(new CombatePreviaJson(tipo: "libera", texto: "pesquisar a " + (m.P.Eras.TryGetValue(id, out var x) ? x.Nome : id) + Com(q)));
             for (var i = 0; i < fs.Niveis.Length; i++)
-                if (Pede(fs.Niveis[i]) == alvo) e.Add(new { tipo = "libera", texto = "armas e armaduras nível " + (i + 1) + Com(fs.Niveis[i]) });
-            if (Pede(fs.Lendario) == alvo) e.Add(new { tipo = "libera", texto = "equipamento lendário" + Com(fs.Lendario) });
+                if (Pede(fs.Niveis[i]) == alvo) e.Add(new CombatePreviaJson(tipo: "libera", texto: "armas e armaduras nível " + (i + 1) + Com(fs.Niveis[i])));
+            if (Pede(fs.Lendario) == alvo) e.Add(new CombatePreviaJson(tipo: "libera", texto: "equipamento lendário" + Com(fs.Lendario)));
         }
         return e;
     }
@@ -140,32 +138,30 @@ public static class VisaoReino
         var chegada = leva?.Chegada ?? 0;
         var pos = r.Filas.Values.Select(f => f.Itens.IndexOf(i)).FirstOrDefault(p => p >= 0, -1);
         var situacao = i.Aguardando && pos == 0 ? Filas.Situacoes(m, r).GetValueOrDefault(i.Id) : null;
-        return new
-        {
+        return new ReinoItemJson(
             i.Id, i.Tipo, i.Rotulo, i.LocalId, i.Hex, i.NivelAlvo, i.Param, i.Qtd,
-            custo = i.Custo, entregue = i.Entregue.ToDictionary(kv => kv.Key, kv => Math.Floor(kv.Value)),
-            duracao = i.DuracaoSeg, i.Inicio, i.Fim, materialCompleto = i.MaterialCompleto,
-            materialChegaEm = i.MaterialCompleto ? (long?)null : chegada > 0 ? chegada : null,
-            materialPartida = i.MaterialCompleto || leva == null || chegada <= 0 ? (long?)null : leva.Partida,
-            estado = i.Iniciado ? "andamento" : i.Aguardando ? (pos == 0 ? "recursos" : "fila") : !i.MaterialCompleto ? "material" : "fila",
-            aguardando = i.Aguardando,
-            faltam = situacao?.Faltam.ToDictionary(kv => kv.Key, kv => Math.Ceiling(kv.Value)),
-            impedimento = situacao?.Impedimento,
-            posicao = pos >= 0 ? pos + 1 : (int?)null,
+            custo: i.Custo, entregue: i.Entregue.ToDictionary(kv => kv.Key, kv => Math.Floor(kv.Value)),
+            duracao: i.DuracaoSeg, i.Inicio, i.Fim, materialCompleto: i.MaterialCompleto,
+            materialChegaEm: i.MaterialCompleto ? (long?)null : chegada > 0 ? chegada : null,
+            materialPartida: i.MaterialCompleto || leva == null || chegada <= 0 ? (long?)null : leva.Partida,
+            estado: i.Iniciado ? "andamento" : i.Aguardando ? (pos == 0 ? "recursos" : "fila") : !i.MaterialCompleto ? "material" : "fila",
+            aguardando: i.Aguardando,
+            faltam: situacao?.Faltam.ToDictionary(kv => kv.Key, kv => Math.Ceiling(kv.Value)),
+            impedimento: situacao?.Impedimento,
+            posicao: pos >= 0 ? pos + 1 : (int?)null,
             // por unidade (tropas, exploradores...): quantas já ficaram prontas e quando fica a próxima
-            prontos = i.Prontos, proximoFim = i.Restantes > 0 ? i.FimDaUnidade(i.Prontos + 1) : null,
-        };
+            prontos: i.Prontos, proximoFim: i.Restantes > 0 ? i.FimDaUnidade(i.Prontos + 1) : null
+        );
     }
 }
 
 public static class VisaoMarcha
 {
-    public static object Propria(Mundo m, Marcha x) => new
-    {
-        x.Id, x.Tipo, x.Caminho, x.Tempos, x.Tropas, carga = x.Carga.Arredondado(), x.Vel, x.Retornando,
-        pessoas = x is Carregadores c ? c.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento d ? d.PessoaIds.Count : (int?)null,
-        detalhe = Detalhes(m, x),
-    };
+    public static object Propria(Mundo m, Marcha x) => new MarchaPropriaJson(
+        x.Id, x.Tipo, x.Caminho, x.Tempos, x.Tropas, carga: x.Carga.Arredondado(), x.Vel, x.Retornando,
+        pessoas: x is Carregadores c ? c.Pessoas : x is ReinoDePedra.Jogo.Pessoas.Deslocamento d ? d.PessoaIds.Count : (int?)null,
+        detalhe: Detalhes(m, x)
+    );
     /// <summary>Sistemas acrescentam detalhes por tipo de marcha (objetivo do ataque, ordem do explorador...).</summary>
     public static List<Func<Mundo, Marcha, object?>> ExtrasPropria { get; } = new();
     private static object? Detalhes(Mundo m, Marcha x)
@@ -174,3 +170,11 @@ public static class VisaoMarcha
         return null;
     }
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record ReinoCustosJson(Dictionary<string, double> moradia, double moradiaSeg, int tetoPorMoradia, Dictionary<string, double> novoLocal, double novoLocalSeg);
+public sealed record ReinoFundaveisJson(string tipo, string? produz, IEnumerable<string> terrenos, int ocupa);
+public sealed record ReinoMelhoriaJson(int nivel, Dictionary<string, double> custo, double seg, string? bloqueio, List<object> efeitos);
+public sealed record ReinoNumJson(string tipo, string? rec, double de, double para);
+public sealed record ReinoItemJson(long Id, string Tipo, string Rotulo, long? LocalId, int Hex, int NivelAlvo, string? Param, int Qtd, Recursos custo, Dictionary<string, double> entregue, double duracao, long? Inicio, long? Fim, bool materialCompleto, long? materialChegaEm, long? materialPartida, string estado, bool aguardando, Dictionary<string, double>? faltam, string? impedimento, int? posicao, int prontos, long? proximoFim);
+public sealed record MarchaPropriaJson(long Id, string Tipo, List<int> Caminho, List<long> Tempos, Dictionary<string, int> Tropas, Dictionary<string, long> carga, string Vel, bool Retornando, int? pessoas, object? detalhe);

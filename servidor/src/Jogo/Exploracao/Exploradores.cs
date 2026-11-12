@@ -378,8 +378,8 @@ namespace ReinoDePedra.Jogo.Exploracao
             PS.RecontarLivres(m, r);
             if (e.HexesRevelados > 0 || e.JazidasAchadas > 0)
             {
-                var linhas = new JsonArray { Fauna.Linha("Hexágonos revelados", e.HexesRevelados.ToString()) };
-                if (e.JazidasAchadas > 0) linhas.Add(Fauna.Linha("Jazidas descobertas", e.JazidasAchadas.ToString()));
+                var linhas = new JsonArray { (JsonNode?)Fauna.Linha("Hexágonos revelados", e.HexesRevelados.ToString()) };
+                if (e.JazidasAchadas > 0) linhas.Add((JsonNode?)Fauna.Linha("Jazidas descobertas", e.JazidasAchadas.ToString()));
                 Registros.Relatar(m, r.Id, "exploracao", "Exploração concluída", new JsonObject
                 {
                     ["resumo"] = e.NomeTipo(m) + " voltou a " + casa.Nome + ".", ["linhas"] = linhas, ["hex"] = e.Alvo,

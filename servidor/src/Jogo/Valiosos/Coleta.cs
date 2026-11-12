@@ -307,8 +307,8 @@ namespace ReinoDePedra.Jogo.Valiosos
                 ["resumo"] = string.Join(" e ", quem) + " trouxeram " + txt + " no total.",
                 ["linhas"] = new JsonArray
                 {
-                    new JsonObject { ["rotulo"] = "Coletado", ["valor"] = txt },
-                    new JsonObject { ["rotulo"] = "Última entrega", ["valor"] = l.Nome },
+                    (JsonNode?)new JsonObject { ["rotulo"] = "Coletado", ["valor"] = txt },
+                    (JsonNode?)new JsonObject { ["rotulo"] = "Última entrega", ["valor"] = l.Nome },
                 },
                 ["hex"] = ex.Dados["coletaHex"]?.GetValue<int>() ?? l.Hex,
             }, "recursos");

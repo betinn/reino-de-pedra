@@ -510,7 +510,7 @@ namespace ReinoDePedra.Jogo.Social
                 // idem para quem o evento já avisa por notificação (o aliado a quem se pede, quem recebe a ajuda ou o reforço)
                 mencionado |= f.Evento is "pedido-recursos" or "ajuda" or "reforco" && f.AlvoId == x.ReinoId;
                 var tocar = q != null && x.ReinoId != f.ReinoId && !mencionado &&!q.NotificacoesDesligadas.Contains(CategoriaConversa);
-                m.Avisar(x.ReinoId, "alianca", new { fala = f.Id, tipo = f.Tipo, evento = f.Evento, de, texto = f.Texto, hex = f.Hex, tocar, naoLidas = NaoLidas(a, x.ReinoId) });
+                m.Avisar(x.ReinoId, "alianca", new AvisoAliancaJson(fala: f.Id, tipo: f.Tipo, evento: f.Evento, de, texto: f.Texto, hex: f.Hex, tocar, naoLidas: NaoLidas(a, x.ReinoId)));
             }
         }
 
@@ -527,7 +527,7 @@ namespace ReinoDePedra.Jogo.Social
             var a = De(m, r);
             if (a == null || a.LidaAte.GetValueOrDefault(r.Id) == a.UltimaFala) return;
             a.LidaAte[r.Id] = a.UltimaFala; m.Sujar(a);
-            m.Avisar(r.Id, "alianca", new { naoLidas = 0 });
+            m.Avisar(r.Id, "alianca", new AvisoAlianca2Json(naoLidas: 0));
         }
 
         /// <summary>Aliança do reino para registrar um evento dele (null se não tem).</summary>
@@ -553,4 +553,7 @@ namespace ReinoDePedra.Jogo
     {
         public Colecao<Alianca> Aliancas { get; } = new("aliancas");
     }
+    // Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+    public sealed record AvisoAliancaJson(long fala, string tipo, string? evento, string? de, string texto, int? hex, bool tocar, int naoLidas);
+    public sealed record AvisoAlianca2Json(int naoLidas);
 }

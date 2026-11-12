@@ -35,7 +35,7 @@ public sealed class OrdemCacar : IOrdemExercito
             Registros.Relatar(m, ex.ReinoId, "caca", "Caçada sem presa", new JsonObject
             {
                 ["resumo"] = "Os caçadores não acharam o bando: ele já tinha sido abatido ou saiu da área. Não trouxeram nada e voltam.", ["hex"] = hex,
-                ["linhas"] = new JsonArray { Fauna.Linha("Trazem", "nada (o bando sumiu)") }, ["ganho"] = Capturas.Json(new Recursos()),
+                ["linhas"] = new JsonArray { (JsonNode?)Fauna.Linha("Trazem", "nada (o bando sumiu)") }, ["ganho"] = Capturas.Json(new Recursos()),
             }, "exploracao");
             ex.Retornar(m);
             return;
@@ -77,7 +77,7 @@ public static class Caca
             Registros.Relatar(m, ex.ReinoId, "caca", "Caçada perdida", new JsonObject
             {
                 ["resumo"] = "Os " + animal + " venceram o grupo de caça: ninguém sobrou e nada foi trazido. Tropas mortas não voltam.", ["hex"] = ex.Destino,
-                ["linhas"] = new JsonArray { Fauna.Linha("Baixas", GT.Partes(m, mortos)), Fauna.Linha("Trazem", "nada (o grupo perdeu a luta)"), Fauna.Linha("Força do grupo", Math.Round(forca) + " de " + 2 * limite) },
+                ["linhas"] = new JsonArray { (JsonNode?)Fauna.Linha("Baixas", GT.Partes(m, mortos)), (JsonNode?)Fauna.Linha("Trazem", "nada (o grupo perdeu a luta)"), (JsonNode?)Fauna.Linha("Força do grupo", Math.Round(forca) + " de " + 2 * limite) },
                 ["ganho"] = Capturas.Json(new Recursos()),
             }, "exploracao");
             ex.Encerrar(m);
@@ -115,11 +115,11 @@ public static class Caca
         var mortos = ex.Dados["mortos"] as JsonObject;
         var linhas = new JsonArray
         {
-            Fauna.Linha("Presa", animal + " (≈ " + rg.Qtd + ")"),
-            Fauna.Linha("Trazem", levado.Count > 0 ? string.Join(", ", levado.Arredondado().Select(kv => kv.Value + " " + kv.Key)) : "nada (sem carga livre)"),
-            Fauna.Linha("Baixas", mortos is { Count: > 0 } ? string.Join(", ", mortos.Select(kv => kv.Value + " " + kv.Key)) : "nenhuma"),
+            (JsonNode?)Fauna.Linha("Presa", animal + " (≈ " + rg.Qtd + ")"),
+            (JsonNode?)Fauna.Linha("Trazem", levado.Count > 0 ? string.Join(", ", levado.Arredondado().Select(kv => kv.Value + " " + kv.Key)) : "nada (sem carga livre)"),
+            (JsonNode?)Fauna.Linha("Baixas", mortos is { Count: > 0 } ? string.Join(", ", mortos.Select(kv => kv.Value + " " + kv.Key)) : "nenhuma"),
         };
-        if (f < 1) linhas.Add(Fauna.Linha("Carga", "o grupo só levou o que cabia"));
+        if (f < 1) linhas.Add((JsonNode?)Fauna.Linha("Carga", "o grupo só levou o que cabia"));
         ex.Dados.Remove("mortos"); ex.Dados.Remove("cacaAte"); ex.Dados.Remove("regiao");
         var trouxe = levado.Count > 0
             ? "O grupo traz " + string.Join(", ", levado.Arredondado().Select(kv => kv.Value + " " + Logistica.NomeRecurso(kv.Key))) + "."

@@ -96,6 +96,9 @@ public class CargaIATestes(ITestOutputHelper saida)
                 segSalvar = sw.Elapsed.TotalSeconds;
                 db.Checkpoint();
             }
+            // REINO_CARGA_BANCO guarda uma cópia do banco: um save de 30 reinos para medir o servidor publicado (docs/desempenho.md)
+            if (Environment.GetEnvironmentVariable("REINO_CARGA_BANCO") is { Length: > 0 } copia)
+                File.Copy(arq, copia, overwrite: true);
             mb = new DirectoryInfo(dir).GetFiles().Sum(f => f.Length) / (1024.0 * 1024);
         }
         finally { try { Directory.Delete(dir, true); } catch { } }

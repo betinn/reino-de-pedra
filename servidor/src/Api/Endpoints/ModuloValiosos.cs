@@ -28,7 +28,7 @@ public sealed class ModuloValiosos : IModuloApi
         conta.MapPost("/veiculos", async (PedidoVeiculo p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Veiculos.Construir(m, r, p.Tipo, p.Qtd ?? 1));
@@ -38,7 +38,7 @@ public sealed class ModuloValiosos : IModuloApi
         conta.MapPost("/salgadeira", async (PedidoSalgadeira p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Salgadeiras.Construir(m, r, p.LocalId));
@@ -48,7 +48,7 @@ public sealed class ModuloValiosos : IModuloApi
         conta.MapPost("/postos", async (PedidoPosto p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoReino.Item(m, r, Postos.Construir(m, r, ModuloTropas.Hex(m, p.Hex, p.C, p.L)));
@@ -58,7 +58,7 @@ public sealed class ModuloValiosos : IModuloApi
         conta.MapPost("/caravanas/previa", async (PedidoCaravanaApi p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoValiosos.PlanoCaravana(m, Caravanas.Planejar(m, r, Converter(p)));
@@ -68,30 +68,29 @@ public sealed class ModuloValiosos : IModuloApi
         conta.MapPost("/caravanas", async (PedidoCaravanaApi p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var (tropas, escolha) = EnvioPessoas.Ler(m, r, p.BaseLocalId ?? r.CasteloId, p.Pessoas, p.Tropas);
                 using var _ = escolha;
                 var c = Caravanas.Enviar(m, r, new PedidoCaravana(p.OrigemLocalId, p.DestinoLocalId, p.Carga, p.Veiculos, tropas, p.BaseLocalId, p.Seguro));
-                return new
-                {
-                    c.Id, c.Fase, c.Chegada, carga = c.Pedido.Arredondado(), c.Veiculos, tropas = c.Tropas,
-                    poucoProtegida = Caravanas.PoucoProtegida(m, c.Tropas),
-                };
+                return new PostCaravanasJson(
+                    c.Id, c.Fase, c.Chegada, carga: c.Pedido.Arredondado(), c.Veiculos, tropas: c.Tropas,
+                    poucoProtegida: Caravanas.PoucoProtegida(m, c.Tropas)
+                );
             }), Json.Web, statusCode: 201);
         });
 
         conta.MapGet("/extracao", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoValiosos.Extracao(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoValiosos.Extracao(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/extracao/previa", async (PedidoExtracao p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoValiosos.PreviaExtracao(m, r, p.DeLocalId, p.Tropas, ModuloTropas.Hex(m, p.Hex, p.C, p.L));
@@ -102,7 +101,7 @@ public sealed class ModuloValiosos : IModuloApi
         conta.MapPost("/extracao", async (PedidoExtracao p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var hex = ModuloTropas.Hex(m, p.Hex, p.C, p.L);
@@ -119,25 +118,25 @@ public sealed class ModuloValiosos : IModuloApi
         conta.MapGet("/reliquias", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoValiosos.Reliquias(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoValiosos.Reliquias(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/reliquias/{rel:long}/previa", async (long rel, PedidoMoverReliquia p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoValiosos.PreviaMover(m, Sessao.ReinoDa(m, id), rel, p.DeLocalId, p.Tropas, p.DestinoLocalId)), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoValiosos.PreviaMover(m, Sessao.ReinoDa(m, id), rel, p.DeLocalId, p.Tropas, p.DestinoLocalId)), Json.Web);
         });
 
         conta.MapPost("/reliquias/{rel:long}/mover", async (long rel, PedidoMoverReliquia p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var (tropas, escolha) = EnvioPessoas.Ler(m, r, p.DeLocalId, p.Pessoas, p.Tropas);
                 using var _ = escolha;
                 var ex = ReliquiasLendarias.Mover(m, r, rel, p.DeLocalId, tropas, p.DestinoLocalId, p.Seguro);
-                return new { exercito = VisaoTropas.Exercito(m, ex), poucoProtegida = Caravanas.PoucoProtegida(m, ex.Tropas) };
+                return new PostReliquiasMoverJson(exercito: VisaoTropas.Exercito(m, ex), poucoProtegida: Caravanas.PoucoProtegida(m, ex.Tropas));
             }), Json.Web, statusCode: 201);
         });
     }
@@ -157,20 +156,18 @@ public static class ExtrasValiosos
             Apresentacao.Conferir(mm, r);
             // "sistemas" vem de VisaoSistemas (com os gatilhos de todos os sistemas)
             var naFila = r.Fila(Obras.Fila).Itens.Where(i => i.Tipo == ObraVeiculo.Id).ToList();
-            d["veiculos"] = mm.B.VEICULOS.ToDictionary(kv => kv.Key, kv => new
-            {
-                nome = kv.Key == "carrocao" ? "Carroção" : "Carroça", livres = Veiculos.Livres(r, kv.Key), emUso = Veiculos.EmUso(mm, r, kv.Key),
-                naFila = naFila.Where(i => i.Param == kv.Key).Sum(i => i.Restantes), carga = kv.Value.Carga, vel = kv.Value.Vel, custo = kv.Value.Custo,
-                seg = mm.P.Veiculo.Tempo.GetValueOrDefault(kv.Key),
-            });
-            d["valiosos"] = new
-            {
-                ids = Valiosos.Ids, valor = mm.P.Valor,
-                salgadeira = new { custo = mm.P.Salgadeira.Custo, seg = mm.P.Salgadeira.Tempo, horas = mm.P.Salgadeira.Horas, horasBase = mm.P.EstoqueHoras },
-                posto = new { custo = mm.P.Posto.Custo, seg = mm.P.Posto.Tempo },
-                escoltaMin = mm.P.Caravana.EscoltaMin,
-            };
-            d["reliquias"] = Reliquias.DoReino(mm, r.Id).OrderBy(x => x.Id).Select(x => new { x.Id, x.Nome, x.Tipo, x.LocalId, x.MarchaId, efeito = ReliquiasLendarias.Efeito(mm, x.Tipo) }).ToList();
+            d["veiculos"] = mm.B.VEICULOS.ToDictionary(kv => kv.Key, kv => new ExtrasValiososVeiculosJson(
+                nome: kv.Key == "carrocao" ? "Carroção" : "Carroça", livres: Veiculos.Livres(r, kv.Key), emUso: Veiculos.EmUso(mm, r, kv.Key),
+                naFila: naFila.Where(i => i.Param == kv.Key).Sum(i => i.Restantes), carga: kv.Value.Carga, vel: kv.Value.Vel, custo: kv.Value.Custo,
+                seg: mm.P.Veiculo.Tempo.GetValueOrDefault(kv.Key)
+            ));
+            d["valiosos"] = new ExtrasValiososValiososJson(
+                ids: Valiosos.Ids, valor: mm.P.Valor,
+                salgadeira: new ExtrasValiososValiososSalgadeiraJson(custo: mm.P.Salgadeira.Custo, seg: mm.P.Salgadeira.Tempo, horas: mm.P.Salgadeira.Horas, horasBase: mm.P.EstoqueHoras),
+                posto: new ExtrasValiososValiososPostoJson(custo: mm.P.Posto.Custo, seg: mm.P.Posto.Tempo),
+                escoltaMin: mm.P.Caravana.EscoltaMin
+            );
+            d["reliquias"] = Reliquias.DoReino(mm, r.Id).OrderBy(x => x.Id).Select(x => new ExtrasValiososReliquiasJson(x.Id, x.Nome, x.Tipo, x.LocalId, x.MarchaId, efeito: ReliquiasLendarias.Efeito(mm, x.Tipo))).ToList();
         });
         VisaoReino.ExtrasLocal.Add((mm, r, l, d) =>
         {
@@ -179,27 +176,41 @@ public static class ExtrasValiosos
             var rels = Reliquias.NoLocal(mm, l.Id).ToList();
             if (rels.Count > 0)
             {
-                d["reliquias"] = rels.Select(x => new { x.Id, x.Nome, x.Tipo, efeito = ReliquiasLendarias.Efeito(mm, x.Tipo) }).ToList();
+                d["reliquias"] = rels.Select(x => new ExtrasValiososReliquias2Json(x.Id, x.Nome, x.Tipo, efeito: ReliquiasLendarias.Efeito(mm, x.Tipo))).ToList();
                 d["nivelReliquias"] = ReliquiasLendarias.Nivel(mm, rels.Count);
             }
         });
         VisaoMarcha.ExtrasPropria.Add((mm, x) => x is Caravana c
-            ? new
-            {
-                c.Fase, veiculos = c.Veiculos, pedido = c.Pedido.Arredondado(), c.OrigemLocalId, c.DestinoLocalId, c.BaseLocalId,
-                origem = mm.Locais.Obter(c.OrigemLocalId)?.Nome, destino = mm.Locais.Obter(c.DestinoLocalId)?.Nome,
-            }
+            ? new ExtrasValiososAoIniciarJson(
+                c.Fase, veiculos: c.Veiculos, pedido: c.Pedido.Arredondado(), c.OrigemLocalId, c.DestinoLocalId, c.BaseLocalId,
+                origem: mm.Locais.Obter(c.OrigemLocalId)?.Nome, destino: mm.Locais.Obter(c.DestinoLocalId)?.Nome
+            )
             : null);
         VisaoMapa.Extras.Add((mm, r, vis) =>
         {
             Apresentacao.Conferir(mm, r);
             return ReliquiasLendarias.NoMapa(mm, r.Id).Select<ReliquiaNoMapa, object>(x => x.Tipo switch
             {
-                "farol" => new { tipo = "farol", id = x.LocalId, hex = x.Hex, n = x.N },
-                "brilho" => new { tipo = "brilho", id = x.LocalId, hex = x.Hex, n = x.N },
-                "local" => new { tipo = "reliquia-em", local = x.LocalId, hex = x.Hex, n = x.N, nivel = x.Nivel, tipos = x.Tipos, reliquia = new { tipo = x.Tipos.FirstOrDefault() ?? "desconhecido" } },
-                _ => new { tipo = "reliquia-em", marcha = x.MarchaId, hex = x.Hex, n = x.N, nivel = "", tipos = x.Tipos, reliquia = new { tipo = x.Tipos.FirstOrDefault() ?? "desconhecido" } },
+                "farol" => new ExtrasValiososAoIniciar2Json(tipo: "farol", id: x.LocalId, hex: x.Hex, n: x.N),
+                "brilho" => new ExtrasValiososAoIniciar2Json(tipo: "brilho", id: x.LocalId, hex: x.Hex, n: x.N),
+                "local" => new ExtrasValiososAoIniciar3Json(tipo: "reliquia-em", local: x.LocalId, hex: x.Hex, n: x.N, nivel: x.Nivel, tipos: x.Tipos, reliquia: new ExtrasValiososAoIniciar3ReliquiaJson(tipo: x.Tipos.FirstOrDefault() ?? "desconhecido")),
+                _ => new ExtrasValiososAoIniciar4Json(tipo: "reliquia-em", marcha: x.MarchaId, hex: x.Hex, n: x.N, nivel: "", tipos: x.Tipos, reliquia: new ExtrasValiososAoIniciar3ReliquiaJson(tipo: x.Tipos.FirstOrDefault() ?? "desconhecido")),
             }).ToList();
         });
     });
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PostCaravanasJson(long Id, string Fase, long Chegada, Dictionary<string, long> carga, Dictionary<string, int> Veiculos, Dictionary<string, int> tropas, bool poucoProtegida);
+public sealed record PostReliquiasMoverJson(object exercito, bool poucoProtegida);
+public sealed record ExtrasValiososVeiculosJson(string nome, int livres, int emUso, int naFila, double carga, string vel, Dictionary<string, double> custo, double seg);
+public sealed record ExtrasValiososValiososJson(string[] ids, Dictionary<string, double> valor, ExtrasValiososValiososSalgadeiraJson salgadeira, ExtrasValiososValiososPostoJson posto, double escoltaMin);
+public sealed record ExtrasValiososValiososSalgadeiraJson(Dictionary<string, double> custo, double seg, double horas, double horasBase);
+public sealed record ExtrasValiososValiososPostoJson(Dictionary<string, double> custo, double seg);
+public sealed record ExtrasValiososReliquiasJson(long Id, string Nome, string Tipo, long? LocalId, long? MarchaId, string efeito);
+public sealed record ExtrasValiososReliquias2Json(long Id, string Nome, string Tipo, string efeito);
+public sealed record ExtrasValiososAoIniciarJson(string Fase, Dictionary<string, int> veiculos, Dictionary<string, long> pedido, long OrigemLocalId, long DestinoLocalId, long BaseLocalId, string? origem, string? destino);
+public sealed record ExtrasValiososAoIniciar2Json(string tipo, long? id, int hex, int n);
+public sealed record ExtrasValiososAoIniciar3Json(string tipo, long? local, int hex, int n, string nivel, string[] tipos, ExtrasValiososAoIniciar3ReliquiaJson reliquia);
+public sealed record ExtrasValiososAoIniciar3ReliquiaJson(string tipo);
+public sealed record ExtrasValiososAoIniciar4Json(string tipo, long? marcha, int hex, int n, string nivel, string[] tipos, ExtrasValiososAoIniciar3ReliquiaJson reliquia);

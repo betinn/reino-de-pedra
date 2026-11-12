@@ -35,7 +35,7 @@ public class ApiTestes
         using var c = s.NovoCliente();
         await c.ContaComReino("bia@exemplo.com", "Valdren");
         c.Http.DefaultRequestHeaders.Remove("X-Reino");
-        var r = await c.Http.PostAsJsonAsync("obras", new { acao = "melhorar", localId = 1 });
+        var r = await c.Http.PostAsJsonAsync("obras", new { acao = "melhorar", localId = 1 }, Cliente.J);
         Assert.Equal(HttpStatusCode.Forbidden, r.StatusCode);
     }
 

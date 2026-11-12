@@ -15,13 +15,13 @@ public sealed class ModuloPessoas : IModuloApi
         conta.MapGet("/reino/pessoas", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoPessoas.Lista(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoPessoas.Lista(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapGet("/pessoas/{pessoaId:long}", async (long pessoaId, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoPessoas.Folha(m, r, PS.Da(m, r, pessoaId));
@@ -31,7 +31,7 @@ public sealed class ModuloPessoas : IModuloApi
         conta.MapPost("/pessoas/{pessoaId:long}/trabalho", async (long pessoaId, PedidoTrabalho p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoPessoas.Folha(m, r, PS.Trabalhar(m, r, pessoaId, p.LocalId, string.IsNullOrWhiteSpace(p.Oficio) ? null : p.Oficio));
@@ -41,7 +41,7 @@ public sealed class ModuloPessoas : IModuloApi
         conta.MapPost("/pessoas/{pessoaId:long}/mover", async (long pessoaId, PedidoMoverPessoa p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoPessoas.Folha(m, r, PS.Mover(m, r, pessoaId, p.LocalId));

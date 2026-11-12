@@ -30,13 +30,13 @@ public sealed class ModuloTropas : IModuloApi
         conta.MapGet("/tropas", async (HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m => VisaoTropas.Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
+            return Json.Resposta(await motor.Executar(m => VisaoTropas.Montar(m, Sessao.ReinoDa(m, id))), Json.Web);
         });
 
         conta.MapPost("/recrutamento", async (PedidoRecrutar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var item = Recrutamento.Recrutar(m, r, p.LocalId, p.Unidade ?? "", p.Qtd);
@@ -47,7 +47,7 @@ public sealed class ModuloTropas : IModuloApi
         conta.MapPost("/tropas/enviar", async (PedidoEnviar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var (tropas, escolha) = EnvioPessoas.Ler(m, r, p.DeLocalId, p.Pessoas, p.Tropas);
@@ -60,7 +60,7 @@ public sealed class ModuloTropas : IModuloApi
         conta.MapPost("/tropas/previa", async (PedidoPrevia p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 var para = Hex(m, p.DestinoHex, p.C, p.L);
@@ -82,7 +82,7 @@ public sealed class ModuloTropas : IModuloApi
         conta.MapPost("/tropas/{marchaId:long}/ordem", async (long marchaId, PedidoOrdem p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 int? hex = p.DestinoHex ?? (p.C is int c && p.L is int l && m.G.Dentro(c, l) ? m.G.Indice(c, l) : null);
@@ -90,14 +90,14 @@ public sealed class ModuloTropas : IModuloApi
                 var quem = marchaId;
                 if (p.Pessoas is { Count: > 0 }) quem = Grupos.Parte(m, r, marchaId, p.Pessoas, e => { Exercitos.DarOrdem(m, r, e.Id, p.Ordem ?? "", hex, p.Seguro, p.Dados); return e; }).Id;
                 else Exercitos.DarOrdem(m, r, marchaId, p.Ordem ?? "", hex, p.Seguro, p.Dados);
-                return m.Marchas.Obter(quem) is Exercito ex ? VisaoTropas.Exercito(m, ex) : new { id = quem, encerrado = true };
+                return m.Marchas.Obter(quem) is Exercito ex ? VisaoTropas.Exercito(m, ex) : new PostExploradoresOrdemJson(id: quem, encerrado: true);
             }), Json.Web);
         });
 
         conta.MapPost("/tropas/juntar", async (PedidoJuntar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 Exercito ex;
@@ -116,7 +116,7 @@ public sealed class ModuloTropas : IModuloApi
         conta.MapPost("/tropas/{marchaId:long}/separar", async (long marchaId, PedidoSeparar p, HttpContext ctx, Motor motor) =>
         {
             var id = ctx.ContaId();
-            return Results.Json(await motor.Executar(m =>
+            return Json.Resposta(await motor.Executar(m =>
             {
                 var r = Sessao.ReinoDa(m, id);
                 return VisaoTropas.Exercito(m, Grupos.Separar(m, r, marchaId, p.Pessoas ?? []));
@@ -128,7 +128,7 @@ public sealed class ModuloTropas : IModuloApi
             var id = ctx.ContaId();
             var postura = LerPostura(p.Postura);
             var n = await motor.Executar(m => Exercitos.MudarPostura(m, Sessao.ReinoDa(m, id), postura, p.LocalId, p.MarchaId, p.Todas == true, p.TodosExercitos == true));
-            return Results.Json(new { alterados = n, postura }, Json.Web);
+            return Json.Resposta(new PutTropasPosturaJson(alterados: n, postura), Json.Web);
         });
     }
 }
@@ -143,16 +143,20 @@ public static class ExtrasTropas
         {
             var exs = Exercitos.De(mm, r.Id).ToList();
             d["popLivre"] = Math.Floor(r.Pop);
-            d["tropasResumo"] = new
-            {
-                guarnicoes = mm.LocaisDe(r.Id).Sum(l => GT.Total(l.Guarnicao)),
-                emCampo = exs.Sum(e => GT.Total(e.Tropas)), exercitos = exs.Count,
-                emTreino = Recrutamento.Itens(r).Sum(i => i.Restantes),
-            };
+            d["tropasResumo"] = new ExtrasTropasTropasResumoJson(
+                guarnicoes: mm.LocaisDe(r.Id).Sum(l => GT.Total(l.Guarnicao)),
+                emCampo: exs.Sum(e => GT.Total(e.Tropas)), exercitos: exs.Count,
+                emTreino: Recrutamento.Itens(r).Sum(i => i.Restantes)
+            );
         });
         VisaoReino.ExtrasLocal.Add((mm, r, l, d) => d["recruta"] = Recrutamento.Recruta(l));
         VisaoMarcha.ExtrasPropria.Add((mm, x) => x is Exercito e
-            ? new { e.Ordem, e.Postura, e.OrigemLocalId, e.AlvoLocalId, parado = e.Parado, cargaMax = e.CargaMax(mm) }
+            ? new ExtrasTropasAoIniciarJson(e.Ordem, e.Postura, e.OrigemLocalId, e.AlvoLocalId, parado: e.Parado, cargaMax: e.CargaMax(mm))
             : null);
     });
 }
+
+// Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+public sealed record PutTropasPosturaJson(int alterados, Postura postura);
+public sealed record ExtrasTropasTropasResumoJson(int guarnicoes, int emCampo, int exercitos, int emTreino);
+public sealed record ExtrasTropasAoIniciarJson(string Ordem, Postura Postura, long OrigemLocalId, long? AlvoLocalId, bool parado, double cargaMax);

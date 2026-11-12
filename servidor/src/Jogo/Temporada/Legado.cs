@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using ReinoDePedra.Jogo.Persistencia;
 using ReinoDePedra.Jogo.Reinos;
 using ReinoDePedra.Jogo.Temporada;
@@ -101,7 +102,7 @@ namespace ReinoDePedra.Jogo.Temporada
             b.Exec("CREATE TABLE IF NOT EXISTS legado (conta_id INTEGER PRIMARY KEY, dados TEXT NOT NULL)");
             foreach (var (id, json) in b.Consultar("SELECT conta_id, dados FROM legado", rd => (rd.GetInt64(0), rd.GetString(1))))
             {
-                var l = JsonSerializer.Deserialize<LegadoConta>(json, Banco.Json);
+                var l = JsonSerializer.Deserialize(json, (JsonTypeInfo<LegadoConta>)Banco.Json.GetTypeInfo(typeof(LegadoConta)));
                 if (l != null) { l.ContaId = id; _porConta[id] = l; }
             }
         }
@@ -112,7 +113,7 @@ namespace ReinoDePedra.Jogo.Temporada
             if (m.Banco == null) return;
             if (!_carregado) Carregar(m.Banco);
             m.Banco.Exec("INSERT INTO legado(conta_id, dados) VALUES($c, $d) ON CONFLICT(conta_id) DO UPDATE SET dados=excluded.dados",
-                ("$c", l.ContaId), ("$d", JsonSerializer.Serialize(l, Banco.Json)));
+                ("$c", l.ContaId), ("$d", JsonSerializer.Serialize(l, (JsonTypeInfo<LegadoConta>)Banco.Json.GetTypeInfo(typeof(LegadoConta)))));
         }
     }
 }

@@ -244,8 +244,8 @@ namespace ReinoDePedra.Jogo.Combate
                 new JsonObject { ["rotulo"] = q.Exilio ? "Novo castelo (exílio)" : "Nova sede", ["valor"] = q.NovoCastelo + " · nível " + q.NivelNovo },
                 new JsonObject { ["rotulo"] = "Recursos perdidos", ["valor"] = perdidos.Length > 0 ? perdidos : "nenhum" },
                 new JsonObject { ["rotulo"] = "População perdida", ["valor"] = N(q.PopulacaoPerdida) + (q.CivisMortos.Count > 0 ? ": " + Pessoas.Pessoas.Nomear(q.CivisMortos) : "") });
-            if (q.ReliquiasLevadas.Count > 0) linhas.Add(new JsonObject { ["rotulo"] = "Relíquias levadas", ["valor"] = string.Join(", ", q.ReliquiasLevadas) });
-            if (q.Exilio) linhas.Add(new JsonObject { ["rotulo"] = "Escudo de exílio", ["valor"] = m.P.EscudoExilioH + " h" });
+            if (q.ReliquiasLevadas.Count > 0) linhas.Add((JsonNode?)new JsonObject { ["rotulo"] = "Relíquias levadas", ["valor"] = string.Join(", ", q.ReliquiasLevadas) });
+            if (q.Exilio) linhas.Add((JsonNode?)new JsonObject { ["rotulo"] = "Escudo de exílio", ["valor"] = m.P.EscudoExilioH + " h" });
             var resumo = q.Exilio
                 ? "O " + q.CasteloAntigo + " caiu e o reino não tinha outros locais. Você recomeça em exílio, longe de quem derrubou, com um kit de recomeço e escudo de " + m.P.EscudoExilioH + " h."
                 : "O " + q.CasteloAntigo + " caiu e virou ruína. A sede foi para " + q.NovoCastelo + ", agora castelo nível " + q.NivelNovo + ". Locais acima dele só sobem quando o castelo passar deles.";

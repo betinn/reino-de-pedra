@@ -54,7 +54,7 @@ namespace ReinoDePedra.Jogo.Social
         {
             var r = m.Relatorios.Adicionar(new Relatorio { ReinoId = reinoId, Tipo = tipo, Titulo = titulo, Quando = m.Agora, Dados = dados ?? new() });
             Podar(m, m.Relatorios.Where(x => x.ReinoId == reinoId), MaxRelatorios, d => m.Relatorios.Remover(d.Id));
-            m.Avisar(reinoId, "relatorio", new { id = r.Id, tipo, titulo });
+            m.Avisar(reinoId, "relatorio", new AvisoRelatorioJson(id: r.Id, tipo, titulo));
             if (categoria != null) Notificar(m, reinoId, categoria, notificacao ?? titulo, null, "relatorio?id=" + r.Id, tamanho);
             return r;
         }
@@ -69,7 +69,7 @@ namespace ReinoDePedra.Jogo.Social
             Podar(m, m.Notificacoes.Where(x => x.ReinoId == reinoId), MaxNotificacoes, d => m.Notificacoes.Remover(d.Id));
             // a preferência decide se o aviso "toca" (push/aviso do navegador); a notificação fica na lista de qualquer jeito
             var ligada = !reino.NotificacoesDesligadas.Contains(categoria);
-            m.Avisar(reinoId, "notificacao", new { id = n.Id, categoria, titulo, texto, link, tocar = ligada, tamanho = tam, prioridade = TamanhoAviso.Prioridade(n), acao });
+            m.Avisar(reinoId, "notificacao", new AvisoNotificacaoJson(id: n.Id, categoria, titulo, texto, link, tocar: ligada, tamanho: tam, prioridade: TamanhoAviso.Prioridade(n), acao));
             return n;
         }
 
@@ -118,4 +118,7 @@ namespace ReinoDePedra.Jogo.Social
             };
         });
     }
+    // Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
+    public sealed record AvisoRelatorioJson(long id, string tipo, string titulo);
+    public sealed record AvisoNotificacaoJson(long id, string categoria, string titulo, string? texto, string? link, bool tocar, string tamanho, int prioridade, JsonObject? acao);
 }
