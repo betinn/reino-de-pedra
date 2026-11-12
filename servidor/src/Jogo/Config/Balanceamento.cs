@@ -127,6 +127,8 @@ public sealed class ParametrosP
     public double[] Portoes { get; init; } = [];
     public TorreP Torre { get; init; } = new();
     public double PortoesEstrutura { get; init; }
+    /// <summary>Defesa própria do castelo pelo nível: torre de menagem, portões básicos e portões fechados (decisão 0042).</summary>
+    public DefesaCasteloP DefesaCastelo { get; init; } = new();
     public double SaqueQueda { get; init; }
     public double SaqueMinimo { get; init; }
     public ReliquiaP Reliquia { get; init; } = new();
@@ -409,6 +411,16 @@ public sealed class TorreP
     public int AlcanceBase { get; init; }
     public int AlcancePorNivel { get; init; } = 1;
 }
+/// <summary>
+/// Defesa própria do castelo (decisão 0042): floor(nível × ArqPorNivel) arqueiros na torre de menagem (como os das torres),
+/// portões básicos no nível floor(nível / PortoesCada) e, sem máquinas de cerco, portões fechados valendo × Fechado.
+/// </summary>
+public sealed class DefesaCasteloP
+{
+    public double ArqPorNivel { get; init; }
+    public int PortoesCada { get; init; } = 1000;
+    public double Fechado { get; init; } = 1;
+}
 public sealed class ReliquiaP
 {
     public double Ataque { get; init; }
@@ -545,6 +557,7 @@ public sealed class IAP
     public ExtracaoIAP Extracao { get; init; } = new();
     public DefesaIAP Defesa { get; init; } = new();
     public ComercioIAP Comercio { get; init; } = new();
+    public GuardaIAP Guarda { get; init; } = new();
 }
 /// <summary>Regras de decisão de uma sessão (as da simulação do modelo).</summary>
 public sealed class CondutaIAP
@@ -571,6 +584,8 @@ public sealed class PerfilIAP
     public int Torres { get; init; }
     public bool Prospecta { get; init; }
     public bool Comercia { get; init; }
+    /// <summary>Multiplica a reserva de tropas em casa (P.ia.guarda.porNivel × nível do castelo).</summary>
+    public double Guarda { get; init; } = 1;
 }
 public sealed class AtaqueIAP
 {
@@ -593,3 +608,12 @@ public sealed class MoradiaIAP { public double Trabalhadores { get; init; } publ
 public sealed class ArmazemIAP { public double Folga { get; init; } }
 public sealed class DefesaIAP { public double Reforco { get; init; } public double Recuo { get; init; } }
 public sealed class ComercioIAP { public double MargemOutros { get; init; } public double Reserva { get; init; } }
+/// <summary>Guarda do reino de IA (decisão 0042): reserva em casa, obras de defesa e tropas que voltam ao ver um exército.</summary>
+public sealed class GuardaIAP
+{
+    public double PorNivel { get; init; }
+    public int CasteloPortoes { get; init; }
+    public int Portoes { get; init; }
+    public int Torres { get; init; }
+    public int RecolherAlcance { get; init; }
+}

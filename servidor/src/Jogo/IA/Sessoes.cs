@@ -89,6 +89,8 @@ public sealed record Conduta(CondutaIAP C, PerfilIAP? Perfil)
     public double Margem => Personas.Fator(Persona?.Ganancia ?? 0.5, 0.3);
     /// <summary>Folga de força exigida para atacar: o agressivo aceita menos, o cauteloso quer mais.</summary>
     public double FolgaDeAtaque => Personas.Fator(1 - (Persona?.Agressividade ?? 0.5), 0.2) * Personas.Fator(Persona?.Cautela ?? 0.5, 0.2);
+    /// <summary>Reserva de tropas em casa (multiplica P.ia.guarda): o cauteloso guarda mais, o agressivo menos.</summary>
+    public double Guarda => Personas.Fator(Persona?.Cautela ?? 0.5, 0.25) * Personas.Fator(1 - (Persona?.Agressividade ?? 0.5), 0.25);
     /// <summary>Quanto tempo aguenta um item parado na fila antes de desistir: o paciente espera mais.</summary>
     public double Espera => 0.4 + 1.2 * (Persona?.Paciencia ?? 0.5);
 }

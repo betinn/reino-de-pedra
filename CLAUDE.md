@@ -237,7 +237,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Cavaleiro de elite**: mais forte por pessoa que a cavalaria e mais caro por força; cada um usa 1 cavalo de raça.
 - **Veterania por pessoa**: cada soldado guarda as próprias marcas. Vitória com perdas abaixo de 50% contra inimigo com pelo menos 30% da força do grupo dá 1 marca a cada sobrevivente; cada derrota tira 1; combate com fauna não conta. O bônus do grupo (exército ou guarnição) é a média das marcas: com 2, 5 e 9, +5%, +10% e +15% de ataque e defesa. Recrutas novos diluem a média; ao enviar por quantidade, os mais veteranos saem primeiro.
 - **Equipamento lendário**: forjado com minério raro, dá **+25% de ataque ou de defesa** a um exército de até 8 tropas (num exército maior, o bônus se dilui). Cada reino forja um por temporada (o capturado não conta). Fica sempre com um grupo: nasce na guarnição da ferraria, vai com o próximo exército que sair do local quando o jogador marca "levar" e fica na guarnição do local onde o exército entrar. Vale para a guarnição (defesa) e para o exército (ataque ou defesa em campo); conta um de cada tipo por grupo, e na guarnição a milícia e os arqueiros no alto também diluem. O grupo que perde a batalha, mesmo recuando, ou que é vencido no caminho, deixa o equipamento no campo e o vencedor o leva (na ocupação, ele fica no local tomado). Se o grupo some sem batalha (morto pela fauna, por exemplo), ninguém o leva: o equipamento volta à guarnição do castelo do dono.
-- **Teto de bônus**: armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo **+50%**. Torres e portões ficam fora do teto.
+- **Teto de bônus**: armas e armaduras, veterania, relíquias, equipamento lendário e legado somam no máximo **+50%**. Torres, a torre de menagem e os portões ficam fora do teto.
 - **Um exército é um grupo de pessoas.** O jogador forma o grupo tocando um soldado, juntando vários (modo de seleção ou laço) ou por atalho ("todos deste tipo aqui", "todo o grupo"), e dá a ele uma **missão**: mover, atacar, caçar, extrair, escavar, interceptar, guarnecer ou reforçar um aliado. Os serviços continuam aceitando quantidade por tipo (ataque rápido, modelos, IA): nesse caso o servidor escolhe as pessoas, as mais veteranas para atacar.
 - Exércitos em marcha são visíveis no mapa de todos, com o dono; o tamanho e o destino, não. O tempo de viagem depende de distância, terreno, rotas e da unidade mais lenta.
 - Além de ir a um lugar, as tropas seguem a **linha exata desenhada no mapa** (arrastando ou de hexágono em hexágono): **patrulhar** repete até nova ordem, indo e voltando numa linha aberta ou dando a volta num circuito fechado; **só uma vez** para no fim da linha. Primeiro vão até o começo da linha pelo caminho de sempre.
@@ -295,6 +295,11 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Não há muros.** A defesa construída são **torres de arqueiros**: construções próprias, com **alcance**, que protegem os locais em volta. Os arqueiros ficam no alto, protegidos, e o invasor precisa **derrubar a torre** para se livrar deles.
 - **Aríetes** derrubam torres e os portões do castelo.
 - O alcance e os arqueiros de uma torre crescem com o nível. O castelo tem portões e torres próprias.
+- **Defesa própria do castelo**, que cresce com o nível e não gasta pessoas:
+  - **Torre de menagem**: arqueiros no alto pelo nível do castelo (metade do nível, arredondada para baixo), com a mesma defesa das torres e fora do teto de bônus. Não são pessoas: não morrem nem ocupam o teto.
+  - **Portões básicos**: o castelo já vem com portões pelo nível (um nível de portão a cada 4 do castelo). A obra de portões sobe a partir do maior entre o básico e o construído; o cerco só derruba os construídos.
+  - **Portões fechados**: sem aríetes nem trebuchets, os portões pesam mais na defesa. As máquinas de cerco arrombam os portões durante a batalha, na proporção da estrutura deles: arrombados por inteiro, não contam. Uma força pequena sem máquinas não toma o castelo, mesmo vazio; um exército de cerco de verdade toma.
+  - É pública como o nível: a prévia do envio, o reconhecimento e a estimativa da IA a mostram. Em campo (interceptação, postura), não conta: ela fica no castelo.
 - Torres de outros reinos ficam visíveis quando a área já foi explorada.
 - O atacante chega apenas com as tropas enviadas, após a viagem; o defensor pode enviar reforços durante a batalha.
 - **Recuar** salva tropas e população, mas o local é saqueado.
@@ -311,7 +316,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 
 ### Queda do castelo
 
-- Se o reino ainda possui outros locais: o castelo vira ruína e a sede vai para o **local de maior nível**, que vira castelo com **metade do nível** do antigo. O reino perde **metade dos recursos guardados**, **30% da população civil** e as relíquias do castelo, que vão com o atacante, sem extinção. Locais acima do novo nível do castelo ficam como estão, mas só sobem quando o castelo passar deles.
+- Se o reino ainda possui outros locais: o castelo vira ruína e a sede vai para o **local de maior nível**, que vira castelo com **metade do nível** do antigo, com a defesa própria desse nível (os portões construídos se perdem com o castelo caído). O reino perde **metade dos recursos guardados**, **30% da população civil** e as relíquias do castelo, que vão com o atacante, sem extinção. Locais acima do novo nível do castelo ficam como estão, mas só sobem quando o castelo passar deles.
 - Se perder tudo: o jogador recomeça **em exílio** em um novo ponto do mapa, com um kit de recomeço (inclusive soldados novos, com nome), mantendo linhagem e relíquias, e recebe **escudo temporário** contra ataques. Seguem o reino as pessoas de recomeço (as presentes primeiro), quem está em marcha, os feridos e os presos; o resto fica para trás.
 - O ponto do exílio é **aleatório e longe de quem derrubou** o reino; escolher a região depende da linhagem.
 - O castelo caído vira ruína sem dono, que pode ser ocupada ou reconstruída como qualquer ruína. No exílio, o reino recomeça só com um castelo nível 1, o kit e a população de recomeço; exércitos em campo e o que carregam seguem com ele. O material das obras na fila e as carroças, exploradores e mensageiros parados no castelo se perdem.
@@ -350,6 +355,10 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Indistinguíveis**: reinos de IA não são identificados como tal para os jogadores.
 - **Mesmas regras dos jogadores**: timers, recursos, população e limites idênticos, sem trapaça. Perfis variados (expansionista, defensivo, saqueador, comerciante) e níveis de habilidade diferentes.
 - Respeitam o escudo de novato e calibram a agressividade pelo porte do alvo.
+- **Guardam o reino** pelas mesmas regras do jogador:
+  - Uma **reserva em casa** que cresce com o nível do castelo fica sempre no castelo: ataque, caça, extração, ocupação, coleta e reforço não a tocam. O perfil e a persona mexem nela: o defensivo e o cauteloso guardam mais, o saqueador e o agressivo menos.
+  - **Todos os perfis cuidam da defesa do castelo**: portões construídos acima dos básicos e pelo menos uma torre perto, antes das obras da economia e só se dá para pagar.
+  - Quando um **exército de outro reino entra na visão**, ela recebe o mesmo aviso do jogador. Se está acordada e vê, entra com o tempo de reação dela e traz de volta as tropas em campo que estão perto do castelo. Usa só o que é público: o dono e o passo da marcha, sem tamanho nem destino.
 - Proteções: escudo de novato de **72 h**; escudo de exílio de **24 h**.
 - **Saída gradual**: conforme jogadores entram, não são criados novos reinos de IA; reinos de IA destruídos não renascem, e excedentes podem abdicar, com seus locais virando ruínas ou terra livre.
 - **Entrada quando jogadores saem**: se a ocupação cair abaixo da meta, novos reinos de IA surgem em regiões com pouca atividade. O reino de um jogador ausente continua dele e conta como ativo; a IA nunca o governa.

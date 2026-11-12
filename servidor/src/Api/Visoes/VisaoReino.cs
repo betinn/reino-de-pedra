@@ -82,7 +82,7 @@ public static class VisaoReino
 
     /// <summary>
     /// O que muda do nível <c>alvo - 1</c> para <c>alvo</c>, em números, para a dica do botão Melhorar.
-    /// Cada efeito: <c>tipo</c> (producao, producaoBasicos, guarda, vagas, nivelLocais, libera), <c>rec</c>, <c>de</c>, <c>para</c>, <c>texto</c>.
+    /// Cada efeito: <c>tipo</c> (producao, producaoBasicos, guarda, vagas, nivelLocais, menagem, portoesBasicos, libera), <c>rec</c>, <c>de</c>, <c>para</c>, <c>texto</c>.
     /// A produção é a com todas as vagas ocupadas e já com os modificadores do local (relíquia, legado).
     /// </summary>
     public static List<object> Efeitos(Mundo m, Reino r, Local l, int alvo)
@@ -100,6 +100,9 @@ public static class VisaoReino
             Num("producaoBasicos", null, m.F.ProducaoCastelo(de) * mult, m.F.ProducaoCastelo(alvo) * mult);
             Num("guarda", "basicos", Economia.CapacidadeNoNivel(m, l, "comida", de), Economia.CapacidadeNoNivel(m, l, "comida", alvo));
             Num("nivelLocais", null, de, alvo);
+            // defesa própria do castelo (decisão 0042): arqueiros na torre de menagem e portões básicos
+            Num("menagem", null, m.F.Menagem(de), m.F.Menagem(alvo));
+            Num("portoesBasicos", null, m.F.PortoesBasicos(de), m.F.PortoesBasicos(alvo));
         }
         else if (l.Tipo == TipoLocal.Armazem)
             Num("guarda", "*", m.F.CapacidadeArmazem(de), m.F.CapacidadeArmazem(alvo));

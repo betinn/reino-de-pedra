@@ -107,5 +107,12 @@ public sealed class AvistamentoAtaqueEvento : Evento
         var perto = m.LocaisDe(w.Id).Where(l => !l.Ruina).OrderBy(l => m.G.Distancia(l.Hex, Hex)).ThenBy(l => l.Id).FirstOrDefault();
         Registros.Notificar(m, w.Id, "ataques", "Exército de " + dono.Nome + " à vista", perto != null ? "Perto de " + perto.Nome + "." : "", "mapa?foco=" + Hex);
         m.Avisar(w.Id, "mapa");
+        AoAvistar?.Invoke(m, w, ex, Hex);
     }
+
+    /// <summary>
+    /// Um exército de outro reino entrou na visão do reino (o mesmo aviso que o jogador recebe: dono e onde, sem tamanho nem
+    /// destino). A IA usa para trazer as tropas de volta, se está acordada e vê.
+    /// </summary>
+    public static event Action<Mundo, Reino, Exercito, int>? AoAvistar;
 }

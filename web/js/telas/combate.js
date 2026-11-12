@@ -118,7 +118,10 @@
     if (f.semDefesa) return '<div class="card pilha forca-inimiga">' + selo + '<p class="fraco">' + RP.esc(f.texto || '') + '</p></div>';
     var h = '<div class="card pilha forca-inimiga" data-forca-fonte="' + RP.esc(f.fonte) + '"><div class="linha-entre">' + selo +
       (f.veredito ? '<span class="selo ' + VEREDITOS[f.veredito][0] + '">' + RP.icone(f.vence ? 'espada' : 'escudo') + VEREDITOS[f.veredito][1] + '</span>' : '') + '</div>';
-    var torres = linha('Torres no alcance', RP.num(f.torres || 0) + (f.arqueirosNoAlto ? ' · ' + RP.num(f.arqueirosNoAlto) + ' arqueiros no alto' : ''));
+    /* a defesa própria do castelo (menagem e portões básicos) é pública como o nível */
+    var noAlto = (f.arqueirosNoAlto || 0) - (f.menagem || 0);
+    var torres = linha('Torres no alcance', RP.num(f.torres || 0) + (noAlto > 0 ? ' · ' + RP.num(noAlto) + ' arqueiros no alto' : '')) +
+      (f.menagem ? linha('Torre de menagem', RP.num(f.menagem) + ' arqueiros no alto') : '');
     var milicia = f.milicia != null ? linha('Milícia estimada', '≈ ' + RP.num(f.milicia)) : '';
     if (f.fonte === 'nenhuma') {
       return h + '<div class="info">' + milicia + torres + '</div>' +
@@ -136,7 +139,7 @@
     var guarnicao = aprox != null ? (aprox === 'nenhuma' ? 'nenhuma à vista' : RP.esc(aprox) + ' tropas') : RP.somaGrupo(g) ? RP.selosGrupo(g) : 'nenhuma no relatório';
     var nota = f.texto || (aprox != null ? 'Estimativa pelo que se vê de fora. A guarnição exata, só um batedor de elite revela.' : '');
     h += '<div class="info">' + linha('Guarnição', guarnicao) + milicia + torres +
-      (f.portoes ? linha('Portões', 'nível ' + f.portoes) : '') + '</div>' +
+      (f.portoes ? linha('Portões', 'nível ' + f.portoes + (f.portoesAbertos == null ? '' : f.portoesAbertos >= 1 ? ' · arrombados pelas máquinas' : f.portoesAbertos > 0 ? ' · ' + Math.round(100 * f.portoesAbertos) + '% arrombados' : ' · fechados (sem máquinas de cerco)')) : '') + '</div>' +
       (nota ? '<p class="fraco env-nota">' + RP.icone('info', 'ico-p') + ' ' + RP.esc(nota) + '</p>' : '') + (opts.acoes || '') + '</div>';
     return h;
   };
@@ -926,6 +929,7 @@
     var d = l.defesa; if (!d) return '';
     var partes = [];
     if (d.torres) partes.push(d.torres + (d.torres > 1 ? ' torres' : ' torre') + ' · ' + d.arqueirosNoAlto + ' arqueiros no alto');
+    if (d.menagem) partes.push('menagem · ' + d.menagem + ' arqueiros no alto');
     if (d.portoes != null) partes.push('portões nível ' + d.portoes);
     return partes.length ? linha('Defesa', RP.esc(partes.join(' · '))) : '';
   });
@@ -955,23 +959,25 @@
   function custoDica(p) { return RP.custoHTML(p.custo) + '<small>' + RP.icone('relogio', 'ico-p') + RP.fmtDuracao(p.seg) + ' de obra</small>'; }
   function mult(v) { return '×' + String(v).replace('.', ','); }
   function dicaPortoes(c, p) {
-    return '<b>Portões: nível ' + c.portoes + ' → ' + p.nivel + '</b>' + efeitoDica('Defesa do castelo', c.multiplicador, p.multiplicador, mult) + custoDica(p);
+    return '<b>Portões: nível ' + c.portoes + ' → ' + p.nivel + '</b>' + efeitoDica('Defesa do castelo', c.multiplicador, p.multiplicador, mult) +
+      efeitoDica('Contra quem vem sem máquinas de cerco', c.multiplicador * c.fechado, p.multiplicador * c.fechado, function (v) { return mult(Math.round(v * 100) / 100); }) + custoDica(p);
   }
   function dicaTorre(t, p) {
     return '<b>Torre: nível ' + t.nivel + ' → ' + p.nivel + '</b>' + efeitoDica('Alcance', t.alcance, p.alcance, function (v) { return v + ' hex.'; }) +
       efeitoDica('Arqueiros no alto', t.arqueiros, p.arqueiros) + '<small>Mais alcance pode proteger mais locais.</small>' + custoDica(p);
   }
   function htmlDefesas(d) {
-    var c = d.castelo, h = '<div class="nota-regra">' + RP.icone('torre', 'ico-p') + '<span>Não há muros. Torres põem <b>arqueiros no alto</b>, que atiram protegidos e defendem seus locais no alcance. O invasor precisa <b>derrubar a torre</b> (aríetes) para se livrar deles.</span></div>';
+    var c = d.castelo, h = '<div class="nota-regra">' + RP.icone('torre', 'ico-p') + '<span>Não há muros. Torres põem <b>arqueiros no alto</b>, que atiram protegidos e defendem seus locais no alcance. O invasor precisa <b>derrubar a torre</b> (aríetes) para se livrar deles. O castelo já tem, pelo nível, a <b>torre de menagem</b> e <b>portões básicos</b>, que não gastam pessoas.</span></div>';
     if (c) {
       var p = c.proximo;
       h += '<div class="secao-titulo">Castelo</div><div class="card pilha torre-card"><div class="linha"><span class="ico-placa ico-placa-g">' + RP.icone('castelo') + '</span><span style="flex:1;min-width:0"><b>' + RP.esc(c.nome) + '</b><br><small class="fraco">Portões nível ' + c.portoes + ' · defesa ×' + String(c.multiplicador).replace('.', ',') +
         (c.torres ? ' · ' + c.torres + (c.torres > 1 ? ' torres' : ' torre') + ' no alcance' : '') + '</small></span><span class="selo">Portões ' + c.portoes + '</span></div>' +
+        '<div class="ext-numeros"><div><span class="fraco">Torre de menagem</span><b class="num">' + RP.num(c.menagem) + ' arqueiros</b></div><div><span class="fraco">Portões básicos</span><b class="num">nível ' + c.basicos + '</b></div><div><span class="fraco">Sem máquinas de cerco</span><b class="num">' + (c.portoes ? mult(Math.round(c.multiplicador * c.fechado * 100) / 100) : '—') + '</b></div></div>' +
         barraEstrutura(c.estrutura, c.estruturaMax) +
         (p ? '<div class="torre-acao">' + (p.bloqueio ? '<span class="selo selo-desconhecido">' + RP.icone('cadeado') + RP.esc(p.bloqueio) + '</span>'
           : '<button type="button" class="btn btn-p btn-primario" data-def-portoes data-dica="' + RP.esc(dicaPortoes(c, p)) + '">' + RP.icone('martelo') + 'Portões nível ' + p.nivel + '</button>') + '</div>'
           : '<p class="fraco">Portões no nível máximo.</p>') +
-        '<small class="fraco">Aríetes e trebuchets derrubam portões no cerco.</small></div>';
+        '<small class="fraco">Aríetes e trebuchets arrombam os portões na batalha e derrubam os construídos no cerco; os básicos vêm com o nível e não caem.</small></div>';
     }
     h += '<div class="secao-titulo">Suas torres</div><div class="pilha">' + (d.torres.length ? d.torres.map(function (t) {
       var p = t.proximo;

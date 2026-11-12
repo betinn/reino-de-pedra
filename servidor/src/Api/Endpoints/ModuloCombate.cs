@@ -140,8 +140,9 @@ public static class ExtrasCombate
         VisaoReino.ExtrasLocal.Add((mm, r, l, d) =>
         {
             d["defesa"] = new ExtrasCombateDefesaJson(
-                torres: Defesas.NoAlcance(mm, l).Count, arqueirosNoAlto: Defesas.ArqueirosNoAlto(mm, l),
-                portoes: l.Tipo == TipoLocal.Castelo ? l.Portoes : (int?)null,
+                torres: Defesas.NoAlcance(mm, l).Count, arqueirosNoAlto: Defesas.ArqueirosNoAlto(mm, l) - Defesas.ArqueirosMenagem(mm, l),
+                portoes: l.Tipo == TipoLocal.Castelo ? Defesas.PortoesEfetivos(mm, l) : (int?)null,
+                menagem: Defesas.ArqueirosMenagem(mm, l),
                 batalhaId: Batalhas.Ativa(mm, l.Id)?.Id
             );
         });
@@ -175,5 +176,6 @@ public static class ExtrasCombate
 // Formato das respostas em JSON: o nome, a ordem e o tipo de cada membro são o contrato com o cliente.
 public sealed record DefesasTorreMotivoJson(string? motivo);
 public sealed record ExtrasCombateCombateJson(Dictionary<string, double?> taticas, string taticaPadrao);
-public sealed record ExtrasCombateDefesaJson(int torres, int arqueirosNoAlto, int? portoes, long? batalhaId);
+/// <summary>Defesa de um local seu: <c>arqueirosNoAlto</c> só das torres; <c>menagem</c>, os da torre de menagem do castelo; <c>portoes</c>, o nível efetivo.</summary>
+public sealed record ExtrasCombateDefesaJson(int torres, int arqueirosNoAlto, int? portoes, int menagem, long? batalhaId);
 public sealed record ExtrasCombateAoIniciarJson(string tipo, long? id, int hex, long inicio, long fim, string? papel, int frentes, List<object> vivos);

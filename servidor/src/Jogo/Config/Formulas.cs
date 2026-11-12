@@ -126,9 +126,33 @@ public sealed class Formulas(Balanceamento b)
             v += n * u.Def * (1 + (P.Vantagem - 1) * frac);
         }
         v += x.Pop * P.MiliciaPorPop * P.DefMilicia;
-        v += x.ArqTorre * B.U["arqueiro"].Def * P.Torre.BonusAlto;
-        v *= BonusCom(x.Reliquia + x.BonusD) * (x.Portoes > 0 ? P.Portoes[x.Portoes] : 1);
+        v += x.ArqTorre * B.U["arqueiro"].Def * P.Torre.BonusAlto;   // torres e torre de menagem
+        v *= BonusCom(x.Reliquia + x.BonusD) * MultPortoes(x.Portoes, ataque);
         return v;
+    }
+
+    /// <summary>Arqueiros na torre de menagem do castelo no nível L (decisão 0042).</summary>
+    public int Menagem(int L) => (int)Math.Floor(Math.Max(0, L) * P.DefesaCastelo.ArqPorNivel + 1e-9);
+    /// <summary>Nível dos portões que o castelo no nível L já tem, sem obra.</summary>
+    public int PortoesBasicos(int L) => Math.Min(P.Portoes.Length - 1, Math.Max(0, L) / Math.Max(1, P.DefesaCastelo.PortoesCada));
+
+    /// <summary>Fração dos portões (nível efetivo n) que as máquinas de cerco do ataque arrombam na batalha: Σ cerco / estrutura, até 1.</summary>
+    public double PortoesAbertos(int n, IReadOnlyDictionary<string, int> ataque)
+    {
+        if (n <= 0) return 1;
+        var cerco = ataque.Sum(kv => kv.Value * (B.U.TryGetValue(kv.Key, out var u) ? u.Cerco : 0));
+        return Math.Min(1, cerco / (n * P.PortoesEstrutura));
+    }
+
+    /// <summary>
+    /// Multiplicador dos portões contra este ataque. Fechados (sem máquinas de cerco), valem P.portoes[n] × P.defesaCastelo.fechado;
+    /// arrombados por inteiro, não contam; em parte, contam em parte.
+    /// </summary>
+    public double MultPortoes(int n, IReadOnlyDictionary<string, int> ataque)
+    {
+        if (n <= 0) return 1;
+        n = Math.Min(n, P.Portoes.Length - 1);
+        return 1 + (P.Portoes[n] * P.DefesaCastelo.Fechado - 1) * (1 - PortoesAbertos(n, ataque));
     }
 
     /// <summary>Resolve um combate. <paramref name="limiteBaixas"/> é o limite da tática (null = sem limite).</summary>
@@ -155,10 +179,12 @@ public sealed class Formulas(Balanceamento b)
 public sealed record ExtraDefesa
 {
     public double Pop { get; init; }
+    /// <summary>Arqueiros no alto: das torres no alcance e da torre de menagem do castelo.</summary>
     public double ArqTorre { get; init; }
     public double Reliquia { get; init; }
     public double BonusD { get; init; }
     public double BonusA { get; init; }
+    /// <summary>Nível efetivo dos portões (castelo): o maior entre os construídos e os básicos do nível.</summary>
     public int Portoes { get; init; }
 }
 
