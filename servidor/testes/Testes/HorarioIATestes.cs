@@ -120,6 +120,41 @@ public class HorarioIATestes(ITestOutputHelper saida)
     }
 
     [Fact]
+    public void Quem_abdica_para_o_jogador_poupa_a_ultima_IA_de_cada_horario()
+    {
+        var t = MundoIA.Novo();
+        var m = t.M;
+        var faixas = m.P.IA.Cronotipos.Keys.ToList();
+        int Na(string f) => Ocupacao.DeIA(m).Count(r => r.Persona!.Cronotipo == f);
+        // as corujas ficam as menores do mundo: pelo porte, seriam as primeiras a sair (as outras ganham tropas)
+        foreach (var r in Ocupacao.DeIA(m).Where(r => r.Persona!.Cronotipo != "coruja"))
+        {
+            var c = m.Locais[r.CasteloId];
+            c.Guarnicao["lanceiro"] = c.Guarnicao.GetValueOrDefault("lanceiro") + 5;
+            m.Sujar(c);
+        }
+        var corujas = Na("coruja");
+        Assert.True(corujas >= 2);
+        Assert.All(Ocupacao.DeIA(m).OrderBy(r => Ocupacao.Porte(m, r)).Take(corujas), r => Assert.Equal("coruja", r.Persona!.Cronotipo));
+        var j = 0;
+        for (; j < m.P.Reinos - m.P.IA.Inicial; j++) MundoIA.Jogador(t, j);   // as vagas livres
+        // o menor porte continua saindo primeiro: a coruja sai enquanto houver outra
+        MundoIA.Jogador(t, j++);
+        Assert.Equal(corujas - 1, Na("coruja"));
+        // jogadores entram até sobrar uma IA por faixa: nenhuma faixa some no caminho, e a última coruja fica
+        while (Ocupacao.DeIA(m).Count() > faixas.Count)
+        {
+            MundoIA.Jogador(t, j++);
+            Assert.All(faixas, f => Assert.True(Na(f) >= 1, $"{f} sumiu com {Ocupacao.DeIA(m).Count()} IAs"));
+        }
+        Assert.All(faixas, f => Assert.Equal(1, Na(f)));
+        // a regra nunca barra o jogador: com só as últimas de cada faixa, sai a menor delas (a coruja)
+        MundoIA.Jogador(t, j++);
+        Assert.Equal(0, Na("coruja"));
+        Assert.Equal(faixas.Count - 1, Ocupacao.DeIA(m).Count());
+    }
+
+    [Fact]
     public void Quem_joga_de_madrugada_dorme_e_nao_joga_24_horas()
     {
         var m = new MundoTeste().M;

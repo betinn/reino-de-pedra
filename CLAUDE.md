@@ -365,7 +365,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Entrada quando jogadores saem**: se a ocupação cair abaixo da meta, novos reinos de IA surgem em regiões com pouca atividade. O reino de um jogador ausente continua dele e conta como ativo; a IA nunca o governa.
 - Cada temporada começa com mais reinos de IA, que vão saindo conforme a base de jogadores cresce.
 - Valores atuais: a temporada começa com 25 reinos de IA e o mundo nunca fica com menos de 20 reinos ativos; o reino de IA novo surge na vaga livre mais longe dos jogadores.
-- Abdica o reino de IA de menor porte: o castelo vira ruína e os outros locais, terra livre. Reino de IA que perde o último local não vai ao exílio: sai do mundo.
+- Abdica o reino de IA de menor porte, salvo a última IA de um horário (a última coruja, por exemplo) enquanto houver outra para sair: o castelo vira ruína e os outros locais, terra livre. Reino de IA que perde o último local não vai ao exílio: sai do mundo.
 - A IA joga em sessões, nas horas de um jogador, e só com o que um jogador saberia: ataca apenas locais espionados nas últimas 24 h, estimando a milícia pelo que é público (famílias do reino por local). Caça enquanto tem pouco couro, para treinar os batedores. Usa os mesmos serviços por quantidade; a atribuição automática cuida das vagas dela.
 - O que o jogador deixou na fila continua lá e começa sozinho quando houver recursos, mesmo com ele fora por dias.
 - Reinos de IA só põem na fila o que podem pagar agora, descontado o que os itens aguardando vão pedir. O reino de IA desiste do item da vez parado há cerca de um dia (o paciente espera mais; o impaciente, menos).

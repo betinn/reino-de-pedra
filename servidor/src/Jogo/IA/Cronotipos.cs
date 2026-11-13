@@ -67,6 +67,15 @@ public static class Cronotipos
         return melhor ?? faixas.Keys.OrderBy(k => k, StringComparer.Ordinal).First();
     }
 
+    /// <summary>
+    /// A IA é a única ativa da faixa dela (faixa do balanceamento; neutra ou sem faixa: não). Ao abdicar para dar vaga a um
+    /// jogador, essa IA fica enquanto houver outra para sair (<see cref="Ocupacao.LiberarVaga"/>): a cota só age em quem nasce,
+    /// e sem isso a última coruja podia sair só por ser a menor, deixando a madrugada sem ninguém.
+    /// </summary>
+    public static bool UltimaDaFaixa(Mundo m, Reino r) =>
+        r.Persona?.Cronotipo is { Length: > 0 } c && m.P.IA.Cronotipos.ContainsKey(c)
+        && !Ocupacao.DeIA(m).Any(o => o.Id != r.Id && o.Persona?.Cronotipo == c);
+
     /// <summary>A faixa aceita esta habilidade? Sem lista, aceita todas.</summary>
     public static bool Aceita(CronotipoIAP f, string? habilidade) =>
         f.Habilidades is not { Length: > 0 } || (habilidade != null && f.Habilidades.Contains(habilidade));

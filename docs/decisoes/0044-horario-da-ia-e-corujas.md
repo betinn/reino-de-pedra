@@ -105,4 +105,12 @@ O cronotipo desloca as sessões, não acrescenta: cada IA joga o mesmo número d
 
 - `P.ia.cronotipos` e `P.ia.madrugada` no balanceamento; metas M33 (madrugada) e M34 (ninguém joga 24 h) no modelo.
 - A coruja reage a ataques de madrugada, com o atraso de gente. Quem ataca uma IA às 3 h pode encontrar resposta.
-- Quando jogadores entram e reinos de IA abdicam (o de menor porte), a cota não é refeita: as corujas que sobram seguem corujas. Um reino de IA novo (meta de ocupação) entra na faixa que estiver faltando.
+- Quando jogadores entram e reinos de IA abdicam, a cota não é refeita: as corujas que sobram seguem corujas. Um reino de IA novo (meta de ocupação) entra na faixa que estiver faltando.
+
+### Abdicação poupa a última IA de cada faixa
+
+A cota só age em quem nasce, e um reino de IA novo só surge com o mundo abaixo de 20 reinos ativos. Com jogadores entrando, isso não acontece: a partir do 6º jogador, cada um faz abdicar o reino de IA de menor porte, e ninguém entra no lugar. Pelo porte, as 4 corujas podiam sair uma a uma e levar a madrugada de volta a zero.
+
+Por isso `Ocupacao.LiberarVaga` pula a IA que é a última ativa da faixa dela (`Cronotipos.UltimaDaFaixa`) e tira a próxima de menor porte. A regra vale para todas as faixas, não só para a coruja: nenhum nome de faixa fica no código, e o madrugador cobre o começo da manhã. A regra nunca barra o jogador. Se só restam as últimas de cada faixa, sai a menor delas, como antes. O teste `Quem_abdica_para_o_jogador_poupa_a_ultima_IA_de_cada_horario` deixa as corujas como as menores do mundo e confere que a última fica até sobrar uma IA por faixa.
+
+O risco era baixo no começo da temporada: a coruja é sempre médio ou ativo, que crescem mais que o fraco. Ele crescia com o mundo cheio de jogadores e poucas IAs, que é quando cada IA na madrugada mais conta.
