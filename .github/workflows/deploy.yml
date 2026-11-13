@@ -1,0 +1,68 @@
+# Publica o servidor quando um PR de um branch deploy/* entra no main.
+# Só gera o pacote (Native AOT para Linux x64) e o envia por SSH; não roda testes.
+# Endereço, chave e impressão digital do servidor ficam em secrets do repositório (VM_HOST, VM_SSH_KEY, VM_KNOWN_HOSTS).
+# O que o servidor faz com o pacote está em docs/publicar.md.
+name: deploy
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'deploy/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Dependências do Native AOT
+        run: sudo apt-get update -q && sudo apt-get install -y -q clang zlib1g-dev
+
+      - name: Gerar pacote
+        run: |
+          set -euo pipefail
+          SAIDA=publicar/reino-de-pedra
+          dotnet publish servidor/src/Api -c Release -r linux-x64 -p:DebugType=none -o "$SAIDA"
+          mkdir -p "$SAIDA/balanceamento"
+          cp balanceamento/config.json "$SAIDA/balanceamento/"
+          cp -r web "$SAIDA/web"
+          cp docs/publicar.md "$SAIDA/LEIAME.md"
+          cp .env.exemplo "$SAIDA/.env.exemplo"
+          echo "${GITHUB_SHA::7} (PR #${{ github.event.pull_request.number }})" > "$SAIDA/VERSAO"
+          tar -czf publicar/reino-de-pedra.tar.gz -C publicar reino-de-pedra
+          ls -lh publicar/reino-de-pedra.tar.gz
+
+      - name: Enviar para o servidor
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$VM_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # A chave só aceita o pacote do jogo na entrada padrão: o servidor troca a versão e confere a saúde.
+          ssh -i ~/.ssh/deploy -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "deploy@$VM_HOST" < publicar/reino-de-pedra.tar.gz
+          rm -f ~/.ssh/deploy
