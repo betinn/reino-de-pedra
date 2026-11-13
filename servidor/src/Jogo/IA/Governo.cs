@@ -193,7 +193,7 @@ public static class Governo
     public static void Construir(Mundo m, Reino r, Conduta c, Local castelo)
     {
         var fila = r.Fila(Obras.Fila);
-        var noite = Sessoes.UltimaDoDia(m, c.C, m.Agora);
+        var noite = Sessoes.UltimaDoDia(m, c.C, m.Agora, c.Persona?.DesvioHoras ?? 0);
         var horizonte = T.DeHoras(noite ? c.C.HorizonteNoite : c.C.Horizonte);
         var dia = (m.Agora - r.CriadoEm) / (double)T.Dia;
         var pm = m.P.IA.Moradia;

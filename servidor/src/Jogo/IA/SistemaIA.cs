@@ -77,8 +77,11 @@ public static class SistemaIA
         foreach (var r in m.Reinos.Where(x => x.Ativo && x.EhIA).ToList())
         {
             if (r.PerfilIA == null) continue;   // reino sem dono criado à mão (testes, ferramentas): ninguém governa
-            Personas.Garantir(m, r);   // mundo de antes da persona: cada reino de IA ganha a sua
-            if (r.SessaoIAEventoId is not long sid || m.Eventos.Obter(sid) is not SessaoIAEvento) Sessoes.Agendar(m, r);
+            // mundo de antes da persona: cada reino de IA ganha a sua. Mundo de antes da decisão 0044: a persona ganha a faixa
+            // de horário pela cota, uma vez só (a faixa fica gravada), e a próxima sessão já sai no horário novo
+            var semHorario = r.Persona is not { Cronotipo.Length: > 0 };
+            Personas.Garantir(m, r);
+            if (semHorario || r.SessaoIAEventoId is not long sid || m.Eventos.Obter(sid) is not SessaoIAEvento) Sessoes.Agendar(m, r);
         }
     }
 

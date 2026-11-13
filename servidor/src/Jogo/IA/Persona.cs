@@ -61,7 +61,12 @@ namespace ReinoDePedra.Jogo.IA
         public double Disciplina { get; set; } = 1;
 
         // ---- quando joga
-        /// <summary>Cronotipo: desloca as horas de sessão da habilidade (horas; negativo é madrugador, positivo é noturno).</summary>
+        /// <summary>
+        /// Faixa de horário (uma das chaves de <c>P.ia.cronotipos</c>: madrugador, normal, notívago, coruja). Vazia: ainda sem
+        /// faixa (persona de um mundo de antes da decisão 0044), e ela ganha uma ao subir, uma vez só (<see cref="Cronotipos.Atribuir"/>).
+        /// </summary>
+        public string Cronotipo { get; set; } = "";
+        /// <summary>Desloca as horas de sessão da habilidade (horas; negativo é madrugador, positivo é noturno), dentro da faixa do <see cref="Cronotipo"/>.</summary>
         public double DesvioHoras { get; set; }
         /// <summary>Chance de aparecer em cada sessão marcada (1 = nunca falta).</summary>
         public double Assiduidade { get; set; } = 1;
@@ -148,13 +153,16 @@ namespace ReinoDePedra.Jogo.IA
         public static Persona Neutra() => new()
         {
             Governante = "Governante", Titulo = "Senhor", Idade = 40, Arquetipo = "estrategista", Temperamento = "ponderado",
-            Objetivos = ["seguranca"], Tom = "direto",
+            Objetivos = ["seguranca"], Tom = "direto", Cronotipo = Cronotipos.Neutro,
         };
 
         private static double Tri(Rng s) => (s.Real() + s.Real()) / 2;   // triangular em [0, 1], centrada em 0,5
         private static double Lim(double x, double min = 0.03, double max = 0.97) => Math.Clamp(x, min, max);
 
-        /// <summary>Uma persona inteira a partir de uma semente: a mesma semente dá sempre a mesma pessoa.</summary>
+        /// <summary>
+        /// Uma persona inteira a partir de uma semente: a mesma semente dá sempre a mesma pessoa. O horário (cronotipo) não sai
+        /// daqui: depende das outras IAs do mundo (cota) e é dado por <see cref="Cronotipos.Atribuir"/>; até lá, desvio 0.
+        /// </summary>
         public static Persona Gerar(ulong semente, string? perfil, string? habilidade)
         {
             var s = new Rng(semente ^ Sal);
@@ -169,8 +177,9 @@ namespace ReinoDePedra.Jogo.IA
             p.Disciplina = Lim(disc + (Tri(s) - 0.5) * 0.3, 0.15, 0.98);
             p.Assiduidade = Lim(assid + (Tri(s) - 0.5) * 0.14, 0.55, 0.99);
             p.Reflexo = Math.Clamp(refl + (Tri(s) - 0.5) * 0.6, 0.5, 2.0);
-            var crono = s.Real();
-            p.DesvioHoras = Math.Round(crono < 0.2 ? -1.5 + (s.Real() - 0.5) : crono < 0.7 ? (s.Real() - 0.5) * 1.4 : 2 + (s.Real() - 0.5) * 1.6, 2);
+            // o horário era sorteado aqui (dois números); hoje sai por cota em Cronotipos.Atribuir. Os dois sorteios ficam,
+            // para o resto da pessoa (nome, idade, tom...) continuar o mesmo para a mesma semente
+            s.Real(); s.Real();
             p.FimDeSemana = Math.Round(0.7 + s.Real() * 0.7, 2);
 
             p.Feminina = s.Chance(0.5);
@@ -218,13 +227,19 @@ namespace ReinoDePedra.Jogo.IA
             return p;
         }
 
-        /// <summary>Todo reino de IA tem persona: o que não tem (mundo de antes desta regra) ganha uma, sempre a mesma para o mesmo reino.</summary>
+        /// <summary>
+        /// Todo reino de IA tem persona: o que não tem (mundo de antes desta regra) ganha uma, sempre a mesma para o mesmo reino.
+        /// A que ainda não tem horário (nascida agora, ou de um mundo de antes da decisão 0044) ganha a faixa pela cota.
+        /// </summary>
         public static Persona? Garantir(Mundo m, Reino r)
         {
             if (!r.EhIA || r.PerfilIA == null) return null;
-            if (r.Persona != null) return r.Persona;
-            r.Persona = Gerar(Rng.Hash(m.Estado.Semente, (ulong)r.Id, (ulong)r.CriadoEm), r.PerfilIA, r.HabilidadeIA);
-            m.Sujar(r);
+            if (r.Persona == null)
+            {
+                r.Persona = Gerar(Rng.Hash(m.Estado.Semente, (ulong)r.Id, (ulong)r.CriadoEm), r.PerfilIA, r.HabilidadeIA);
+                m.Sujar(r);
+            }
+            Cronotipos.Atribuir(m, r);
             return r.Persona;
         }
 
@@ -236,10 +251,13 @@ namespace ReinoDePedra.Jogo.IA
 
         // ---------------------------------------------------------------- presença e atenção
 
-        /// <summary>Sábado ou domingo, na hora local da IA.</summary>
-        public static bool FimDeSemana(Mundo m, long t)
+        /// <summary>
+        /// Sábado ou domingo, na hora local da IA e no dia de quem joga: <paramref name="desvioH"/> (o cronotipo) desloca a
+        /// virada do dia. A coruja que joga às 3 h de sábado ainda está na noite de sexta dela; às 3 h de segunda, no domingo.
+        /// </summary>
+        public static bool FimDeSemana(Mundo m, long t, double desvioH = 0)
         {
-            var dias = (long)Math.Floor((t / (double)T.Hora + m.P.IA.FusoH) / 24);
+            var dias = (long)Math.Floor((t / (double)T.Hora + m.P.IA.FusoH - desvioH) / 24);
             var diaDaSemana = ((dias % 7) + 7 + 4) % 7;   // 1º de janeiro de 1970 foi quinta (4); 0 = domingo
             return diaDaSemana is 0 or 6;
         }
@@ -253,7 +271,7 @@ namespace ReinoDePedra.Jogo.IA
             var p = r.Persona;
             if (p == null || p.Assiduidade >= 1) return true;
             var chance = p.Assiduidade;
-            if (FimDeSemana(m, m.Agora)) chance = 1 - (1 - chance) / Math.Max(0.2, p.FimDeSemana);
+            if (FimDeSemana(m, m.Agora, p.DesvioHoras)) chance = 1 - (1 - chance) / Math.Max(0.2, p.FimDeSemana);
             var veio = p.Faltas >= 2 || Sorte(m, r, "sessao").Chance(Math.Clamp(chance, 0.05, 1));
             p.Faltas = veio ? 0 : p.Faltas + 1;
             m.Sujar(r);
@@ -292,13 +310,8 @@ namespace ReinoDePedra.Jogo.IA
         }
 
         /// <summary>Está acordada e por perto do jogo? Entre a primeira e a última sessão do dia dela, com folga de 1 h.</summary>
-        public static bool Acordada(Mundo m, Reino r, Config.CondutaIAP c)
-        {
-            if (c.Sessoes.Length == 0) return false;
-            var h = Sessoes.HoraLocal(m, m.Agora) - (r.Persona?.DesvioHoras ?? 0);
-            h = ((h % 24) + 24) % 24;
-            return h >= c.Sessoes.Min() - 1 && h <= c.Sessoes.Max() + 1;
-        }
+        public static bool Acordada(Mundo m, Reino r, Config.CondutaIAP c) =>
+            Cronotipos.AcordadaNaHora(Sessoes.HoraLocal(m, m.Agora), r.Persona?.DesvioHoras ?? 0, c.Sessoes);
 
         // ---------------------------------------------------------------- memória: rancor e afinidade
 

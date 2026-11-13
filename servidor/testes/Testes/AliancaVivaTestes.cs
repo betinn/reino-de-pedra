@@ -325,8 +325,9 @@ public class AliancaVivaTestes
         for (var dia = 0; dia < 14; dia++)
             for (var s = 0; s < 4; s++)
             {
-                t.AvancarHoras(6);
+                // a entrada pode vir na sessão agendada da própria IA (dentro do avanço do relógio) ou na chamada aqui
                 var antes = sociavel.AliancaId;
+                t.AvancarHoras(6);
                 Sessao(t, calada); Sessao(t, sociavel);
                 if (antes == null && sociavel.AliancaId != null) pedidos++;
             }
