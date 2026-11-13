@@ -186,7 +186,10 @@ public static class ConvivioAlianca
 
     // ---------------------------------------------------------------- conversa e reforço
 
-    /// <summary>Uma fala dela na conversa da aliança, pelo ponto único (<see cref="Falas.Gerar"/>), com as últimas linhas como histórico.</summary>
+    /// <summary>
+    /// Uma fala dela na conversa da aliança, pelo ponto único (<see cref="Falas.Pedir"/>), com as últimas linhas como
+    /// histórico. Com a LLM ligada a fala sai segundos depois; true quer dizer que ela resolveu falar.
+    /// </summary>
     public static bool Dizer(Mundo m, Reino r, string tipo, string? para, Dictionary<string, string> situacao)
     {
         var a = Aliancas.De(m, r);
@@ -198,14 +201,16 @@ public static class ConvivioAlianca
         situacao.TryAdd("recurso", falta);
         situacao.TryAdd("Recurso", char.ToUpperInvariant(falta[0]) + falta[1..]);
         var historico = a.Conversa.TakeLast(14).Select(f => new FalaAnterior(f.ReinoId != 0 ? m.Reinos.Obter(f.ReinoId)?.Nome ?? "" : a.Nome, f.Texto, f.ReinoId == r.Id && f.Tipo == Aliancas.TipoFala)).ToList();
-        var texto = Falas.Gerar(m, r, new ContextoFala
+        var aliancaId = a.Id;
+        return Falas.Pedir(m, r, new ContextoFala
         {
             Tipo = tipo, Canal = Falas.CanalAlianca, ParaReino = para, Situacao = situacao, Historico = historico, MaxCaracteres = m.P.Social.Conversa.Caracteres,
+        }, (mm, texto) =>
+        {
+            if (r.AliancaId != aliancaId) return;   // saiu da aliança enquanto digitava
+            // @todos e menções só valem para quem tem o cargo: o texto dela nunca começa uma dessas por acidente
+            Aliancas.Falar(mm, r, texto.Replace("@", ""));
         });
-        if (texto == null) return false;
-        // @todos e menções só valem para quem tem o cargo: o texto dela nunca começa uma dessas por acidente
-        try { Aliancas.Falar(m, r, texto.Replace("@", "")); return true; }
-        catch (RegraException) { return false; }
     }
 
     /// <summary>Atacada e na aliança: pede socorro na conversa (uma vez por batalha).</summary>

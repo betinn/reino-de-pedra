@@ -72,14 +72,14 @@ public static class Convivio
             var tipo = rancor > 0.45 ? (p.Orgulho > 0.5 ? Falas.Ameaca : Falas.Queixa)
                 : FalasPorModelo.Hostil(responder.Texto) ? (p.Orgulho > 0.55 || p.Agressividade > 0.6 ? Falas.Desafio : Falas.Apaziguar)
                 : Falas.Resposta;
-            var texto = Falas.Gerar(m, r, new ContextoFala
+            var respondeA = responder.Id;
+            responder.Lida = true; m.Sujar(responder);
+            Falas.Pedir(m, r, new ContextoFala
             {
                 Tipo = tipo, Canal = Falas.CanalMensageiro, ParaReino = de.Nome, MaxCaracteres = m.P.Mensageiro.Caracteres,
                 Historico = [new FalaAnterior(de.Nome, responder.Texto)],
                 Situacao = Situacao(m, r, de),
-            });
-            responder.Lida = true; m.Sujar(responder);
-            if (texto != null) { Mensageiros.Enviar(m, r, texto, null, null, responder.Id); Personas.Favor(m, r, de.Id, 0.05); }
+            }, (mm, texto) => { Mensageiros.Enviar(mm, r, texto, null, null, respondeA); Personas.Favor(mm, r, de.Id, 0.05); });
             return;
         }
 
@@ -89,9 +89,9 @@ public static class Convivio
             if (!Personas.Sorte(m, r, "recado").Chance(0.15 + 0.5 * p.Orgulho)) { Marcar(m, r, "recado:" + did); return; }   // engoliu calado desta vez
             if (!Mensageiro(m, r)) return;
             var tipo = p.Agressividade < 0.35 && p.Cautela > 0.55 ? Falas.PropostaPaz : p.Orgulho > 0.55 || p.Agressividade > 0.6 ? Falas.Ameaca : Falas.Queixa;
-            var texto = Falas.Gerar(m, r, new ContextoFala { Tipo = tipo, Canal = Falas.CanalMensageiro, ParaReino = desafeto.Nome, MaxCaracteres = m.P.Mensageiro.Caracteres, Situacao = Situacao(m, r, desafeto) });
             Marcar(m, r, "recado:" + did);
-            if (texto != null) Mensageiros.Enviar(m, r, texto, did, null);
+            Falas.Pedir(m, r, new ContextoFala { Tipo = tipo, Canal = Falas.CanalMensageiro, ParaReino = desafeto.Nome, MaxCaracteres = m.P.Mensageiro.Caracteres, Situacao = Situacao(m, r, desafeto) },
+                (mm, texto) => Mensageiros.Enviar(mm, r, texto, did, null));
             return;
         }
 
@@ -103,9 +103,10 @@ public static class Convivio
                 .OrderBy(x => m.G.Distancia(m.Locais[x.CasteloId].Hex, castelo.Hex)).ThenBy(x => x.Id).FirstOrDefault();
             if (vizinho == null) { Marcar(m, r, "vizinho"); return; }
             if (!Mensageiro(m, r)) return;
-            var texto = Falas.Gerar(m, r, new ContextoFala { Tipo = Falas.Vizinho, Canal = Falas.CanalMensageiro, ParaReino = vizinho.Nome, MaxCaracteres = m.P.Mensageiro.Caracteres });
             Marcar(m, r, "vizinho");
-            if (texto != null) Mensageiros.Enviar(m, r, texto, vizinho.Id, null);
+            var vid = vizinho.Id;
+            Falas.Pedir(m, r, new ContextoFala { Tipo = Falas.Vizinho, Canal = Falas.CanalMensageiro, ParaReino = vizinho.Nome, MaxCaracteres = m.P.Mensageiro.Caracteres },
+                (mm, texto) => Mensageiros.Enviar(mm, r, texto, vid, null));
         }
     }
 

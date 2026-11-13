@@ -1,6 +1,4 @@
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using ReinoDePedra.Jogo.Nucleo;
 using ReinoDePedra.Jogo.Reinos;
 
@@ -31,7 +29,7 @@ public sealed class ContextoFala
     public int MaxCaracteres { get; set; } = 200;
 }
 
-/// <summary>Quem escreve a fala. Hoje, modelos de texto (<see cref="FalasPorModelo"/>); amanhã, uma LLM com a mesma assinatura.</summary>
+/// <summary>Quem escreve o rascunho da fala, na hora e sem sair do servidor: os modelos de texto (<see cref="FalasPorModelo"/>).</summary>
 public interface IGeradorDeFala
 {
     /// <summary>A fala, ou null para ficar calado. <paramref name="sorte"/> dá a variação (a mesma sorte dá a mesma fala).</summary>
@@ -39,10 +37,22 @@ public interface IGeradorDeFala
 }
 
 /// <summary>
+/// Quem reescreve o rascunho na voz da persona, fora da thread do mundo (uma LLM). <see cref="Escrever"/> é chamado na
+/// thread do mundo e volta logo; o texto chega depois por <paramref name="pronto"/>, que roda de novo na thread do mundo
+/// (null quando não deu: fora do ar, demorou, limite de uso, recusou). Nunca derruba nada: na falha, vale o rascunho.
+/// </summary>
+public interface IEscritorDeFala
+{
+    void Escrever(PromptDeFala pedido, Action<Mundo, string?> pronto);
+}
+
+/// <summary>
 /// O ponto único de onde sai toda fala de um reino de IA: conversa da aliança e mensagens por mensageiro. Quem quer que a
-/// IA diga algo monta o <see cref="ContextoFala"/> e chama <see cref="Gerar"/>; ninguém escreve texto de IA em outro lugar.
-/// Trocar <see cref="Gerador"/> troca quem escreve (uma LLM, no futuro) sem tocar em quem pede a fala. Nada aqui chama
-/// serviço externo.
+/// IA diga algo monta o <see cref="ContextoFala"/> e chama <see cref="Pedir"/>; ninguém escreve texto de IA em outro lugar.
+/// <para>Em duas etapas: os modelos de texto (<see cref="Gerador"/>) escrevem o rascunho na hora, já na voz da persona
+/// (<see cref="Vozes"/>); se há um <see cref="Escritor"/> (a LLM, ligada pela API), ele reescreve o rascunho do jeito
+/// daquela pessoa e a fala sai quando ele responde, segundos depois, como gente digitando. Sem escritor, ou se ele falhar,
+/// sai o rascunho.</para>
 /// </summary>
 public static class Falas
 {
@@ -57,12 +67,14 @@ public static class Falas
         ConviteAlianca = "convite-alianca", AceitaConvite = "aceita-convite", RecusaConvite = "recusa-convite",
         Ameaca = "ameaca", Queixa = "queixa", PropostaPaz = "proposta-paz", Vizinho = "vizinho", Desafio = "desafio", Apaziguar = "apaziguar";
 
-    /// <summary>Quem escreve. Padrão: modelos de texto variados pela persona.</summary>
+    /// <summary>Quem escreve o rascunho. Padrão: modelos de texto variados pela persona.</summary>
     public static IGeradorDeFala Gerador { get; set; } = new FalasPorModelo();
+    /// <summary>Quem reescreve o rascunho (a LLM). Null: sai o rascunho, na hora. A API liga quando configurada.</summary>
+    public static IEscritorDeFala? Escritor { get; set; }
 
     /// <summary>
-    /// A fala de <paramref name="de"/> para o contexto dado, ou null (reino sem persona, ou quem escreve preferiu calar).
-    /// Preenche quem fala, corta no tamanho do canal e nunca devolve texto vazio.
+    /// O rascunho da fala de <paramref name="de"/> para o contexto dado, ou null (reino sem persona, ou quem escreve
+    /// preferiu calar). Preenche quem fala, corta no tamanho do canal e nunca devolve texto vazio.
     /// </summary>
     public static string? Gerar(Mundo m, Reino de, ContextoFala c)
     {
@@ -74,22 +86,47 @@ public static class Falas
         try { t = Gerador.Gerar(p, c, sorte); }
         catch (Exception) { t = null; }   // quem escreve falhou: a IA fica calada, o jogo segue
         if (string.IsNullOrWhiteSpace(t)) return null;
-        t = t.Trim();
-        if (t.Length > c.MaxCaracteres) t = t[..c.MaxCaracteres].TrimEnd();
+        t = PromptsDeFala.Cortar(t.Trim(), c.MaxCaracteres);
         return t.Length == 0 ? null : t;
     }
 
     /// <summary>
-    /// O pedido como uma LLM o receberia: a persona inteira e o contexto, em JSON. Não é usado hoje; existe para o formato
-    /// ficar definido e testado (a persona é serializável e o contexto traz quem, para quem, a situação e o histórico).
+    /// Pede a fala e a entrega por <paramref name="entregar"/>, na thread do mundo: na hora (sem LLM) ou quando a LLM
+    /// responder. Devolve false se a pessoa ficou calada (nada será entregue). Quem entrega deve conferir de novo o que
+    /// pode ter mudado no meio tempo; uma <see cref="RegraException"/> ali só descarta a fala.
     /// </summary>
-    public static JsonObject Pedido(Persona p, ContextoFala c) => new()
+    public static bool Pedir(Mundo m, Reino de, ContextoFala c, Action<Mundo, string> entregar)
     {
-        ["persona"] = JsonSerializer.SerializeToNode(p, Persistencia.JsonJogo.Padrao.GetTypeInfo(typeof(Persona))),
-        ["contexto"] = JsonSerializer.SerializeToNode(c, Persistencia.JsonJogo.Padrao.GetTypeInfo(typeof(ContextoFala))),
-        ["instrucao"] = "Escreva uma única fala curta, em português, na voz desta pessoa, para o canal e a situação dados. " +
-                        "No máximo " + c.MaxCaracteres + " caracteres. Não diga que é uma IA.",
-    };
+        var rascunho = Gerar(m, de, c);
+        if (rascunho == null) return false;
+        var escritor = Escritor;
+        if (escritor == null)
+        {
+            try { entregar(m, rascunho); return true; }
+            catch (RegraException) { return false; }
+        }
+        var para = c.ParaReino is { Length: > 0 } nome ? m.Reinos.FirstOrDefault(x => x.Nome == nome) : null;
+        var relacao = para == null ? ((double, double)?)null : (Personas.RancorDe(de, para.Id), Personas.AfinidadeDe(de, para.Id));
+        var pedido = PromptsDeFala.Montar(de.Persona!, c, rascunho, relacao);
+        var persona = de.Persona!;
+        var sorte = Personas.Sorte(m, de, "digitar:" + c.Tipo + ":" + c.Historico.Count);
+        void Entregar(Mundo mm, string? texto)
+        {
+            // a LLM ainda capricha em acento e vírgula: o mesmo jeito de digitar dos modelos passa por cima
+            var limpo = PromptsDeFala.Limpar(texto, pedido);
+            if (limpo != null)
+            {
+                limpo = Digitacao.Aplicar(persona, Vozes.De(persona), limpo, sorte);
+                if (persona.Minusculas) limpo = limpo.ToLowerInvariant();
+                if (limpo.Length == 0) limpo = null;
+            }
+            try { entregar(mm, limpo ?? rascunho); }
+            catch (RegraException) { }   // o mundo mudou enquanto ela digitava (saiu da aliança, sem mensageiro): a fala some
+        }
+        try { escritor.Escrever(pedido, Entregar); }
+        catch (Exception) { Entregar(m, null); }
+        return true;
+    }
 }
 
 /// <summary>
@@ -140,46 +177,37 @@ public sealed class FalasPorModelo : IGeradorDeFala
     };
     private static readonly string[] Genericas = ["Certo.", "Entendido.", "Vamos ver.", "Anotado."];
 
-    /// <summary>Aberturas e fechos por tom: o que muda de pessoa para pessoa mesmo quando a frase é a mesma.</summary>
-    private static readonly Dictionary<string, (string[] abre, string[] fecha)> PorTom = new()
-    {
-        ["formal"] = (["", "", "Senhores. ", "Saudações. "], ["", "", "", " Grato."]),
-        ["seco"] = (["", "", ""], ["", "", ""]),
-        ["brincalhão"] = (["", "", "Eita. ", "Opa! "], ["", " haha", " kkk", ""]),
-        ["arcaico"] = (["", "Salve. ", "Ouçam: ", ""], ["", " Que os ventos ajudem.", "", " Assim seja."]),
-        ["direto"] = (["", "", ""], ["", "", ""]),
-        ["caloroso"] = (["", "Amigos! ", "", "Pessoal! "], ["", " Abraço!", " Contem comigo.", ""]),
-    };
     private static readonly (string de, string para)[] Abreviacoes =
         [("você", "vc"), ("Você", "vc"), ("para ", "pra "), ("também", "tb"), ("porque", "pq"), ("obrigado", "obg"), ("Obrigado", "obg"), ("estou", "tô"), ("Estou", "tô"), ("beleza", "blz")];
 
     public string? Gerar(Persona p, ContextoFala c, Rng s)
     {
         var lista = Modelos.GetValueOrDefault(c.Tipo) ?? Genericas;
-        // não repete o que já está na conversa recente, dela ou dos outros: sorteia entre as frases que ninguém disse há pouco.
-        // Se todas já foram ditas, a conversa fiada cala (ninguém repete o mesmo comentário); os outros assuntos repetem.
-        var livres = lista.Where(f => !c.Historico.Any(h => Contem(h.Texto, Preencher(f, c)))).ToArray();
+        var voz = Vozes.De(p);
+        // não repete o que já está na conversa recente, dela ou dos outros: sorteia entre as frases que ninguém disse há pouco
+        // (crua ou já na voz de quem disse). Se todas já foram ditas, a conversa fiada cala (ninguém repete o mesmo
+        // comentário); os outros assuntos repetem.
+        var livres = lista.Where(f =>
+        {
+            var crua = Preencher(f, c); var naVoz = Vozes.Trocar(voz, crua, p.Feminina);
+            return !c.Historico.Any(h => Contem(h.Texto, crua) || Contem(h.Texto, naVoz));
+        }).ToArray();
         if (livres.Length == 0 && c.Tipo is Falas.ConversaFiada or Falas.RespostaConversa) return null;
         var t = Preencher(s.Escolher(livres.Length > 0 ? livres : lista), c);
 
-        // quem é seco fala só a primeira frase; quem é brincalhão ou caloroso às vezes emenda um bordão
-        if (p.Tom == "seco") { var i = t.IndexOfAny(['.', '!', '?']); if (i > 0 && i < t.Length - 1) t = t[..(i + 1)]; }
-        var (abre, fecha) = PorTom.GetValueOrDefault(p.Tom, ([""], [""]));
-        var curto = c.MaxCaracteres - t.Length;
-        var a = s.Escolher(abre); var f = s.Escolher(fecha);
-        // abertura e fecho só na conversa: numa mensagem a outro reino, "Pessoal!" não cabe
-        var comFecho = false;
-        if (c.Canal == Falas.CanalAlianca && a.Length + f.Length < curto && (f.Length == 0 || !t.Contains(f.Trim(), StringComparison.OrdinalIgnoreCase))) { t = a + t + f; comFecho = f.Length > 0; }
-        // o bordão não se empilha com o fecho do tom: um arremate por fala
+        // quem é seco fala só a primeira frase
+        if (p.Tom == "seco" || voz.Id == Vozes.Seca) { var i = t.IndexOfAny(['.', '!', '?']); if (i > 0 && i < t.Length - 1) t = t[..(i + 1)]; }
+        // a voz da pessoa: trocas de palavra, interjeição, apelido, xingamento na briga, fecho
+        t = Vozes.Aplicar(p, c, t, s, out var comFecho);
+        // o bordão não se empilha com o fecho da voz: um arremate por fala
         if (!comFecho && p.Bordoes.Count > 0 && s.Chance(0.22) && t.Length + p.Bordoes[0].Length + 2 < c.MaxCaracteres && !t.Contains(p.Bordoes[0], StringComparison.OrdinalIgnoreCase))
             // depois de pergunta ou exclamação o bordão é outra frase ("Tudo bem? Certo."); senão, emenda com vírgula
             t = t.EndsWith('?') || t.EndsWith('!') ? t + " " + char.ToUpperInvariant(p.Bordoes[0][0]) + p.Bordoes[0][1..] + "." : t.TrimEnd('.') + ", " + p.Bordoes[0] + ".";
 
-        // o jeito de digitar: pressa abrevia e come acento; há quem escreva tudo em minúsculas
+        // o jeito de digitar: pressa abrevia; quase ninguém acentua nem pontua em chat de jogo, e escapa um erro de vez em quando
         if (p.Pressa > 0.3 && s.Chance(p.Pressa))
             foreach (var (de, para) in Abreviacoes) t = t.Replace(de, para);
-        if (p.Pressa > 0.2 && s.Chance(p.Pressa * 0.8)) t = SemAcento(t);
-        if (p.Pressa > 0.35 && s.Chance(p.Pressa * 0.5)) t = t.TrimEnd('.');
+        t = Digitacao.Aplicar(p, voz, t, s);
         if (p.Minusculas) t = t.ToLowerInvariant();
         return t;
     }
@@ -194,7 +222,10 @@ public sealed class FalasPorModelo : IGeradorDeFala
     }
     /// <summary>A fala <paramref name="dita"/> traz a frase (com abertura, fecho, minúsculas ou sem acento por cima)?</summary>
     private static bool Contem(string dita, string frase) =>
-        SemAcento(dita).Contains(SemAcento(frase).Trim('.', '!', '?', ' '), StringComparison.OrdinalIgnoreCase);
+        Normal(dita).Contains(Normal(frase), StringComparison.OrdinalIgnoreCase);
+    /// <summary>Sem acento, sem pontuação e com um espaço só: compara o que foi dito com quem digita sem capricho.</summary>
+    private static string Normal(string t) =>
+        System.Text.RegularExpressions.Regex.Replace(SemAcento(t).Replace(",", " ").Replace(".", " ").Replace(";", " ").Replace("!", " ").Replace("?", " "), @"\s+", " ").Trim();
 
     /// <summary>A fala é uma das perguntas de conversa que os modelos conhecem? (vale para quem quer que a tenha escrito)</summary>
     public static bool PerguntaDeConversa(string dita) =>
@@ -202,7 +233,7 @@ public sealed class FalasPorModelo : IGeradorDeFala
 
     /// <summary>A mensagem é uma ameaça ou uma queixa das que os modelos conhecem? (vale para quem quer que a tenha escrito)</summary>
     public static bool Hostil(string dita) =>
-        Modelos[Falas.Ameaca].Concat(Modelos[Falas.Queixa]).Select(Fixo).Any(f => f.Length >= 8 && Contem(dita, f));
+        Modelos[Falas.Ameaca].Concat(Modelos[Falas.Queixa]).Select(Fixo).Any(f => f.Length >= 8 && Contem(dita, f)) || Vozes.TemBriga(dita);
 
     /// <summary>O maior pedaço fixo de um modelo (sem as chaves): "Por aqui falta {recurso}. E vocês?" → "Por aqui falta".</summary>
     private static string Fixo(string modelo) =>
