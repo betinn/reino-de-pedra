@@ -35,6 +35,15 @@ public sealed class Configuracao
     public string? AdminToken { get; init; } = Env("REINO_ADMIN_TOKEN");
     /// <summary>Pedidos de convite por IP por hora.</summary>
     public int ConvitesPorHora { get; init; } = int.TryParse(Env("REINO_CONVITES_HORA"), out var ch) && ch > 0 ? ch : 5;
+    /// <summary>
+    /// Falas dos reinos de IA reescritas por LLM (REINO_FALAS_LLM=1), com a chave em ANTHROPIC_API_KEY. Desligado, ou sem
+    /// a chave: as falas saem dos modelos de texto, na voz de cada persona.
+    /// </summary>
+    public bool FalasLlm { get; init; } = Env("REINO_FALAS_LLM") == "1" && Env("ANTHROPIC_API_KEY") != null;
+    /// <summary>Modelo das falas. Padrão: claude-haiku-5-5.</summary>
+    public string FalasModelo { get; init; } = Env("REINO_FALAS_MODELO") ?? "claude-haiku-5-5";
+    /// <summary>Teto de falas por LLM por hora, no mundo todo (acima disso, modelos de texto). Padrão: 240.</summary>
+    public int FalasPorHora { get; init; } = int.TryParse(Env("REINO_FALAS_HORA"), out var fh) && fh > 0 ? fh : 240;
     /// <summary>Só testes: o feed público é montado a cada pedido.</summary>
     public bool FeedSemCache { get; init; }
 

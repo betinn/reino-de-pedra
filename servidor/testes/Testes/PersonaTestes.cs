@@ -467,11 +467,12 @@ public class PersonaTestes
             Assert.Equal(ia.Nome, c.DeReino); Assert.Equal("Valdren", c.ParaReino);
             Assert.Equal(Falas.AvisoAtaque, c.Tipo); Assert.Equal(Falas.CanalAlianca, c.Canal);
             Assert.Equal("Mina Rubra", c.Situacao["local"]); Assert.Equal(2, c.Historico.Count);
-            // o pedido que uma LLM receberia: persona inteira e contexto, em JSON
-            var pedido = Falas.Pedido(ia.Persona!, c);
-            Assert.Equal(ia.Persona!.Governante, pedido["persona"]!["Governante"]!.GetValue<string>());
-            Assert.Equal("Valdren", pedido["contexto"]!["ParaReino"]!.GetValue<string>());
-            Assert.Equal(2, pedido["contexto"]!["Historico"]!.AsArray().Count);
+            // o pedido que a LLM recebe: o jogo, a pessoa (com a voz) e a fala da vez, com o rascunho e o histórico
+            var pedido = PromptsDeFala.Montar(ia.Persona!, c, texto!);
+            Assert.Equal(PromptsDeFala.ContextoDoJogo, pedido.Jogo);
+            Assert.Contains(ia.Persona!.Governante, pedido.Pessoa);
+            Assert.Contains("Valdren", pedido.Pedido);
+            Assert.Contains("[Valdren] alguém aí?", pedido.Pedido); Assert.Contains("[você] aqui", pedido.Pedido);
             // corta no tamanho do canal; quem escreve pode calar ou falhar sem derrubar nada
             Assert.InRange(Falas.Gerar(t.M, ia, new ContextoFala { Tipo = Falas.Saudacao, MaxCaracteres = 5 })!.Length, 1, 5);
             Falas.Gerador = new Calado();

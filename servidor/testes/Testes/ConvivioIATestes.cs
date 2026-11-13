@@ -120,10 +120,11 @@ public class ConvivioIATestes
         var r2 = Assert.Single(t.M.Mensagens, x => x.DeId == pacifica.Id && x.RespondeA == m2.Id).Texto;
         // nenhuma das duas agradece a ameaça
         Assert.DoesNotContain("brigad", r1); Assert.DoesNotContain("brigad", r2);
-        var g = new FalasPorModelo();
-        string[] Todas(Reino ia, string tipo) => Enumerable.Range(0, 60).Select(i => g.Gerar(ia.Persona!, new ContextoFala { Tipo = tipo, Canal = Falas.CanalMensageiro, ParaReino = j.Nome, MaxCaracteres = 200 }, new Rng((ulong)i))!).Distinct().ToArray();
-        Assert.Contains(r1, Todas(orgulhosa, Falas.Desafio));
-        Assert.Contains(r2, Todas(pacifica, Falas.Apaziguar));
+        // a orgulhosa devolve, a pacífica baixa o tom: a frase exata varia (voz, digitação, erro), o sentido não
+        static string N(string x) => FalasPorModelo.SemAcento(x).ToLowerInvariant();
+        string[] paz = ["briga", "paz", "confus", "caminho", "canto", "registrado", "contra voce", "contra vc", "recado dado", "nao quero", "nao procuro", "sigo meu", "cada um no"];
+        Assert.DoesNotContain(paz, x => N(r1).Contains(x));
+        Assert.True(paz.Any(x => N(r2).Contains(x)), "r1=" + r1 + " | r2=" + r2);
     }
 
     [Fact]

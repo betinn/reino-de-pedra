@@ -80,6 +80,12 @@ namespace ReinoDePedra.Api
             Action<Evento, Exception> aoErroEvento = (ev, ex) => log.LogError(ex, "erro no evento {Tipo}#{Id}", ev.GetType().Name, ev.Id);
             Mundo.ErroEvento += aoErroEvento;
             var motor = new Motor(mundo, banco) { Log = s => log.LogWarning("{Msg}", s) };
+            // falas dos reinos de IA por LLM, se configurado (senão, modelos de texto na voz de cada persona)
+            if (cfg.FalasLlm)
+            {
+                ReinoDePedra.Jogo.IA.Falas.Escritor = new EscritorClaude(motor, cfg, s => log.LogWarning("{Msg}", s));
+                log.LogInformation("falas dos reinos de IA por LLM ({Modelo}, até {N}/h)", cfg.FalasModelo, cfg.FalasPorHora);
+            }
 
             builder.Services.AddSingleton(cfg);
             builder.Services.AddSingleton(banco);
