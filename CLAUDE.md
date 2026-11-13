@@ -17,6 +17,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - Antes de cada commit, revisar o diff procurando segredos e caminhos locais.
 - Mudanças de regra de jogo devem ser refletidas neste documento.
 - **Nome de branch diz o que ela entrega.** Em português, kebab-case, 2 a 5 palavras, sem id, hash, data ou nome de sessão: `correcoes-usabilidade-paineis`, `marcha-revela-nevoa`, `mapa-maior-tropas-rapidas`, `docs-decisao-ia`. Um prefixo fixo da ferramenta (ex.: `claude/`) pode ficar antes do nome. Sessão que começa numa branch com nome automático (`claude/abc123`, `ccr-…`) a renomeia com `git branch -m` antes do primeiro commit; se a branch já foi publicada, cria a nova com o nome certo e abandona a antiga. A mensagem do primeiro commit e o título do PR dizem a mesma coisa que o nome da branch.
+- **Branch `deploy/…` publica o jogo.** Um PR de branch que começa com `deploy/` publica o servidor ao entrar no `main` (`.github/workflows/deploy.yml`). Qualquer outro prefixo só entra no código. Só use `deploy/` quando o dono pedir para publicar.
 
 ---
 

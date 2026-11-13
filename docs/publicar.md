@@ -57,3 +57,21 @@ O estado inteiro está em `REINO_DADOS/reino.db` (+ `-wal`). Para copiar com o j
 ## 6. Atualizar
 
 Pare o serviço (ele grava tudo ao parar), troque os arquivos do programa, inicie de novo. Os dados ficam.
+
+## 7. Publicação automática
+
+O workflow `.github/workflows/deploy.yml` publica sozinho quando um PR de um branch `deploy/…` entra no `main`. PR de outro branch não publica.
+
+O que o workflow faz:
+
+- gera o pacote como no item 1, sem rodar os testes;
+- grava no pacote o arquivo `VERSAO`, com o commit e o número do PR;
+- envia o pacote por SSH, pela entrada padrão.
+
+O servidor precisa de três coisas:
+
+- um script que recebe o pacote, troca a pasta do programa e reinicia o serviço;
+- a conferência de `GET /api/v1/saude` depois de reiniciar;
+- a volta para a versão anterior quando a saúde falha.
+
+A chave usada pelo workflow só pode chamar esse script. Endereço, chave e impressão digital do servidor ficam nos secrets `VM_HOST`, `VM_SSH_KEY` e `VM_KNOWN_HOSTS`, nunca no repositório.
