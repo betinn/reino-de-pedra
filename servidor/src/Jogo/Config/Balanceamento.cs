@@ -542,6 +542,10 @@ public sealed class IAP
     /// <summary>Fuso (horas de UTC) das horas de sessão e variação sorteada (minutos, para mais ou para menos).</summary>
     public double FusoH { get; init; }
     public double VariacaoMin { get; init; }
+    /// <summary>Faixas de horário de quem governa (decisão 0044): peso da cota, desvio das horas de sessão e habilidades aceitas.</summary>
+    public Dictionary<string, CronotipoIAP> Cronotipos { get; init; } = new();
+    /// <summary>Horas locais da madrugada que a meta M33 confere (início, fim).</summary>
+    public double[] Madrugada { get; init; } = [];
     public Dictionary<string, CondutaIAP> Habilidades { get; init; } = new();
     public int LocaisBase { get; init; }
     public int ObrasPorSessao { get; init; }
@@ -558,6 +562,16 @@ public sealed class IAP
     public DefesaIAP Defesa { get; init; } = new();
     public ComercioIAP Comercio { get; init; } = new();
     public GuardaIAP Guarda { get; init; } = new();
+}
+/// <summary>
+/// Uma faixa de horário (cronotipo) dos reinos de IA: o peso dela na cota, o desvio das horas de sessão (horas, sorteado
+/// por igual entre os dois números; negativo é madrugador) e as habilidades que ela aceita (vazio: todas).
+/// </summary>
+public sealed class CronotipoIAP
+{
+    public double Peso { get; init; }
+    public double[] Desvio { get; init; } = [0, 0];
+    public string[]? Habilidades { get; init; }
 }
 /// <summary>Regras de decisão de uma sessão (as da simulação do modelo).</summary>
 public sealed class CondutaIAP

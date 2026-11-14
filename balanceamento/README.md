@@ -113,6 +113,8 @@ Cada meta vem das regras do `CLAUDE.md`, do plano de pessoas no mapa ou de prát
 | M9 | Tática média recua com 40% e ainda causa perdas na defesa | O recuo protege, mas o ataque não é inútil | 9% de perdas na defesa |
 | M31 | Batalha sem tempo fixo: 50 contra 1 acaba em até 30 s; 20 contra 20 leva de 3 a 6 min; nenhuma passa de 10 min | Pedido do dono: 50 contra 1 não pode demorar | 20 s · 4 min 20 s · 10 min |
 | M32 | A reserva da IA em casa (castelo × 0,5, até o perfil defensivo) cabe nas tropas do médio e ainda sobra tropa para sair | Decisão 0042: a IA guarda o reino pelas mesmas regras | 6 de 7 · 7 de 10 · 8 de 13 · 9 de 23 (dias 3, 7, 14 e 35) |
+| M33 | Num mundo de 25 IAs, de 1 h a 5 h cada hora tem pelo menos 2 IAs acordadas e 0,5 sessão, e a média fica abaixo de 1/4 das acordadas e 1/3 das sessões do dia; com 20 IAs, pelo menos 1 acordada por hora | Decisão 0044: de madrugada não havia IA nenhuma; o dono quer bem menos que de dia, mas nunca zero | 4 a 7,1 acordadas (dia 23,6) · 0,8 a 3 sessões/h (dia 5,6) · 3 com 20 IAs |
+| M34 | Ninguém joga 24 h: toda IA dorme pelo menos 6 h seguidas, em qualquer cronotipo | A faixa só desloca o dia, não o alonga | fraco 10 h · médio 7 h · ativo 6 h |
 
 ## Como os números saem
 
@@ -201,6 +203,21 @@ Decisão 0042. A IA guarda o reino pelas mesmas regras do jogador:
 - **Reserva em casa**: `ceil(nível do castelo × 0,5 × perfil × persona)` tropas ficam no castelo. Nada sai abaixo disso: ataque, caça, extração, ocupação, coleta e reforço. Perfil: defensivo 1,5; expansionista e comerciante 1; saqueador 0,7. Persona: o cauteloso guarda mais e o agressivo menos (até ±25% cada traço).
 - **Obras de defesa em todos os perfis**: portões construídos até o nível 3 a partir do castelo 6, e pelo menos 1 torre perto do castelo a partir do castelo 3. O defensivo continua com 2 torres; o comerciante, com 1. Vêm antes das obras da economia e só se dá para pagar.
 - **Exército à vista**: quando um exército de outro reino entra na visão, ela recebe o mesmo aviso do jogador. Se está acordada e vê, entra com o tempo de reação dela e traz de volta as tropas em campo a até 30 hexágonos do castelo (caçando, extraindo, coletando, paradas ou reconhecendo). Usa só o que é público: o dono e o passo da marcha, sem tamanho nem destino.
+
+## Horário dos reinos de IA
+
+Decisão 0044. Cada IA tem um cronotipo que desloca todas as horas de sessão da habilidade, o "acordada" da reação a ataques e o dia do fim de semana. As faixas ficam em `P.ia.cronotipos`:
+
+| Faixa | Peso | Desvio | Habilidades |
+|---|---|---|---|
+| Madrugador | 16% | −2 a −1 h | todas |
+| Normal | 42% | −0,7 a +0,7 h | todas |
+| Notívago | 26% | +1,2 a +2,8 h | todas |
+| Coruja | 16% | +4,5 a +6,5 h | médio e ativo |
+
+- **Por cota**: a IA nova entra na faixa mais abaixo do peso entre as IAs ativas. Um mundo de 25 IAs tem sempre 4 corujas; um de 20, 3. Antes eram 20% madrugadores, 50% normais e 30% notívagos, sorteados no código, e entre ≈ 2h30 e 4h20 não havia nenhuma IA.
+- **Coruja só médio e ativo**: o fraco joga às 9, 14 e 21 h e dorme cedo; como coruja, dormiria às 3 h e deixaria a madrugada vazia.
+- **Madrugada, num mundo de 25 IAs** (esperado; tabela completa em [`tabelas.md`](tabelas.md#horário-dos-reinos-de-ia)): de 1 h a 5 h, 4 a 7 IAs acordadas e 0,8 a 3 sessões por hora, contra 24 acordadas e 5,6 sessões por hora de dia. Ninguém joga 24 h: o ativo dorme 6 h seguidas; a coruja ativa vai dormir entre 4h30 e 6h30 e acorda entre 10h30 e 12h30.
 
 ## Combates de referência
 

@@ -122,12 +122,14 @@ public static class Ocupacao
     /// <summary>
     /// Gancho de <see cref="CriacaoReino.LiberarVagaDeIA"/>: o reino de IA de menor porte abdica e devolve a vaga
     /// (a do castelo inicial dele). Só abdica quem deixa uma vaga que o jogador pode usar (sem locais de outros reinos nem
-    /// relíquias nos hexágonos dela). -1 se não houver.
+    /// relíquias nos hexágonos dela). A última IA de uma faixa de horário fica enquanto houver outra para sair, para a madrugada
+    /// não perder a última coruja (decisão 0044). -1 se não houver.
     /// </summary>
     public static int LiberarVaga(Mundo m)
     {
-        var ia = DeIA(m).Where(r => r.Vaga >= 0 && CriacaoReino.VagaUtilizavel(m, m.Mapa.Vagas[r.Vaga], r.Id)).OrderBy(r => Porte(m, r)).ThenBy(r => r.Vaga).FirstOrDefault();
-        if (ia == null) return -1;
+        var candidatas = DeIA(m).Where(r => r.Vaga >= 0 && CriacaoReino.VagaUtilizavel(m, m.Mapa.Vagas[r.Vaga], r.Id)).OrderBy(r => Porte(m, r)).ThenBy(r => r.Vaga).ToList();
+        if (candidatas.Count == 0) return -1;
+        var ia = candidatas.FirstOrDefault(r => !Cronotipos.UltimaDaFaixa(m, r)) ?? candidatas[0];
         var vaga = ia.Vaga;
         Abdicar(m, ia);
         return vaga;

@@ -379,7 +379,8 @@
     };
     fundo.addEventListener('click', function (e) {
       var b = e.target.closest('[data-i]');
-      if (b) { fechar(); var a = o.acoes[+b.getAttribute('data-i')]; if (a.acao) a.acao(); }
+      /* ação com `fica`: o diálogo continua aberto e a ação fecha quando quiser (com o retorno de RP.modal) */
+      if (b) { var a = o.acoes[+b.getAttribute('data-i')]; if (!a.fica) fechar(); if (a.acao) a.acao(); }
       else if (e.target === fundo && o.fecharFora !== false) fechar();
     });
     fundo.addEventListener('rp:fechar-modal', function () { if (o.fecharFora !== false) fechar(); });

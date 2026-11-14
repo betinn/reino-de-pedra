@@ -757,6 +757,44 @@
    "idsPorReino": 6,
    "fusoH": -3,
    "variacaoMin": 40,
+   "cronotipos": {
+    "madrugador": {
+     "peso": 0.16,
+     "desvio": [
+      -2,
+      -1
+     ]
+    },
+    "normal": {
+     "peso": 0.42,
+     "desvio": [
+      -0.7,
+      0.7
+     ]
+    },
+    "notivago": {
+     "peso": 0.26,
+     "desvio": [
+      1.2,
+      2.8
+     ]
+    },
+    "coruja": {
+     "peso": 0.16,
+     "desvio": [
+      4.5,
+      6.5
+     ],
+     "habilidades": [
+      "medio",
+      "ativo"
+     ]
+    }
+   },
+   "madrugada": [
+    1,
+    5
+   ],
    "habilidades": {
     "fraco": {
      "sessoes": [

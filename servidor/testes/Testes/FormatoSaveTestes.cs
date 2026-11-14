@@ -13,7 +13,8 @@ namespace ReinoDePedra.Testes;
 /// <para><c>Amostras/save-antigo.jsonl.gz</c> foi gravado pela versão de antes (System.Text.Json por reflection): uma amostra de
 /// cada tipo de documento de um mundo de 30 reinos depois de 10 dias de jogo (o teste de carga) e dos documentos gravados
 /// pela suíte de testes inteira. Cada linha traz a coleção, o id, o tipo e o JSON gravado; <c>volta</c>, quando existe, é o
-/// que a versão de antes gravava depois de ler esse JSON (na amostra atual nenhuma linha precisou).</para>
+/// que se grava depois de ler esse JSON. Hoje só as personas dos reinos de IA têm <c>volta</c>: ganharam o campo
+/// <c>Cronotipo</c> vazio (decisão 0044), e o resto sai igual.</para>
 /// <para>Se um documento ganhar um campo, a volta passa a escrevê-lo e este teste falha de propósito: confira que a mudança é
 /// a esperada e grave a amostra de novo (lendo o save antigo com a versão nova e conferindo o diff).</para>
 /// </summary>

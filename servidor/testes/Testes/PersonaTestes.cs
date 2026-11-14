@@ -51,7 +51,9 @@ public class PersonaTestes
             Assert.InRange(p.Objetivos.Count, 1, 3); Assert.NotEmpty(p.Inspiracoes);
             Assert.InRange(p.Idade, 16, 75);
             foreach (var k in Tracos) Assert.InRange(Traco(p, k), 0, 1);
-            Assert.InRange(p.Assiduidade, 0.5, 1); Assert.InRange(p.Reflexo, 0.5, 2); Assert.InRange(p.DesvioHoras, -3, 4);
+            Assert.InRange(p.Assiduidade, 0.5, 1); Assert.InRange(p.Reflexo, 0.5, 2);
+            var faixa = t.M.P.IA.Cronotipos[p.Cronotipo];   // horário pela faixa do balanceamento (decisão 0044)
+            Assert.InRange(p.DesvioHoras, faixa.Desvio[0], faixa.Desvio[1]);
         }
         // gente diferente: vários temperamentos, tons, arquétipos e horários
         Assert.True(ias.Select(r => r.Persona!.Temperamento).Distinct().Count() >= 3);
@@ -293,7 +295,7 @@ public class PersonaTestes
         {
             t.AvancarHoras(3.1);
             var veio = Personas.Aparece(t.M, r);
-            if (Personas.FimDeSemana(t.M, t.M.Agora)) { fds++; if (!veio) faltasFds++; } else { semana++; if (!veio) faltasSemana++; }
+            if (Personas.FimDeSemana(t.M, t.M.Agora, r.Persona!.DesvioHoras)) { fds++; if (!veio) faltasFds++; } else { semana++; if (!veio) faltasSemana++; }
         }
         Assert.True(fds > 200 && semana > 600);
         Assert.True(faltasFds / (double)fds < faltasSemana / (double)semana - 0.05);

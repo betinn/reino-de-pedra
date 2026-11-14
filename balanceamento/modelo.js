@@ -332,6 +332,20 @@ const P = {
     inicial: 25, minimo: 20, reservaReinos: 90, idsPorReino: 6,
     /* sessões: hora local (fuso em horas de UTC) com variação sorteada de até ±40 min em cada uma */
     fusoH: -3, variacaoMin: 40,
+    /* horário de quem governa (decisão 0044): o cronotipo desloca todas as horas de sessão da habilidade, e também o
+       "acordada" da reação a ataques e o dia do fim de semana. Cada faixa tem um peso, um desvio em horas (sorteado por
+       igual entre os dois números) e, se quiser, as habilidades que aceita. A faixa sai por cota, não por sorteio solto:
+       a IA nova entra na faixa mais abaixo do peso entre as IAs ativas (as de um mundo antigo ganham a faixa uma vez, ao
+       subir). As corujas são só médio e ativo, que jogam até tarde: com +4,5 a +6,5 h ficam acordadas a madrugada toda.
+       Antes eram 20% madrugadores, 50% normais e 30% notívagos, e entre ≈ 2h30 e 4h20 não havia nenhuma IA. */
+    cronotipos: {
+      madrugador: { peso: 0.16, desvio: [-2, -1] },
+      normal: { peso: 0.42, desvio: [-0.7, 0.7] },
+      notivago: { peso: 0.26, desvio: [1.2, 2.8] },
+      coruja: { peso: 0.16, desvio: [4.5, 6.5], habilidades: ['medio', 'ativo'] }
+    },
+    /* horas (local) que a meta M33 confere: sempre alguma IA acordada e com sessão, bem menos que de dia */
+    madrugada: [1, 5],
     /* habilidade = as regras de decisão da simulação (medio e ativo são os PERFIS do modelo; fraco entra menos e escolhe pior).
        Novos locais: até 4 + 1 a cada locaisCadaDias dias, no máximo locaisMax. acerto: chance de escolher a obra de melhor
        retorno (senão, uma qualquer das candidatas). arqueiros: fração do recrutamento em arqueiros (limitada pelo couro). */
@@ -950,6 +964,66 @@ COMECO.tabela.forEach(h => { const a = comecoSem.marcos[h], b = comecoCom.marcos
 const fmtC5 = s => s.castelo5 != null ? 'em ' + fmtT(s.castelo5 * 3600) : 'depois de ' + COMECO.horas + ' h';
 out('\nCastelo nível 5: sem coleta ' + fmtC5(comecoSem) + '; com coleta ' + fmtC5(comecoCom) + '. Os primeiros níveis são baratos e rápidos (' + fmtT(tempoObra(2)) + ' a ' + fmtT(tempoObra(5)) + '); o que segura o começo é madeira e pedra, e a coleta resolve.\n');
 
+/* ---------- horário dos reinos de IA (decisão 0044) ---------- */
+/* Valores esperados num mundo de n IAs: a cota de cada faixa de cronotipo (a IA nova entra na faixa mais abaixo do peso),
+   a habilidade pelos pesos (a faixa que só aceita algumas habilidades fica com elas; as outras dividem o resto), o desvio
+   por igual dentro da faixa e a variação de ±variacaoMin em cada sessão. "Acordada" é a regra da reação: entre a primeira e
+   a última sessão do dia dela, com 1 h de folga. As sessões contadas são as marcadas (a assiduidade ainda falta a algumas). */
+const CRONO = P.ia.cronotipos;
+function cotasCrono(n) {
+  const nomes = Object.keys(CRONO).sort(), total = nomes.reduce((s, k) => s + CRONO[k].peso, 0);
+  const c = Object.fromEntries(nomes.map(k => [k, 0]));
+  for (let i = 0; i < n; i++) {
+    let melhor = null, maior = -Infinity;
+    nomes.forEach(k => { const d = CRONO[k].peso / total * (i + 1) - c[k]; if (d > maior + 1e-9) { maior = d; melhor = k; } });
+    c[melhor]++;
+  }
+  return c;
+}
+const acordadaIA = (h, d, s) => { const x = ((h - d) % 24 + 24) % 24; return x >= Math.min(...s) - 1 && x <= Math.max(...s) + 1; };
+function horarioIA(n) {
+  const c = cotasCrono(n), pesosH = P.ia.pesosHabilidade, totH = soma(pesosH), mix = {};
+  const resto = Object.fromEntries(Object.keys(pesosH).map(h => [h, n * pesosH[h] / totH]));
+  Object.keys(c).filter(k => CRONO[k].habilidades).forEach(k => {
+    const ok = CRONO[k].habilidades, t = ok.reduce((s, h) => s + pesosH[h], 0);
+    mix[k] = Object.fromEntries(ok.map(h => [h, c[k] * pesosH[h] / t]));
+    ok.forEach(h => { resto[h] = Math.max(0, resto[h] - mix[k][h]); });
+  });
+  const tResto = soma(resto);
+  Object.keys(c).filter(k => !CRONO[k].habilidades).forEach(k => { mix[k] = Object.fromEntries(Object.keys(resto).map(h => [h, c[k] * resto[h] / tResto])); });
+  const acordadas = Array(24).fill(0), sessoes = Array(24).fill(0), v = P.ia.variacaoMin / 60, PASSOS = 40;
+  Object.keys(c).forEach(k => {
+    const [a, b] = CRONO[k].desvio;
+    for (let i = 0; i < PASSOS; i++) {
+      const d = a + (b - a) * (i + 0.5) / PASSOS;
+      Object.entries(mix[k]).forEach(([h, q]) => {
+        const s = P.ia.habilidades[h].sessoes, w = q / PASSOS;
+        for (let H = 0; H < 24; H++) { let x = 0; for (let j = 0; j < 12; j++) x += acordadaIA(H + (j + 0.5) / 12, d, s) ? 1 : 0; acordadas[H] += w * x / 12; }
+        s.forEach(h0 => {
+          const ini = h0 + d - v, fim = h0 + d + v;
+          for (let H = -24; H < 48; H++) { const sob = Math.max(0, Math.min(fim, H + 1) - Math.max(ini, H)); if (sob > 0) sessoes[((H % 24) + 24) % 24] += w * sob / (2 * v); }
+        });
+      });
+    }
+  });
+  return { cotas: c, acordadas, sessoes };
+}
+const horas = (a, b) => Array.from({ length: b - a }, (_, i) => a + i);
+const MADRUGADA = horas(P.ia.madrugada[0], P.ia.madrugada[1]), DIA_IA = horas(9, 22);
+const media = xs => xs.reduce((s, x) => s + x, 0) / xs.length;
+const horIni = horarioIA(P.ia.inicial), horMin = horarioIA(P.ia.minimo);
+/* quanto cada habilidade dorme: as horas do dia fora do "acordada" (a faixa só desloca o dia, não o alonga) */
+const dormeIA = Object.fromEntries(Object.entries(P.ia.habilidades).map(([h, c]) => [h, 24 - (Math.max(...c.sessoes) - Math.min(...c.sessoes) + 2)]));
+const fmtCotas = c => Object.entries(c).map(([k, n]) => k + ' ' + n).join(', ');
+out('## Horário dos reinos de IA\n');
+out('Cada IA tem um cronotipo que desloca todas as horas de sessão da habilidade (e o "acordada" da reação e o dia do fim de semana). A faixa sai por cota: ' + Object.entries(CRONO).map(([k, f]) => k + ' ' + r0(f.peso * 100) + '% (' + String(f.desvio[0]).replace('.', ',') + ' a ' + String(f.desvio[1]).replace('.', ',') + ' h' + (f.habilidades ? ', só ' + f.habilidades.join(' e ') : '') + ')').join(', ') +
+  '. Num mundo de ' + P.ia.inicial + ' IAs: ' + fmtCotas(horIni.cotas) + '; de ' + P.ia.minimo + ': ' + fmtCotas(horMin.cotas) + '. Valores esperados por hora local (sessões marcadas, com a variação de ±' + P.ia.variacaoMin + ' min):\n');
+out('| Hora | Acordadas (' + P.ia.inicial + ' IAs) | Sessões (' + P.ia.inicial + ' IAs) | Acordadas (' + P.ia.minimo + ' IAs) | Sessões (' + P.ia.minimo + ' IAs) |');
+out('|---|---|---|---|---|');
+horas(0, 24).forEach(H => out('| ' + H + ' h | ' + r1(horIni.acordadas[H]) + ' | ' + r1(horIni.sessoes[H]) + ' | ' + r1(horMin.acordadas[H]) + ' | ' + r1(horMin.sessoes[H]) + ' |'));
+out('\nNinguém joga 24 h: o fraco dorme ' + dormeIA.fraco + ' h, o médio ' + dormeIA.medio + ' h e o ativo ' + dormeIA.ativo + ' h por dia, seguidas. A coruja ativa vai dormir entre ' + [0, 1].map(i => String((Math.max(...P.ia.habilidades.ativo.sessoes) + 1 + CRONO.coruja.desvio[i]) % 24).replace('.', ',') + ' h').join(' e ') +
+  ' e acorda entre ' + [0, 1].map(i => String(Math.min(...P.ia.habilidades.ativo.sessoes) - 1 + CRONO.coruja.desvio[i]).replace('.', ',') + ' h').join(' e ') + ', conforme o desvio dela.\n');
+
 /* ================================================================ metas */
 const kitLanceiros = Math.floor(Math.min(...Object.keys(U.lanceiro.custo).map(k => P.kit[k] / U.lanceiro.custo[k])));
 const metas = [
@@ -1023,7 +1097,15 @@ const metas = [
     duracaoBatalha(1, 0.02) <= 30 && duracaoBatalha(20, 1) >= 180 && duracaoBatalha(20, 1) <= 360 && duracaoBatalha(500, 1) <= 600],
   ['M32', 'A reserva da IA em casa (castelo × ' + String(P.ia.guarda.porNivel).replace('.', ',') + ', até o perfil defensivo) cabe nas tropas do médio e ainda sobra tropa para sair (dias 3, 7, 14 e 35)',
     [3, 7, 14, 35].map(d => reservaIA(sims.medio.log[d].castelo, P.ia.perfis.defensivo.guarda) + ' de ' + sims.medio.log[d].tropas).join(' · '),
-    [3, 7, 14, 35].every(d => reservaIA(sims.medio.log[d].castelo, P.ia.perfis.defensivo.guarda) < sims.medio.log[d].tropas)]
+    [3, 7, 14, 35].every(d => reservaIA(sims.medio.log[d].castelo, P.ia.perfis.defensivo.guarda) < sims.medio.log[d].tropas)],
+  ['M33', 'Madrugada com IA, mas pouca: num mundo de ' + P.ia.inicial + ' IAs, de ' + P.ia.madrugada[0] + ' h a ' + P.ia.madrugada[1] + ' h cada hora tem pelo menos 2 IAs acordadas e 0,5 sessão, e a média fica abaixo de 1/4 das acordadas e 1/3 das sessões do dia (9 h a 22 h); com ' + P.ia.minimo + ' IAs, ainda pelo menos 1 acordada por hora',
+    'acordadas ' + r1(Math.min(...MADRUGADA.map(H => horIni.acordadas[H]))) + ' a ' + r1(Math.max(...MADRUGADA.map(H => horIni.acordadas[H]))) + ' (dia ' + r1(media(DIA_IA.map(H => horIni.acordadas[H]))) + ') · sessões ' +
+      r1(Math.min(...MADRUGADA.map(H => horIni.sessoes[H]))) + ' a ' + r1(Math.max(...MADRUGADA.map(H => horIni.sessoes[H]))) + '/h (dia ' + r1(media(DIA_IA.map(H => horIni.sessoes[H]))) + ') · com ' + P.ia.minimo + ': ' + r1(Math.min(...MADRUGADA.map(H => horMin.acordadas[H]))) + ' acordadas',
+    MADRUGADA.every(H => horIni.acordadas[H] >= 2 && horIni.sessoes[H] >= 0.5 && horMin.acordadas[H] >= 1)
+      && media(MADRUGADA.map(H => horIni.acordadas[H])) < media(DIA_IA.map(H => horIni.acordadas[H])) / 4
+      && media(MADRUGADA.map(H => horIni.sessoes[H])) < media(DIA_IA.map(H => horIni.sessoes[H])) / 3],
+  ['M34', 'Ninguém joga 24 h: toda IA dorme pelo menos 6 h seguidas por dia, em qualquer cronotipo (a faixa só desloca o dia)',
+    Object.entries(dormeIA).map(([h, n]) => h + ' ' + n + ' h').join(' · '), Object.values(dormeIA).every(n => n >= 6)]
 ];
 out('## Metas verificadas\n');
 out('| | Meta | Resultado | |');

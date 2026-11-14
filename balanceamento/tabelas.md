@@ -343,6 +343,39 @@ Jogador de olho no jogo: sempre que a fila fica livre, começa a melhoria mais b
 
 Castelo nível 5: sem coleta depois de 4 h; com coleta em 2 h 11 min. Os primeiros níveis são baratos e rápidos (40 s a 5 min); o que segura o começo é madeira e pedra, e a coleta resolve.
 
+## Horário dos reinos de IA
+
+Cada IA tem um cronotipo que desloca todas as horas de sessão da habilidade (e o "acordada" da reação e o dia do fim de semana). A faixa sai por cota: madrugador 16% (-2 a -1 h), normal 42% (-0,7 a 0,7 h), notivago 26% (1,2 a 2,8 h), coruja 16% (4,5 a 6,5 h, só medio e ativo). Num mundo de 25 IAs: coruja 4, madrugador 4, normal 11, notivago 6; de 20: coruja 3, madrugador 3, normal 9, notivago 5. Valores esperados por hora local (sessões marcadas, com a variação de ±40 min):
+
+| Hora | Acordadas (25 IAs) | Sessões (25 IAs) | Acordadas (20 IAs) | Sessões (20 IAs) |
+|---|---|---|---|---|
+| 0 h | 9.5 | 4.1 | 7.6 | 3.3 |
+| 1 h | 7.1 | 3 | 5.6 | 2.4 |
+| 2 h | 4.8 | 0.8 | 3.6 | 0.6 |
+| 3 h | 4 | 1.3 | 3 | 1 |
+| 4 h | 4.1 | 2.1 | 3.1 | 1.6 |
+| 5 h | 4 | 1.9 | 3 | 1.4 |
+| 6 h | 6.1 | 2.8 | 4.8 | 2.2 |
+| 7 h | 11.1 | 5.3 | 8.8 | 4.2 |
+| 8 h | 15.7 | 6.3 | 12.6 | 5.1 |
+| 9 h | 18.7 | 5.4 | 15.1 | 4.4 |
+| 10 h | 20.6 | 4.5 | 16.7 | 3.7 |
+| 11 h | 21.8 | 5.1 | 17.6 | 4 |
+| 12 h | 23.5 | 6.8 | 18.9 | 5.4 |
+| 13 h | 24.8 | 8.1 | 19.9 | 6.5 |
+| 14 h | 25 | 5.8 | 20 | 4.7 |
+| 15 h | 25 | 4.5 | 20 | 3.7 |
+| 16 h | 25 | 3.2 | 20 | 2.5 |
+| 17 h | 25 | 3.9 | 20 | 3 |
+| 18 h | 25 | 6.5 | 20 | 5.2 |
+| 19 h | 25 | 6.2 | 20 | 4.9 |
+| 20 h | 24.3 | 5.8 | 19.5 | 4.7 |
+| 21 h | 22.9 | 7.2 | 18.4 | 5.8 |
+| 22 h | 19 | 5.9 | 15.4 | 4.8 |
+| 23 h | 15.4 | 5.9 | 12.5 | 4.8 |
+
+Ninguém joga 24 h: o fraco dorme 10 h, o médio 7 h e o ativo 6 h por dia, seguidas. A coruja ativa vai dormir entre 4,5 h e 6,5 h e acorda entre 10,5 h e 12,5 h, conforme o desvio dela.
+
 ## Metas verificadas
 
 | | Meta | Resultado | |
@@ -397,5 +430,7 @@ Castelo nível 5: sem coleta depois de 4 h; com coleta em 2 h 11 min. Os primeir
 | M30 | A vida volta inteira em 1 h 20 a 2 h 40; um ataque do perigo alto não mata ninguém de um grupo de lanceiros | 2 h · golpe até 105 < 110 | ✓ |
 | M31 | Batalha sem tempo fixo: 50 contra 1 acaba em até 30 s; 20 contra 20 leva de 3 a 6 min; nenhuma passa de 10 min | 20 s · 4 min 20 s · 10 min | ✓ |
 | M32 | A reserva da IA em casa (castelo × 0,5, até o perfil defensivo) cabe nas tropas do médio e ainda sobra tropa para sair (dias 3, 7, 14 e 35) | 6 de 7 · 7 de 10 · 8 de 13 · 9 de 23 | ✓ |
+| M33 | Madrugada com IA, mas pouca: num mundo de 25 IAs, de 1 h a 5 h cada hora tem pelo menos 2 IAs acordadas e 0,5 sessão, e a média fica abaixo de 1/4 das acordadas e 1/3 das sessões do dia (9 h a 22 h); com 20 IAs, ainda pelo menos 1 acordada por hora | acordadas 4 a 7.1 (dia 23.6) · sessões 0.8 a 3/h (dia 5.6) · com 20: 3 acordadas | ✓ |
+| M34 | Ninguém joga 24 h: toda IA dorme pelo menos 6 h seguidas por dia, em qualquer cronotipo (a faixa só desloca o dia) | fraco 10 h · medio 7 h · ativo 6 h | ✓ |
 
 Todas as metas no alvo.
