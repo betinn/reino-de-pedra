@@ -419,6 +419,7 @@ Este documento registra as **decisões de negócio e de game design** já fechad
 - **Sem mercado global**: um mercado único quebraria as regras de recurso no local e de roubo no caminho.
 - **Sem chat geral.** Fora da aliança, a comunicação é por **mensageiro** e pelos recados curtos que acompanham as propostas.
 - **Mensageiro**: treinado no castelo; unidade que ocupa 1 de população e leva uma mensagem a qualquer reino. Vai com bandeira branca, evidente no mapa como não agressivo; tropas e fauna não o atacam. Depois de entregar, o mensageiro volta.
+- **Mensageiro pelo mapa**: clicar num local de outro reino (botão esquerdo, a folha; ou o direito, o menu) mostra "Mensageiro". Clicar nele abre uma caixa flutuante só com o texto, Enviar e Cancelar; Enviar manda o mensageiro àquele local, e Enter envia. Sem mensageiro livre, a caixa diz por quê (nenhum no reino, todos a caminho ou em treino) e oferece treinar um.
 - **Troca direta** ("dou X, quero Y") com qualquer reino. Se aceita, as duas cargas saem dos locais mais próximos e viajam visíveis no mapa, podendo ser roubadas.
 - **Reinos de IA comerciantes** compram abaixo e vendem acima do valor de referência, só com o próprio estoque e pelas mesmas regras dos jogadores. Mantêm o comércio vivo quando há poucos jogadores.
   - Compram a 85% e vendem a 115%, com a prata pelo valor cheio; nunca dão mais que metade do que guardam de um recurso. Os outros reinos de IA pedem o dobro da margem.
