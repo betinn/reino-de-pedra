@@ -105,6 +105,12 @@ public class CargaIATestes(ITestOutputHelper saida)
         var tempoSessoes = new Stopwatch();
         var porTipo = new Dictionary<string, (long n, long ticks)>();
         var proximaAmostra = m.Agora + T.Hora;
+        // horário da IA: sessões marcadas (etapa 0) e jogadas (a segunda parte, que só existe quando ela veio) por hora local,
+        // IAs acordadas (Personas.Acordada) por hora local e, a cada dia, castelo e tropas médios e batalhas acumuladas
+        var marcadasPorHora = new long[24]; var jogadasPorHora = new long[24];
+        var acordadasPorHora = new double[24]; var amostrasPorHora = new int[24];
+        var diario = new List<string>();
+        var proximoDia = m.Agora + T.Dia;
         while (true)
         {
             var temEvento = m.Agenda.Proximo(out _, out var q);
@@ -125,6 +131,8 @@ public class CargaIATestes(ITestOutputHelper saida)
             var tipo = temEvento && m.Agenda.Proximo(out var idEv, out _) ? m.Eventos.Obter(idEv)?.GetType().Name ?? "(cancelado)" : "(nenhum)";
             var ehSessao = tipo == nameof(SessaoIAEvento);
             if (ehSessao) { tempoSessoes.Start(); sessoesIA++; }
+            if (ehSessao && m.Agenda.Proximo(out var idSessao, out _) && m.Eventos.Obter(idSessao) is SessaoIAEvento se)
+                (se.Etapa == 0 ? marcadasPorHora : jogadasPorHora)[(int)Sessoes.HoraLocal(m, t.Relogio.Agora)]++;
             var t0 = Stopwatch.GetTimestamp();
             eventos += m.ProcessarAte(t.Relogio.Agora, 1);
             var dt = Stopwatch.GetTimestamp() - t0;
@@ -133,7 +141,16 @@ public class CargaIATestes(ITestOutputHelper saida)
             if (m.Agora >= proximaAmostra)
             {
                 picoMemoria = Math.Max(picoMemoria, GC.GetTotalMemory(false) - memoriaAntes);
+                var hAmostra = (int)Sessoes.HoraLocal(m, m.Agora);
+                acordadasPorHora[hAmostra] += Ocupacao.DeIA(m).Count(r => Sessoes.De(m, r) is { } c && Personas.Acordada(m, r, c.C));
+                amostrasPorHora[hAmostra]++;
                 proximaAmostra += T.Hora;
+            }
+            if (m.Agora >= proximoDia)
+            {
+                var iaDia = Ocupacao.DeIA(m).ToList();
+                diario.Add($"  dia {diario.Count + 1}: castelo médio {iaDia.Average(r => m.Locais[r.CasteloId].Nivel):0.0}, tropas médias {iaDia.Average(r => Economia.Tropas(m, r)):0.0}, batalhas {AjustesTeste.De(m).Fins.Count}");
+                proximoDia += T.Dia;
             }
         }
         t.Relogio.Agora = fim;
@@ -228,6 +245,11 @@ public class CargaIATestes(ITestOutputHelper saida)
         saida.WriteLine($"memória gerenciada: pico {picoMemoria / 1048576.0:0.0} MB, viva no fim {viva / 1048576.0:0.0} MB");
         saida.WriteLine($"banco {mb:0.00} MB, salvo em {segSalvar:0.00} s; documentos {m.Colecoes.Sum(c => c.Count)}");
         saida.WriteLine($"IA: castelo médio {nivelCastelo:0.0}, tropas médias {tropas:0}; batalhas {batalhas} ({atkIA} atacadas por IA)");
+        foreach (var linha in diario) saida.WriteLine(linha);
+        saida.WriteLine("hora local:            " + string.Concat(Enumerable.Range(0, 24).Select(h => $"{h,5}")));
+        saida.WriteLine("sessões marcadas/dia:  " + string.Concat(marcadasPorHora.Select(n => $"{n / (double)dias,5:0.0}")));
+        saida.WriteLine("sessões jogadas/dia:   " + string.Concat(jogadasPorHora.Select(n => $"{n / (double)dias,5:0.0}")));
+        saida.WriteLine("IAs acordadas (média): " + string.Concat(Enumerable.Range(0, 24).Select(h => $"{acordadasPorHora[h] / Math.Max(1, amostrasPorHora[h]),5:0.0}")));
 
         // o trabalho das buscas de caminho, igual em qualquer máquina: uma busca que varre o mapa custa 74.880 hexágonos, e
         // uma por requisição de fila dava 16 milhões por dia de jogo (hoje são cerca de 600 mil)

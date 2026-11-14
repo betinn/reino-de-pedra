@@ -63,11 +63,14 @@ public static class Sessoes
         m.Sujar(r);
     }
 
-    /// <summary>Esta é a última sessão do dia (a fila de obras cobre a noite)?</summary>
-    public static bool UltimaDoDia(Mundo m, CondutaIAP c, long agora)
+    /// <summary>
+    /// Esta é a última sessão do dia (a fila de obras cobre a noite)? No dia de quem joga: <paramref name="desvioH"/> (o
+    /// cronotipo) desloca as horas, então a última da coruja é a das 4 h, não a das 21 h.
+    /// </summary>
+    public static bool UltimaDoDia(Mundo m, CondutaIAP c, long agora, double desvioH = 0)
     {
         if (c.Sessoes.Length == 0) return true;
-        var hl = HoraLocal(m, agora);
+        var hl = ((HoraLocal(m, agora) - desvioH) % 24 + 24) % 24;
         var ultima = c.Sessoes.Max();
         // perto (dentro da variação) da última hora, ou depois dela
         return hl >= ultima - m.P.IA.VariacaoMin / 60.0 || hl < c.Sessoes.Min() - m.P.IA.VariacaoMin / 60.0;
