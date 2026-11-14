@@ -457,6 +457,9 @@ namespace ReinoDePedra.Jogo.Social
         /// <c>@Nome do Reino</c> menciona um membro (ele é avisado mesmo com a conversa silenciada); <c>@todos</c>, só líder e
         /// conselheiros. <paramref name="hex"/>: um ponto do mapa mostrado à aliança (clicar na fala centra o mapa lá).
         /// </summary>
+        /// <summary>Alguém escreveu na conversa (a IA usa para ver a menção ou a pergunta fora da sessão).</summary>
+        public static event Action<Mundo, Alianca, FalaAlianca>? AoFalar;
+
         public static FalaAlianca Falar(Mundo m, Reino r, string? texto, int? hex = null)
         {
             var a = Minha(m, r);
@@ -476,6 +479,7 @@ namespace ReinoDePedra.Jogo.Social
                 f.Todos = true;
             }
             Registrar(m, a, f);
+            AoFalar?.Invoke(m, a, f);
             // a menção avisa sempre (categoria da aliança, não a da conversa, que o jogador pode silenciar)
             foreach (var id in f.Todos ? a.Membros.Select(x => x.ReinoId).Where(id => id != r.Id).ToList() : f.Mencoes)
                 Registros.Notificar(m, id, "alianca", r.Nome + (f.Todos ? " chamou a aliança" : " mencionou você"), Cortar(texto, 90), "alianca");

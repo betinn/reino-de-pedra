@@ -37,6 +37,8 @@ namespace ReinoDePedra.Jogo.Reinos
         public long? SessaoIA2EventoId { get; set; }
         /// <summary>Reação a um ataque, fora da sessão, já marcada.</summary>
         public long? ReacaoIAEventoId { get; set; }
+        /// <summary>Volta à conversa da aliança, fora da sessão, por uma menção ou pergunta que ela viu (já marcada).</summary>
+        public long? ConversaIAEventoId { get; set; }
     }
 }
 
