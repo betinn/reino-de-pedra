@@ -110,6 +110,15 @@
       return '<button type="button" class="btn btn-p" data-derrubar-bandeira="' + o.id + '" data-hex="' + o.hex + '">' + RP.icone('tropas') + 'Derrubar</button>';
     };
   }
+  /* local de outro reino (aliado ou não): "Mensageiro" na folha do local, no menu do botão direito e na folha do hexágono.
+     Abre a caixa flutuante de mensagens.js, que manda o mensageiro só àquele local. */
+  var tl = RP.mapa.tiposObjeto.local = RP.mapa.tiposObjeto.local || {}, acoesLocal0 = tl.acoes;
+  tl.acoes = function (o, d) {
+    var html = acoesLocal0 ? acoesLocal0(o, d) || '' : '';
+    if ((o.dono === 'aliado' || o.dono === 'outro') && o.reino && !o.ruina && !(RP.envio && RP.envio.ativo()))
+      html += '<button type="button" class="btn btn-p btn-fantasma" data-mensageiro-local="' + o.id + '">' + RP.icone('mensagem') + 'Mensageiro</button>';
+    return html;
+  };
   function objs(h, d) { return (d && d.porHex && d.porHex[h]) || []; }
   function localEm(h, d) { return objs(h, d).filter(function (o) { return o.tipo === 'local'; })[0]; }
   function bandeirasAlheias(h, d) { return objs(h, d).filter(function (o) { return o.tipo === 'bandeira' && o.dono !== 'meu'; }); }
@@ -123,7 +132,6 @@
     if (RP.envio && RP.envio.ativo()) return '';
     var e = RP.mapaModelo.estado(h), html = '', l = localEm(h, d);
     if (l && l.dono === 'aliado' && l.reino) html += '<a class="btn btn-p" href="#/pedido?reino=' + l.reino.id + '">' + RP.icone('carroca') + 'Pedir recursos</a>';
-    if (l && (l.dono === 'aliado' || l.dono === 'outro') && l.reino && !l.ruina) html += '<a class="btn btn-p btn-fantasma" href="#/mensagem?para=' + l.reino.id + '">' + RP.icone('mensagem') + 'Mensageiro</a>';
     var minha = objs(h, d).some(function (o) { return o.tipo === 'bandeira' && o.dono === 'meu'; });
     if (!e.nunca && !minha) html += '<a class="btn btn-p btn-fantasma" href="#/bandeira-nova?alvo=' + H.c(h) + ',' + H.l(h) + '">' + RP.icone('bandeira') + 'Bandeira</a>';
     return html;

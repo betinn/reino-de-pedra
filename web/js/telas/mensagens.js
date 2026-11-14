@@ -54,6 +54,70 @@
   });
   document.addEventListener('rp:social', function (e) { if (e.detail === 'mensagem') S.redesenhar('mensagens', desenhar); });
 
+  /* ---------------------------------------------------------------- Mensageiro pelo mapa
+     "Mensageiro" num local de outro reino abre uma caixa flutuante com o texto, Enviar e Cancelar; Enviar manda o mensageiro só
+     àquele local. Sem mensageiro livre, a caixa diz por quê e oferece treinar um. */
+  function localNoMapa(id) {
+    var d = RP.mapaModelo && RP.mapaModelo.dados;
+    return ((d && d.objetos) || []).filter(function (o) { return o.tipo === 'local' && o.id === id; })[0] || null;
+  }
+  function treinarRapido() {
+    return RP.tentar(RP.post('/mensageiros/treinar', { qtd: 1 })).then(function (it) {
+      RP.aviso({ titulo: it.aguardando ? 'Mensageiro na fila' : 'Mensageiro em treino', texto: it.aguardando ? RP.textoFilaItem(it) : 'Pronto em ' + RP.fmtDuracao(it.duracao) + '.', icone: 'mensagem', tipo: 'sucesso' });
+      RP.recarregarReino();
+    }).catch(function () { /* aviso já mostrado */ });
+  }
+  function caixaSemMensageiro(d, l) {
+    var motivo = d.emCampo.length ? (d.emCampo.length > 1 ? 'Os ' + d.emCampo.length + ' mensageiros estão a caminho' : 'O mensageiro está a caminho') + ': volta depois de entregar.'
+      : d.emTreino ? 'Nenhum pronto ainda: ' + d.emTreino + ' em treino.' : 'O reino não tem mensageiros.';
+    RP.modal({
+      titulo: 'Nenhum mensageiro livre',
+      corpo: '<p>' + RP.esc(motivo) + '</p><p class="fraco" style="font-size:var(--fs-2);margin-top:var(--esp-2)">' +
+        (d.emCampo.length || d.emTreino ? 'Para não esperar, treine outro' : 'Para escrever a ' + RP.esc(S.nome(l.reino)) + ', treine um') + ' no castelo: ocupa ' + d.pop + ' de população · ' + RP.custoHTML(d.custo) + '</p>',
+      acoes: [{ rotulo: RP.icone('mais') + 'Treinar mensageiro', classe: 'btn-primario', acao: treinarRapido }, { rotulo: 'Cancelar' }]
+    });
+  }
+  function caixaMensagem(d, l) {
+    var max = d.max, total = d.livres + d.emCampo.length, enviando = false, fechar;
+    function enviar() {
+      var ta = RP.$('#texto-mensageiro-rapido'), texto = ta ? ta.value.trim() : '';
+      if (enviando) return;
+      if (!texto) { RP.aviso({ titulo: 'Mensagem vazia', texto: 'Escreva o que o mensageiro vai dizer.', icone: 'mensagem', tipo: 'alerta' }); if (ta) ta.focus(); return; }
+      enviando = true;
+      RP.tentar(RP.post('/mensagens', { texto: texto, localId: l.id })).then(function (x) {
+        fechar();
+        RP.aviso({ titulo: 'Mensageiro a caminho de ' + l.nome, texto: x.chegada ? 'Entrega ' + RP.fmtHora(x.chegada) + '.' : '', icone: 'mensagem', tipo: 'sucesso' });
+        if (RP.mapaModelo) RP.mapaModelo.velho = true;
+        RP.recarregarReino();
+      }).catch(function () { enviando = false; /* aviso já mostrado; o texto fica na caixa */ });
+    }
+    fechar = RP.modal({
+      titulo: 'Mensageiro para ' + RP.esc(S.nome(l.reino)),
+      corpo: '<div class="campo"><label for="texto-mensageiro-rapido">Vai a ' + RP.esc(l.nome || 'este local') + ', com bandeira branca</label>' +
+        '<textarea id="texto-mensageiro-rapido" maxlength="' + max + '" rows="4" placeholder="Ex.: Podemos conversar sobre a estrada do norte?"></textarea>' +
+        '<span class="campo-ajuda"><span data-mr-contador>0</span>/' + max + ' · ' + d.livres + ' de ' + total + ' mensageiros livres</span></div>',
+      acoes: [{ rotulo: RP.icone('mensagem') + 'Enviar', classe: 'btn-primario', fica: true, acao: enviar }, { rotulo: 'Cancelar' }]
+    });
+    var ta = RP.$('#texto-mensageiro-rapido');
+    if (!ta) return;
+    ta.addEventListener('input', function () { var c = RP.$('[data-mr-contador]'); if (c) c.textContent = ta.value.length; });
+    /* Enter envia (Shift + Enter quebra a linha); Esc cancela */
+    ta.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
+      else if (e.key === 'Escape') { e.stopPropagation(); fechar(); }
+    });
+    setTimeout(function () { ta.focus(); }, 60);
+  }
+  RP.mensageiroPara = function (localId) {
+    var l = localNoMapa(localId);
+    if (!l || !l.reino) { RP.aviso({ titulo: 'Local não encontrado', icone: 'mensagem', tipo: 'alerta' }); return; }
+    RP.tentar(carregar()).then(function (d) { if (d.livres > 0) caixaMensagem(d, l); else caixaSemMensageiro(d, l); }).catch(function () { /* aviso já mostrado */ });
+  };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-mensageiro-local]');
+    if (b) RP.mensageiroPara(+b.getAttribute('data-mensageiro-local'));
+  });
+
   /* ---------------------------------------------------------------- Escrever mensagem */
   var nova = { para: null, texto: '', responde: null };
   function desenharNova(el) {
