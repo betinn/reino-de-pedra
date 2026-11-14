@@ -63,6 +63,25 @@ public static class SistemaIA
                 w.ReacaoIAEventoId = mm.Agendar(new ReacaoIAEvento { ReinoId = w.Id, Quando = mm.Agora + Personas.TempoDeReacao(mm, w, "vista") }).Id;
                 mm.Sujar(w);
             };
+            // menção ou pergunta na conversa da aliança, fora da sessão: quem está acordada e vê o aviso volta para responder,
+            // com o atraso de quem larga o que estava fazendo. Só fala de jogador (IA não puxa IA numa conversa sem fim).
+            Aliancas.AoFalar += (mm, a, f) =>
+            {
+                if (!mm.IA.Ativa || f.Tipo != Aliancas.TipoFala || mm.Reinos.Obter(f.ReinoId) is not { EhIA: false }) return;
+                foreach (var x in a.Membros.Where(x => x.ReinoId != f.ReinoId).ToList())
+                {
+                    if (mm.Reinos.Obter(x.ReinoId) is not { EhIA: true, Persona: { Reflexo: > 0 } quem } ia) continue;
+                    var chamada = f.Todos || f.Mencoes.Contains(ia.Id);
+                    var pergunta = !chamada && f.Mencoes.Count == 0 && f.Texto.TrimEnd().EndsWith('?');
+                    if (!chamada && !pergunta) continue;
+                    if (ia.ConversaIAEventoId != null || Sessoes.De(mm, ia) is not { } c || !Personas.Acordada(mm, ia, c.C)) continue;
+                    // a menção sempre avisa; a pergunta solta só chega a quem acompanha a conversa
+                    var viu = chamada ? 0.35 + 0.5 * quem.Disciplina : 0.1 + 0.4 * quem.Sociabilidade;
+                    if (!Personas.Sorte(mm, ia, "viu-conversa:" + f.Id).Chance(viu)) continue;
+                    ia.ConversaIAEventoId = mm.Agendar(new ReacaoIAEvento { ReinoId = ia.Id, Conversa = true, Quando = mm.Agora + Personas.TempoDeReacao(mm, ia, "conversa:" + f.Id, 90) }).Id;
+                    mm.Sujar(ia);
+                }
+            };
             // temporada nova: reserva de ids nova e a leva inicial de IA (o estado da IA foi apagado com o mundo)
             Temporada.Temporadas.AoReiniciar += mm =>
             {
@@ -93,10 +112,11 @@ public static class SistemaIA
     {
         foreach (var r in m.Reinos.Where(x => !x.EhIA).ToList())
         {
-            if (r.SessaoIAEventoId == null && r.SessaoIA2EventoId == null && r.ReacaoIAEventoId == null) continue;
+            if (r.SessaoIAEventoId == null && r.SessaoIA2EventoId == null && r.ReacaoIAEventoId == null && r.ConversaIAEventoId == null) continue;
             m.Cancelar(r.SessaoIAEventoId); r.SessaoIAEventoId = null;
             m.Cancelar(r.SessaoIA2EventoId); r.SessaoIA2EventoId = null;
             m.Cancelar(r.ReacaoIAEventoId); r.ReacaoIAEventoId = null;
+            m.Cancelar(r.ConversaIAEventoId); r.ConversaIAEventoId = null;
             m.Sujar(r);
         }
     }

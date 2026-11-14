@@ -417,6 +417,54 @@ public class AliancaVivaTestes
         Assert.Equal(0, Aliancas.NaoLidas(a, ia.Id));
     }
 
+    /// <summary>Jogador e IA (sociável, atenta, com reflexo) na mesma aliança, às <paramref name="hora"/> h dela.</summary>
+    private static (MundoTeste t, Reino j, Reino ia, Alianca a) ConversaForaDaSessao(double hora)
+    {
+        var t = MundoIA.Novo(criar: false);
+        var j = MundoIA.Jogador(t, 0);
+        var a = Aliancas.Criar(t.M, j, "Liga do Vale");
+        var ia = IA(t, "comerciante", p => { p.Sociabilidade = 1; p.Reflexo = 1; p.DesvioHoras = 0; });
+        Aliancas.Convidar(t.M, j, ia.Id); Aliancas.AceitarConvite(t.M, ia, a.Id);
+        ia.Persona!.FalouEm["saudacao:" + a.Id] = t.M.Agora; Aliancas.MarcarLida(t.M, ia);
+        var hl = Sessoes.HoraLocal(t.M, t.M.Agora);
+        t.AvancarHoras(((hora - hl) % 24 + 24) % 24);
+        return (t, j, ia, a);
+    }
+
+    [Fact]
+    public void IA_acordada_ve_a_mencao_e_responde_fora_da_sessao_com_atraso_de_gente()
+    {
+        var (t, j, ia, a) = ConversaForaDaSessao(14.2);
+        var minha = Aliancas.Falar(t.M, j, "fala @" + ia.Nome + " tudo de boa por ai?");
+        // viu o aviso: a volta à conversa está marcada, com o atraso de quem larga o que fazia
+        var ev = Assert.IsType<ReacaoIAEvento>(t.M.Eventos.Obter(ia.ConversaIAEventoId!.Value));
+        Assert.True(ev.Conversa);
+        Assert.InRange((ev.Quando - t.M.Agora) / 1000.0, 15, 30 * 60);
+        Assert.DoesNotContain(a.Conversa, f => f.Tipo == Aliancas.TipoFala && f.ReinoId == ia.Id && f.Id > minha.Id);   // não na hora
+        t.AvancarMin(31);
+        Assert.Contains(a.Conversa, f => f.Tipo == Aliancas.TipoFala && f.ReinoId == ia.Id && f.Id > minha.Id);
+        Assert.Null(ia.ConversaIAEventoId);
+        Assert.Equal(0, Aliancas.NaoLidas(a, ia.Id));
+    }
+
+    [Fact]
+    public void IA_dormindo_ou_sem_reflexo_so_ve_a_mencao_na_sessao_e_fala_de_IA_nao_chama_IA()
+    {
+        var (t, j, ia, a) = ConversaForaDaSessao(3.5);   // madrugada: ela dorme
+        Aliancas.Falar(t.M, j, "@" + ia.Nome + " acordada?");
+        Assert.Null(ia.ConversaIAEventoId);
+        var (t2, j2, ia2, a2) = ConversaForaDaSessao(14.2);
+        ia2.Persona!.Reflexo = 0;   // a persona sem reflexo só age na sessão
+        Aliancas.Falar(t2.M, j2, "@" + ia2.Nome + " por aí?");
+        Assert.Null(ia2.ConversaIAEventoId);
+        // uma IA que pergunta não puxa a outra IA para fora da sessão
+        var (t3, _, ia3, a3) = ConversaForaDaSessao(14.2);
+        var outra = IA(t3, "defensivo", p => { p.Sociabilidade = 1; p.Reflexo = 1; p.DesvioHoras = 0; });
+        Aliancas.Convidar(t3.M, t3.M.Reinos.Obter(a3.Membros[0].ReinoId)!, outra.Id); Aliancas.AceitarConvite(t3.M, outra, a3.Id);
+        Aliancas.Falar(t3.M, outra, "@" + ia3.Nome + " como vai?");
+        Assert.Null(ia3.ConversaIAEventoId);
+    }
+
     [Fact]
     public void IA_lider_aceita_pedido_de_entrada_de_quem_nao_lhe_fez_mal_e_recusa_o_desafeto()
     {

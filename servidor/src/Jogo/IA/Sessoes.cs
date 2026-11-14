@@ -146,10 +146,21 @@ public sealed class SessaoIAEvento : Evento
 public sealed class ReacaoIAEvento : Evento
 {
     public long ReinoId { get; set; }
+    /// <summary>Viu uma menção ou pergunta na conversa da aliança: entra só para ler e responder (<see cref="ConvivioAlianca.Sessao"/>).</summary>
+    public bool Conversa { get; set; }
     public override void Executar(Mundo m)
     {
         var r = m.Reinos.Obter(ReinoId);
-        if (r == null || !r.Ativo || r.ReacaoIAEventoId != Id) return;
+        if (r == null || !r.Ativo) return;
+        if (Conversa)
+        {
+            if (r.ConversaIAEventoId != Id) return;
+            r.ConversaIAEventoId = null; m.Sujar(r);
+            if (m.IA.Ativa && Sessoes.De(m, r) is { } cc)
+                try { ConvivioAlianca.Sessao(m, r, cc); } catch (RegraException) { }
+            return;
+        }
+        if (r.ReacaoIAEventoId != Id) return;
         r.ReacaoIAEventoId = null; m.Sujar(r);
         if (m.IA.Ativa && Sessoes.De(m, r) is { } c) Governo.Reagir(m, r, c);
     }
