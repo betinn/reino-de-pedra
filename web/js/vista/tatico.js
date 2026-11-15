@@ -532,6 +532,8 @@
   TP.moverMarchas = function () {
     var d = M.dados, g = this.g, els = this.elsMarcha || (this.elsMarcha = {}), agora = RP.agora(), real = performance.now();
     if (!d) return;
+    /* dados novos com outra ordem: os marcadores ainda são os da lista antiga; refaz antes de mover */
+    if (this.versaoSvg !== M.versao || this.versaoMoveis !== M.versaoMoveis) { this.atualizarMoveis(); return; }
     d.marchas.forEach(function (m) {
       var el = els[m._k];
       if (el === undefined) el = els[m._k] = g.querySelector('[data-marcha="' + m._k + '"]') || null;
