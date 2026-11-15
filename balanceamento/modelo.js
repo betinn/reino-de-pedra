@@ -220,11 +220,11 @@ const P = {
        chance = base + porTropa × tropas que o veem, até max (4 lanceiros ≈ 25%). Batedor de elite é furtivo (×0 ao passar). */
     captura: { base: 0.05, porTropa: 0.05, max: 0.5, furtivo: 0 }
   },
-  /* fauna gerada com o mundo: 2 regiões por reino (raio 1 ou 2, centros a 4+ hexágonos uns dos outros, longe 2+ dos castelos).
+  /* fauna gerada com o mundo: 4 regiões por reino (raio 1 ou 2, centros a 4+ hexágonos uns dos outros, longe 2+ dos castelos).
      Nível base = o da caça do animal, com 25% de chance de um nível abaixo e 25% acima. A até 3 hexágonos de um castelo
      inicial (o que o castelo vê), sempre baixo. O bando muda de hexágono dentro da região a cada 1 h a 1 h 40. Tamanho do bando (animais desenhados no mapa). */
   faunaServ: {
-    regioesPorReino: 2, raio: [2, 4], distanciaMin: 8, longeCastelo: 4, pertoReino: 6, variacao: 0.25, moverH: [1, 5 / 3],
+    regioesPorReino: 4, raio: [2, 4], distanciaMin: 8, longeCastelo: 4, pertoReino: 6, variacao: 0.25, moverH: [1, 5 / 3],
     bando: { lobos: [2, 6], javalis: [2, 5], ursos: [1, 2], crocodilos: [2, 4] },
     /* carregadores sem escolta: força 5 por pessoa (gente sem armas, metade de uma milícia) */
     forcaCarregador: 5,

@@ -512,7 +512,7 @@
    }
   },
   "faunaServ": {
-   "regioesPorReino": 2,
+   "regioesPorReino": 4,
    "raio": [
     2,
     4
