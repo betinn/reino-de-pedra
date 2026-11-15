@@ -166,13 +166,15 @@ public class ConvivioIATestes
         var amiga = IA(t, "comerciante", p => { p.Sociabilidade = 1; p.Lealdade = 0.1; });
         Aliancas.Convidar(t.M, j, amiga.Id); Aliancas.AceitarConvite(t.M, amiga, a.Id);
         Sessao(t, amiga); t.AvancarHoras(1);   // cumprimenta e fica em dia com a conversa
-        var antes = a.Conversa.Count(f => f.Tipo == Aliancas.TipoFala && f.ReinoId == amiga.Id);
+        var conversaAntes = a.Conversa.Where(f => f.Tipo == Aliancas.TipoFala && f.ReinoId == amiga.Id).Select(f => f.Id).ToHashSet();
         for (var i = 0; i < 3; i++)
         {
             Aliancas.Evento(t.M, a, "vitoria", j.Nome + " venceu a batalha em Mina.", j.Id, alvoId: 999);
             t.AvancarHoras(2); Sessao(t, amiga);
         }
-        var parabens = a.Conversa.Count(f => f.Tipo == Aliancas.TipoFala && f.ReinoId == amiga.Id) - antes;
+        // só os parabéns contam: a conversa fiada dela, sorteada à parte, não entra na regra de uma vez por dia
+        var parabens = a.Conversa.Count(f => f.Tipo == Aliancas.TipoFala && f.ReinoId == amiga.Id && !conversaAntes.Contains(f.Id)
+            && System.Text.RegularExpressions.Regex.IsMatch(f.Texto, "Boa,|Mandou bem|Parab|Isso a[ií]", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
         Assert.InRange(parabens, 0, 1);
     }
 
