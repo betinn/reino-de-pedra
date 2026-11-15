@@ -313,7 +313,6 @@
   M.publico = false;
   M.mundoPublico = null;
   M.ultimoVivo = null;
-  var assinaturaMoveis = '';
   M.versaoMoveis = 0;
   /* o mapa como um visitante o vê: ao vivo em toda parte, nada descoberto */
   function composto(c, w, v) {
@@ -383,8 +382,11 @@
     var vivas = {};
     d.marchas.forEach(function (m) { vivas[m.id] = true; });
     d.fantasmas = M.fantasmas(vivas);
-    var ass = d.marchas.map(function (m) { return m.id; }).join() + '|' + d.objs.filter(function (o) { return o.tipo === 'batalha'; }).map(function (o) { return o.hex; }).join();
-    if (ass !== assinaturaMoveis) { assinaturaMoveis = ass; M.versaoMoveis++; }
+    /* o desenho acha cada objeto pela posição dele na lista (_k): se a lista muda de ordem ou de tamanho, o mapa se refaz,
+       senão o marcador de uma marcha passa a andar com a posição de outra (a tropa vira explorador até o próximo redesenho) */
+    var ass = d.objetos.map(function (o) { return o.tipo + ':' + (o.id != null ? o.id : '') + (o.tipo === 'batalha' ? '@' + o.hex : ''); }).join();
+    /* guardada nos próprios dados: o /mapa recarregado vem em outra ordem (com as marchas alheias que o feed troca) */
+    if (ass !== d.assinaturaMoveis) { d.assinaturaMoveis = ass; M.versaoMoveis++; }
     document.dispatchEvent(new CustomEvent('rp:vivo', { detail: v }));
     anunciarNovas(v);
   };
