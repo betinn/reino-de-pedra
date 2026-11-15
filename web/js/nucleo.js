@@ -1068,8 +1068,8 @@
   /* destinos da barra do topo: cada um abre a janela da tela, com a tecla de atalho */
   RP.NAV = [
     { tela: 'reino', icone: 'castelo', rotulo: 'Reino', cor: 'reino', tecla: 'R' },
-    { tela: 'construcao', icone: 'martelo', rotulo: 'Construir', cor: 'reino', tecla: 'B' },
-    { tela: 'tropas', icone: 'tropas', rotulo: 'Exército', cor: 'tropas', tecla: 'E' },
+    { tela: 'construcao', icone: 'martelo', rotulo: 'Construir', cor: 'reino', tecla: 'B', fila: 'obras' },
+    { tela: 'tropas', icone: 'tropas', rotulo: 'Exército', cor: 'tropas', tecla: 'E', fila: 'recrutamento' },
     { tela: 'recrutamento', icone: 'populacao', rotulo: 'Recrutar', cor: 'tropas', tecla: 'T' },
     { tela: 'pessoas', icone: 'populacao', rotulo: 'Pessoas', cor: 'mais', tecla: 'P' },
     { tela: 'alianca', icone: 'estandarte', rotulo: 'Aliança', cor: 'mais', tecla: 'J', contador: 'alianca' },
@@ -1089,6 +1089,14 @@
         .concat([{ sep: true }, { rotulo: 'Atalhos do teclado', icone: 'info', tecla: 'F1', acao: RP.ajudaTeclas }, { rotulo: 'Sons e conta', icone: 'menu', href: '#/mais' }])
     });
   }
+  /* quantos itens esperam ou andam numa fila do reino (obras, recrutamento): o número dos botões Construir e Exército */
+  function itensNaFila(nome) { return ((RP.reino && RP.reino.filas && RP.reino.filas[nome]) || []).length; }
+  document.addEventListener('rp:reino', function () {
+    RP.$$('#topo-jogo [data-nav-fila]').forEach(function (c) {
+      var n = itensNaFila(c.getAttribute('data-nav-fila'));
+      c.textContent = n; c.hidden = !n;
+    });
+  });
   RP.montarTopo = function () {
     var topo = RP.$('#topo-jogo'); if (!topo) return;
     var r = RP.reino;
@@ -1099,7 +1107,8 @@
         return '<button type="button" class="topo-btn nav-' + i.cor + '" data-nav="' + i.tela + '"' + (i.menu ? ' data-menu-mais' : ' data-ir="' + i.tela + '"') +
           ' data-dica="<b>' + RP.esc(i.rotulo) + '</b>' + (i.tecla ? '<kbd class=\'tecla\'>' + i.tecla + '</kbd>' : '') + '">' + RP.icone(i.icone) + '<span>' + i.rotulo + '</span>' +
           (i.contador === 'alianca' ? '<span class="contador" data-nav-contador-alianca' + (RP.naoLidasAlianca ? '' : ' hidden') + '>' + (RP.naoLidasAlianca || 0) + '</span>' :
-            i.contador ? '<span class="contador" data-nav-contador' + (RP.naoLidas ? '' : ' hidden') + '>' + RP.naoLidas + '</span>' : '') +
+            i.contador ? '<span class="contador" data-nav-contador' + (RP.naoLidas ? '' : ' hidden') + '>' + RP.naoLidas + '</span>' :
+              i.fila ? '<span class="contador" data-nav-fila="' + i.fila + '"' + (itensNaFila(i.fila) ? '' : ' hidden') + '>' + itensNaFila(i.fila) + '</span>' : '') +
           (i.tecla ? '<kbd class="tecla" aria-hidden="true">' + i.tecla + '</kbd>' : '') + '</button>';
       }).join('') + '</div>';
     marcarNav();
